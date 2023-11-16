@@ -7,6 +7,8 @@ output: beamer_presentation
 classoption: t
 bibliography: /home/raim/ref/tata.bib
 citation_package: natbib
+header-includes:
+    - \graphicspath{{/home/raim/data/mistrans/figures/}} 
 ---
 
 # Relative Location of Translation Errors?
@@ -36,25 +38,30 @@ mistranslation frequency may depend on
 tRNA frequency/codon optimality, and thus could
 also show a N $\rightarrow$ C gradient.
 
-# Protein Stability
+
+# Protein Stability Changes: $\Delta\Delta G$ 
 
 \vspace{3ex}
 
+<!--
 #### $\alpha$-helix vs $\beta$-sheet vs coil vs DNA structure
 
 * Ancient protein folds, likely older than the genetic code,
 * $\alpha$-helix ~3.6 AA per turn, ie. ~10.8 bp, ie. ~1 turn of
   the DNA helix, **coincidence or correlation**?
 * $\alpha \rightarrow \beta \rightarrow$ protein aggregation and *stability*?
+-->
 
-#### Protein Stability Changes: $\Delta\Delta G$ 
+Are we looking for stabilizing or de-stabilizing mistranslations?
 
-* Are we looking for stabilizing or de-stabilizing mutations?
-* Degrons: mutations in specific degradation signals,
-* $\Delta\Delta G$: 
-    - Stabilizing mutations rare and perhaps unexpected,
-	- Destabilizing: unfolding, may lead to aggregation,
-	and thereby stabilize?
+* **Specific** effects, **stabilizing**:
+    - Destroying degron signals,
+	- ubiquitinylation sites, 
+	- ...
+* **Unspecific** effects, **destabilizing**:
+    - Leading to aggregation,
+    - $\Delta\Delta G > 0$,
+	- $\alpha \rightarrow \beta$ switch.
 
 # Relative Location of Translation Errors: Q&D Scan
 
