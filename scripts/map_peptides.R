@@ -3,18 +3,20 @@ library(readxl)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
-
+proj.path <- "/home/raim/data/mistrans"
+dat.path <- file.path(proj.path,"originalData")
+fig.path <- file.path(proj.path,"figures")
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
 
-dat <- read_xlsx("All_MTP_BP_sharedPep_quant_03Oct23.xlsx")
+dat <- read_xlsx(file.path(dat.path,"All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
 
 ## GET ENSEMBL PROTEINS
 fasta.url <- "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz"
-fasta <- "Homo_sapiens.GRCh38.pep.all.fa.gz"
+fasta <- file.path(dat.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
 if ( !file.exists(fasta) )
         download.file(inurl, infile)
 fas <- readFASTA(fasta)
@@ -190,7 +192,8 @@ legend("topright", c("BP position","protein length"),
        col=c(1,2), lty=1)
 
 
-png("absolute_position_length.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"absolute_position_length.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
     xpd=TRUE)
 dense2d(len, pos, xlim=c(0,1e3), ylim=c(0,1e3),
@@ -207,7 +210,8 @@ dense2d(log10(len), log10(pos), ylim=c(0,5), xlim=c(0,5),
         xlab=expression(protein~length/log[10]))
 abline(a=0,b=1)
 
-png("relative_position_hist.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_hist.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(rpos, breaks=seq(0,1,.1),
      main=paste(sum(!is.na(rpos)), "unique MTP"),
@@ -216,8 +220,8 @@ loc.sze <- table(rpos>.5)
 dev.off()
 
 ## BACKGROUND: main peptides
-png("relative_position_hist_main_peptides.png", res=300,
-    width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_hist_main_peptides.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(unlist(mpos), breaks=seq(0,1,.1),
      main=paste(sum(!is.na(unlist(mpos))), "main peptides"),
@@ -225,22 +229,23 @@ hist(unlist(mpos), breaks=seq(0,1,.1),
 dev.off()
 
 ## SMALL v LARGE PROTEINS
-png("relative_position_hist_small.png", res=300,
-    width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_hist_small.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(rpos[small], breaks=seq(0,1,.1),
      main=paste0(sum(small), " small proteins <",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
-png("relative_position_hist_large.png", res=300,
-    width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_hist_large.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(rpos[large], breaks=seq(0,1,.1),
      main=paste0(sum(large), " large proteins >",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
 
-png("protein_length.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"protein_length.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(log10(len),
      xlab=expression(protein~length/log[10]), breaks=50)
@@ -248,7 +253,8 @@ abline(v=log10(size.cutoff))
 dev.off()
 
 
-png("relative_position_length.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_length.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(rpos, log10(len),
         ##len, log="y",
@@ -257,21 +263,24 @@ dense2d(rpos, log10(len),
 abline(h=log10(size.cutoff))
 dev.off()
 
-png("relative_position_intensity.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_intensity.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(dat$rpos, dat[,"MTP_intensity"]/dat[,"BP_intensity"], log="y",
         xlab="relative position of peptide in protein",
         ylab="relative intensity MTP/BP")
 dev.off()
 
-png("absolute_position_RAAS.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"absolute_position_RAAS.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(dat$pos, dat[,"RAAS"], xlim=c(0,1e3),
         xlab="absolute position of peptide in protein/log10",
         ylab="RAAS")
 dev.off()
 
-png("relative_position_RAAS.png", res=300, width=5, height=3.5, units="in")
+png(file.path(fig.path,"relative_position_RAAS.png"),
+    res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(dat$rpos, dat[,"RAAS"], 
         xlab="relative position of peptide in protein",
