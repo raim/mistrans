@@ -96,21 +96,31 @@ rn[rn>10] <- 11
 rcnt <- table(rn)
 ## percent of total MTPs
 rprc <- rcnt/nrow(dat)
+## percent of total proteins
+pprc <- rcnt/nrow(raas)
 
 png(file.path(fig.path,"mtp_per_protein.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-barplot(rcnt, xlab="unique MTPs/protein",
+barplot(rcnt, xlab="unique MTP/protein",
         ylab="# proteins")
 legend("topright",c(paste0("unique MTP: ", nrow(dat)),
                     paste0("unique proteins: ", nrow(raas))))
 dev.off()
 
-png(file.path(fig.path,"mtp_per_protein_percent.png"),
+png(file.path(fig.path,"mtp_per_protein_percent_mtp.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-barplot(rprc, xlab="unique MTPs/protein",
-        ylab="% of total unique MTPs")
+barplot(rprc, xlab="unique MTP/protein",
+        ylab="% of total unique MTP")
+legend("topright",c(paste0("unique MTP: ", nrow(dat)),
+                    paste0("unique proteins: ", nrow(raas))))
+dev.off()
+png(file.path(fig.path,"mtp_per_protein_percent_protein.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+barplot(pprc, xlab="unique MTP/protein",
+        ylab="% of total unique proteins")
 legend("topright",c(paste0("unique MTP: ", nrow(dat)),
                     paste0("unique proteins: ", nrow(raas))))
 dev.off()
@@ -126,6 +136,31 @@ hist(raas$mean, breaks=brks)
 hist(raas$mean[raas$n>1], breaks=brks, col=2, add=TRUE)
 hist(raas$sd[raas$n>1], xlab="standard deviation of RAAS", breaks=brks,
      border=4, add=TRUE)
+
+hist(log10(raas$density), breaks=100,
+     xlab=expression(log[10](MTP/AA)))
+
+## RAAS vs. MTP DENSITY
+plotdev(file.path(fig.path,"mtp_raas_density"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(raas$mean, log10(raas$density), xlab="mean RAAS",
+        ylab=expression(log[10](MTP/AA)))
+dev.off()
+
+plotdev(file.path(fig.path,"mtp_raas_number"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(raas$mean, log10(raas$n), xlab="mean RAAS",
+        ylab=expression(log[10](MTP/protein)))
+dev.off()
+
+plotdev(file.path(fig.path,"mtp_length"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(raas$len, raas$n, log="xy", xlab="protein length/AA",
+        ylab="MTP/protein")
+dev.off()
 
 
 ## ENRICHMENT TESTS
@@ -149,13 +184,23 @@ cls.mat <- cbind(number=rn,
                  raas=bn)
 cls.srts <- list(number=1:4,
                  raas=levels(bins))
-cls.labs <- c(number="MTPs/protein",
+cls.labs <- c(number="MTP/protein",
               raas="mean RAAS")
 
 ovl <- clusterCluster(cls.mat[,1], cls.mat[,2])
-plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
-             xlab=cls.labs[2], ylab=cls.labs[1])
+## calculate optimal figure height: result fields + figure margins (mai)
+nh <- nrow(ovl$p.value) *.3 + 1
+nw <- ncol(ovl$p.value) *.4 + 1
 
+## RAAS vs. MTP densitiy
+plotdev(file.path(fig.path,"mtp_raas_density_discrete"),
+        height=nh, width=nw, res=200)
+par(mai=c(.75,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
+             xlab=NA, ylab=cls.labs[1])
+mtext(cls.labs[2], 1, 2.5)
+dev.off()
+       
 ## TODO: look for manually defined functions over all annotations
 my.functions <-
     list(immune=c("antigen binding","immunoglobulin","immune response"),

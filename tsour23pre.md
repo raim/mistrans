@@ -245,10 +245,18 @@ SIMPLE: $\Rightarrow$ **CAI/tAI of MTP vs. Main peptides?** $\Leftarrow$
 
 ![](/home/raim/Documents/gobet20_fig1c_A.png){width=32%}![](/home/raim/Documents/gobet20_fig5a.png){width=30%}
 
+# MTP Functional Analysis
+
+![](mtp_length.png){width=33%}![](mtp_raas_number.png){width=33%}![](mtp_raas_density.png){width=33%}
+
+![](mtp_per_protein.png){width=50%}![](mtp_raas_density_discrete.png){width=50%}
+
+\footnotesize 
+
+... requires unique set of proteins: analyze MTP per protein.
 
 # MTP Functions: Immune Response
 
-![](mtp_per_protein.png){width=60%}
 
 (number_annot_GO:CC/MF/BP),
 
@@ -302,6 +310,9 @@ phosphorylase, brain form`.
 
 ## TODO
 
+* Use a consistent annotation set for all functional analyses,
+* Hands-on, **add to gene table**: complete column with gene names,
+  add columns with GO terms,
 * GOslim: get a better handle to reduce significant hits
   for the most comprehensive annotation,
 * map to transcripts to get codons,
