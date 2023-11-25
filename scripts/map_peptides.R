@@ -6,6 +6,7 @@ options(stringsAsFactors=FALSE)
 proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures")
+out.path <- file.path(proj.path,"processedData")
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
@@ -160,29 +161,39 @@ rpos <- pos/len
 
 
 ## bind to data frame
-dat <- cbind(dat, pos=pos, len=len, rpos=pos/len)
+dat <- cbind(dat, proteinID=mids, pos=pos, len=len, rpos=pos/len)
 
 ## filter
 rm <- which(pos<0)
 if ( length(rm)>0 ) {
 
-    cat(paste("removing", length(rm), "without exact match\n"))
+    cat(paste("removing", length(rm), "MTP without exact match\n"))
 
     pos <- pos[-rm]
     len <- len[-rm]
     dat <- dat[-rm,]
 }
 
+### TODO:
+## BACKGROUND: main peptides
+## * background frequencies: map all "main peptides",
+## * background frequencies: map all genomic mutations,
+## STATISTICS: of missing hits (peptides not in protein),
+
+### WRITE OUT TABLE with positions for downstream analysis
+write.table(dat, file=file.path(out.path,"mtp_mapped.tsv"),
+            sep="\t", quote=FALSE, na="")
+
+
+#### PLOTS
+
+### POSITION v LENGTH
 
 size.cutoff <- 3e2
-
 small <- len<size.cutoff
 large <- len>size.cutoff
 
-### TODO:
-## * background frequencies: map all "main peptides",
-## * background frequencies: map all genomic mutations,
-## background: main peptides
+
 
 
 hist(pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
