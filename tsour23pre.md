@@ -27,7 +27,7 @@ header-includes:
 
 \vspace{3ex}
   
-\phantom{noch viel mittiger}![](sejour23_fig1.jpg){width=50%}\newline 
+\phantom{noch viel mittiger}![](doc/sejour23_fig1.jpg){width=50%}\newline 
 \phantom{noch viel mittiger}\tiny RRT: ribosome residence time [@Gardin2014]
 
 \vspace{-3ex}
@@ -245,6 +245,68 @@ SIMPLE: $\Rightarrow$ **CAI/tAI of MTP vs. Main peptides?** $\Leftarrow$
 
 ![](/home/raim/Documents/gobet20_fig1c_A.png){width=32%}![](/home/raim/Documents/gobet20_fig5a.png){width=30%}
 
+
+# MTP Functions: Immune Response
+
+![](mtp_per_protein.png){width=60%}
+
+(number_annot_GO:CC/MF/BP),
+
+* top hit MTP/protein: `ENSP00000418649`, no cross-annotation via
+  mapping pipeline (likely the `freeBayes`-based hits?,
+* Many Immunglobulin V regions! 
+
+GO:MF antigen binding,
+GO:CC immunoglobulin complex
+Go:BP immune response
+
+# MTP Functions: Extracellular
+
+\tiny
+
+GO: external extracellular vesicle junction adhesion secretory
+
+# MTP Functions: Cytoskeleton
+
+# MTP Functions: Metabolism
+
+\tiny
+
+GO: glycoly* gluconeogene* mitochon* organell* vacuol* lysos* proteaso* translation ribosom*
+
+
+* number_annot_WP: glycolysis,
+* number_annot_GO:CC: 
+    - \tiny **extracellular vesicles**,
+	- cytoskeleton,
+    - mitochondrion,
+	- lysosome, vacuole,
+	- proteasome,
+	- translation and a bit of ribosome.
+	
+	
+## likely false-positives with genomic mutations
+
+(number_annot_GO:CC/MF/BP),
+
+* top hit MTP/protein: `ENSP00000418649`, no cross-annotation via
+  mapping pipeline (likely the `freeBayes`-based hits?,
+* Many Immunglobulin V regions! 
+  
+## non-unique mapping
+
+* eg. Top_leading_protein `ENSP00000216962` (w/o mutation!) has
+different Blast_ref_protein entries: `NP_005600.1| glycogen
+phosphorylase, muscle form isoform 1` vs `NP_002853.2| glycogen
+phosphorylase, brain form`.
+
+## TODO
+
+* GOslim: get a better handle to reduce significant hits
+  for the most comprehensive annotation,
+* map to transcripts to get codons,
+* map to genome (splicing, accurate TSS),\newline e.g. control:
+  genomic mutations and MTP vs nucleosome data.
 
 
 # References {.allowframebreaks} 

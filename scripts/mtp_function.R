@@ -47,7 +47,7 @@ head(raas$n)
 
 ### UNIQUE PROTEIN MATRIX
 
-## add gene descriptions
+## ADD GENE DESCRIPTIONS
 desc <- sub("\\[Homo sapiens\\]","",sub(".*\\|","",dat$Blast_ref_protein))
 desc.lst <- split(desc, f=mids)
 desc.lst <- lapply(desc.lst, function(x) trimws(x[x!=""]))
@@ -58,14 +58,36 @@ desc.lst <- lapply(desc.lst, unique)
 table(unlist(lapply(desc.lst, length)))
 which(unlist(lapply(desc.lst, length))==2)
 
-if ( any(table(unlist(lapply(desc.lst,length)))>1) )
+if ( any(as.numeric(names(table(unlist(lapply(desc.lst,length)))))>1) )
     warning("non-unique mapping between ensembl and refseq")
 desc <- unlist(lapply(desc.lst, function(x) x[1]))
 
-raas <- cbind.data.frame(raas, description=desc)
+## TODO: collect more info here,
+## * protein length
+
+## ADD PROTEIN LENGTH
+len <- dat$len
+len.lst <- split(len, f=mids)
+len.lst <- lapply(len.lst, function(x) trimws(x[x!=""]))
+len.lst <- lapply(len.lst, unique)
+
+## check unique? NOTE: several with non-unique ensembl<->refseq mapping
+## i.e. Blast_ref_protein vs. Top_leading_protein
+table(unlist(lapply(len.lst, length)))
+which(unlist(lapply(len.lst, length))==2)
+
+if ( any(as.numeric(names(table(unlist(lapply(len.lst,length)))))>1) )
+    warning("non-unique mapping between ensembl and refseq")
+
+len <- as.numeric(unlist(len.lst))
+
+## MTP density
+dns <- raas$n/len
+
+raas <- cbind.data.frame(raas, description=desc, length=len, density=dns)
 
 ## sort by MTP/protein
-raas <- raas[order(unlist(raas$n), decreasing=TRUE),]
+raas <- raas[order(unlist(raas$density), decreasing=TRUE),]
 
 ## plot MTP/protein distribution
 rn <- unlist(raas$n)
@@ -108,7 +130,7 @@ hist(raas$sd[raas$n>1], xlab="standard deviation of RAAS", breaks=brks,
 
 ## ENRICHMENT TESTS
 go.path <- file.path(fig.path,"annotation")
-dir.create(go.path)
+dir.create(go.path, showWarnings=FALSE)
 
 ## categorizations
 
@@ -134,6 +156,15 @@ ovl <- clusterCluster(cls.mat[,1], cls.mat[,2])
 plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
              xlab=cls.labs[2], ylab=cls.labs[1])
 
+## TODO: look for manually defined functions over all annotations
+my.functions <-
+    list(immune=c("antigen binding","immunoglobulin","immune response"),
+         extracellular=c("external", "extracellular",
+                         "vesicle", "junction", "adhesion", "secretory"),
+         cytoskeleton=c("actin","myosin","tubul","adhesion","fiber","polymer"),
+         metabolism=c("glycoly", "gluconeogene", "mitochon", "organell",
+                      "vacuol", "lysos", "proteaso", "translation", "ribosom"))
+
 for ( ct in 1:ncol(cls.mat) ) {
 
     ##cls <- get(paste0("cls",ctypes[ct]))
@@ -148,8 +179,13 @@ for ( ct in 1:ncol(cls.mat) ) {
     cl.sze <- unlist(lapply(cl.lst, length))[cl.srt]
     
     gores <- gost(query=cl.lst, organism = "hsapiens", significant=FALSE)
+
+    cat(paste("ANALYZING CLUSTERING", cid, "\n"))
     
     ## PLOT ENRICHMENTS
+
+    ## TODO: grep pre-selected terms
+    
     for ( ctgy in rev(unique(gores$result$source)) ) { #c("CC","BP","MF") ) {
         
         go <- gores$result
