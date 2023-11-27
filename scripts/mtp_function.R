@@ -128,7 +128,11 @@ dev.off()
 ## plot RAAS per protein variance
 ## TODO: understand RAAS per protein distribution or get good value
 ## test whether correlating
-plot(raas$mean, raas$sd)
+plotdev(file.path(fig.path,"mtp_raas_mean_sd"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(raas$mean, raas$sd, xlab="mean RAAS", ylab="SD RAAS")
+dev.off()
 
 mx <- max(abs(c(raas$sd,raas$mean)), na.rm=TRUE)
 brks <- seq(-mx-1, mx+1, 1)

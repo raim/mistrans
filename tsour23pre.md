@@ -245,7 +245,34 @@ SIMPLE: $\Rightarrow$ **CAI/tAI of MTP vs. Main peptides?** $\Leftarrow$
 
 ![](/home/raim/Documents/gobet20_fig1c_A.png){width=32%}![](/home/raim/Documents/gobet20_fig5a.png){width=30%}
 
+# Previous: Position Bias along Proteins
+
+![](relative_position_hist.png){width=45%}
+
+
+
+
+\footnotesize
+
+* Position bias towards C-terminal end.
+
+
+# Previous: Position Bias along Proteins
+
+![](relative_position_hist_small.png){width=45%}![](relative_position_hist_large.png){width=45%}
+
+![](absolute_position_length.png){width=45%}![](relative_position_RAAS.png){width=45%}
+
+
+\footnotesize
+
+* Position bias towards C-terminal end,
+* Stronger in small proteins.
+
+
 # MTP Functional Analysis
+
+... requires unique set of proteins: analyze MTP per protein.
 
 ![](mtp_length.png){width=33%}![](mtp_raas_number.png){width=33%}![](mtp_raas_density.png){width=33%}
 
@@ -253,7 +280,6 @@ SIMPLE: $\Rightarrow$ **CAI/tAI of MTP vs. Main peptides?** $\Leftarrow$
 
 \footnotesize 
 
-... requires unique set of proteins: analyze MTP per protein.
 
 # MTP Functions: Immune Response
 
