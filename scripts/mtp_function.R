@@ -190,6 +190,7 @@ cls.srts <- list(number=1:4,
                  raas=levels(bins))
 cls.labs <- c(number="MTP/protein",
               raas="mean RAAS")
+rownames(cls.mat) <- rownames(raas)
 
 ovl <- clusterCluster(cls.mat[,1], cls.mat[,2])
 ## calculate optimal figure height: result fields + figure margins (mai)
@@ -210,89 +211,49 @@ my.functions <-
     list(immune=c("antigen binding","immunoglobulin","immune response"),
          extracellular=c("external", "extracellular",
                          "vesicle", "junction", "adhesion", "secretory"),
-         cytoskeleton=c("actin","myosin","tubul","adhesion","fiber","polymer"),
-         metabolism=c("glycoly", "gluconeogene", "mitochon", "organell",
-                      "vacuol", "lysos", "proteaso", "translation", "ribosom"))
+         cytoskeleton=c("actin[^g]","myosin","tubul","adhesion","fiber",
+                        "polymer","filament"),
+         metabolism=c("glycoly", "gluconeogene", "proteolysis", "catabolism",
+                      "vacuol", "lysos", "proteaso", "translation", "ribosom"),
+         organelle=c("mitochon", "organell","vacuol", "lysos"))
 
 for ( ct in 1:ncol(cls.mat) ) {
 
-    ##cls <- get(paste0("cls",ctypes[ct]))
-    ##cls.srt <- get(paste0("cls",ctypes[ct],".srt"))
 
-    ## by MTP/protein bins
+    ## get clustering
     cid <- colnames(cls.mat)[ct]
     cls <- cls.mat[,ct]
 
     cl.srt <- cls.srts[[ct]]
-    cl.lst <- split(rownames(raas), f=as.character(cls))[cl.srt]
-    cl.sze <- unlist(lapply(cl.lst, length))[cl.srt]
-    
-    gores <- gost(query=cl.lst, organism = "hsapiens", significant=FALSE)
 
-    cat(paste("ANALYZING CLUSTERING", cid, "\n"))
+    cat(paste("CALCULATING ANNOTATION ENRICHMENTS for", cid, "\n"))
     
-    ## PLOT ENRICHMENTS
 
-    ## TODO: grep pre-selected terms
+    ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
+    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt) 
+    ## plot enrichments
+    for ( ctgy in names(ovll) ) {
     
-    for ( ctgy in rev(unique(gores$result$source)) ) { #c("CC","BP","MF") ) {
-        
-        go <- gores$result
-        go <- go[go$source==ctgy,]
+        ovl <- ovll[[ctgy]]
 
-        cat(paste("analyzing category", ctgy, "with",
-                  length(unique(go$term_id)), "entries\n"))
-    
-    
-        terms <- go[,c("term_id","term_name","term_size")]
-        terms <- terms[!duplicated(terms$term_id),]
-        rownames(terms) <- terms$term_id
-        
         ## filter large annotations such as GO
         p.filt <- 1e-1
         cut <- TRUE
         if ( length(grep("^GO:",ctgy))>0 ) {
-            terms <- terms[terms$term_size >10 & terms$term_size<5e3,]
+
+            ## 
+            trm.srt <- ovl$num.query[,1]
+            keep <- trm.srt > 10 & trm.srt <5e3
+            trm.srt <- names(trm.srt)[keep]
+            ovl <- sortOverlaps(ovl, srt=trm.srt)
+            
             p.filt <- 1e-3
             cut <- TRUE
         } else if ( ctgy=="TF" ) {
             p.filt <- 1e-3
             cut <- TRUE
-        } 
-        
-        ## construct overlap matrix
-        govl <- matrix(NA, nrow=nrow(terms), ncol=length(cl.lst))
-        colnames(govl) <- names(cl.lst)
-        rownames(govl) <- terms$term_name
-        
-        gopvl <- gocnt <- govl
-        
-        ## generate overlap structure:
-        ## fill matrices with overlap p-values and counts, num.query, num.target
-        ## TODO: do this more efficiently, one loop and vectors.
-        for ( i in 1:nrow(govl) ) 
-            for ( j in 1:ncol(govl) ) {
-                idx <- which(go$query==colnames(govl)[j] &
-                             go$term_id==terms$term_id[i])
-                if ( length(idx)>1 ) {
-                    stop("too many fields; shouldn't happen")
-                    break
-                } else if ( length(idx)==0 ) {
-                    gopvl[i,j] <- 1
-                    gocnt[i,j] <- 0
-                } else {
-                    gopvl[i,j] <- go$p_value[idx]
-                    gocnt[i,j] <- go$intersection_size[idx]
-                }
-            }
-        
-        ## construct overlap class
-        ovl <- list()
-        ovl$p.value <- gopvl
-        ovl$count <- gocnt
-        ovl$num.query <- as.matrix(terms[,"term_size",drop=FALSE])
-        ovl$num.target <- t(as.matrix(cl.sze))
-        class(ovl) <- "clusterOverlaps"
+        }
+
         
         ## sort along clusters
         ovc <- sortOverlaps(ovl, p.min=p.filt, cut=cut)
@@ -308,6 +269,39 @@ for ( ct in 1:ncol(cls.mat) ) {
         plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
                      xlab=NA, ylab=NA)
         mtext(cls.labs[ct], 1, 1, adj=-1.5, cex=1.2, font=2)
+        axis(2, at=nrow(ovc$p.value)+1.5, label=ctgy,
+             cex.axis=1.2, font=2, xpd=TRUE, las=2)
+        dev.off()
+    }
+    
+    ## ENRICHMENT OVER PRE-SELECTED TERMS in gprofiler2
+    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt,
+                    terms=my.functions) 
+    ## plot enrichments
+    for ( ctgy in names(ovll) ) {
+    
+        ovl <- ovll[[ctgy]]
+
+        ## filter large annotations such as GO
+        p.filt <- 1e-2
+        cut <- TRUE
+        
+        ## sort along clusters
+        ovc <- sortOverlaps(ovl, p.min=p.filt, cut=cut)
+        
+        ## calculate optimal figure height: result fields + figure margins (mai)
+        nh <- nrow(ovc$p.value) *.2 + 1
+        nw <- ncol(ovc$p.value) *.4 + 5
+        
+        ## plot figure
+        plotdev(file.path(go.path,paste0(cid,"_annot_",ctgy)),
+                height=nh, width=nw, res=200)
+        par(mai=c(.75,4.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
+                     xlab=NA, ylab=NA)
+        mtext(cls.labs[ct], 1, 1, adj=-1.5, cex=1.2, font=2)
+        axis(2, at=nrow(ovc$p.value)+1.5, label=ctgy,
+             cex.axis=1.2, font=2, xpd=TRUE, las=2)
         dev.off()
     }
 }
