@@ -3,6 +3,7 @@ library(readxl)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
+mam.path <- "/home/raim/data/mammary"
 proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures")
@@ -14,10 +15,13 @@ out.path <- file.path(proj.path,"processedData")
 dat <- read_xlsx(file.path(dat.path,"All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
+## get ALL proteins - from project mammary
+genes <- read.delim(file.path(mam.path,"features_GRCh38.110.tsv"))
+##genes <- genes[genes$type=="protein_coding",]
 
-## GET ENSEMBL PROTEINS
+## GET ENSEMBL PROTEINS - from project mammary
 fasta.url <- "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz"
-fasta <- file.path(dat.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
+fasta <- file.path(mam.path,"originalData","Homo_sapiens.GRCh38.pep.all.fa.gz")
 if ( !file.exists(fasta) )
         download.file(inurl, infile)
 fas <- readFASTA(fasta)
@@ -184,6 +188,30 @@ if ( length(rm)>0 ) {
 write.table(dat, file=file.path(out.path,"mtp_mapped.tsv"),
             sep="\t", quote=FALSE, na="")
 
+
+### HOTSPOTS
+## look for proteins with more than one mutation
+## in close vicinity
+hotspots <- split(dat$pos, f=dat$proteinID)
+hotspots <- lapply(hotspots, sort)
+
+mutn <- unlist(lapply(hotspots, length))
+
+idx <-  which.max(mutn)
+#idx <- which(names(hotspots)=="ENSP00000506126")
+id <- names(hotspots)[idx]
+name <- genes$name[grep(id, genes$protein)]
+if ( length(name)==0 ) name <- id
+pos <- table(hotspots[[idx]])
+
+png(file.path(fig.path,"hotspots_example.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(x=as.numeric(names(pos)), y=pos, type="h",
+     main=name, xlab="position in protein",
+     ylab="# MTP")
+axis(2)
+dev.off()
 
 #### PLOTS
 
