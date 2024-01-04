@@ -43,34 +43,36 @@ raasp <- dat$Mean_precursor_RAAS # 582 NA
 rid <- "Mean_precursor_RAAS"
 raas <- unlist(dat[,rid])
 
-raas_bins <- cut(raas, c(seq(-7,5,2),Inf))
+raas_bins <- cut(raas, c(seq(-6,4,1),Inf))
 
 df <- data.frame(raas=raas,
                  bins=raas_bins,
                  sim=sim)
 df <- df[!is.na(raas),]# & !is.infinite(raas),]
 
-png(file.path(fig.path,"raas_blosum62_dense.png"),
+png(file.path(fig.path,"blosum62_raas_dense.png"),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(df$raas[!is.infinite(df$raas)], df$sim[!is.infinite(df$raas)],
         ylab="BLOSUM62 similarity", xlab=rid)
 dev.off()
-png(file.path(fig.path,"raas_blosum62_violin.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+png(file.path(fig.path,"blosum62_raas_violin.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 vioplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
-        xlab=rid)
+        xlab=NA, las=2)
+mtext(rid, 1, 2.5)
 dev.off()
-png(file.path(fig.path,"raas_blosum62_boxplot.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+png(file.path(fig.path,"blosum62_raas_boxplot.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 boxplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
-        xlab=rid)
+        xlab=NA, las=2)
+mtext(rid, 1, 2.5)
 dev.off()
 
 png(file.path(fig.path,"blosum62_similarities_hist.png"),
-    res=300, width=3.5, height=3.5, units="in")
+    res=300, width=5, height=3.5, units="in")
 hist(BLOSUM62[lower.tri(BLOSUM62)])
 dev.off()
        
