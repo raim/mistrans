@@ -24,9 +24,8 @@ dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
 ## first find mutated AA pairs
-## (column AAS mixes I/L)
-## split mutated AA pairs into from/to
-fromto <- strsplit(dat$AAS, " to ")
+## (column AASin input mixes I/L)
+## and split mutated AA pairs into from/to
 
 saaps <- strsplit(dat$SAAP,"")
 bases <- strsplit(dat$BP, "")
@@ -34,8 +33,6 @@ fromto <- lapply(1:length(saaps), function(i) {
     pos <- which(saaps[[i]]!=bases[[i]])
     c(from=bases[[i]][pos], to=saaps[[i]][pos])
 })
-from <- unlist(lapply(fromto, function(x) x[1]))
-to <- unlist(lapply(fromto, function(x) x[2]))
 
 ## similarity of replaced AA
 sim <- unlist(lapply(fromto, function(x) BLOSUM62[x[1],x[2]]))
@@ -72,6 +69,11 @@ boxplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
         xlab=rid)
 dev.off()
 
+png(file.path(fig.path,"blosum62_similarities_hist.png"),
+    res=300, width=3.5, height=3.5, units="in")
+hist(BLOSUM62[lower.tri(BLOSUM62)])
+dev.off()
+       
 #### TODO: adapat old code below
 
 ## get ALL proteins - from project mammary
