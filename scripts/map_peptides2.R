@@ -1,6 +1,9 @@
 
 library(readxl)
 library(segmenTools)
+library(Biostrings) # for blosum62
+data(BLOSUM62)
+library(vioplot)
 options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
@@ -14,13 +17,62 @@ out.path <- file.path(proj.path,"processedData")
 
 ## NOTE: input has changed significantly, proceed in a map_peptides2.R
 
-saap.file <- "All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
-##saap.file <- "All_SAAP_protein_filter_df.xlsx"
+##saap.file <- "All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
+saap.file <- "All_SAAP_protein_filter_df.xlsx"
 
 dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
+## first find mutated AA pairs
+## (column AAS mixes I/L)
+## split mutated AA pairs into from/to
+fromto <- strsplit(dat$AAS, " to ")
 
+saaps <- strsplit(dat$SAAP,"")
+bases <- strsplit(dat$BP, "")
+fromto <- lapply(1:length(saaps), function(i) {
+    pos <- which(saaps[[i]]!=bases[[i]])
+    c(from=bases[[i]][pos], to=saaps[[i]][pos])
+})
+from <- unlist(lapply(fromto, function(x) x[1]))
+to <- unlist(lapply(fromto, function(x) x[2]))
+
+## similarity of replaced AA
+sim <- unlist(lapply(fromto, function(x) BLOSUM62[x[1],x[2]]))
+
+raasr <- dat$Mean_reporter_RAAS # 9965 NA
+raasp <- dat$Mean_precursor_RAAS # 582 NA
+
+rid <- "Mean_precursor_RAAS"
+raas <- unlist(dat[,rid])
+
+raas_bins <- cut(raas, c(seq(-7,5,2),Inf))
+
+df <- data.frame(raas=raas,
+                 bins=raas_bins,
+                 sim=sim)
+df <- df[!is.na(raas),]# & !is.infinite(raas),]
+
+png(file.path(fig.path,"raas_blosum62_dense.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(df$raas[!is.infinite(df$raas)], df$sim[!is.infinite(df$raas)],
+        ylab="BLOSUM62 similarity", xlab=rid)
+dev.off()
+png(file.path(fig.path,"raas_blosum62_violin.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+vioplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
+        xlab=rid)
+dev.off()
+png(file.path(fig.path,"raas_blosum62_boxplot.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+boxplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
+        xlab=rid)
+dev.off()
+
+#### TODO: adapat old code below
 
 ## get ALL proteins - from project mammary
 genes <- read.delim(file.path(mam.path,"features_GRCh38.110.tsv"))
@@ -43,7 +95,7 @@ dat <- dat[mids%in%ids,]
 
 ## FILTER unique mistranslated or base peptides
 ## SAAP reflect individual mutations at potentially different locations
-dat <- dat[!duplicated(dat$SAAP_sequence),]
+dat <- dat[!duplicated(dat$SAAP),]
 
 ## refresh mids: remove mutation annotation
 mids <- sub("_.*","", dat$Top_leading_protein)
