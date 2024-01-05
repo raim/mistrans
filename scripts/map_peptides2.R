@@ -3,14 +3,17 @@ library(readxl)
 library(segmenTools)
 library(Biostrings) # for blosum62
 data(BLOSUM62)
+data(PAM250)
 library(vioplot)
 options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
 proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
-fig.path <- file.path(proj.path,"figures")
+fig.path <- file.path(proj.path,"figures","saap_analysis")
 out.path <- file.path(proj.path,"processedData")
+
+dir.create(fig.path, showWarnings=FALSE)
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
@@ -34,48 +37,108 @@ fromto <- lapply(1:length(saaps), function(i) {
     c(from=bases[[i]][pos], to=saaps[[i]][pos])
 })
 
-## similarity of replaced AA
-sim <- unlist(lapply(fromto, function(x) BLOSUM62[x[1],x[2]]))
 
-raasr <- dat$Mean_reporter_RAAS # 9965 NA
-raasp <- dat$Mean_precursor_RAAS # 582 NA
+## analyze AA similarity by different matrices
+## TODO: remove extra columns
+simmats <- c("BLOSUM62", "PAM250")
 
-rid <- "Mean_precursor_RAAS"
-raas <- unlist(dat[,rid])
+for ( i in seq_along(simmats) ) {
 
-raas_bins <- cut(raas, c(seq(-6,4,1),Inf))
+    mid <- simmats[i]
+    MAT <- get(mid)[AA_STANDARD,AA_STANDARD]
 
-df <- data.frame(raas=raas,
-                 bins=raas_bins,
-                 sim=sim)
-df <- df[!is.na(raas),]# & !is.infinite(raas),]
+    ylab <- "similarity between replaced AA" #"BLOSUM62 similarity"
 
-png(file.path(fig.path,"blosum62_raas_dense.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(df$raas[!is.infinite(df$raas)], df$sim[!is.infinite(df$raas)],
-        ylab="BLOSUM62 similarity", xlab=rid)
-dev.off()
-png(file.path(fig.path,"blosum62_raas_violin.png"),
-    res=300, width=5, height=3.5, units="in")
-par(mai=c(1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-vioplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
-        xlab=NA, las=2)
-mtext(rid, 1, 2.5)
-dev.off()
-png(file.path(fig.path,"blosum62_raas_boxplot.png"),
-    res=300, width=5, height=3.5, units="in")
-par(mai=c(1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-boxplot(sim ~ bins, data=df, ylab="BLOSUM62 similarity",
-        xlab=NA, las=2)
-mtext(rid, 1, 2.5)
-dev.off()
+    ## similarity of replaced AA
+    sim <- unlist(lapply(fromto, function(x) MAT[x[1],x[2]]))
 
-png(file.path(fig.path,"blosum62_similarities_hist.png"),
-    res=300, width=5, height=3.5, units="in")
-hist(BLOSUM62[lower.tri(BLOSUM62)])
-dev.off()
-       
+    raasr <- dat$Mean_reporter_RAAS # 9965 NA
+    raasp <- dat$Mean_precursor_RAAS # 582 NA
+    
+    rid <- "Mean_precursor_RAAS"
+    raas <- unlist(dat[,rid])
+    
+    raas_bins <- cut(raas, c(seq(-6,4,1),Inf))
+    raas_dual <- rep("RAAS>0", length(raas))
+    raas_dual[raas < 0] <- "RAAS<0"
+    
+    df <- data.frame(raas=raas,
+                     bins=raas_bins,
+                     dual=raas_dual,
+                     sim=sim)
+    df <- df[!is.na(raas),]# & !is.infinite(raas),]
+    dff <- df[!is.infinite(df$raas),]
+    
+    
+    
+    ## correlation
+    ##ct <- cor.test(dff$raas, dff$sim)
+    ct <- cor.test(dff$raas, dff$sim, method="spearman")
+    fit <- lm(dff$sim ~ dff$raas)
+    ##fit2 <- tls::tls(sim ~ raas, data=df)
+    
+    png(file.path(fig.path,paste0(mid,"_raas_dense.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(dff$raas, dff$sim,
+            ylab=ylab, xlab=rid)
+    ##abline(fit)
+    ##legend("topright", paste0("p=", signif(ct$p.value,1)),
+    ##       seg.len=0, y.intersp=0, bty="n")
+    mtext(paste0("p=", signif(ct$p.value,0)), 3,0, adj=1)
+    dev.off()
+    png(file.path(fig.path,paste0(mid,"_raas_violin.png")),
+        res=300, width=5, height=3.5, units="in")
+    par(mai=c(.75,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    vioplot(sim ~ bins, data=df, ylab=ylab,
+            xlab=NA, las=2)
+    mtext(rid, 1, 2.5)
+    dev.off()
+    png(file.path(fig.path,paste0(mid,"_raas_boxplot.png")),
+        res=300, width=5, height=3.5, units="in")
+    par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    boxplot(sim ~ bins, data=df, ylab=ylab,
+            xlab=NA, las=2, at=seq_along(levels(df$bins)))
+    axis(3, at=seq_along(levels(df$bins)), labels=table(df$bins),las=2)
+    mtext(rid, 1, 2.5)
+    dev.off()
+    
+
+    png(file.path(fig.path,paste0(mid,"_raas_boxplot_dual.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    b62 <- cbind.data.frame(MAT[lower.tri(MAT)],
+                            mid)
+    ddff <- data.frame(sim=c(dff[,"sim"], b62[,1]),
+                       dual=c(dff[,"dual"],b62[,2]))
+    ddff[,2] <- as.factor(ddff[,2])
+    ylim <- range(ddff[,1])
+    ylim[2]  <- ylim[2]*1.1
+    par(mai=c(.5,.5,.25,0), mgp=c(1.3,.3,0), tcl=-.25)
+    boxplot(sim ~ dual, data=ddff, xlab=NA,
+            ylab=ylab, axes=FALSE, at=1:3, box=FALSE, ylim=ylim)
+    axis(2)
+    axis(1, at=1:3, labels=paste0(levels(ddff[,2]), "\n", table(ddff[,2])),
+         mgp=c(0,1.5,0))
+    ## TODO: significance bars
+    tt <- wilcox.test(ddff$sim[ddff$dual=="RAAS<0"],
+                      ddff$sim[ddff$dual=="RAAS>0"])
+    text(2.5, par("usr")[4]*.9, paste("p =",signif(tt$p.value,1)),
+         xpd=TRUE, pos=3)
+    arrows(x0=2, y0=par("usr")[4]*.9, x1=3, angle=90,
+           code=3, length=.05, xpd=TRUE)
+    tt <- wilcox.test(ddff$sim[ddff$dual==mid],
+                      ddff$sim[ddff$dual=="RAAS<0"])
+    text(1.5, par("usr")[4], paste("p =",signif(tt$p.value,1)), xpd=TRUE, pos=3)
+    arrows(x0=1, y0=par("usr")[4], x1=2, angle=90, code=3, length=.05, xpd=TRUE)
+    dev.off()
+    
+    png(file.path(fig.path,paste0(mid,"_similarities_hist.png")),
+        res=300, width=5, height=3.5, units="in")
+    hist(MAT[lower.tri(MAT)])
+    dev.off()
+}
+
+
 #### TODO: adapat old code below
 
 ## get ALL proteins - from project mammary
