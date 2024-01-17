@@ -21,7 +21,7 @@ dir.create(fig.path, showWarnings=FALSE)
 ## NOTE: input has changed significantly, proceed in a map_peptides2.R
 
 ##saap.file <- "All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
-saap.file <- "All_SAAP_protein_filter_df.xlsx"
+saap.file <- "All_SAAP_protein_filter_df_20240111.xlsx"
 
 dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
@@ -58,7 +58,7 @@ for ( i in seq_along(simmats) ) {
     rid <- "Mean_precursor_RAAS"
     raas <- unlist(dat[,rid])
     
-    raas_bins <- cut(raas, c(seq(-6,4,1),Inf))
+    raas_bins <- cut(raas, c(seq(-6,4,1)))
     raas_dual <- rep("RAAS>0", length(raas))
     raas_dual[raas < 0] <- "RAAS<0"
     
