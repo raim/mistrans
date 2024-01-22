@@ -8,6 +8,16 @@ dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures")
 out.path <- file.path(proj.path,"processedData")
 
+
+## protein fasta
+fasta <- file.path(dat.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
+## transcript fasta
+transcr <- file.path(dat.path,"Homo_sapiens.GRCh38.cdna.all.fa.gz")
+## protein-transcript map
+tpmap <- file.path(dat.path,"protein_transcript_map.tsv")
+## transcript start/end coordinates
+transcoor <- file.path(dat.path,"transcript_coordinates.tsv")
+
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
 
@@ -16,16 +26,15 @@ colnames(dat) <- gsub(" ","_", colnames(dat))
 
 
 ## GET ENSEMBL PROTEINS
-fasta.url <- "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz"
-fasta <- file.path(dat.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
-if ( !file.exists(fasta) )
-        download.file(inurl, infile)
 fas <- readFASTA(fasta)
 
 desc <- lapply(fas, function(x) {unlist(strsplit(x$desc, " "))})
 ids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
 names(fas) <- ids
 
+##
+
+## FILTER for proteins we know (annotation file)
 ## only take proteins where Top_leading_protein is present in fasta
 mids <- sub("_.*","",dat$Top_leading_protein)
 dat <- dat[mids%in%ids,]
@@ -50,7 +59,7 @@ mpos <- list() ## main peptide positions
 testit <- TRUE # TEST whether the mutation position is correct
 for ( i in 1:nrow(dat) ) {
     oid <- dat$Top_leading_protein[i]
-    j <- grep(mids[i], names(fas),value=FALSE, fixed=TRUE)
+    j <- grep(mids[i], names(fas), value=FALSE, fixed=TRUE)
     if ( length(j)==0 ) {
         cat(paste(i, oid, "not found\n"))
         next
@@ -97,7 +106,12 @@ for ( i in 1:nrow(dat) ) {
              strsplit(ntarg,"")[[1]][pos[i]] ) {
             stop(i, mids[i], j, names(fas)[j], "error: no mutation detected\n")
         }
-    }   
+    }
+
+    ## get codon
+    ## protein:transcript mapping
+    ## load transcript, load UTR file, get codon
+    
 }
 
 mpos <- rep(list(NA), nrow(dat)) ## main peptide positions
