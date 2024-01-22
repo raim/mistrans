@@ -247,7 +247,7 @@ names(trfas) <- names(fas)
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
-pos <- len <- rep(NA, nrow(dat))
+pos <- len <- cdn <- aaf <- aat <- rep(NA, nrow(dat))
 mpos <- list() ## main peptide positions
 testit <- TRUE # TEST whether the mutation position is correct
 for ( i in 1:nrow(dat) ) {
@@ -316,17 +316,20 @@ for ( i in 1:nrow(dat) ) {
     npos <- (pos[i]-1)*3+1
 
     codon <- substr(nt$seq, npos, npos+2)
+
+    ## store codon
     ##codon <- codons(DNAString(nt$seq))[pos[i]]
-    aaf <- strsplit(target,"")[[1]][pos[i]]
-    aaf <- strsplit(query,"")[[1]][mut]
-    aat <- strsplit(saap,"")[[1]][mut]
+    ##aaf[i] <- strsplit(target,"")[[1]][pos[i]]
+    aaf[i] <- strsplit(query,"")[[1]][mut]
+    aat[i] <- strsplit(saap,"")[[1]][mut]
+    cdn[i] <- codon
     ## GENETIC_CODE[codon]
     tcodons <- paste(names(which(GENETIC_CODE==aat)),collapse=";")
 
-    ## report
     
+    ## report
     tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
-    cat(paste(i, codon, aaf, GENETIC_CODE[codon], "->", aat,
+    cat(paste(i, codon, aaf[i], GENETIC_CODE[codon], "->", aat[i],
               tcodons, tmp, "\n"))
 }
 
