@@ -4,19 +4,20 @@ library(segmenTools)
 options(stringsAsFactors=FALSE)
 
 proj.path <- "/home/raim/data/mistrans"
+mam.path <- "/home/raim/data/mammary"
+gen.path <- file.path(mam.path, "originalData")
 dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures")
 out.path <- file.path(proj.path,"processedData")
 
-
 ## protein fasta
-fasta <- file.path(dat.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
+fasta <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
 ## transcript fasta
-transcr <- file.path(dat.path,"Homo_sapiens.GRCh38.cdna.all.fa.gz")
+transcr <- file.path(gen.path,"Homo_sapiens.GRCh38.cdna.all.fa.gz")
 ## protein-transcript map
-tpmap <- file.path(dat.path,"protein_transcript_map.tsv")
+tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
 ## transcript start/end coordinates
-transcoor <- file.path(dat.path,"transcript_coordinates.tsv")
+transcoor <- file.path(gen.path,"transcript_coordinates.tsv")
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
@@ -32,7 +33,54 @@ desc <- lapply(fas, function(x) {unlist(strsplit(x$desc, " "))})
 ids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
 names(fas) <- ids
 
+## protein lengths -use to filter
+prlen <- unlist(lapply(fas, function(x) nchar(x$seq)))
+
+## get matching transcripts
+trfas <- readFASTA(transcr)
+desc <- lapply(trfas, function(x) {unlist(strsplit(x$desc, " "))})
+trids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
+names(trfas) <- trids
+
+## protein-transcript map
+trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+
+## re-order transcripts for available proteins
+missing <- which(!names(fas)%in%rownames(trmap))
+cat(paste("removing", length(missing), "proteins w/o matching transcript\n"))
+fas <- fas[-missing]
+
+## 
+trfas <- trfas[trmap[names(fas),1]]
+
+## get coding region coordinates
+
+utr <- read.delim(transcoor, row.names=1)
+
+## TODO: which proteins are missing? only "scaffold"?
+##hist(prlen[which(!names(trfas)%in%rownames(utr))], breaks=100)
 ##
+missing <- which(!names(trfas)%in%rownames(utr))
+cat(paste("removing", length(missing), "w/o UTR info\n"))
+
+fas <- fas[-missing]
+trfas <- trfas[-missing]
+
+
+utr <- utr[names(trfas),]
+rownames(utr) <- names(trfas)
+
+## cut transcripts' UTR - TODO: do in external script
+## and just load here instead of full fasta
+trcut <- sapply(names(trfas), function(id) {
+    new <- trfas[[id]]
+    len <- nchar(trfas[[id]]$seq)
+    start <- utr[id,1]+1
+    end <- len - utr[id,2] 
+    coding <- start:end 
+    new$seq <- paste0(strsplit(trfas[[id]]$seq,"")[[1]][coding], collapse="")
+    new
+})
 
 ## FILTER for proteins we know (annotation file)
 ## only take proteins where Top_leading_protein is present in fasta
