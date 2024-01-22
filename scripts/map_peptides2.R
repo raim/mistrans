@@ -496,7 +496,7 @@ abline(a=0,b=1)
 png(file.path(fig.path,"relative_position_hist.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos, breaks=seq(0,1,.1),
+hist(dat$rpos, breaks=seq(0,1,.05),
      main=paste(sum(!is.na(dat$rpos)), "unique SAAP"),
      xlab="relative position of peptide in protein")
 loc.sze <- table(dat$rpos>.5)
@@ -506,7 +506,7 @@ dev.off()
 png(file.path(fig.path,"relative_position_hist_main_peptides.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(unlist(mpos), breaks=seq(0,1,.1),
+hist(unlist(mpos), breaks=seq(0,1,.05),
      main=paste(sum(!is.na(unlist(mpos))), "main peptides"),
      xlab="relative position of peptide in protein")
 dev.off()
@@ -515,14 +515,14 @@ dev.off()
 png(file.path(fig.path,"relative_position_hist_small.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos[small], breaks=seq(0,1,.1),
+hist(dat$rpos[small], breaks=seq(0,1,.05),
      main=paste0(sum(small,na.rm=TRUE), " small proteins <",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
 png(file.path(fig.path,"relative_position_hist_large.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos[large], breaks=seq(0,1,.1),
+hist(dat$rpos[large], breaks=seq(0,1,.05),
      main=paste0(sum(large,na.rm=TRUE), " large proteins >",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
@@ -552,7 +552,7 @@ png(file.path(fig.path,"absolute_position_RAAS.png"),
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(dat$pos, dat[,raas.col], xlim=c(0,1e3),
         ylim=range(dat[,raas.col], na.rm=TRUE),
-        xlab="absolute position of peptide in protein/log10",
+        xlab="absolute position of peptide in protein",
         ylab=raas.col)
 dev.off()
 
