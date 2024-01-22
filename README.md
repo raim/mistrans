@@ -2,6 +2,11 @@ Protein mutation data by Shiri Tsour, 2023.
 
 Ideas
 
+## TODO
+
+* position in protein, by RAAS,
+* 
+
 # 5'/3' bias
 
 * map peptides and mutations via ensembl/refseq ID to full length proteins,

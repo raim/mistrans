@@ -1,6 +1,7 @@
 
 library(readxl)
 library(segmenTools)
+library(Biostrings)
 options(stringsAsFactors=FALSE)
 
 proj.path <- "/home/raim/data/mistrans"
@@ -12,12 +13,10 @@ out.path <- file.path(proj.path,"processedData")
 
 ## protein fasta
 fasta <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
-## transcript fasta
-transcr <- file.path(gen.path,"Homo_sapiens.GRCh38.cdna.all.fa.gz")
+## coding region fasta
+transcr <- file.path(mam.path,"processedData","coding.fa")
 ## protein-transcript map
 tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
-## transcript start/end coordinates
-transcoor <- file.path(gen.path,"transcript_coordinates.tsv")
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
@@ -40,6 +39,7 @@ prlen <- unlist(lapply(fas, function(x) nchar(x$seq)))
 trfas <- readFASTA(transcr)
 desc <- lapply(trfas, function(x) {unlist(strsplit(x$desc, " "))})
 trids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
+trids <- sub(",$","", trids)
 names(trfas) <- trids
 
 ## protein-transcript map
@@ -52,35 +52,7 @@ fas <- fas[-missing]
 
 ## 
 trfas <- trfas[trmap[names(fas),1]]
-
-## get coding region coordinates
-
-utr <- read.delim(transcoor, row.names=1)
-
-## TODO: which proteins are missing? only "scaffold"?
-##hist(prlen[which(!names(trfas)%in%rownames(utr))], breaks=100)
-##
-missing <- which(!names(trfas)%in%rownames(utr))
-cat(paste("removing", length(missing), "w/o UTR info\n"))
-
-fas <- fas[-missing]
-trfas <- trfas[-missing]
-
-
-utr <- utr[names(trfas),]
-rownames(utr) <- names(trfas)
-
-## cut transcripts' UTR - TODO: do in external script
-## and just load here instead of full fasta
-trcut <- sapply(names(trfas), function(id) {
-    new <- trfas[[id]]
-    len <- nchar(trfas[[id]]$seq)
-    start <- utr[id,1]+1
-    end <- len - utr[id,2] 
-    coding <- start:end 
-    new$seq <- paste0(strsplit(trfas[[id]]$seq,"")[[1]][coding], collapse="")
-    new
-})
+names(trfas) <- names(fas)
 
 ## FILTER for proteins we know (annotation file)
 ## only take proteins where Top_leading_protein is present in fasta
@@ -94,7 +66,7 @@ dat <- dat[!duplicated(dat$MTP_sequence),]
 ## refresh mids: remove mutation annotation
 mids <- sub("_.*","", dat$Top_leading_protein)
 
-## get mutations
+## get detected genomic mutations
 notmutated <- grep("_", dat$Top_leading_protein, invert=TRUE)
 muts <- sub(".*_","", dat$Top_leading_protein)
 muts[notmutated] <- ""
@@ -106,8 +78,11 @@ pos <- len <- rep(NA, nrow(dat))
 mpos <- list() ## main peptide positions
 testit <- TRUE # TEST whether the mutation position is correct
 for ( i in 1:nrow(dat) ) {
+
     oid <- dat$Top_leading_protein[i]
-    j <- grep(mids[i], names(fas), value=FALSE, fixed=TRUE)
+    gid <- mids[i] # original gene ID
+    
+    j <- grep(gid, names(fas), value=FALSE, fixed=TRUE)
     if ( length(j)==0 ) {
         cat(paste(i, oid, "not found\n"))
         next
@@ -152,14 +127,30 @@ for ( i in 1:nrow(dat) ) {
         ntarg <- sub(query,mtp,target)
         if ( strsplit(target,"")[[1]][pos[i]] ==
              strsplit(ntarg,"")[[1]][pos[i]] ) {
-            stop(i, mids[i], j, names(fas)[j], "error: no mutation detected\n")
+            stop(i, gid, j, names(fas)[j], "error: no mutation detected\n")
         }
     }
 
     ## get codon
     ## protein:transcript mapping
     ## load transcript, load UTR file, get codon
-    
+    nt <- trfas[[gid]]
+    if ( is.null(nt) ) {
+        cat(paste("no sequence found for", oid, "\n"))
+        next
+    }
+
+    ## position of codon
+    npos <- (pos[i]-1)*3+1
+
+    codon <- substr(nt$seq, npos, npos+2)
+    ##codon <- codons(DNAString(nt$seq))[pos[i]]
+    aaf <- strsplit(target,"")[[1]][pos[i]]
+    aaf <- strsplit(query,"")[[1]][mut]
+    aat <- strsplit(mtp,"")[[1]][mut]
+    ## GENETIC_CODE[codon]
+    tcodons <- paste(names(which(GENETIC_CODE==aat)),collapse=";")
+    cat(paste(i, codon, aaf, GENETIC_CODE[codon], "->", aat,  tcodons, "\n"))
 }
 
 mpos <- rep(list(NA), nrow(dat)) ## main peptide positions
@@ -188,7 +179,7 @@ for ( i in 1:nrow(dat) ) {
         else target <- ntar
     }
 
-    ## MAP ALL MAIN PETPTIDES
+    ## MAP ALL MAIN PEPTIDES
     queries <- strsplit(dat$Main_peptides[i],",")
     queries <- unlist(lapply(queries, function(x) gsub("[^[:alnum:]]","",x)))
     apos <- rep(NA,length(queries))
@@ -256,7 +247,7 @@ small <- len<size.cutoff
 large <- len>size.cutoff
 
 
-
+dat[,"RAAS"] <- as.numeric(dat[,"RAAS"])
 
 hist(pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
      main=NA)
@@ -330,7 +321,6 @@ png(file.path(fig.path,"relative_position_length.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(rpos, log10(len),
-        ##len, log="y",
         xlab="relative position of peptide in protein",
         ylab=expression(protein~length/log[10]))
 abline(h=log10(size.cutoff))

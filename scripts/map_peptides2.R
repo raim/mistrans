@@ -9,10 +9,20 @@ options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
 proj.path <- "/home/raim/data/mistrans"
+
+gen.path <- file.path(mam.path, "originalData")
 dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures","saap_analysis")
 out.path <- file.path(proj.path,"processedData")
 
+## protein fasta
+fasta <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
+## coding region fasta
+transcr <- file.path(mam.path,"processedData","coding.fa")
+## protein-transcript map
+tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
+
+## 
 dir.create(fig.path, showWarnings=FALSE)
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
@@ -25,6 +35,36 @@ saap.file <- "All_SAAP_protein_filter_df_20240111.xlsx"
 
 dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
+
+### FILTER
+rm <-
+    (dat$Potential_contaminant | dat$Immunoglobulin) |
+    (dat$"Hemoglobin/Albumin" | dat$Potential_uncaptured_transcript)
+
+cat(paste("removing", sum(rm),
+          "proteins that are potentially false positives\n"))
+dat <- dat[!rm,]
+
+## get mapped proteins
+pids <- gsub("'","",
+             sub("\\[","",
+                 sub("\\]","", dat$"Leading_razor_proteins_(all_TMT)")))
+pids <- lapply(strsplit(pids, ","), trimws)
+## remove all non ENSEMBL proteins
+pids <- lapply(pids, function(x) x[grep("ENSP",x)])
+##hist(unlist(lapply(pids, length)))
+
+## take FIRST of multiple
+pids <- unlist(lapply(pids, function(x) x[1]))
+dat$protein <- pids
+
+## FILTER unique mistranslated or base peptides
+## SAAP reflect individual mutations at potentially different locations
+##cat(paste("removing", sum(duplicated(dat$SAAP)), "duplicated SAAP\n"))
+##dat <- dat[!duplicated(dat$SAAP),]
+
+
+#### REPLACED AA SIMILARITIES
 
 ## first find mutated AA pairs
 ## (column AASin input mixes I/L)
@@ -42,6 +82,16 @@ fromto <- lapply(1:length(saaps), function(i) {
 ## TODO: remove extra columns
 simmats <- c("BLOSUM62", "PAM250")
 
+## reporter vs. precursor RAAS
+
+png(file.path(fig.path,paste0("raas_precursor_reporter.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(dat$Mean_reporter_RAAS, dat$Mean_precursor_RAAS, na.rm=TRUE,
+        xlab="mean reporter RAAS", ylab="mean precursor RAAS")
+abline(a=0, b=1, col=1, lty=2, lwd=2)
+dev.off()
+
 for ( i in seq_along(simmats) ) {
 
     mid <- simmats[i]
@@ -55,7 +105,7 @@ for ( i in seq_along(simmats) ) {
     raasr <- dat$Mean_reporter_RAAS # 9965 NA
     raasp <- dat$Mean_precursor_RAAS # 582 NA
     
-    rid <- "Mean_precursor_RAAS"
+    rid <- "Mean_reporter_RAAS"
     raas <- unlist(dat[,rid])
     
     raas_bins <- cut(raas, c(seq(-6,4,1)))
@@ -139,17 +189,10 @@ for ( i in seq_along(simmats) ) {
 }
 
 
-#### TODO: adapat old code below
+#### FIND POSITIONS of SAAP in protein and transcript
 
-## get ALL proteins - from project mammary
-genes <- read.delim(file.path(mam.path,"features_GRCh38.110.tsv"))
-##genes <- genes[genes$type=="protein_coding",]
 
 ## GET ENSEMBL PROTEINS - from project mammary
-fasta.url <- "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz"
-fasta <- file.path(mam.path,"originalData","Homo_sapiens.GRCh38.pep.all.fa.gz")
-if ( !file.exists(fasta) )
-        download.file(inurl, infile)
 fas <- readFASTA(fasta)
 
 desc <- lapply(fas, function(x) {unlist(strsplit(x$desc, " "))})
@@ -157,21 +200,50 @@ ids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
 names(fas) <- ids
 
 ## only take proteins where Top_leading_protein is present in fasta
-mids <- sub("_.*","",dat$Top_leading_protein)
-dat <- dat[mids%in%ids,]
+mids <- sub("_.*","",dat$protein)
+keep <- mids%in%ids
+cat(paste("removing", sum(!keep), "proteins where we don't have a sequence\n"))
 
-## FILTER unique mistranslated or base peptides
-## SAAP reflect individual mutations at potentially different locations
-dat <- dat[!duplicated(dat$SAAP),]
+dat <- dat[keep,]
+
 
 ## refresh mids: remove mutation annotation
-mids <- sub("_.*","", dat$Top_leading_protein)
+mids <- sub("_.*","", dat$protein)
 
 ## get mutations
-notmutated <- grep("_", dat$Top_leading_protein, invert=TRUE)
-muts <- sub(".*_","", dat$Top_leading_protein)
+notmutated <- grep("_", dat$protein, invert=TRUE)
+muts <- sub(".*_","", dat$protein)
+
+## nucleotide level mutations
+nmuts <- grep(">", muts)
+indels <- rep("",nrow(dat))
+indels[nmuts] <- sub(".*_","", dat$protein[nmuts])
+
+## protein level mutations
 muts[notmutated] <- ""
+muts[nmuts] <- ""
 muts <- strsplit(muts, ",")
+
+
+## get matching transcripts
+trfas <- readFASTA(transcr)
+desc <- lapply(trfas, function(x) {unlist(strsplit(x$desc, " "))})
+trids <- unlist(lapply(desc, function(x) sub("\\..*","",x[1])))
+trids <- sub(",$","", trids)
+names(trfas) <- trids
+
+## protein-transcript map
+trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+
+## re-order transcripts for available proteins
+missing <- which(!names(fas)%in%rownames(trmap))
+cat(paste("removing", length(missing), "proteins w/o matching transcript\n"))
+fas <- fas[-missing]
+
+trfas <- trfas[trmap[names(fas),1]]
+names(trfas) <- names(fas)
+
+
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
@@ -179,7 +251,9 @@ pos <- len <- rep(NA, nrow(dat))
 mpos <- list() ## main peptide positions
 testit <- TRUE # TEST whether the mutation position is correct
 for ( i in 1:nrow(dat) ) {
-    oid <- dat$Top_leading_protein[i]
+    oid <- dat$protein[i]
+    gid <- mids[i] # original gene ID
+    
     j <- grep(mids[i], names(fas),value=FALSE, fixed=TRUE)
     if ( length(j)==0 ) {
         cat(paste(i, oid, "not found\n"))
@@ -189,7 +263,7 @@ for ( i in 1:nrow(dat) ) {
         cat(paste(i, oid, "more than one hit\n"))
         next
     }
-    query <- unlist(dat[i,3])
+    query <- unlist(dat[i,"BP"])
     target <- fas[[j]]$seq
 
     ## introduce genomic mutations
@@ -215,7 +289,7 @@ for ( i in 1:nrow(dat) ) {
                       "; taking first\n"))
     }
     ## get position of mutation
-    saap <- unlist(dat[i,2])
+    saap <- unlist(dat[i,"SAAP"])
     mut <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
     pos[i] <- res[[1]][1] + mut -1
     len[i] <- length(unlist(strsplit(target,"")))
@@ -227,14 +301,40 @@ for ( i in 1:nrow(dat) ) {
              strsplit(ntarg,"")[[1]][pos[i]] ) {
             stop(i, mids[i], j, names(fas)[j], "error: no mutation detected\n")
         }
-    }   
+    }
+    
+    ## GET CODON
+    ## protein:transcript mapping
+    ## load transcript, load UTR file, get codon
+    nt <- trfas[[gid]]
+    if ( is.null(nt) ) {
+        cat(paste("no sequence found for", oid, "\n"))
+        next
+    }
+
+    ## position of codon
+    npos <- (pos[i]-1)*3+1
+
+    codon <- substr(nt$seq, npos, npos+2)
+    ##codon <- codons(DNAString(nt$seq))[pos[i]]
+    aaf <- strsplit(target,"")[[1]][pos[i]]
+    aaf <- strsplit(query,"")[[1]][mut]
+    aat <- strsplit(saap,"")[[1]][mut]
+    ## GENETIC_CODE[codon]
+    tcodons <- paste(names(which(GENETIC_CODE==aat)),collapse=";")
+
+    ## report
+    
+    tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
+    cat(paste(i, codon, aaf, GENETIC_CODE[codon], "->", aat,
+              tcodons, tmp, "\n"))
 }
 
 mpos <- rep(list(NA), nrow(dat)) ## main peptide positions
 miss <- mpos
 for ( i in 1:nrow(dat) ) {
 
-    oid <- dat$Top_leading_protein[i]
+    oid <- dat$protein[i]
     j <- grep(mids[i], names(fas),value=FALSE, fixed=TRUE)
     if ( length(j)==0 ) {
         cat(paste(i, oid, "not found\n"))
@@ -257,7 +357,8 @@ for ( i in 1:nrow(dat) ) {
     }
 
     ## MAP ALL MAIN PETPTIDES
-    queries <- strsplit(dat$Main_peptides[i],",")
+    queries <- strsplit(dat$Peptides_associated_with_leading_razor_protein[i],
+                        ",")
     queries <- unlist(lapply(queries, function(x) gsub("[^[:alnum:]]","",x)))
     apos <- rep(NA,length(queries))
     mss <- c()
@@ -268,12 +369,12 @@ for ( i in 1:nrow(dat) ) {
                           "; taking first\n"))
         }
         if ( res[[1]][1]==-1 ) {
-            warning(i, oid, " no match in ", j, names(fas)[j])
+            warning(paste(i, oid, "no match in", j, names(fas)[j]))
             cat(paste0(oid, " no match for ", queries[k], "\n"))
             mss <- c(mss, k)
         } else apos[k] <- res[[1]][1]        
     }
-    miss[[k]] <- mss
+    miss[[i]] <- mss
     mpos[[i]] <- apos/len[i]
 }
 
@@ -291,7 +392,7 @@ rpos <- pos/len
 
 
 ## bind to data frame
-dat <- cbind(dat, proteinID=mids, pos=pos, len=len, rpos=pos/len)
+dat <- cbind(dat, pos=pos, len=len, rpos=pos/len)
 
 ## filter
 rm <- which(pos<0)
@@ -299,9 +400,18 @@ if ( length(rm)>0 ) {
 
     cat(paste("removing", length(rm), "SAAP without exact match\n"))
 
-    pos <- pos[-rm]
-    len <- len[-rm]
     dat <- dat[-rm,]
+}
+
+## remove where NA
+## TODO: find source
+nas <- which(is.na(len) | is.na(rpos))
+
+if ( length(nas)>0 ) {
+
+    cat(paste("removing", length(nas), "SAAP with NA in length or position\n"))
+
+    dat <- dat[-nas,]
 }
 
 ### TODO:
@@ -316,9 +426,13 @@ write.table(dat, file=file.path(out.path,"saap_mapped.tsv"),
 
 
 ### HOTSPOTS
+## get ALL proteins - from project mammary
+genes <- read.delim(file.path(mam.path,"features_GRCh38.110.tsv"))
+##genes <- genes[genes$type=="protein_coding",]
+
 ## look for proteins with more than one mutation
 ## in close vicinity
-hotspots <- split(dat$pos, f=dat$proteinID)
+hotspots <- split(dat$pos, f=dat$protein)
 hotspots <- lapply(hotspots, sort)
 
 mutn <- unlist(lapply(hotspots, length))
@@ -328,12 +442,12 @@ idx <-  which.max(mutn)
 id <- names(hotspots)[idx]
 name <- genes$name[grep(id, genes$protein)]
 if ( length(name)==0 ) name <- id
-pos <- table(hotspots[[idx]])
+hpos <- table(hotspots[[idx]])
 
 png(file.path(fig.path,"hotspots_example.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(x=as.numeric(names(pos)), y=pos, type="h",
+plot(x=as.numeric(names(hpos)), y=hpos, type="h",
      main=name, xlab="position in protein",
      ylab="# SAAP")
 axis(2)
@@ -343,34 +457,35 @@ dev.off()
 
 ### POSITION v LENGTH
 
+
+
+## size cut off
 size.cutoff <- 3e2
-small <- len<size.cutoff
-large <- len>size.cutoff
+small <- dat$len<size.cutoff
+large <- dat$len>size.cutoff
 
 
 
-
-hist(pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
+hist(dat$pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
      main=NA)
-hist(len, breaks=seq(0,4e4,100), border=2, add=TRUE)
-legend("topright", c("BP position","protein length"),
-       col=c(1,2), lty=1)
+hist(dat$len, breaks=seq(0,4e4,100), border=2, add=TRUE)
+legend("topright", c("BP position","protein length"), col=c(1,2), lty=1)
 
 
 png(file.path(fig.path,"absolute_position_length.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
     xpd=TRUE)
-dense2d(len, pos, xlim=c(0,1e3), ylim=c(0,1e3),
+dense2d(dat$len, dat$pos, xlim=c(0,1e3), ylim=c(0,1e3),
         ylab=expression(SAAP~position),
         xlab=expression(protein~length), nbin=512)
 par(xpd=FALSE)
 abline(a=0, b=1)
-abline(a=0, b=.4)
+abline(a=0, b=.5)
 abline(v=size.cutoff)
 dev.off()
 
-dense2d(log10(len), log10(pos), ylim=c(0,5), xlim=c(0,5),
+dense2d(log10(dat$len), log10(dat$pos), ylim=c(0,5), xlim=c(0,5),
         ylab=expression(SAAP~position/log[10]),
         xlab=expression(protein~length/log[10]))
 abline(a=0,b=1)
@@ -378,10 +493,10 @@ abline(a=0,b=1)
 png(file.path(fig.path,"relative_position_hist.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(rpos, breaks=seq(0,1,.1),
-     main=paste(sum(!is.na(rpos)), "unique SAAP"),
+hist(dat$rpos, breaks=seq(0,1,.1),
+     main=paste(sum(!is.na(dat$rpos)), "unique SAAP"),
      xlab="relative position of peptide in protein")
-loc.sze <- table(rpos>.5)
+loc.sze <- table(dat$rpos>.5)
 dev.off()
 
 ## BACKGROUND: main peptides
@@ -397,22 +512,22 @@ dev.off()
 png(file.path(fig.path,"relative_position_hist_small.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(rpos[small], breaks=seq(0,1,.1),
-     main=paste0(sum(small), " small proteins <",size.cutoff," aa"),
+hist(dat$rpos[small], breaks=seq(0,1,.1),
+     main=paste0(sum(small,na.rm=TRUE), " small proteins <",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
 png(file.path(fig.path,"relative_position_hist_large.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(rpos[large], breaks=seq(0,1,.1),
-     main=paste0(sum(large), " large proteins >",size.cutoff," aa"),
+hist(dat$rpos[large], breaks=seq(0,1,.1),
+     main=paste0(sum(large,na.rm=TRUE), " large proteins >",size.cutoff," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
 
 png(file.path(fig.path,"protein_length.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(log10(len),
+hist(log10(dat$len),
      xlab=expression(protein~length/log[10]), breaks=50)
 abline(v=log10(size.cutoff))
 dev.off()
@@ -421,35 +536,31 @@ dev.off()
 png(file.path(fig.path,"relative_position_length.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(rpos, log10(len),
+dense2d(dat$rpos, log10(dat$len),
         ##len, log="y",
         xlab="relative position of peptide in protein",
         ylab=expression(protein~length/log[10]))
 abline(h=log10(size.cutoff))
 dev.off()
 
-png(file.path(fig.path,"relative_position_intensity.png"),
-    res=300, width=5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$rpos, dat[,"SAAP_intensity"]/dat[,"BP_intensity"], log="y",
-        xlab="relative position of peptide in protein",
-        ylab="relative intensity SAAP/BP")
-dev.off()
-
+raas.col <- "Mean_precursor_RAAS"
 png(file.path(fig.path,"absolute_position_RAAS.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$pos, dat[,"RAAS"], xlim=c(0,1e3),
+dense2d(dat$pos, dat[,raas.col], xlim=c(0,1e3),
+        ylim=range(dat[,raas.col], na.rm=TRUE),
         xlab="absolute position of peptide in protein/log10",
-        ylab="RAAS")
+        ylab=raas.col)
 dev.off()
 
 png(file.path(fig.path,"relative_position_RAAS.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$rpos, dat[,"RAAS"], 
+dense2d(dat$rpos, dat[,raas.col],
+        xlim=range(dat$rpos, na.rm=TRUE),
+        ylim=range(dat[,raas.col], na.rm=TRUE),
         xlab="relative position of peptide in protein",
-        ylab="RAAS")
+        ylab=raas.col)
 dev.off()
 
 
