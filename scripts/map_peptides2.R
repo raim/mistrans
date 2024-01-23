@@ -395,7 +395,7 @@ rpos <- pos/len
 
 
 ## bind to data frame
-dat <- cbind(dat, pos=pos, len=len, rpos=pos/len)
+dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn)
 
 ## filter
 rm <- which(pos<0)
@@ -424,8 +424,10 @@ if ( length(nas)>0 ) {
 ## STATISTICS: of missing hits (peptides not in protein),
 
 ### WRITE OUT TABLE with positions for downstream analysis
-write.table(dat, file=file.path(out.path,"saap_mapped.tsv"),
-            sep="\t", quote=FALSE, na="")
+sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
+               "protein","len","pos","rpos","from","to","codon")]
+write.table(sdat, file=file.path(out.path,"saap_mapped.tsv"),
+            sep="\t", quote=FALSE, na="", row.names=FALSE)
 
 
 ### HOTSPOTS
@@ -442,7 +444,7 @@ mutn <- unlist(lapply(hotspots, length))
 
 idx <-  which.max(mutn)
 #idx <- which(names(hotspots)=="ENSP00000506126")
-id <- names(hotspots)[idx]
+id <- sub("_.*","",names(hotspots)[idx])
 name <- genes$name[grep(id, genes$protein)]
 if ( length(name)==0 ) name <- id
 hpos <- table(hotspots[[idx]])
@@ -458,28 +460,114 @@ dev.off()
 
 #### PLOTS
 
+raas.col <- "Mean_precursor_RAAS"
+hdat <- dat#[dat[,raas.col]> -1,]
+
+###  CODONS
+aa <- unique(GENETIC_CODE)
+CODONS <- rep("", length(aa))
+for ( i in seq_along(aa) )
+    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
+names(CODONS) <- aa
+
+## TODO:
+## * store codon context,-1,+1,
+## * check consistency of dat$from and dat$codon,
+##   -> requires to account for genomic mutations?
+## * load codon usage table, AA usage table,
+
+
+## codon positions
+cpos <- strsplit(hdat$codon,"")
+## https://pubmed.ncbi.nlm.nih.gov/11164038/ A vs. U in 2nd
+
+c1 <- unlist(lapply(cpos, function(x) x[1]))
+c2 <- unlist(lapply(cpos, function(x) x[2]))
+c3 <- unlist(lapply(cpos, function(x) x[3]))
+
+
+boxplot(hdat[,raas.col] ~ c1, ylab=raas.col)
+boxplot(hdat[,raas.col] ~ c2, ylab=raas.col)
+boxplot(hdat[,raas.col] ~ c3, ylab=raas.col)
+
+cfrq <- rbind("1"=table(c1),
+              "2"=table(c2),
+              "3"=table(c3))
+cfrq <- cfrq[,c("A","T","G","C")]
+png(file.path(fig.path,"codons_type.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+barplot(cfrq,beside=TRUE, legend.text=rownames(cfrq),
+        args.legend=list(x="top",ncol=3, inset=c(-.02,-.1), bty="n",
+                         title="codon position"))
+dev.off()
+png(file.path(fig.path,"codons_pos.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
+        args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
+        xlab="codon position")
+dev.off()
+
+
+
+fta <- table(hdat$to, hdat$from)
+
+image_matrix(fta, axis=1:2, ylab="mistranslated", xlab="encoded")
+
+png(file.path(fig.path,"codons_all.png"),
+    res=300, width=20, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+ftc <- table(hdat$to,paste(hdat$from,hdat$codon, sep="-"))
+txt <- ftc
+txt[txt==0] <- ""
+ftc[ftc==0] <- NA
+image_matrix(ftc, axis=1:3, text=txt, ylab="mistranslated", text.cex=.7, xlab="")
+axis(4, nrow(ftc):1, labels=CODONS[rownames(ftc)], las=2)
+dev.off()
+
+
 ### POSITION v LENGTH
 
-
-
 ## size cut off
-size.cutoff <- 3e2
-small <- dat$len<size.cutoff
-large <- dat$len>size.cutoff
+size.cutoff <- c(2.5e2,1e3)
+small <- hdat$len <  size.cutoff[1]
+large <- hdat$len >= size.cutoff[1] & hdat$len <= size.cutoff[2]
+huge  <- hdat$len >  size.cutoff[2]
 
 
 
-hist(dat$pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
+hist(hdat$pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
      main=NA)
-hist(dat$len, breaks=seq(0,4e4,100), border=2, add=TRUE)
+hist(hdat$len, breaks=seq(0,4e4,100), border=2, add=TRUE)
 legend("topright", c("BP position","protein length"), col=c(1,2), lty=1)
 
 
-png(file.path(fig.path,"absolute_position_length.png"),
+png(file.path(fig.path,"position_length_total.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(log10(hdat$len),
+     xlab=expression(protein~length/log[10]), breaks=50)
+abline(v=log10(size.cutoff))
+dev.off()
+
+
+png(file.path(fig.path,"position_length_relative.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(hdat$rpos, log10(hdat$len),
+        ##len, log="y",
+        xlab="relative position of peptide in protein",
+        ylab=expression(protein~length/log[10]))
+abline(h=log10(size.cutoff))
+dev.off()
+
+png(file.path(fig.path,"position_length_absolute.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
     xpd=TRUE)
-dense2d(dat$len, dat$pos, xlim=c(0,1e3), ylim=c(0,1e3),
+dense2d(hdat$len, hdat$pos, xlim=c(0,1500), ylim=c(0,1500),
         ylab=expression(SAAP~position),
         xlab=expression(protein~length), nbin=512)
 par(xpd=FALSE)
@@ -488,22 +576,68 @@ abline(a=0, b=.5)
 abline(v=size.cutoff)
 dev.off()
 
-dense2d(log10(dat$len), log10(dat$pos), ylim=c(0,5), xlim=c(0,5),
+
+
+png(file.path(fig.path,"position_ecdf_relative_short.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+cdf <- ecdf(hdat$rpos[small]) 
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), xlim=c(0,1), ylim=c(0,1),
+     xlab="relative position of peptide in protein",
+     ylab=expression(ecdf(x)), col=2, type="l", main=NA)
+abline(a=0,b=1, col=1)
+dev.off()
+
+png(file.path(fig.path,"position_ecdf_relative_mid.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+cdf <- ecdf(hdat$rpos[large])
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), xlim=c(0,1), ylim=c(0,1),
+     xlab="relative position of peptide in protein",
+     ylab=expression(ecdf(x)), col=2, type="l", main=NA)
+abline(a=0,b=1, col=1)
+dev.off()
+
+png(file.path(fig.path,"position_ecdf_relative_long.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+cdf <- ecdf(hdat$rpos[huge])
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), xlim=c(0,1), ylim=c(0,1),
+     xlab="relative position of peptide in protein",
+     ylab=expression(ecdf(x)), col=2, type="l", main=NA)
+abline(a=0,b=1, col=1)
+dev.off()
+
+png(file.path(fig.path,"position_ecdf_absolute_zoom.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+cdf <- ecdf(hdat$pos)
+plot(seq(0,100,.01), cdf(seq(0,100,.01)),xlim=c(0,30), ylim=c(0,.05),
+     xlab="absolute position of peptide in protein",
+     ylab=expression(ecdf(x)), type="l", col=2)
+abline(v=8.5, col=1)
+dev.off()
+
+png(file.path(fig.path,"position_length_absolute_log.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+dense2d(log10(hdat$len), log10(hdat$pos), ylim=c(1,4), xlim=c(1,4),
         ylab=expression(SAAP~position/log[10]),
         xlab=expression(protein~length/log[10]))
 abline(a=0,b=1)
+dev.off()
 
-png(file.path(fig.path,"relative_position_hist.png"),
+png(file.path(fig.path,"position_hist_relative.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos, breaks=seq(0,1,.05),
-     main=paste(sum(!is.na(dat$rpos)), "unique SAAP"),
+hist(hdat$rpos, breaks=seq(0,1,.05),
+     main=paste(sum(!is.na(hdat$rpos)), "unique SAAP"),
      xlab="relative position of peptide in protein")
-loc.sze <- table(dat$rpos>.5)
+loc.sze <- table(hdat$rpos>.5)
 dev.off()
 
 ## BACKGROUND: main peptides
-png(file.path(fig.path,"relative_position_hist_main_peptides.png"),
+png(file.path(fig.path,"position_hist_relative_main_peptides.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(unlist(mpos), breaks=seq(0,1,.05),
@@ -512,59 +646,59 @@ hist(unlist(mpos), breaks=seq(0,1,.05),
 dev.off()
 
 ## SMALL v LARGE PROTEINS
-png(file.path(fig.path,"relative_position_hist_small.png"),
+png(file.path(fig.path,"position_hist_relative_short.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos[small], breaks=seq(0,1,.05),
-     main=paste0(sum(small,na.rm=TRUE), " small proteins <",size.cutoff," aa"),
+hist(hdat$rpos[small], breaks=seq(0,1,.05),
+     main=paste0(sum(small,na.rm=TRUE),
+                 " short proteins <",size.cutoff[1]," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
-png(file.path(fig.path,"relative_position_hist_large.png"),
+png(file.path(fig.path,"position_hist_relative_long.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$rpos[large], breaks=seq(0,1,.05),
-     main=paste0(sum(large,na.rm=TRUE), " large proteins >",size.cutoff," aa"),
+hist(hdat$rpos[huge], breaks=seq(0,1,.05),
+     main=paste0(sum(huge,na.rm=TRUE),
+                 " long proteins >",size.cutoff[2]," aa"),
+     xlab="relative position of peptide in protein")
+dev.off()
+png(file.path(fig.path,"position_hist_relative_mid.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(hdat$rpos[large], breaks=seq(0,1,.05),
+     main=paste0(sum(large,na.rm=TRUE),
+                 " proteins >",size.cutoff[1]," aa, <",size.cutoff[2]," aa"),
      xlab="relative position of peptide in protein")
 dev.off()
 
-png(file.path(fig.path,"protein_length.png"),
-    res=300, width=5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(log10(dat$len),
-     xlab=expression(protein~length/log[10]), breaks=50)
-abline(v=log10(size.cutoff))
-dev.off()
-
-
-png(file.path(fig.path,"relative_position_length.png"),
-    res=300, width=5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$rpos, log10(dat$len),
-        ##len, log="y",
-        xlab="relative position of peptide in protein",
-        ylab=expression(protein~length/log[10]))
-abline(h=log10(size.cutoff))
-dev.off()
 
 raas.col <- "Mean_precursor_RAAS"
-png(file.path(fig.path,"absolute_position_RAAS.png"),
+png(file.path(fig.path,"position_RAAS_absolute.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$pos, dat[,raas.col], xlim=c(0,1e3),
-        ylim=range(dat[,raas.col], na.rm=TRUE),
+dense2d(hdat$pos, hdat[,raas.col], #xlim=c(0,1e4),
+        ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="absolute position of peptide in protein",
         ylab=raas.col)
 dev.off()
 
-png(file.path(fig.path,"relative_position_RAAS.png"),
+png(file.path(fig.path,"position_RAAS_relative.png"),
     res=300, width=5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(dat$rpos, dat[,raas.col],
-        xlim=range(dat$rpos, na.rm=TRUE),
-        ylim=range(dat[,raas.col], na.rm=TRUE),
+dense2d(hdat$rpos, hdat[,raas.col],
+        xlim=range(hdat$rpos, na.rm=TRUE),
+        ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="relative position of peptide in protein",
         ylab=raas.col)
 dev.off()
 
+png(file.path(fig.path,"protein_length_RAAS.png"),
+    res=300, width=5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(hdat$len, hdat[,raas.col], #xlim=c(0,1e4),
+        ylim=range(hdat[,raas.col], na.rm=TRUE),
+        xlab="protein length",
+        ylab=raas.col)
+dev.off()
 
 
