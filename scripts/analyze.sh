@@ -1,7 +1,10 @@
 #!/bin/bash
 
-## download ensembl human proteins
-wget https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz
+## SCRIPTS to analyze location and function of mistranslation
+## events, derived by Shiri Tsour from the slavovlab.
+
+## INPUT GENOME DATA IS GENERATED
+## by from genomeBrowser/mammary/setup.sh
 
 ## map each peptide to position in protein and transcript
 R --vanilla < scripts/map_peptides_2.R

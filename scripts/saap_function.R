@@ -205,6 +205,7 @@ cls.labs <- c(number="SAAP/protein",
               raas="mean RAAS")
 rownames(cls.mat) <- rownames(raas)
 
+## discrete SAAP/density vs. RAAS
 ovl <- clusterCluster(cls.mat[,1], cls.mat[,2], cl2.srt=levels(bins))
 ## calculate optimal figure height: result fields + figure margins (mai)
 nh <- nrow(ovl$p.value) *.3 + 1
@@ -256,7 +257,8 @@ colnames(got) <- trms[colnames(got)]
 for ( i in 1:ncol(gen.cls) ) {
 
     ct <- colnames(gen.cls)[i]
-    ovl <- clusterAnnotation(cls=gen.cls[,i], data=got, cls.srt=c(cls.srts[[i]],"na"))
+    ovl <- clusterAnnotation(cls=gen.cls[,i],
+                             data=got, cls.srt=c(cls.srts[[i]],"na"))
     ovc <- sortOverlaps(ovl, axis=2, p.min=1e-5, cut=TRUE)
     
     ## calculate optimal figure height: result fields + figure margins (mai)
@@ -301,7 +303,9 @@ for ( ct in 1:ncol(cls.mat) ) {
     
 
     ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
-    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt) 
+    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt)
+###, significant=FALSE, evcodes=FALSE)
+    
     ## plot enrichments
     for ( ctgy in names(ovll) ) {
     
