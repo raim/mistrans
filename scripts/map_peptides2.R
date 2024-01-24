@@ -4,15 +4,15 @@
 ## * ENSP00000496574_I90L: no I at position 90,
 ## * ENSP00000426880_R28 : missing target AA
 ## * 
-## TODO: [306] "V10G;STRG.35134.2|chromosome:GRCh38:KI270726.1:26240:26240:+"
-##       [1863] "E74K;ENSP00000496648" 
+
+### TODO:
+## BACKGROUND: main peptides
+## * background frequencies: map all "main peptides",
+## * background frequencies: map all genomic mutations,
+## STATISTICS: of missing hits (peptides not in protein),
 
 library(readxl)
 library(segmenTools)
-library(Biostrings) # for blosum62
-data(BLOSUM62)
-data(PAM250)
-library(vioplot)
 options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
@@ -72,6 +72,7 @@ pids <- lapply(pids, function(x) x[grep("ENSP",x)])
 ## take FIRST of multiple
 pids <- unlist(lapply(pids, function(x) x[1]))
 
+## sublists: split and take first again
 ## TODO: handle sublists betters
 pids <- strsplit(pids, ";")
 pids <- unlist(lapply(pids, function(x) x[1]))
@@ -98,7 +99,7 @@ keep <- mids%in%ids
 dat <- dat[keep,]
 
 cat(paste("removed", sum(!keep),
-          "proteins where we don't have a sequence; now:",nrow(dat),"\n"))
+          "proteins where we don't have a sequence; now:", nrow(dat), "\n"))
 
 ## refresh mids: remove mutation annotation
 mids <- sub("_.*","", dat$protein)
@@ -264,7 +265,6 @@ for ( i in 1:nrow(dat) ) {
                   aas[i], GENETIC_CODE[codon], "\n"))
 }
 
-apply(errors, 2, sum, na.rm=TRUE)
 
 if ( !interactive() ) {
     cat(paste("PEPTIDE NOT MATCHED,",length(nomatch),":",
@@ -329,54 +329,45 @@ for ( i in 1:nrow(dat) ) {
     mpos[[i]] <- apos/len[i]
 }
 
-## TODO
-## 2012: Jonathan Weissman, Ignolia, Cell paper: MOUSE embryonic stem cells,
-## ribosome density at mutated position.
-##  https://doi.org/10.1016/j.cell.2011.10.002
-## Bacterial mistranslation v ribosome density.
-
-## ribosome density: ribosome density per codon divided
-## by the mean ribosome density of transcript.
 
 ## relative position
 rpos <- pos/len
-
-
 ## bind to data frame
 dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn)
 
+apply(errors, 2, sum, na.rm=TRUE)
 
-## filter
-rm <- which(dat$pos<0)
+## FILTER DATA
+## TODO: find sources!
+
+## missing position - no match found from peptide in protein!!
+## TODO: perhaps test LONGEST of the leading razor proteins.
+rm <- which(is.na(dat$pos)) #dat$pos<0)
 if ( length(rm)>0 ) {
     dat <- dat[-rm,]
+    errors <- errors[-rm,]
     cat(paste("removed", length(rm), "SAAP without protein match, now:",
               nrow(dat), "\n"))
 }
 
-## remove where length or position are NA
-## TODO: find source
-nas <- which(is.na(dat$len))
-if ( length(nas)>0 ) {
-    dat <- dat[-nas,]
-    cat(paste("removed", length(nas), "SAAP no protein length, now:",
+## remove where length or position are NA - same as "no match"!
+rm <- which(is.na(dat$len))
+if ( length(rm)>0 ) {
+    dat <- dat[-rm,]
+    errors <- errors[-rm,]
+    cat(paste("removed", length(rm), "SAAP no protein length, now:",
               nrow(dat), "\n"))
 }
 
 ## remove where no codon was assigned
-## TODO: find source
-nas <- which(is.na(dat$codon))
-if ( length(nas)>0 ) {
-    dat <- dat[-nas,]
-    cat(paste("removed", length(nas), "SAAP w/o codon, now:",
+## no transcript found or wrong codon
+rm <- which(is.na(dat$codon))
+if ( length(rm)>0 ) {
+    dat <- dat[-rm,]
+    cat(paste("removed", length(rm), "SAAP w/o codon, now:",
               nrow(dat), "\n"))
 }
 
-### TODO:
-## BACKGROUND: main peptides
-## * background frequencies: map all "main peptides",
-## * background frequencies: map all genomic mutations,
-## STATISTICS: of missing hits (peptides not in protein),
 
 ### WRITE OUT TABLE with positions for downstream analysis
 sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),

@@ -1,9 +1,18 @@
 
+## TODO
+## 2012: Jonathan Weissman, Ignolia, Cell paper: MOUSE embryonic stem cells,
+## ribosome density at mutated position.
+##  https://doi.org/10.1016/j.cell.2011.10.002
+## Bacterial mistranslation v ribosome density.
+
+## ribosome density: ribosome density per codon divided
+## by the mean ribosome density of transcript.
+
+
 library(segmenTools)
 library(Biostrings) # for blosum62
 data(BLOSUM62)
 data(PAM250)
-library(vioplot)
 options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
@@ -199,11 +208,21 @@ plot(seq(0,1,.01), cdf(seq(0,1,.01)), xlim=c(0,1), ylim=c(0,1),
 abline(a=0,b=1, col=1)
 dev.off()
 
+png(file.path(fig.path,"position_ecdf_absolute.png"),
+    res=300, width=2.5, height=2.5, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
+cdf <- ecdf(hdat$pos)
+x <- seq(0,max(hdat$pos),1)
+plot(x, cdf(x), xlim=c(0,1000), xlab="absolute position in protein",
+     ylab=expression(ecdf(x)), type="l", col=2)
+abline(v=8.5, col=1)
+dev.off()
+
 png(file.path(fig.path,"position_ecdf_absolute_zoom.png"),
     res=300, width=2.5, height=2.5, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
 cdf <- ecdf(hdat$pos)
-plot(seq(0,100,.01), cdf(seq(0,100,.01)),xlim=c(0,50), ylim=c(0,.05),
+plot(seq(0,100,.01), cdf(seq(0,100,.01)),xlim=c(0,30), ylim=c(0,.05),
      xlab="absolute position in protein",
      ylab=expression(ecdf(x)), type="l", col=2)
 abline(v=8.5, col=1)
@@ -361,16 +380,12 @@ for ( i in seq_along(simmats) ) {
     
     
     
-    ## correlation
-    ##ct <- cor.test(dff$raas, dff$sim)
-    ct <- cor.test(dff$raas, dff$sim, method="spearman")
-    fit <- lm(dff$sim ~ dff$raas)
-    
     png(file.path(fig.path,paste0("AAS_",mid,"_raas_dense.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    dense2d(dff$raas, dff$sim,
+    plotCor(dff$sim, dff$raas, 
             ylab=ylab, xlab=rid)
+    abline(fit)
     mtext(paste0("p=", signif(ct$p.value,0)), 3,0, adj=1)
     dev.off()
 

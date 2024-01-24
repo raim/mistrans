@@ -197,12 +197,9 @@ bins <- cut(raas$mean, breaks=brks)
 bn <- as.character(bins)
 bn[is.na(bn)] <- "na"
 
-cls.mat <- cbind(number=rn,
-                 raas=bn)
-cls.srts <- list(number=1:4,
-                 raas=levels(bins))
-cls.labs <- c(number="SAAP/protein",
-              raas="mean RAAS")
+cls.mat <- cbind(number=rn, raas=bn)
+cls.srts <- list(number=1:4, raas=levels(bins))
+cls.labs <- c(number="SAAP/protein", raas="mean RAAS")
 rownames(cls.mat) <- rownames(raas)
 
 ## discrete SAAP/density vs. RAAS
@@ -291,7 +288,6 @@ my.functions <-
          organelle=c("mitochon", "organell","vacuol", "lysos"))
 
 for ( ct in 1:ncol(cls.mat) ) {
-
 
     ## get clustering
     cid <- colnames(cls.mat)[ct]
