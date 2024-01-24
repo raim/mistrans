@@ -10,6 +10,9 @@
 ## * background frequencies: map all "main peptides",
 ## * background frequencies: map all genomic mutations,
 ## STATISTICS: of missing hits (peptides not in protein),
+## BACKGROUND: codons
+## * get codons from all BP, all "main peptides",
+##   all mapped proteins or ALL proteins.
 
 library(readxl)
 library(segmenTools)
