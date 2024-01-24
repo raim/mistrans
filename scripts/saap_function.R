@@ -5,11 +5,16 @@ options(stringsAsFactors=FALSE)
 library(gprofiler2)
 
 proj.path <- "/home/raim/data/mistrans"
+mam.path <- file.path("/home/raim/data/mammary")
 dat.path <- file.path(proj.path,"originalData")
 out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures","saap_function")
 dir.create(fig.path)
 
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
+
+##
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
 ##colnames(dat) <- gsub(" ","_", colnames(dat))
 
@@ -23,7 +28,7 @@ dat <- read.delim(file.path(out.path,"saap_mapped.tsv"))
 
 ### REDUCE TABLE TO UNIQUE HUMAN PROTEINS
 
-mids <- dat$protein
+mids <- sub("_.*", "", dat$protein)
 mids.sze <- table(mids) # sort(table(mids), decreasing=TRUE)
 
 ## NOTE: many mutations in expected, eg. ENSP00000474524
@@ -90,7 +95,9 @@ dns <- raas$n/len
 raas <- cbind.data.frame(raas, length=len, density=dns)
 
 ## rm NA
-raas <- raas[!is.na(raas$mean),]
+naras <- is.na(raas$mean)
+raas <- raas[!naras,]
+cat(paste("removed", sum(naras), "proteins where", raas.col,"is NA, now:",nrow(raas),"\n"))
 
 ## sort by SAAP/protein
 raas <- raas[order(unlist(raas$density), decreasing=TRUE),]
@@ -137,7 +144,7 @@ dev.off()
 plotdev(file.path(fig.path,"saap_raas_mean_sd"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(raas$mean, raas$sd, xlab="mean RAAS", ylab="SD RAAS")
+plotCor(raas$mean, raas$sd, xlab="mean RAAS", ylab="SD RAAS", na.rm=TRUE)
 dev.off()
 
 mx <- max(abs(c(raas$sd,raas$mean)), na.rm=TRUE)
@@ -154,7 +161,7 @@ hist(log10(raas$density), breaks=100,
 plotdev(file.path(fig.path,"saap_raas_density"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(raas$mean, log10(raas$density), xlab="mean RAAS",
+plotCor(raas$mean, log10(raas$density), xlab="mean RAAS",
         ylab=expression(log[10](SAAP/AA)))
 dev.off()
 
@@ -185,7 +192,7 @@ cls.mat <- cbind(number=rn)
                 
 rs <- raas$mean
 rs[abs(rs)>10] <- 10 * sign(rs[abs(rs)>10])
-brks <- seq(-5,4,1)
+brks <- c(-5,-3,-2,-1,0,1,4)
 bins <- cut(raas$mean, breaks=brks)
 bn <- as.character(bins)
 bn[is.na(bn)] <- "na"
@@ -198,7 +205,7 @@ cls.labs <- c(number="SAAP/protein",
               raas="mean RAAS")
 rownames(cls.mat) <- rownames(raas)
 
-ovl <- clusterCluster(cls.mat[,1], cls.mat[,2])
+ovl <- clusterCluster(cls.mat[,1], cls.mat[,2], cl2.srt=levels(bins))
 ## calculate optimal figure height: result fields + figure margins (mai)
 nh <- nrow(ovl$p.value) *.3 + 1
 nw <- ncol(ovl$p.value) *.4 + 1
@@ -211,7 +218,65 @@ plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
              xlab=NA, ylab=cls.labs[1])
 mtext(cls.labs[2], 1, 2.5)
 dev.off()
-       
+
+## GOslim with segmenTools
+
+## get feature file with GO
+features <- read.delim(feature.file)
+
+## search saap proteins in features$protein and filter for MANE
+gidx <- sapply(rownames(raas), function(x) grep(x, features$proteins))
+
+## check multiples?
+## table(unlist(lapply(gidx, length)))
+gidx <- unlist(gidx)
+
+## NOTE: very few (26) are non-MANE
+table(features$MANE[gidx]=="")
+
+## get ALL MANE + 26 non-MANE
+midx <- which(features$MANE!="")
+genes <- features[sort(union(gidx,midx)),]
+
+gidx <- sapply(rownames(raas), function(x) grep(x, genes$proteins))
+gidx <- unlist(gidx)
+gen.cls <- matrix("na", ncol=ncol(cls.mat), nrow=nrow(genes))
+gen.cls[gidx, ] <- cls.mat
+colnames(gen.cls) <- colnames(cls.mat)
+
+## get GOslim table for use with clusterAnnotation
+terms <- read.delim(goslim.file)
+got <- parseAnnotationList(genes[,c("ID","GOslim")]) 
+## replace GO IDs by terms
+trms <- terms[,2]
+names(trms) <- terms[,1]
+colnames(got) <- trms[colnames(got)]
+
+## calculate enrichment!
+for ( i in 1:ncol(gen.cls) ) {
+
+    ct <- colnames(gen.cls)[i]
+    ovl <- clusterAnnotation(cls=gen.cls[,i], data=got, cls.srt=c(cls.srts[[i]],"na"))
+    ovc <- sortOverlaps(ovl, axis=2, p.min=1e-5, cut=TRUE)
+    
+    ## calculate optimal figure height: result fields + figure margins (mai)
+    nh <- nrow(ovc$p.value) *.2 + 1
+    nw <- ncol(ovc$p.value) *.4 + 5
+    
+    ## plot figure
+    plotdev(file.path(go.path,paste0(ct, "_goslim")),
+            height=nh, width=nw, res=200)
+    par(mai=c(.75,4.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    
+    plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
+                 xlab=NA, ylab=NA)
+    mtext(cls.labs[ct], 1, 1, adj=-1.5, cex=1.2, font=2)
+    dev.off()
+}
+
+
+### GPROFILER2
+
 ## TODO: look for manually defined functions over all annotations
 my.functions <-
     list(immune=c("antigen binding","immunoglobulin","immune response"),
@@ -220,7 +285,7 @@ my.functions <-
          cytoskeleton=c("actin[^g]","myosin","tubul","adhesion","fiber",
                         "polymer","filament"),
          metabolism=c("glycoly", "gluconeogene", "proteolysis", "catabolism",
-                      "vacuol", "lysos", "proteaso", "translation", "ribosom")),
+                      "vacuol", "lysos", "proteaso", "translation", "ribosom"),
          organelle=c("mitochon", "organell","vacuol", "lysos"))
 
 for ( ct in 1:ncol(cls.mat) ) {
@@ -244,7 +309,7 @@ for ( ct in 1:ncol(cls.mat) ) {
         ovl <- ovll[[ctgy]]
 
         ## filter large annotations such as GO
-        p.filt <- 1e-1
+        p.filt <- 1e-2
         cut <- TRUE
         if ( length(grep("^GO:",ctgy))>0 ) {
 
@@ -254,10 +319,10 @@ for ( ct in 1:ncol(cls.mat) ) {
             trm.srt <- names(trm.srt)[keep]
             ovl <- sortOverlaps(ovl, srt=trm.srt)
             
-            p.filt <- 1e-3
+            p.filt <- 1e-5
             cut <- TRUE
         } else if ( ctgy=="TF" ) {
-            p.filt <- 1e-3
+            p.filt <- 1e-5
             cut <- TRUE
         }
 
@@ -314,3 +379,4 @@ for ( ct in 1:ncol(cls.mat) ) {
         dev.off()
     }
 }
+
