@@ -383,10 +383,7 @@ for ( i in seq_along(simmats) ) {
     png(file.path(fig.path,paste0("AAS_",mid,"_raas_dense.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(dff$sim, dff$raas, 
-            ylab=ylab, xlab=rid)
-    abline(fit)
-    mtext(paste0("p=", signif(ct$p.value,0)), 3,0, adj=1)
+    plotCor(dff$sim, dff$raas, ylab=ylab, xlab=rid)
     dev.off()
 
     png(file.path(fig.path,paste0("AAS_",mid,"_raas_boxplot.png")),

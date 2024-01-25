@@ -187,7 +187,7 @@ dir.create(go.path, showWarnings=FALSE)
 ## categorizations
 
 rn <- raas$n
-rn[rn>3] <- 4
+rn[rn>3] <- ">3" # implict cast to char
 cls.mat <- cbind(number=rn)
                 
 rs <- raas$mean
@@ -198,12 +198,13 @@ bn <- as.character(bins)
 bn[is.na(bn)] <- "na"
 
 cls.mat <- cbind(number=rn, raas=bn)
-cls.srts <- list(number=1:4, raas=levels(bins))
+cls.srts <- list(number=c("1","2","3",">3"), raas=levels(bins))
 cls.labs <- c(number="SAAP/protein", raas="mean RAAS")
 rownames(cls.mat) <- rownames(raas)
 
 ## discrete SAAP/density vs. RAAS
-ovl <- clusterCluster(cls.mat[,1], cls.mat[,2], cl2.srt=levels(bins))
+ovl <- clusterCluster(cls.mat[,1], cls.mat[,2],
+                      cl1.srt=cls.srts[[1]], cl2.srt=cls.srts[[2]])
 ## calculate optimal figure height: result fields + figure margins (mai)
 nh <- nrow(ovl$p.value) *.3 + 1
 nw <- ncol(ovl$p.value) *.4 + 1

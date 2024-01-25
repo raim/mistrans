@@ -7,7 +7,8 @@
 ## by from genomeBrowser/mammary/setup.sh
 
 ## map each peptide to position in protein and transcript
-R --vanilla < scripts/map_peptides_2.R
+R --vanilla < scripts/map_peptides2.R > log/map.txt
+R --vanilla < scripts/saap_analysis.R 
 ## functional enrichment of SAAP-harboring proteins
 R --vanilla < scripts/saap_function.R
 

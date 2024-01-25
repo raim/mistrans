@@ -6,6 +6,9 @@
 ## * 
 
 ### TODO:
+## * mean of mean of means: better use median?
+## * take mean/median RAAS of duplicate SAAP before removing them.
+
 ## BACKGROUND: main peptides
 ## * background frequencies: map all "main peptides",
 ## * background frequencies: map all genomic mutations,
@@ -16,6 +19,7 @@
 
 library(readxl)
 library(segmenTools)
+library(Biostrings)
 options(stringsAsFactors=FALSE)
 
 mam.path <- "/home/raim/data/mammary"
@@ -48,9 +52,9 @@ dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
 ### FILTER
-rm <-
-    (dat$Potential_contaminant | dat$Immunoglobulin) |
-    (dat$"Hemoglobin/Albumin" | dat$Potential_uncaptured_transcript)
+##dat$"Hemoglobin/Albumin"
+rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
+    (dat$"K/R_AAS" | dat$Potential_uncaptured_transcript)
 dat <- dat[!rm,]
 
 cat(paste("removed", sum(rm),
@@ -61,6 +65,8 @@ cat(paste("removed", sum(rm),
 dups <- duplicated(dat$SAAP)
 cat(paste("removing", sum(dups), "duplicated SAAP\n"))
 dat <- dat[!dups,]
+
+## TODO: take mean RAAS
 
 cat(paste("removed", sum(dups), "duplicated SAAP; now:",nrow(dat),"\n"))
 
