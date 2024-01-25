@@ -14,9 +14,9 @@ module load stringtie/2.1.1
 module load samtools/1.10
 
 
-echo $1
-echo $2
-echo $3
+echo $1 # filge id gdc string - first column in manifest file  
+echo $2 # second column file name
+echo $3 # new name : caseID_tumor|normal ->sample sheet in gdc cart
 
    
 cd /scratch/tsour.s/Sat_LSCC/RNAseq_data/$1
