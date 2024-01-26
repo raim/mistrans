@@ -20,6 +20,6 @@ for (( i=$start; i<=$end; i++ )); do
     echo running loop $i
     
     ## run script
-    sbatch -a $i --job-name=s4pred_${i} --output=s4pred_${i}.out -p short --nodes=1 --ntasks 1 --cpus-per-task $ncpu --mem=2GB $batch/scripts/s4pred_call.sh $i $seq_per_call $ncpu
+    sbatch -a $i --job-name=s4pred_${i} --output=s4pred_${i}.out -p short --nodes=1 --ntasks 1 --cpus-per-task $ncpu --mem=2GB $batch/scripts/s4pred_run.sh $i $seq_per_call $ncpu
 done
 
