@@ -63,3 +63,4 @@ ncpu=40
 srun -p short --nodes=1 --ntasks 1 --cpus-per-task $ncpu --mem=2GB python run_model.py s4pred_177.fas --threads $ncpu -z -s -o ./pred/
 ## 40494178
 ## StartTime=2024-01-26T12:27:35
+## Job Wall-clock time: 00:46:46 - strangely no improvement!

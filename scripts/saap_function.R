@@ -1,4 +1,8 @@
 
+## TODO:
+## * enrichment analysis using ONLY avaible proteins
+##   as background.
+
 library(viridis)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
@@ -85,7 +89,11 @@ len <- as.numeric(unlist(len.lst))
 ## SAAP density
 dns <- raas$n/len
 
-raas <- cbind.data.frame(raas, length=len, density=dns)
+## RAAS bins
+brks <- c(-5,-3,-2,-1,0,1,4)
+raas_bins <- cut(raas$mean, brks)
+
+raas <- cbind.data.frame(raas, length=len, density=dns, bins=raas_bins)
 
 ## rm NA
 naras <- is.na(raas$mean)
@@ -159,11 +167,28 @@ plotCor(raas$mean, log10(raas$density), xlab="mean RAAS",
         ylab=expression(log[10](SAAP/AA)), colf=viridis::viridis)
 dev.off()
 
+plotdev(file.path(fig.path,"saap_raas_density_bins"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
+boxplot(log10(raas$density) ~ raas$bin, ylab=expression(log[10](SAAP/AA)),
+        xlab=NA, las=2, at=seq_along(levels(df$bins)))
+axis(3, at=seq_along(levels(raas$bin)), labels=table(raas$bin),las=2)
+mtext("mean RAAS", 1, 2.5)
+dev.off()
+
 plotdev(file.path(fig.path,"saap_raas_number"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(raas$mean, log10(raas$n), xlab="mean RAAS",
+plotCor(raas$mean, log10(raas$n), xlab="mean RAAS", ##cor.method="spearman",
         ylab=expression(log[10](SAAP/protein)), colf=viridis::viridis)
+dev.off()
+
+
+plotdev(file.path(fig.path,"saap_length_log"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log10(raas$len), log10(raas$n), xlab="protein length/AA",
+        ylab="SAAP/protein", colf=viridis::viridis)
 dev.off()
 
 plotdev(file.path(fig.path,"saap_length"),
@@ -173,6 +198,28 @@ dense2d(raas$len, raas$n, log="xy", xlab="protein length/AA",
         ylab="SAAP/protein", colf=viridis::viridis)
 dev.off()
 
+plotdev(file.path(fig.path,"saap_raas_length"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(raas$mean, raas$len, xlab="mean RAAS",
+        ylab="protein length/AA", colf=viridis::viridis)
+dev.off()
+
+plotdev(file.path(fig.path,"saap_raas_length_bins"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
+boxplot(log10(raas$len) ~ raas$bin, ylab=expression(log[10](protein~length)),
+        xlab=NA, las=2, at=seq_along(levels(df$bins)))
+axis(3, at=seq_along(levels(raas$bin)), labels=table(raas$bin),las=2)
+mtext("mean RAAS", 1, 2.5)
+dev.off()
+
+plotdev(file.path(fig.path,"saap_raas_length_log"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(raas$mean, log10(raas$len), xlab="mean RAAS",
+        ylab=expression(log[10](protein~length)), colf=viridis::viridis)
+dev.off()
 
 ## ENRICHMENT TESTS
 go.path <- file.path(fig.path,"annotation")

@@ -343,19 +343,20 @@ dev.off()
 png(file.path(fig.path,"protein_length_RAAS.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$len, hdat[,raas.col], #colf=viridis::viridis,xlim=c(0,1e4),
-        ylim=range(hdat[,raas.col], na.rm=TRUE),
-        xlab="protein length",
-        ylab=raas.col)
+plotCor(hdat[,raas.col], hdat$len, colf=viridis::viridis, na.rm=TRUE,
+        ylim=c(0,1e4),
+        xlim=range(hdat[,raas.col], na.rm=TRUE),
+        ylab="protein length",
+        xlab=raas.col)
 dev.off()
 
 png(file.path(fig.path,"protein_length_RAAS_log.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(log10(hdat$len), hdat[,raas.col], colf=viridis::viridis,#xlim=c(0,1e4),
-        ylim=range(hdat[,raas.col], na.rm=TRUE),
-        xlab="protein length",
-        ylab=raas.col)
+plotCor(hdat[,raas.col], log10(hdat$len), colf=viridis::viridis,na.rm=TRUE,
+        xlim=range(hdat[,raas.col], na.rm=TRUE),
+        ylab=expression(log[10](protein~length)),
+        xlab=raas.col)
 dev.off()
 
 
