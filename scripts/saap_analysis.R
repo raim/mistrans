@@ -225,7 +225,7 @@ cdf <- ecdf(hdat$pos)
 plot(seq(0,100,.01), cdf(seq(0,100,.01)),xlim=c(0,30), ylim=c(0,.05),
      xlab="absolute position in protein",
      ylab=expression(ecdf(x)), type="l", col=2)
-abline(v=8.5, col=1)
+abline(v=10, col=1)
 dev.off()
 
 png(file.path(fig.path,"position_length_absolute_log.png"),
@@ -240,7 +240,7 @@ dev.off()
 png(file.path(fig.path,"position_hist_relative.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(hdat$rpos, breaks=seq(0,1,.05),
+hist(hdat$rpos, breaks=seq(0,1,0.1),
      main=paste(sum(!is.na(hdat$rpos)), "unique SAAP"),
      xlab="relative position of AAS in protein")
 loc.sze <- table(hdat$rpos>.5)
@@ -251,7 +251,7 @@ load(file.path(out.path, "mapped_peptides.rda"))
 png(file.path(fig.path,"position_hist_relative_main_peptides.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(unlist(mpos), breaks=seq(0,1,.05),
+hist(unlist(mpos), breaks=seq(0,1,0.1),
      main=paste(sum(!is.na(unlist(mpos))), "main peptides"),
      xlab="relative position of AAS in protein")
 dev.off()
@@ -260,7 +260,7 @@ dev.off()
 png(file.path(fig.path,"position_hist_relative_short.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(hdat$rpos[small], breaks=seq(0,1,.05),
+hist(hdat$rpos[small], breaks=seq(0,1,0.1),
      main=paste0(sum(small,na.rm=TRUE),
                  " short proteins <",size.cutoff[1]," aa"),
      xlab="relative position of AAS in protein")
@@ -268,7 +268,7 @@ dev.off()
 png(file.path(fig.path,"position_hist_relative_long.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(hdat$rpos[huge], breaks=seq(0,1,.05),
+hist(hdat$rpos[huge], breaks=seq(0,1,0.1),
      main=paste0(sum(huge,na.rm=TRUE),
                  " long proteins >",size.cutoff[2]," aa"),
      xlab="relative position of AAS in protein")
@@ -276,7 +276,7 @@ dev.off()
 png(file.path(fig.path,"position_hist_relative_mid.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(hdat$rpos[large], breaks=seq(0,1,.05),
+hist(hdat$rpos[large], breaks=seq(0,1,0.1),
      main=paste0(sum(large,na.rm=TRUE),
                  " proteins >",size.cutoff[1]," aa, <",size.cutoff[2]," aa"),
      xlab="relative position of AAS in protein")
