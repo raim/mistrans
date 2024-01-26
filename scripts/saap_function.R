@@ -284,13 +284,23 @@ gen.cls <- matrix("na", ncol=ncol(cls.mat), nrow=nrow(genes))
 gen.cls[gidx, ] <- cls.mat
 colnames(gen.cls) <- colnames(cls.mat)
 
+
 ## get GOslim table for use with clusterAnnotation
-terms <- read.delim(goslim.file)
 got <- parseAnnotationList(genes[,c("ID","GOslim")]) 
 ## replace GO IDs by terms
+terms <- read.delim(goslim.file)
 trms <- terms[,2]
 names(trms) <- terms[,1]
 colnames(got) <- trms[colnames(got)]
+
+## REDUCE AGAIN to use only available proteins with RAAS
+## TODO: define proper background set!
+local <- FALSE
+if ( local ) {
+    gen.cls <- gen.cls[gidx,]
+    got <- got[gidx,]
+}
+
 
 ## calculate enrichment!
 for ( i in 1:ncol(gen.cls) ) {
@@ -301,8 +311,12 @@ for ( i in 1:ncol(gen.cls) ) {
     ovc <- sortOverlaps(ovl, axis=2, p.min=1e-5, cut=TRUE)
     
     ## calculate optimal figure height: result fields + figure margins (mai)
-    nh <- nrow(ovc$p.value) *.2 + 1
-    nw <- ncol(ovc$p.value) *.4 + 5
+    nh <- .2; nw <- .4
+    if ( nrow(ovc$p.value) < 5 ) {
+        nh <- nh+.1; nw <- nw+.1
+    }
+    nh <- nrow(ovc$p.value) *nh + 1
+    nw <- ncol(ovc$p.value) *nw + 5
     
     ## plot figure
     plotdev(file.path(go.path,paste0(ct, "_goslim")),
@@ -341,7 +355,8 @@ for ( ct in 1:ncol(cls.mat) ) {
     
 
     ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
-    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt, evcodes=FALSE)
+    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt, evcodes=FALSE,
+                    custom_bg=rownames(got))
 ###, significant=FALSE, evcodes=FALSE)
     
     ## plot enrichments
@@ -368,13 +383,22 @@ for ( ct in 1:ncol(cls.mat) ) {
             cut <- TRUE
         }
 
-        
         ## sort along clusters
         ovc <- sortOverlaps(ovl, p.min=p.filt, cut=cut)
+
+        if ( nrow(ovc$p.value)==0 ) {
+            cat(paste("NO SIGNIFICANT HITS REMAINING\n"))
+            next
+        }
         
+       
         ## calculate optimal figure height: result fields + figure margins (mai)
         nh <- nrow(ovc$p.value) *.2 + 1
         nw <- ncol(ovc$p.value) *.4 + 5
+
+        if ( nrow(ovc$p.value) < 5 ) {
+            nh <- nh*2; nw <- nw*2
+        }
         
         ## plot figure
         plotdev(file.path(go.path,paste0(cid,"_annot_",ctgy)),
@@ -389,11 +413,15 @@ for ( ct in 1:ncol(cls.mat) ) {
     }
     
     ## ENRICHMENT OVER PRE-SELECTED TERMS in gprofiler2
+    cat(paste("CALCULATING ENRICHMENTS for pre-selected functions\n"))
     ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt,
-                    terms=my.functions) 
+                    terms=my.functions, evcodes=FALSE,
+                    custom_bg=rownames(got)) 
     ## plot enrichments
     for ( ctgy in names(ovll) ) {
     
+        cat(paste("\tPLOTTING for", ctgy, "\n"))
+
         ovl <- ovll[[ctgy]]
 
         ## filter large annotations such as GO
@@ -403,12 +431,20 @@ for ( ct in 1:ncol(cls.mat) ) {
         ## sort along clusters
         ovc <- sortOverlaps(ovl, p.min=p.filt, cut=cut)
 
-        if ( nrow(ovc$p.value)==0 ) next
+        if ( nrow(ovc$p.value)==0 ) {
+            cat(paste("NO SIGNIFICANT HITS REMAINING\n"))
+            next
+        }
         
+         
         ## calculate optimal figure height: result fields + figure margins (mai)
         nh <- nrow(ovc$p.value) *.2 + 1.25
         nw <- ncol(ovc$p.value) *.4 + 5
         
+        if ( nrow(ovc$p.value) < 5 ) {
+            nh <- nh*2; nw <- nw*2
+        }
+
         ## plot figure
         plotdev(file.path(go.path,paste0(cid,"_annot_",ctgy)),
                 height=nh, width=nw, res=200)
