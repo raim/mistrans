@@ -25,6 +25,6 @@ for (( i=$start; i<=$end; i++ )); do
     awk "/^>/ {n++} (n>=$from && n<=$to) {print}" $fasta > s4pred_${i}.fas
 
     ## run script
-    sbatch -a $i --job-name=s4pred_${i} --output=s4pred_${i}.out -p short --nodes=1 --ntasks 1 --cpus-per-task $ncpu --mem=2GB python ${spred}/run_model.py s4pred_${i}.fas --threads $ncpu -z -s -o ./pred/
+    sbatch -a $i --job-name=s4pred_${i} --output=s4pred_${i}.out -p short --nodes=1 --ntasks 1 --cpus-per-task $ncpu --mem=2GB python ${spred}/run_model.py s4pred_${i}.fas --threads $ncpu -z -s -o /home/${USER}/data/mammary/processedData/s4pred/
 done
 

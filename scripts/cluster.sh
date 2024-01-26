@@ -1,18 +1,21 @@
 
 ## just a record of data and scripts for discovery
 
-mkdir programs
-cd programs
-
+mkdir ~/programs
 mkdir data
 mkdir data/mammary
+mkdir work
 
 ## from exon
 ## rsync -avz /home/raim/data/mammary/processedData r.machne@login.discovery.neu.edu:data/mammary/
 ## rsync -avz /home/raim/data/mammary/originalData r.machne@login.discovery.neu.edu:data/mammary/
 
 ## 
-cd programs
+cd ~/work
+git clone git@github.com:raim/mistrans.git
+
+## 
+cd ~/programs
 git clone https://github.com/lh3/bioawk 
 cd bioawk
 make

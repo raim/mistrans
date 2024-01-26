@@ -13,6 +13,9 @@ R --vanilla < scripts/saap_analysis.R
 R --vanilla < scripts/saap_function.R
 
 
+## predict secondary structure for all ensembl proteins
+## at NEU discovery!
+~/work/mistrans/scripts/s4pred_batch.sh
 
 cp -a ~/Documents/sejour23_fig1.jpg .
 
