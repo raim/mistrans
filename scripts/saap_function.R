@@ -209,7 +209,7 @@ plotdev(file.path(fig.path,"saap_raas_length_bins"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
 boxplot(log10(raas$len) ~ raas$bin, ylab=expression(log[10](protein~length)),
-        xlab=NA, las=2, at=seq_along(levels(df$bins)))
+        xlab=NA, las=2, at=seq_along(levels(raas$bin)))
 axis(3, at=seq_along(levels(raas$bin)), labels=table(raas$bin),las=2)
 mtext("mean RAAS", 1, 2.5)
 dev.off()
