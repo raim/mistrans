@@ -300,7 +300,7 @@ for ( ct in 1:ncol(cls.mat) ) {
     
 
     ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
-    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt)
+    ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt, evcodes=FALSE)
 ###, significant=FALSE, evcodes=FALSE)
     
     ## plot enrichments
