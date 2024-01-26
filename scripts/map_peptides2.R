@@ -54,7 +54,8 @@ colnames(dat) <- gsub(" ","_", colnames(dat))
 ### FILTER
 ##dat$"Hemoglobin/Albumin"
 rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
-    (dat$"K/R_AAS" | dat$Potential_uncaptured_transcript)
+    (dat$"K/R_AAS" | dat$Potential_uncaptured_transcript) |
+    dat$"Hemoglobin/Albumin"
 dat <- dat[!rm,]
 
 cat(paste("removed", sum(rm),

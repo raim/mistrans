@@ -4,6 +4,13 @@
 mkdir programs
 cd programs
 
+mkdir data
+mkdir data/mammary
+
+## from exon
+## rsync -avz /home/raim/data/mammary/processedData r.machne@login.discovery.neu.edu:data/mammary/
+## rsync -avz /home/raim/data/mammary/originalData r.machne@login.discovery.neu.edu:data/mammary/
+
 ## 
 cd programs
 git clone https://github.com/lh3/bioawk 
