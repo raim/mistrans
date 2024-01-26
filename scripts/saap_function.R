@@ -1,5 +1,5 @@
 
-library(readxl)
+library(viridis)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 library(gprofiler2)
@@ -13,13 +13,6 @@ dir.create(fig.path)
 
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
-
-##
-##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
-##colnames(dat) <- gsub(" ","_", colnames(dat))
-
-##dat <- read_xlsx(file.path(dat.path,"All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
-##colnames(dat) <- gsub(" ","_", colnames(dat))
 
 ## READ MTP TABLE
 ## output from map_peptides.R
@@ -144,7 +137,8 @@ dev.off()
 plotdev(file.path(fig.path,"saap_raas_mean_sd"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(raas$mean, raas$sd, xlab="mean RAAS", ylab="SD RAAS", na.rm=TRUE)
+plotCor(raas$mean, raas$sd, xlab="mean RAAS", ylab="SD RAAS", na.rm=TRUE,
+        colf=viridis::viridis)
 dev.off()
 
 mx <- max(abs(c(raas$sd,raas$mean)), na.rm=TRUE)
@@ -162,21 +156,21 @@ plotdev(file.path(fig.path,"saap_raas_density"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(raas$mean, log10(raas$density), xlab="mean RAAS",
-        ylab=expression(log[10](SAAP/AA)))
+        ylab=expression(log[10](SAAP/AA)), colf=viridis::viridis)
 dev.off()
 
 plotdev(file.path(fig.path,"saap_raas_number"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(raas$mean, log10(raas$n), xlab="mean RAAS",
-        ylab=expression(log[10](SAAP/protein)))
+        ylab=expression(log[10](SAAP/protein)), colf=viridis::viridis)
 dev.off()
 
 plotdev(file.path(fig.path,"saap_length"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(raas$len, raas$n, log="xy", xlab="protein length/AA",
-        ylab="SAAP/protein")
+        ylab="SAAP/protein", colf=viridis::viridis)
 dev.off()
 
 

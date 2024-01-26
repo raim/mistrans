@@ -9,6 +9,7 @@
 ## by the mean ribosome density of transcript.
 
 
+library(viridis)
 library(segmenTools)
 library(Biostrings) # for blosum62
 data(BLOSUM62)
@@ -156,7 +157,7 @@ dev.off()
 png(file.path(fig.path,"position_length_relative.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$rpos, log10(hdat$len),
+dense2d(hdat$rpos, log10(hdat$len), colf=viridis::viridis,
         ##len, log="y",
         xlab="relative position of AAS in protein",
         ylab=expression(protein~length/log[10]))
@@ -167,15 +168,22 @@ png(file.path(fig.path,"position_length_absolute.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
     xpd=TRUE)
-dense2d(hdat$len, hdat$pos, xlim=c(0,1500), ylim=c(0,1500),
+dense2d(hdat$len, hdat$pos, colf=viridis::viridis,
+        xlim=c(0,1500), ylim=c(0,1500),
         ylab=expression(SAAP~position),
         xlab=expression(protein~length), nbin=512)
 par(xpd=FALSE)
-abline(a=0, b=1)
+##abline(a=0, b=1)
 abline(a=0, b=.5)
 abline(v=size.cutoff)
 dev.off()
 
+png(file.path(fig.path,"position_hist_absolute.png"),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
+    xpd=TRUE)
+hist(hdat$pos)
+dev.off()
 
 
 png(file.path(fig.path,"position_ecdf_relative_short.png"),
@@ -231,7 +239,8 @@ dev.off()
 png(file.path(fig.path,"position_length_absolute_log.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
-dense2d(log10(hdat$len), log10(hdat$pos), ylim=c(1,4), xlim=c(1,4),
+dense2d(log10(hdat$len), log10(hdat$pos),
+        colf=viridis::viridis, ylim=c(1,4), xlim=c(1,4),
         ylab=expression(SAAP~position/log[10]),
         xlab=expression(protein~length/log[10]))
 abline(a=0,b=1)
@@ -250,36 +259,64 @@ dev.off()
 load(file.path(out.path, "mapped_peptides.rda"))
 png(file.path(fig.path,"position_hist_relative_main_peptides.png"),
     res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(unlist(mpos), breaks=seq(0,1,0.1),
      main=paste(sum(!is.na(unlist(mpos))), "main peptides"),
      xlab="relative position of AAS in protein")
+par(new=TRUE)
+cdf <- ecdf(unlist(mpos))
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), type="l", axes=FALSE, col=2,
+     xlab=NA, ylab=NA)
+abline(a=0,b=1)
+mtext(expression(ecdf(x)), 4, 1.3)
+axis(4)
 dev.off()
 
 ## SMALL v LARGE PROTEINS
 png(file.path(fig.path,"position_hist_relative_short.png"),
     res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(hdat$rpos[small], breaks=seq(0,1,0.1),
      main=paste0(sum(small,na.rm=TRUE),
                  " short proteins <",size.cutoff[1]," aa"),
      xlab="relative position of AAS in protein")
+par(new=TRUE)
+cdf <- ecdf(hdat$rpos[small])
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), type="l", axes=FALSE, col=2,
+     xlab=NA, ylab=NA)
+abline(a=0,b=1)
+mtext(expression(ecdf(x)), 4, 1.3)
+axis(4)
 dev.off()
 png(file.path(fig.path,"position_hist_relative_long.png"),
     res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(hdat$rpos[huge], breaks=seq(0,1,0.1),
      main=paste0(sum(huge,na.rm=TRUE),
                  " long proteins >",size.cutoff[2]," aa"),
      xlab="relative position of AAS in protein")
+par(new=TRUE)
+cdf <- ecdf(hdat$rpos[huge])
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), type="l", axes=FALSE, col=2,
+     xlab=NA, ylab=NA)
+abline(a=0,b=1)
+mtext(expression(ecdf(x)), 4, 1.3)
+axis(4)
 dev.off()
 png(file.path(fig.path,"position_hist_relative_mid.png"),
     res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(hdat$rpos[large], breaks=seq(0,1,0.1),
      main=paste0(sum(large,na.rm=TRUE),
                  " proteins >",size.cutoff[1]," aa, <",size.cutoff[2]," aa"),
      xlab="relative position of AAS in protein")
+par(new=TRUE)
+cdf <- ecdf(hdat$rpos[large])
+plot(seq(0,1,.01), cdf(seq(0,1,.01)), type="l", axes=FALSE, col=2,
+     xlab=NA, ylab=NA)
+abline(a=0,b=1)
+mtext(expression(ecdf(x)), 4, 1.3)
+axis(4)
 dev.off()
 
 
@@ -287,7 +324,7 @@ raas.col <- "Mean_precursor_RAAS"
 png(file.path(fig.path,"position_RAAS_absolute.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$pos, hdat[,raas.col], #xlim=c(0,1e4),
+dense2d(hdat$pos, hdat[,raas.col], colf=viridis::viridis,#xlim=c(0,1e4),
         ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="absolute position of AAS in protein",
         ylab=raas.col)
@@ -296,7 +333,7 @@ dev.off()
 png(file.path(fig.path,"position_RAAS_relative.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$rpos, hdat[,raas.col],
+dense2d(hdat$rpos, hdat[,raas.col], colf=viridis::viridis,
         xlim=range(hdat$rpos, na.rm=TRUE),
         ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="relative position of AAS in protein",
@@ -306,7 +343,7 @@ dev.off()
 png(file.path(fig.path,"protein_length_RAAS.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$len, hdat[,raas.col], #xlim=c(0,1e4),
+dense2d(hdat$len, hdat[,raas.col], #colf=viridis::viridis,xlim=c(0,1e4),
         ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="protein length",
         ylab=raas.col)
@@ -315,7 +352,7 @@ dev.off()
 png(file.path(fig.path,"protein_length_RAAS_log.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(log10(hdat$len), hdat[,raas.col], #xlim=c(0,1e4),
+dense2d(log10(hdat$len), hdat[,raas.col], colf=viridis::viridis,#xlim=c(0,1e4),
         ylim=range(hdat[,raas.col], na.rm=TRUE),
         xlab="protein length",
         ylab=raas.col)
@@ -349,7 +386,8 @@ png(file.path(fig.path,paste0("raas_precursor_reporter.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(dat$Mean_reporter_RAAS, dat$Mean_precursor_RAAS, na.rm=TRUE,
-        xlab="mean reporter RAAS", ylab="mean precursor RAAS")
+        xlab="mean reporter RAAS", ylab="mean precursor RAAS",
+        colf=viridis::viridis)
 abline(a=0, b=1, col=1, lty=2, lwd=2)
 dev.off()
 
@@ -383,7 +421,7 @@ for ( i in seq_along(simmats) ) {
     png(file.path(fig.path,paste0("AAS_",mid,"_raas_dense.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(dff$sim, dff$raas, ylab=ylab, xlab=rid)
+    plotCor(dff$sim, dff$raas, ylab=ylab, xlab=rid, colf=viridis::viridis)
     dev.off()
 
     png(file.path(fig.path,paste0("AAS_",mid,"_raas_boxplot.png")),
