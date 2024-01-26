@@ -1,12 +1,5 @@
-#!/bin/bash
+#!/bin/sh
 
-#SBATCH --job-name=${3}
-#SBATCH --output=PGDB_${3}.out
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
-#SBATCH --mem=80Gb
-#SBATCH --time=24:00:00
-#SBATCH --partition=short
 
 i=${1}
 seq_per_call=${2}
