@@ -29,15 +29,53 @@ feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 ## SAAP mapped to protein and codons
 in.file <- file.path(out.path,"saap_mapped.tsv")
 dat <- read.delim(in.file)
+PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
 
-### HOTSPOTS
 ## get ALL proteins - from project mammary
 genes <- read.delim(feature.file)
 ##genes <- genes[genes$type=="protein_coding",]
 
+###  CODONS
+aa <- unique(GENETIC_CODE)
+CODONS <- rep("", length(aa))
+for ( i in seq_along(aa) )
+    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
+names(CODONS) <- aa
+
+
+#### FILTER DATA, with QC plots at each level
+
+## QC plots: mean of means over duplicate SAAPs?
+png(file.path(fig.path,"duplicates.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mfcol=c(2,1), mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(log10(dat$RAAS.mean[dat$RAAS.n > 1]), main=NA,
+     xlab=paste("mean of RAAS over duplicate SAAP"))
+hist(dat$RAAS.cv[dat$RAAS.n > 1], main=NA,
+     xlab=paste("CV of RAAS over duplicate SAAP"))
+dev.off()
+
+png(file.path(fig.path,"duplicates_CV.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(dat$RAAS.n[dat$RAAS.n > 1], dat$RAAS.cv[dat$RAAS.n > 1],
+        xlab="number of samples with duplicate SAAP",
+        ylab=paste("CV of RAAS over duplicate SAAP"))
+dev.off()
+
+png(file.path(fig.path,"duplicates_mean.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(dat[dat$RAAS.n > 1,PRAAS], dat$RAAS.mean[dat$RAAS.n > 1], xlab=PRAAS,
+        ylab=paste("mean over duplicate SAAP"), na.rm=TRUE)
+dev.off()
+
+
+### HOTSPOTS
+
 ## look for proteins with more than one mutation
 ## in close vicinity
-hotspots <- split(dat$pos, f=dat$protein)
+hotspots <- split(dat$pos, f=dat$ensembl)
 hotspots <- lapply(hotspots, sort)
 
 mutn <- unlist(lapply(hotspots, length))
@@ -58,17 +96,14 @@ plot(x=as.numeric(names(hpos)), y=hpos, type="h",
 axis(2)
 dev.off()
 
+## QC: mean over proteins!
+
+
 #### PLOTS
 
-raas.col <- "Mean_precursor_RAAS"
-hdat <- dat#[dat[,raas.col]> -1,]
 
-###  CODONS
-aa <- unique(GENETIC_CODE)
-CODONS <- rep("", length(aa))
-for ( i in seq_along(aa) )
-    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
-names(CODONS) <- aa
+hdat <- dat#[dat[,PRAAS]> -1,]
+
 
 ## TODO:
 ## * store codon context,-1,+1,
@@ -86,9 +121,9 @@ c2 <- unlist(lapply(cpos, function(x) x[2]))
 c3 <- unlist(lapply(cpos, function(x) x[3]))
 
 
-boxplot(hdat[,raas.col] ~ c1, ylab=raas.col)
-boxplot(hdat[,raas.col] ~ c2, ylab=raas.col)
-boxplot(hdat[,raas.col] ~ c3, ylab=raas.col)
+boxplot(hdat[,PRAAS] ~ c1, ylab=PRAAS)
+boxplot(hdat[,PRAAS] ~ c2, ylab=PRAAS)
+boxplot(hdat[,PRAAS] ~ c3, ylab=PRAAS)
 
 cfrq <- rbind("1"=table(c1),
               "2"=table(c2),
@@ -320,43 +355,42 @@ axis(4)
 dev.off()
 
 
-raas.col <- "Mean_precursor_RAAS"
 png(file.path(fig.path,"position_RAAS_absolute.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$pos, hdat[,raas.col], colf=viridis::viridis,#xlim=c(0,1e4),
-        ylim=range(hdat[,raas.col], na.rm=TRUE),
+dense2d(hdat$pos, hdat[,PRAAS], colf=viridis::viridis,#xlim=c(0,1e4),
+        ylim=range(hdat[,PRAAS], na.rm=TRUE),
         xlab="absolute position of AAS in protein",
-        ylab=raas.col)
+        ylab=PRAAS)
 dev.off()
 
 png(file.path(fig.path,"position_RAAS_relative.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(hdat$rpos, hdat[,raas.col], colf=viridis::viridis,
+dense2d(hdat$rpos, hdat[,PRAAS], colf=viridis::viridis,
         xlim=range(hdat$rpos, na.rm=TRUE),
-        ylim=range(hdat[,raas.col], na.rm=TRUE),
+        ylim=range(hdat[,PRAAS], na.rm=TRUE),
         xlab="relative position of AAS in protein",
-        ylab=raas.col)
+        ylab=PRAAS)
 dev.off()
 
 png(file.path(fig.path,"protein_length_RAAS.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(hdat[,raas.col], hdat$len, colf=viridis::viridis, na.rm=TRUE,
+plotCor(hdat[,PRAAS], hdat$len, colf=viridis::viridis, na.rm=TRUE,
         ylim=c(0,1e4),
-        xlim=range(hdat[,raas.col], na.rm=TRUE),
+        xlim=range(hdat[,PRAAS], na.rm=TRUE),
         ylab="protein length",
-        xlab=raas.col)
+        xlab=PRAAS)
 dev.off()
 
 png(file.path(fig.path,"protein_length_RAAS_log.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(hdat[,raas.col], log10(hdat$len), colf=viridis::viridis,na.rm=TRUE,
-        xlim=range(hdat[,raas.col], na.rm=TRUE),
+plotCor(hdat[,PRAAS], log10(hdat$len), colf=viridis::viridis,na.rm=TRUE,
+        xlim=range(hdat[,PRAAS], na.rm=TRUE),
         ylab=expression(log[10](protein~length)),
-        xlab=raas.col)
+        xlab=PRAAS)
 dev.off()
 
 
