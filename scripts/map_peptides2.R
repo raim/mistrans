@@ -413,20 +413,20 @@ apply(errors, 2, sum, na.rm=TRUE)
 ## TODO: find sources!
 ## TODO: don't remove but carry over as background
 
-## explore s4pred results
+## TODO: move the following interactive exploration to saap_analysis.R
 if ( interactive() ) {
+    ## explore s4pred results
     ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
     ss.tot <- ss.tot/sum(ss.tot)
     ss.aas <- table(sss)
     ss.aas <- ss.aas/sum(ss.aas)
     ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
-    ## TODO: move to analysis script and analyze by RAAS 
+    ## slight enrichment of beta/alpha
     barplot(ss.tab, beside=TRUE, legend=TRUE)
 
-    ##
-
-    plotCor(dat$Mean_precursor_RAAS, iup)
-    plotCor(dat$Mean_precursor_RAAS, anc)
+    ## slight positive trend of unstructured/anchor vs RAAS
+    plotCor(dat$Mean_precursor_RAAS, iup, na.rm=TRUE)
+    plotCor(dat$Mean_precursor_RAAS, anc, na.rm=TRUE)
 }
 
 ## missing position - no match found from peptide in protein!!
