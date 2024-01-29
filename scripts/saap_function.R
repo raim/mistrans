@@ -2,6 +2,8 @@
 ## TODO:
 ## * enrichment analysis using ONLY avaible proteins
 ##   as background.
+## * implement SetRank R package in segmenTools,
+## https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1571-6
 
 library(viridis)
 library(segmenTools)

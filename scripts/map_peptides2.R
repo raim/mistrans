@@ -33,11 +33,15 @@ out.path <- file.path(proj.path,"processedData")
 ## protein fasta
 fasta <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all.fa.gz")
 ## coding region fasta
-transcr <- file.path(mam.path,"processedData","coding.fa")
+transcr <- file.path(mam.path,"processedData","coding.fa")#"Homo_sapiens.GRCh38.pep.all_cds.fa.gz")
 ## protein-transcript map
 tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
 
-## 
+## s4pred
+s4pred <- file.path(mam.path,"processedData","Homo_sapiens.GRCh38.pep.large_s4pred.fas.gz")
+iupred <- file.path(mam.path,"processedData","iupred3")
+
+## figures
 dir.create(fig.path, showWarnings=FALSE)
 
 ##dat <- read_xlsx("All_MTP_BP_sharedPep_quant.xlsx")
@@ -52,7 +56,7 @@ dat <- read_xlsx(file.path(dat.path, saap.file))
 colnames(dat) <- gsub(" ","_", colnames(dat))
 
 ### FILTER
-##dat$"Hemoglobin/Albumin"
+## TODO: carry over to proteins for function analysis
 rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
     (dat$"K/R_AAS" | dat$Potential_uncaptured_transcript) |
     dat$"Hemoglobin/Albumin"
@@ -143,19 +147,30 @@ trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
 missing <- which(!names(fas)%in%rownames(trmap))
 cat(paste("removing", length(missing), "proteins w/o matching transcript\n"))
 fas <- fas[-missing]
-
+## order by protein names via trmap
 trfas <- trfas[trmap[names(fas),1]]
 names(trfas) <- names(fas)
 
 
+## s4pred
+s4p <- readFASTA(s4pred, grepID=TRUE)
+## skip version number - TODO: use version numbers!
+names(s4p) <- sub("\\.[0-9]+", "", names(s4p))
+## reorder
+cat(paste("s4pred:", sum(!names(fas)%in%names(s4p)), "proteins not found\n"))
+s4p <- s4p[names(fas)]
+
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
-pos <- len <- cdn <- aaf <- aat <-  aas <- rep(NA, nrow(dat))
+pos <- len <- cdn <- aaf <- aat <-  aas <-
+    sss <- anc <- iup <- rep(NA, nrow(dat))
+sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
+colnames(sssbg) <- c("C","E","H")
 mpos <- list() ## main peptide positions
 testit <- TRUE # TEST whether the mutation position is correct
 ## count errors
-mform <- merr <- nomatch <- noseq <- wcodon <- character()
+mform <- merr <- nomatch <- noseq <- wcodon <- wsss <- wiup <- character()
 errors <- matrix(NA, nrow=nrow(dat), ncol=5)
 colnames(errors) <- c("mform", "merr", "nomatch", "noseq", "wcodon")
 for ( i in 1:nrow(dat) ) {
@@ -226,13 +241,48 @@ for ( i in 1:nrow(dat) ) {
             stop(i, mids[i], j, names(fas)[j], "error: no mutation detected\n")
         }
     }
+
+    ## GET s4pred
+    s4s <- s4p[[gid]]
+    if ( is.null(s4s) ) {
+        cat(paste("WARNING:", i, "no s4pred found for", oid, "\n"))
+        wsss <- c(wsss, paste(i, gid, "not found"))
+    } else {
+        ## test length
+        if ( nchar(s4s$seq)!=len[i] ) {
+            cat(paste("WARNING:", i, "s4 prediction has wrong length for",
+                      oid, "\n"))
+            wsss <- c(wsss, paste(i, gid, "wrong length"))
+        } else {
+            sss[i] <- substr(s4s$seq, pos[i], pos[i])
+            tb <- table(unlist(strsplit(s4s$seq,"")))
+            sssbg[i,names(tb)] <- tb
+        }
+    }
+
+    ## GET IUPRED3
+    iufile <- list.files(pattern=paste0("^",gid,".*"), path=iupred)
+    if ( length(iufile)!=1 )  {
+        cat(paste("WARNING:", i, "no iupred3 found for", oid, "\n"))
+        wiup <- c(wiup, paste(i, gid, "not found"))
+    } else {
+        iud <- read.delim(file.path(iupred,iufile), header=FALSE)
+        if ( nrow(iud)!=len[i] ) {
+            cat(paste("WARNING:", i, "iupred3 prediction has wrong length for",
+                      oid, "\n"))
+            wiup <- c(wiup, paste(i, gid, "wrong length"))
+        } else {
+            anc[i] <- iud[pos[i], 4]
+            iup[i] <- iud[pos[i], 3] 
+        }
+   }
     
     ## GET CODON
     ## protein:transcript mapping
     ## load transcript, load UTR file, get codon
     nt <- trfas[[gid]]
     if ( is.null(nt) ) {
-        cat(paste("WARNING:", i, "no sequence found for", oid, "\n"))
+        cat(paste("WARNING:", i, "no transcript found for", oid, "\n"))
         noseq <- c(noseq, paste(i, gid))
         errors[i,"noseq"] <- 1
         next
@@ -263,6 +313,7 @@ for ( i in 1:nrow(dat) ) {
     ## GENETIC_CODE[codon]
     tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
 
+    ## TODO: get secondary structure, disordered probability
     
     ## report
     tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
@@ -343,12 +394,25 @@ for ( i in 1:nrow(dat) ) {
 ## relative position
 rpos <- pos/len
 ## bind to data frame
-dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn)
+dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
+             s4pred=sss)
 
 apply(errors, 2, sum, na.rm=TRUE)
 
 ## FILTER DATA
 ## TODO: find sources!
+## TODO: don't remove but carry over as background
+
+## explore s4pred results
+if ( interactive() ) {
+    ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
+    ss.tot <- ss.tot/sum(ss.tot)
+    ss.aas <- table(sss)
+    ss.aas <- ss.aas/sum(ss.aas)
+    ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
+    ## TODO: move to analysis script and analyze by RAAS 
+    barplot(ss.tab, beside=TRUE, legend=TRUE)
+}
 
 ## missing position - no match found from peptide in protein!!
 ## TODO: perhaps test LONGEST of the leading razor proteins.

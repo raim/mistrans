@@ -4,8 +4,17 @@ Ideas
 
 ## TODO
 
-* position in protein, by RAAS,
-* 
+* hypothesis tree:
+    - synthesis: codons, ribosome density, translation kinetics,
+	- degradation: degrons,
+	- dominance: catalytic sites, protein interactions, 
+
+* unstructured domains:
+    - iupred3,  PONDR® VSL2B,
+	- 3500 proteomes from viruses and the three domains of life: https://doi.org/10.1080/07391102.2012.675145,
+	- https://disprot.org/
+* catalytic sites:
+    - https://www.ebi.ac.uk/thornton-srv/m-csa/ 
 
 # 5'/3' bias
 
