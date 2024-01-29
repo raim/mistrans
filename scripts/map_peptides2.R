@@ -160,6 +160,12 @@ names(s4p) <- sub("\\.[0-9]+", "", names(s4p))
 cat(paste("s4pred:", sum(!names(fas)%in%names(s4p)), "proteins not found\n"))
 s4p <- s4p[names(fas)]
 
+## map iupred files here! 
+iufiles <- list.files(pattern=paste0(".*iupred3.tsv"), path=iupred)
+names(iufiles) <- sub("\\..*","", iufiles)
+iufiles <- iufiles[names(fas)]
+
+cat(paste("iupred3", sum(is.na(iufiles)), "proteins not found\n"))
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
@@ -214,7 +220,8 @@ for ( i in 1:nrow(dat) ) {
         } 
     }
 
-    ## MAP PETPTIDE 
+    ## GET POSITION OF MUTATION
+    ## 1: MAP PETPTIDE 
     res <- gregexpr(query, target)
     if ( res[[1]][1]==-1 ) {
         cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],"\n"))
@@ -227,7 +234,8 @@ for ( i in 1:nrow(dat) ) {
                   "more than two hits in",j, names(fas)[j],
                   "; taking first\n"))
     }
-    ## get position of mutation
+
+    ## 2: AAS within peptide
     saap <- unlist(dat[i,"SAAP"])
     mut <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
     pos[i] <- res[[1]][1] + mut -1
@@ -261,8 +269,10 @@ for ( i in 1:nrow(dat) ) {
     }
 
     ## GET IUPRED3
-    iufile <- list.files(pattern=paste0("^",gid,".*"), path=iupred)
-    if ( length(iufile)!=1 )  {
+    ##TODO: remove version tag from iupred files to avoid searching!
+    ## or search once above
+    iufile <- iufiles[gid]
+    if ( is.na(iufile) )  {
         cat(paste("WARNING:", i, "no iupred3 found for", oid, "\n"))
         wiup <- c(wiup, paste(i, gid, "not found"))
     } else {
@@ -395,7 +405,7 @@ for ( i in 1:nrow(dat) ) {
 rpos <- pos/len
 ## bind to data frame
 dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
-             s4pred=sss)
+             s4pred=sss, iupred3=iup, anchor2=anc)
 
 apply(errors, 2, sum, na.rm=TRUE)
 
@@ -412,6 +422,11 @@ if ( interactive() ) {
     ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
     ## TODO: move to analysis script and analyze by RAAS 
     barplot(ss.tab, beside=TRUE, legend=TRUE)
+
+    ##
+
+    plotCor(dat$Mean_precursor_RAAS, iup)
+    plotCor(dat$Mean_precursor_RAAS, anc)
 }
 
 ## missing position - no match found from peptide in protein!!
