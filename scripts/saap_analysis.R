@@ -137,18 +137,21 @@ cdat$aacodon <- paste(cdat$from,cdat$codon, sep="-")
 cpos <- strsplit(cdat$codon,"")
 ## https://pubmed.ncbi.nlm.nih.gov/11164038/ A vs. U in 2nd
 
-c1 <- unlist(lapply(cpos, function(x) x[1]))
-c2 <- unlist(lapply(cpos, function(x) x[2]))
-c3 <- unlist(lapply(cpos, function(x) x[3]))
+c1 <- factor(unlist(lapply(cpos, function(x) x[1])), levels=c("A","T","G","C"))
+c2 <- factor(unlist(lapply(cpos, function(x) x[2])), levels=c("A","T","G","C"))
+c3 <- factor(unlist(lapply(cpos, function(x) x[3])), levels=c("A","T","G","C"))
 
 
 png(file.path(fig.path,"codons_pos_raas.png"),
     res=300, width=3, height=3, units="in")
-par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18, xlab=NA)
-boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18)
-boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18)
-axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=c("A","C","G","T"))
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18,
+        names=rep(1,4), xlab=NA)
+boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18,
+        names=rep(2,4))
+boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18,
+        names=rep(3,4))
+axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=levels(c1))
 dev.off()
 
 cfrq <- rbind("1"=table(c1),
@@ -157,11 +160,12 @@ cfrq <- rbind("1"=table(c1),
 cfrq <- cfrq[,c("A","T","G","C")]
 png(file.path(fig.path,"codons_type.png"),
     res=300, width=3, height=3, units="in")
-par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(cfrq,beside=TRUE, legend.text=rownames(cfrq),
         args.legend=list(x="top",ncol=3, inset=c(-.02,-.1), bty="n",
                          title="codon position"))
 dev.off()
+
 png(file.path(fig.path,"codons_pos.png"),
     res=300, width=3, height=3, units="in")
 par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
