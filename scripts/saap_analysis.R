@@ -41,6 +41,8 @@ CODONS <- rep("", length(aa))
 for ( i in seq_along(aa) )
     CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
 names(CODONS) <- aa
+ACODONS <- paste0(names(CODONS),": ", CODONS)
+names(ACODONS) <- aa
 
 
 #### FILTER DATA, with QC plots at each level
@@ -101,9 +103,25 @@ dev.off()
 
 #### PLOTS
 
+## filtered tables
 
-hdat <- dat#[dat[,PRAAS]> -1,]
+hdat <- dat[!dat$remove,]
+cdat <- hdat[hdat$codon!="" & !is.na(hdat$RAAS.mean),]
 
+
+hist(hdat$RAAS.mean)
+
+
+png(file.path(fig.path,"raas_colors.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+raas.col <- selectColors(cdat$RAAS.mean[!is.na(cdat$RAAS.mean)],
+                         q=0, mx=1, mn=-4,
+                         colf=viridis::viridis, plot=TRUE,
+                         mai=c(.5,.5,.1,.1),
+                         xlab=PRAAS,
+                         n=40)
+dev.off()
 
 ## TODO:
 ## * store codon context,-1,+1,
@@ -111,9 +129,12 @@ hdat <- dat#[dat[,PRAAS]> -1,]
 ##   -> requires to account for genomic mutations?
 ## * load codon usage table, AA usage table,
 
+###  CODONS
+
+cdat$aacodon <- paste(cdat$from,cdat$codon, sep="-")
 
 ## codon positions
-cpos <- strsplit(hdat$codon,"")
+cpos <- strsplit(cdat$codon,"")
 ## https://pubmed.ncbi.nlm.nih.gov/11164038/ A vs. U in 2nd
 
 c1 <- unlist(lapply(cpos, function(x) x[1]))
@@ -121,9 +142,14 @@ c2 <- unlist(lapply(cpos, function(x) x[2]))
 c3 <- unlist(lapply(cpos, function(x) x[3]))
 
 
-boxplot(hdat[,PRAAS] ~ c1, ylab=PRAAS)
-boxplot(hdat[,PRAAS] ~ c2, ylab=PRAAS)
-boxplot(hdat[,PRAAS] ~ c3, ylab=PRAAS)
+png(file.path(fig.path,"codons_pos_raas.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18, xlab=NA)
+boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18)
+boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18)
+axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=c("A","C","G","T"))
+dev.off()
 
 cfrq <- rbind("1"=table(c1),
               "2"=table(c2),
@@ -146,7 +172,7 @@ dev.off()
 
 
 
-fta <- table(hdat$to, hdat$from)
+fta <- table(cdat$to, cdat$from)
 
 image_matrix(fta, axis=1:2, ylab="mistranslated", xlab="encoded")
 
@@ -154,15 +180,53 @@ png(file.path(fig.path,"codons_all.png"),
     res=300, width=15, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 par(mai=c(.7,.5,.7,3))
-ftc <- table(hdat$to,paste(hdat$from,hdat$codon, sep="-"))
+ftc <- table(cdat$to,cdat$aacodon)
 txt <- ftc
 txt[txt==0] <- ""
 ftc[ftc==0] <- NA
 image_matrix(ftc, axis=1:3, text=txt, ylab="mistranslated",
              text.cex=.7, xlab="")
-axis(4, nrow(ftc):1, labels=CODONS[rownames(ftc)], las=2)
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
 dev.off()
 
+## median RAAS
+ftc.raas <- table(cdat$to,cdat$aacodon)
+txt <- ftc.raas
+txt[txt==0] <- ""
+for ( i in 1:nrow(ftc) ) {
+    for ( j in 1:ncol(ftc) ) {
+        idx <- cdat$to==rownames(ftc)[i] & cdat$aacodon==colnames(ftc)[j]
+        ftc.raas[i,j] <- median(cdat$RAAS.mean[idx], na.rm=TRUE)
+    }
+}
+png(file.path(fig.path,"codons_all_raas.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+source("~/programs/segmenTools/R/clusterTools.R")
+image_matrix(ftc.raas, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:3, text=txt, ylab="mistranslated",
+             xlab="")
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+dev.off()
+
+df <- data.frame(freq=c(ftc), raas=c(ftc.raas))
+png(file.path(fig.path,"codons_frequency_raas.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log10(df$freq),df$raas, xlab=expression(log[10](frequency)),
+        ylab="median RAAS")
+dev.off()
+
+png(file.path(fig.path,"codons_raas.png"),
+    res=300, width=12.1, height=5, units="in")
+par(mai=c(.7,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+#par(mai=c(.7,.5,.7,3))
+boxplot(cdat$RAAS.mean ~ cdat$aacodon, las=2,
+        xlab=NA, ylab="RAAS")
+tb <- table(cdat$aacodon)
+axis(3, at=1:length(tb), labels=tb, las=2)
+dev.off()
 
 ### POSITION v LENGTH
 
