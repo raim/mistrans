@@ -154,6 +154,8 @@ boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18,
 axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=levels(c1))
 dev.off()
 
+barplot(t(cfrq))
+
 cfrq <- rbind("1"=table(c1),
               "2"=table(c2),
               "3"=table(c3))
@@ -169,7 +171,7 @@ dev.off()
 png(file.path(fig.path,"codons_pos.png"),
     res=300, width=3, height=3, units="in")
 par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
+barplot(t(cfrq),beside=FALSE, legend.text=colnames(cfrq),
         args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
         xlab="codon position")
 dev.off()
