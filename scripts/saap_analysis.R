@@ -536,7 +536,7 @@ png(file.path(fig.path,"position_ecdf_absolute.png"),
     res=300, width=2.5, height=2.5, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
 cdf <- ecdf(hdat$pos)
-x <- seq(0,max(hdat$pos),1)
+x <- seq(0,max(hdat$pos, na.rm=TRUE),1)
 plot(x, cdf(x), xlim=c(0,1000), xlab="absolute position in protein",
      ylab=expression(ecdf(x)), type="l", col=2)
 abline(v=8.5, col=1)
