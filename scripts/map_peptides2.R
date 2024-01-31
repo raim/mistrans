@@ -81,6 +81,7 @@ slst <- split(10^unlist(dat[,PRAAS]), f=dat$SAAP)
 slst <- slst[dat$SAAP] # map to main data
 
 slen <- unlist(lapply(slst, length))
+smds <- unlist(lapply(slst, median, na.rm=TRUE))
 smns <- unlist(lapply(slst, mean, na.rm=TRUE))
 sdev <- unlist(lapply(slst, sd, na.rm=TRUE))
 scvs <- sdev/smns
@@ -90,7 +91,8 @@ dups <- slen > 1
 cat(paste("tagged", sum(dups), "duplicated SAAP\n"))
 
 ## attach mean and CV RAAS to duplicate-filtered list
-dat <- cbind(dat, RAAS.mean=log10(smns), RAAS.cv=scvs, RAAS.n=slen)
+dat <- cbind(dat, RAAS.median=log10(smds),
+             RAAS.mean=log10(smns), RAAS.cv=scvs, RAAS.n=slen)
 
 ### RESOLVE MAPPED PROTEINS
 
@@ -244,7 +246,7 @@ cat(paste("iupred3", sum(is.na(iufiles)), "proteins not found\n"))
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
 pos <- len <- cdn <- aaf <- aat <-  aas <-
-    sss <- anc <- iup <- rep(NA, nrow(dat))
+    sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
 colnames(sssbg) <- c("C","E","H")
 mpos <- list() ## main peptide positions
@@ -361,6 +363,7 @@ for ( i in 1:nrow(dat) ) {
             wsss <- c(wsss, paste(i, gid, "wrong length"))
         } else {
             sss[i] <- substr(s4s$seq, pos[i], pos[i])
+            ## background: complete protein sequence
             tb <- table(unlist(strsplit(s4s$seq,"")))
             sssbg[i,names(tb)] <- tb
         }
@@ -381,7 +384,10 @@ for ( i in 1:nrow(dat) ) {
             wiup <- c(wiup, paste(i, gid, "wrong length"))
         } else {
             anc[i] <- iud[pos[i], 4]
-            iup[i] <- iud[pos[i], 3] 
+            iup[i] <- iud[pos[i], 3]
+            ## whole protein mean
+            anbg[i] <- mean(iud[, 4])
+            iubg[i] <- mean(iud[, 3])
         }
    }
     
@@ -453,8 +459,11 @@ if ( !interactive() ) {
 ## relative position
 rpos <- pos/len
 ## bind to data frame
+colnames(sssbg) <- paste0(colnames(sssbg), ".protein")
 dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
-             s4pred=sss, iupred3=iup, anchor2=anc)
+             s4pred=sss, sssbg,
+             iupred3=iup, iupred3.protein=iubg,
+             anchor2=anc, anchor2.protein=anbg)
 
 ## PLOT ERRORS
 ## TODO: legend!
@@ -487,10 +496,44 @@ if ( interactive() ) {
     ## slight enrichment of beta/alpha
     barplot(ss.tab, beside=TRUE, legend=TRUE)
 
+    ## TODO: why negative iup?
+
+
+
     ## slight positive trend of unstructured/anchor vs RAAS
+    plotCor(iup, iubg) # positive correlation to background
+
+    hist(iup, border=NA, col=NA)
+    hist(iubg, col=1, border=1, add=TRUE)
+    hist(iup, border=2, col=paste0(rgb(t(col2rgb(2))/255),77), add=TRUE)
+    legend("topright", paste0("p=",signif(wilcox.test(iup, iubg)$p.value,2)))
+    
+    layout(t(1:2), widths=c(1,.25))
+    par(mai=c(.5,.5,.1,.1),yaxs="i")
     plotCor(dat$Mean_precursor_RAAS, iup, na.rm=TRUE)
+    iubgh <- hist(iubg, breaks=0:10/10, plot=FALSE)
+    par(mai=c(.5,0,.1,.2),yaxs="i")
+    barplot(iubgh$counts,names.arg=iubgh$mids, horiz=TRUE, las=2, space=0)
+
+    plotCor(anc, anbg) # positive correlation to background
+
+    hist(anc, border=NA, col=NA)
+    hist(anbg, col=1, border=1, add=TRUE)
+    hist(anc, border=2, col=paste0(rgb(t(col2rgb(2))/255),77), add=TRUE)
+    legend("topright", paste0("p=",signif(wilcox.test(anc, anbg)$p.value,2)))
+
+    layout(t(1:2), widths=c(1,.25))
+    par(mai=c(.5,.5,.1,.1))
     plotCor(dat$Mean_precursor_RAAS, anc, na.rm=TRUE)
-}
+    anbgh <- hist(anbg, breaks=0:10/10, plot=FALSE)
+    par(mai=c(.5,0,.1,.2),yaxs="i")
+    barplot(anbgh$counts,names.arg=anbgh$mids, horiz=TRUE, las=2, space=0)
+    axis(4)
+
+    plotCor(dat$Mean_precursor_RAAS, anc/anbg, na.rm=TRUE)
+    plotCor(dat$Mean_precursor_RAAS, iup/iubg, na.rm=TRUE)
+
+ }
 
 ## missing position - no match found from peptide in protein!!
 ## TODO: perhaps test LONGEST of the leading razor proteins.
@@ -521,7 +564,10 @@ if ( length(rm)>0 ) {
 ### WRITE OUT TABLE with positions for downstream analysis
 sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
                "ensembl","protein","len","pos","rpos","from","to",
-               "codon","s4pred","iupred3","anchor2","remove")]
+               "codon","s4pred",
+               "iupred3","iupred3.protein",
+               "anchor2","anchor2.protein",
+               "remove")]
 write.table(sdat, file=file.path(out.path,"saap_mapped.tsv"),
             sep="\t", quote=FALSE, na="", row.names=FALSE)
 

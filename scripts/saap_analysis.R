@@ -30,6 +30,7 @@ feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 in.file <- file.path(out.path,"saap_mapped.tsv")
 dat <- read.delim(in.file)
 PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
+MRAAS <- "RAAS.median"
 
 ## get ALL proteins - from project mammary
 genes <- read.delim(feature.file)
@@ -51,7 +52,7 @@ names(ACODONS) <- aa
 png(file.path(fig.path,"duplicates.png"),
     res=300, width=3.5, height=3.5, units="in")
 par(mfcol=c(2,1), mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(log10(dat$RAAS.mean[dat$RAAS.n > 1]), main=NA,
+hist(log10(dat$RAAS.median[dat$RAAS.n > 1]), main=NA,
      xlab=paste("mean of RAAS over duplicate SAAP"))
 hist(dat$RAAS.cv[dat$RAAS.n > 1], main=NA,
      xlab=paste("CV of RAAS over duplicate SAAP"))
@@ -68,7 +69,7 @@ dev.off()
 png(file.path(fig.path,"duplicates_mean.png"),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(dat[dat$RAAS.n > 1,PRAAS], dat$RAAS.mean[dat$RAAS.n > 1], xlab=PRAAS,
+plotCor(dat[dat$RAAS.n > 1,PRAAS], dat$RAAS.median[dat$RAAS.n > 1], xlab=PRAAS,
         ylab=paste("mean over duplicate SAAP"), na.rm=TRUE)
 dev.off()
 
@@ -106,16 +107,16 @@ dev.off()
 ## filtered tables
 
 hdat <- dat[!dat$remove,]
-cdat <- hdat[hdat$codon!="" & !is.na(hdat$RAAS.mean),]
+cdat <- hdat[hdat$codon!="" & !is.na(hdat$RAAS.median),]
 
 
-hist(hdat$RAAS.mean)
+hist(hdat$RAAS.median)
 
 
 png(file.path(fig.path,"raas_colors.png"),
     res=300, width=3, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-raas.col <- selectColors(cdat$RAAS.mean[!is.na(cdat$RAAS.mean)],
+raas.col <- selectColors(cdat$RAAS.median[!is.na(cdat$RAAS.median)],
                          q=0, mx=1, mn=-4,
                          colf=viridis::viridis, plot=TRUE,
                          mai=c(.5,.5,.1,.1),
@@ -133,6 +134,16 @@ dev.off()
 
 cdat$aacodon <- paste(cdat$from,cdat$codon, sep="-")
 
+## note: same as genomebrowser
+ntcols <- c(A=rgb(85/255,107/255,47/255), ## green
+            T=rgb(1,0,0), ## red
+            G=rgb(1,.65,0),## orange
+            C=rgb(0,0,1)) ## blue
+
+cd.col <- c("darkgray", rgb(t(col2rgb(2))/255), rgb(t(col2rgb(3))/255))
+names(cd.col) <- 1:3
+
+
 ## codon positions
 cpos <- strsplit(cdat$codon,"")
 ## https://pubmed.ncbi.nlm.nih.gov/11164038/ A vs. U in 2nd
@@ -141,47 +152,104 @@ c1 <- factor(unlist(lapply(cpos, function(x) x[1])), levels=c("A","T","G","C"))
 c2 <- factor(unlist(lapply(cpos, function(x) x[2])), levels=c("A","T","G","C"))
 c3 <- factor(unlist(lapply(cpos, function(x) x[3])), levels=c("A","T","G","C"))
 
-
-png(file.path(fig.path,"codons_pos_raas.png"),
-    res=300, width=3, height=3, units="in")
-par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18,
-        names=rep(1,4), xlab=NA)
-boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18,
-        names=rep(2,4))
-boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18,
-        names=rep(3,4))
-axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=levels(c1))
-dev.off()
-
-barplot(t(cfrq))
-
 cfrq <- rbind("1"=table(c1),
               "2"=table(c2),
               "3"=table(c3))
 cfrq <- cfrq[,c("A","T","G","C")]
-png(file.path(fig.path,"codons_type.png"),
+
+
+png(file.path(fig.path,"codons_pos.png"),
+    res=300, width=3, height=1.5, units="in")
+par(mai=c(.25,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
+        args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
+        xlab="codon position", col=ntcols)
+dev.off()
+
+png(file.path(fig.path,"codons_pos_raas.png"),
     res=300, width=3, height=3, units="in")
-par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-barplot(cfrq,beside=TRUE, legend.text=rownames(cfrq),
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+par(mai=c(.5,.5,.15,.1))
+boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, boxwex=.75, at=1:4,
+        names=NA, xlab=NA, xlim=c(0.25,14), axes=FALSE,
+        col=ntcols, cex=.5)
+axis(2)
+boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 + 4.5, boxwex=.75,
+        names=NA, axes=FALSE, col=ntcols, cex=.5)
+boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 + 9, boxwex=.75,
+        names=NA, axes=FALSE, col=ntcols, cex=.5)
+axis(1, at=c(2.5,7,11.5), labels=1:3, col=NA)
+mtext("codon position", 1, 1.3)
+dev.off()
+
+png(file.path(fig.path,"codons_type.png"),
+    res=300, width=3, height=1.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+par(mai=c(0.1,.5,.2,.1))
+barplot(cfrq,beside=TRUE, legend.text=rownames(cfrq), col=cd.col,
         args.legend=list(x="top",ncol=3, inset=c(-.02,-.1), bty="n",
                          title="codon position"))
 dev.off()
-
-png(file.path(fig.path,"codons_pos.png"),
+png(file.path(fig.path,"codons_type_raas.png"),
     res=300, width=3, height=3, units="in")
-par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-barplot(t(cfrq),beside=FALSE, legend.text=colnames(cfrq),
-        args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
-        xlab="codon position")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.15,.1))
+boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18,
+        names=rep(1,4), xlab=NA, xlim=c(.4,4.05), axes=FALSE, col=cd.col[1])
+axis(2)
+boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18,
+        names=rep(2,4), axes=FALSE, col=cd.col[2])
+boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18,
+        names=rep(3,4), axes=FALSE, col=cd.col[3])
+axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=levels(c1))
+dev.off()
+
+## full codon table
+
+png(file.path(fig.path,"codons_aa.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+fta <- table(cdat$to, cdat$from)
+txt <- fta
+txt[txt==0] <- ""
+fta[fta==0] <- NA
+image_matrix(fta, axis=1:2, text=txt, ylab="mistranslated", xlab="encoded")
 dev.off()
 
 
+## median RAAS
+fta.raas <- table(cdat$to,cdat$from)
+txt <- fta.raas
+txt[txt==0] <- ""
+for ( i in 1:nrow(fta) ) {
+    for ( j in 1:ncol(fta) ) {
+        idx <- cdat$to==rownames(fta)[i] & cdat$from==colnames(fta)[j]
+        fta.raas[i,j] <- median(cdat$RAAS.median[idx], na.rm=TRUE)
+    }
+}
 
-fta <- table(cdat$to, cdat$from)
+png(file.path(fig.path,"codons_aa_raas.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(fta.raas, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=2, text=txt, text.cex=.6, ylab="mistranslated AA",
+             xlab="templated AA")
+axis(1, 1:ncol(fta), labels=colnames(fta), las=2)
+dev.off()
 
-image_matrix(fta, axis=1:2, ylab="mistranslated", xlab="encoded")
+df <- data.frame(freq=c(fta), raas=c(fta.raas))
+png(file.path(fig.path,"codons_aa_raas_frequency.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log10(df$freq),df$raas, xlab="AA->AA count",
+        ylab="median RAAS", axes=FALSE)
+axis(2)
+axis(1, at=log10(1:300), labels=FALSE, tcl=par("tcl")/2)
+axis(1, at=log10(10^(0:4)), labels=10^(0:4))
+dev.off()
 
+
+## actual codons
 png(file.path(fig.path,"codons_all.png"),
     res=300, width=15, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
@@ -202,37 +270,182 @@ txt[txt==0] <- ""
 for ( i in 1:nrow(ftc) ) {
     for ( j in 1:ncol(ftc) ) {
         idx <- cdat$to==rownames(ftc)[i] & cdat$aacodon==colnames(ftc)[j]
-        ftc.raas[i,j] <- median(cdat$RAAS.mean[idx], na.rm=TRUE)
+        ftc.raas[i,j] <- median(cdat$RAAS.median[idx], na.rm=TRUE)
     }
 }
 png(file.path(fig.path,"codons_all_raas.png"),
     res=300, width=15, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 par(mai=c(.7,.5,.7,3))
-source("~/programs/segmenTools/R/clusterTools.R")
 image_matrix(ftc.raas, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
              axis=1:3, text=txt, ylab="mistranslated",
              xlab="")
 axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
 dev.off()
 
+
 df <- data.frame(freq=c(ftc), raas=c(ftc.raas))
-png(file.path(fig.path,"codons_frequency_raas.png"),
+png(file.path(fig.path,"codons_all_raas_frequency.png"),
     res=300, width=3, height=3, units="in")
-par(mai=c(.5,.25,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log10(df$freq),df$raas, xlab=expression(log[10](frequency)),
-        ylab="median RAAS")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log10(df$freq),df$raas, xlab="codon->AA count",
+        ylab="median RAAS", axes=FALSE)
+axis(2)
+axis(1, at=log10(1:300), labels=FALSE, tcl=par("tcl")/2)
+axis(1, at=log10(10^(0:4)), labels=10^(0:4))
 dev.off()
+
+
+## max RAAS
+ftc.max <- table(cdat$to,cdat$aacodon)
+txt <- ftc.max
+txt[txt==0] <- ""
+for ( i in 1:nrow(ftc) ) {
+    for ( j in 1:ncol(ftc) ) {
+        idx <- cdat$to==rownames(ftc)[i] & cdat$aacodon==colnames(ftc)[j]
+        ftc.max[i,j] <- max(cdat$RAAS.median[idx], na.rm=TRUE)
+    }
+}
+ftc.max[is.infinite(ftc.max)] <- NA
+
+png(file.path(fig.path,"codons_all_raas_max.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+image_matrix(ftc.max, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:3, text=txt, ylab="mistranslated",
+             xlab="")
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+dev.off()
+
+## TODO: codon efficiency - 
+## 
+
 
 png(file.path(fig.path,"codons_raas.png"),
     res=300, width=12.1, height=5, units="in")
 par(mai=c(.7,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
 #par(mai=c(.7,.5,.7,3))
-boxplot(cdat$RAAS.mean ~ cdat$aacodon, las=2,
+boxplot(cdat$RAAS.median ~ cdat$aacodon, las=2,
         xlab=NA, ylab="RAAS")
 tb <- table(cdat$aacodon)
 axis(3, at=1:length(tb), labels=tb, las=2)
 dev.off()
+
+
+### SECONDARY STRUCTURE
+
+## TODO: load background
+
+if ( interactive() ) {
+    boxplot(cdat$RAAS.median ~ cdat$s4pred)
+    plotCor(hdat$RAAS.median, hdat$iupred3)
+    plotCor(hdat$RAAS.median, hdat$anchor2)
+    
+    hist(hdat$anchor2)
+
+
+    ## explore s4pred results
+    ##ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
+    ##ss.tot <- ss.tot/sum(ss.tot)
+    ss.aas <- table(cdat$s4pred)
+    ss.aas <- ss.aas/sum(ss.aas)
+    ss.tab <- rbind(AAS=ss.aas)#, total=ss.tot)
+    ## slight enrichment of beta/alpha
+    barplot(ss.tab, beside=TRUE, legend=TRUE)
+}
+
+## GET STRUCTURE SCORES
+    
+iup <- hdat$iupred3
+## TODO: why negative IUPRED3??
+if ( min(iup,na.rm=TRUE)<0 )
+    iup <- iup - min(iup,na.rm=TRUE)
+iubg <- hdat$iupred3.protein
+
+anc <- hdat$anchor2
+anbg <- hdat$anchor2.protein
+
+png(file.path(fig.path,"structure_iupred3_bg.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plotCor(iup, iubg, xlab="iupred3 score  at AAS site",
+        ylab="mean iupred3 score of protein") 
+dev.off()
+
+## slight positive trend of unstructured/anchor vs RAAS
+png(file.path(fig.path,"structure_iupred3.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+hist(iubg, border=NA, col=NA, breaks=seq(0,1,.05), xlab="iupred3 score",
+     main=NA)
+hist(iubg, col=1, border=1, add=TRUE, breaks=seq(0,1,.05))
+hist(iup, border=2, col=paste0(rgb(t(col2rgb(2))/255),77),
+     add=TRUE, breaks=seq(0,1,.05))
+legend("topright", c("AAS", "mean of protein",
+                     paste0("p=",signif(wilcox.test(iup, iubg)$p.value,2))),
+       col=c(1,2,NA), lty=1, bty="n")
+dev.off()       
+    
+png(file.path(fig.path,"structure_iupred3_raas.png"),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+layout(t(1:2), widths=c(1,.25))
+par(mai=c(.5,.5,.1,.1),yaxs="i")
+plotCor(hdat$RAAS.median, iup, na.rm=TRUE, xlab=paste("median RAAS"),
+        ylab="iupred3 score at AAS site")
+iubgh <- hist(iubg, breaks=0:10/10, plot=FALSE)
+par(mai=c(.5,0,.1,.2),yaxs="i")
+barplot(iubgh$counts,horiz=TRUE, las=2, space=0)
+dev.off()
+
+png(file.path(fig.path,"structure_anchor2_bg.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plotCor(anc, anbg, xlab="anchor2 score  at AAS site",
+        ylab="mean anchor2 score of protein") 
+dev.off()
+
+png(file.path(fig.path,"structure_anchor2.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+hist(anc, border=NA, col=NA, breaks=seq(0,1,.05), main=NA,
+     xlab="anchor2 score")
+hist(anbg, col=1, border=1, add=TRUE, breaks=seq(0,1,.05))
+hist(anc, border=2, col=paste0(rgb(t(col2rgb(2))/255),77),
+     add=TRUE, breaks=seq(0,1,.05), main=NA)
+legend("topright", c("AAS", "mean of protein",
+                     paste0("p=",signif(wilcox.test(anc, anbg)$p.value,2))),
+       col=c(1,2,NA), lty=1, bty="n")
+dev.off()
+
+png(file.path(fig.path,"structure_anchor2_raas.png"),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+layout(t(1:2), widths=c(1,.25))
+par(mai=c(.5,.5,.1,.1))
+plotCor(hdat$RAAS.median, anc, , xlab=paste("median RAAS"),
+        ylab="anchor2 score at AAS site")
+anbgh <- hist(anbg, breaks=0:10/10, plot=FALSE)
+par(mai=c(.5,0,.1,.2),yaxs="i")
+barplot(anbgh$counts,names.arg=anbgh$mids, horiz=TRUE, las=2, space=0)
+axis(4)
+dev.off()
+
+png(file.path(fig.path,"structure_anchor2_raas_norm.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plotCor(hdat$RAAS.median, anc/anbg, xlab="median RAAS",
+        ylab="normalized anchor2 score, AAS/protein")
+dev.off()
+
+png(file.path(fig.path,"structure_iupred3_raas_norm.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plotCor(hdat$RAAS.median, iup/iubg, xlab="median RAAS",
+        ylab="normalized iupred3 score, AAS/protein", ylim=c(0,4))
+dev.off()
+ 
 
 ### POSITION v LENGTH
 
@@ -241,8 +454,6 @@ size.cutoff <- c(2.5e2,1e3)
 small <- hdat$len <  size.cutoff[1]
 large <- hdat$len >= size.cutoff[1] & hdat$len <= size.cutoff[2]
 huge  <- hdat$len >  size.cutoff[2]
-
-
 
 hist(hdat$pos, breaks=seq(0,4e4,100), xlim=c(0,3000), xlab="absolute position",
      main=NA)
