@@ -83,21 +83,34 @@ tmtf$RAAS <- as.numeric(tmtf$RAAS)
 rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
-tmt <- split(tmtf$RAAS, paste0(tmtf$Dataset,"_",tmtf$SAAP))
+
+
+
+
+tmt <- split(tmtf$RAAS, paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP))
 ## map to main data
-tmt <- tmt[paste0(dat$Dataset,"_",dat$SAAP)]
+unid <- paste0(dat$Dataset,"_",dat$SAAP,"_",dat$BP)
+cat(paste("didn't find", sum(!unid%in%names(tmt)),
+          "dataset/saap/bp in TMT file\n"))
+tmt <- tmt[unid]
+
 
 ## delog for stats
 tmtl <- lapply(tmt, function(x) x^10) # delog
 tlen <- unlist(lapply(tmtl, length))
-tmds <- unlist(lapply(tmtl, median, na.rm=TRUE))
-tmns <- unlist(lapply(tmtl, mean, na.rm=TRUE))
-tdev <- unlist(lapply(tmtl, sd, na.rm=TRUE))
-tcvs <- sdev/smns
+tmds <- unlist(lapply(tmtl, median, na.rm=FALSE))
+tmns <- unlist(lapply(tmtl, mean, na.rm=FALSE))
+tdev <- unlist(lapply(tmtl, sd, na.rm=FALSE))
+tcvs <- tdev/tmns
 
 ## calculate mean RAAS from raw data for each of the SAAP
 ## don't delog first, to reproduce shiri's values
-tmnr <- unlist(lapply(tmt, mean, na.rm=TRUE))
+tmnr <- unlist(lapply(tmt, mean, na.rm=FALSE))
+tmdr <- lapply(tmt, median, na.rm=TRUE)
+tmdr <- unlist(lapply(tmdr, function(x) ifelse(length(x)==0, NA, x)))
+
+## collect number of times this SAAP/BP was found per cancer type
+tmtf$count <- tlen[paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP)]
 
 ## get list of mean RAAS values over cancer types
 slst <- split(10^unlist(dat[,PRAAS]), f=dat$SAAP)
@@ -105,39 +118,100 @@ slst <- slst[dat$SAAP] # map to main data
 slen <- unlist(lapply(slst, length))
 smds <- unlist(lapply(slst, median, na.rm=TRUE))
 smns <- unlist(lapply(slst, mean, na.rm=TRUE))
+smns.nrm <- unlist(lapply(slst, function(x) mean(log10(x),na.rm=TRUE)))
 sdev <- unlist(lapply(slst, sd, na.rm=TRUE))
 scvs <- sdev/smns
 
+## log of means vs. mean of logs
+png(file.path(fig.path,"raas_means_duplicate_saap_delogged.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(log10(smns[slen>1]), smns.nrm[slen>1])
+abline(a=0, b=1)
+dev.off()
 
 ## confirm consistency of means
 ## TODO: why differences?
+png(file.path(fig.path,"raas_means.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(tmnr, dat$Mean_precursor_RAAS,
         xlab="mean RAAS from TMT level file",
         ylab="mean RAAS from summary file")
 abline(a=0, b=1, col=1)
+dev.off()
 
-## TODO mean of ratios vs. ratio of means
-n <- 100
-x <- rnorm(n, mean=2000, sd=1000)
-y <- rnorm(n, mean=6000, sd=500)
 
-## sum(x)/n / sum(y)/n = sum(x)/sum(y)
-## sum(x/y)/n
+png(file.path(fig.path,"raas_means_delogged.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(log10(tmns), tmnr, xlab=expression(log[10](mean(10^RAAS))),
+        ylab="mean RAAS from TMT level file")
+abline(a=0, b=1, col=1)
+dev.off()
 
-mean(x)/mean(y)
-mean(x/y)
+## regression to mean problem
+png(file.path(fig.path,"raas_means_datasets.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+df <- data.frame(mean=tmnr, n=tlen)
+## remove healthy
+df <- df[-grep("Healthy", names(tmnr)),]
+df <- df[df$n>0,]
+dense2d(df$mean, log10(df$n),
+        ylab="#unique Dataset/SAAP/BP", cex=.6,
+        xlab="mean TMT level RAAS", axes=FALSE, xlim=c(-6,4))
+axis(1)
+axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+dev.off()
 
-## TODO: log of means vs. mean of logs
-tmp <- c(x,y)
-tmp <- tmp[tmp>0] 
-hist(tmp)
-abline(v=10^mean(log10(tmp)), col=4, lwd=2)
-abline(v=10^log10(mean(tmp)), col=2, lwd=2)
-hist(log10(tmp))
-abline(v=mean(log10(tmp)), col=4, lwd=2)
-abline(v=log10(mean(tmp)), col=2, lwd=2)
+cptac <- tmtf$Dataset!="Healthy"
+## regression to mean problem
+png(file.path(fig.path,"raas_means_datasets_all_RAAS.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(tmtf$RAAS[cptac], log10(tmtf$count[cptac]), cex=.2,
+        xlab="TMT level RAAS", ylab="#unique Dataset/SAAP/BP", axes=FALSE,
+        xlim=c(-6,4))
+axis(1)
+axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+dev.off()
 
-dense2d(log10(tmds), tmnr)#, ylim=range(tmnr,na.rm=TRUE))
+idx <- which(tmtf$count>60 & cptac)[1]
+id <- names(idx)
+vls <- unlist(tmtf[which(paste0(tmtf$Dataset,"_",
+                                tmtf$SAAP,"_",tmtf$BP)==id),"RAAS"])
+range(vls)
+
+if ( interactive() )
+    for ( cnt in unique(tmtf$count) )
+        if ( sum(tmtf$count==cnt &cptac)>0 ) {
+            hist(unlist(tmtf[which(tmtf$count==cnt & cptac),"RAAS"]), main=cnt)
+            Sys.sleep(1)
+        }
+
+## regression to the MEDIAN problem
+png(file.path(fig.path,"raas_medians_datasets.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+df <- data.frame(mean=tmdr, n=tlen)
+## remove healthy
+df <- df[-grep("Healthy", names(tmdr)),]
+df <- df[df$n>0,]
+dense2d(df$mean, log10(df$n),
+        ylab="#unique Dataset/SAAP/BP", cex=.6,
+        xlab="median TMT level RAAS", axes=FALSE, xlim=c(-6,4))
+axis(1)
+axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+dev.off()
+
+
+## duplicate SAAP/datatype
+idx <- which(duplicated(paste(dat$SAAP, dat$Dataset, dat$BP)))
+head(dat[dat$SAAP==dat$SAAP[idx[1]],1:10])
 
 ## tag duplicates
 dups <- slen > 1
