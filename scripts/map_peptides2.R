@@ -54,37 +54,80 @@ dir.create(fig.path, showWarnings=FALSE)
 ## NOTE: input has changed significantly, proceed in a map_peptides2.R
 
 ##saap.file <- "All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
-saap.file <- "All_SAAP_protein_filter_df_20240111.xlsx"
+saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_20240111.xlsx")
+tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
+pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
 PMATCH <- "Leading_razor_proteins__all_TMT_" # column with protein matches
 PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
 RRAAS <- "Mean_reporter_RAAS"  # reporter ion/patient level
 
-dat <- data.frame(read_xlsx(file.path(dat.path, saap.file)))
+dat <- data.frame(read_xlsx(saap.file))
 colnames(dat) <- gsub("\\.","_", colnames(dat))
 
 ### FILTER
 ## TODO: carry over to proteins for function analysis
 rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
-    (dat$"K_R_AAS" | dat$Potential_uncaptured_transcript) |
-    dat$"Hemoglobin_Albumin"
+    (dat$"K_R_AAS" | dat$Potential_uncaptured_transcript) 
+rm <- rm | dat$"Hemoglobin_Albumin"
 dat$remove <- rm
 
 cat(paste("tagged", sum(rm),
           "potentially false positives; now:",nrow(dat),"\n"))
 
-## FILTER unique mistranslated or base peptides
-## and attach mean and CV RAAS,
-## SAAP reflect individual mutations at potentially different locations
+## GET MEAN RAAS FOR UNIQUE SAAP FROM RAW DATA
+## get raw RAAS data
 
-## first get list of RAAS values for duplicates
+tmtf <- read_xlsx(tmt.file)
+tmtf$RAAS <- as.numeric(tmtf$RAAS)
+## exclude NA or Inf
+rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
+cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
+tmtf <- tmtf[!rm,]
+tmt <- split(tmtf$RAAS, paste0(tmtf$Dataset,"_",tmtf$SAAP))
+## map to main data
+tmt <- tmt[paste0(dat$Dataset,"_",dat$SAAP)]
+
+## delog for stats
+tmtl <- lapply(tmt, function(x) x^10) # delog
+tlen <- unlist(lapply(tmtl, length))
+tmds <- unlist(lapply(tmtl, median, na.rm=TRUE))
+tmns <- unlist(lapply(tmtl, mean, na.rm=TRUE))
+tdev <- unlist(lapply(tmtl, sd, na.rm=TRUE))
+tcvs <- sdev/smns
+
+## calculate mean RAAS from raw data for each of the SAAP
+## don't delog first, to reproduce shiri's values
+tmnr <- unlist(lapply(tmt, mean, na.rm=TRUE))
+
+## get list of mean RAAS values over cancer types
 slst <- split(10^unlist(dat[,PRAAS]), f=dat$SAAP)
 slst <- slst[dat$SAAP] # map to main data
-
 slen <- unlist(lapply(slst, length))
 smds <- unlist(lapply(slst, median, na.rm=TRUE))
 smns <- unlist(lapply(slst, mean, na.rm=TRUE))
 sdev <- unlist(lapply(slst, sd, na.rm=TRUE))
 scvs <- sdev/smns
+
+
+## confirm consistency of means
+## TODO: why differences?
+dense2d(tmnr, dat$Mean_precursor_RAAS,
+        xlab="mean RAAS from TMT level file",
+        ylab="mean RAAS from summary file")
+abline(a=0, b=1, col=1)
+
+## TODO: log of means vs. mean of logs
+tmp <- c(rnorm(100, mean=2000, sd=1000),
+         rnorm(100, mean=6000, sd=500))
+tmp <- tmp[tmp>0] 
+hist(tmp)
+abline(v=10^mean(log10(tmp)), col=4, lwd=2)
+abline(v=10^log10(mean(tmp)), col=2, lwd=2)
+hist(log10(tmp))
+abline(v=mean(log10(tmp)), col=4, lwd=2)
+abline(v=log10(mean(tmp)), col=2, lwd=2)
+
+dense2d(log10(tmds), tmnr)#, ylim=range(tmnr,na.rm=TRUE))
 
 ## tag duplicates
 dups <- slen > 1
@@ -237,7 +280,7 @@ cat(paste("s4pred:", sum(!names(fas)%in%names(s4p)), "proteins not found\n"))
 s4p <- s4p[names(fas)]
 
 ## map iupred files here! 
-iufiles <- list.files(pattern=paste0(".*iupred3.tsv"), path=iupred)
+iufiles <- list.files(pattern=paste0(".*iupred3.tsv.gz"), path=iupred)
 names(iufiles) <- sub("\\..*","", iufiles)
 iufiles <- iufiles[names(fas)]
 

@@ -5,6 +5,8 @@
 ## * implement SetRank R package in segmenTools,
 ## https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1571-6
 
+## * re-calculate mean RAAS from raw data where required!
+
 library(viridis)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
@@ -24,10 +26,19 @@ goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 ## output from map_peptides.R
 dat <- read.delim(file.path(out.path,"saap_mapped.tsv"))
 
+## FILTERED TABLES
+
+dat$aacodon <- paste(dat$from,dat$codon, sep="-")
+
+hdat <- dat[!dat$remove,]
+hdat <- hdat[hdat$codon!="" & !is.na(hdat$RAAS.median),]
 
 ### REDUCE TABLE TO UNIQUE HUMAN PROTEINS
 
-mids <- sub("_.*", "", dat$protein)
+## * TODO: calculate mean or median RAAS on protein level here!
+##   from all SAAP of this protein
+
+mids <- sub("_.*", "", hdat$protein)
 mids.sze <- table(mids) # sort(table(mids), decreasing=TRUE)
 
 ## NOTE: many mutations in expected, eg. ENSP00000474524
@@ -36,7 +47,7 @@ mids.sze <- table(mids) # sort(table(mids), decreasing=TRUE)
 
 ## analyze RAAS distribution of multiply mutated/SAAPd
 raas.col <- "Mean_precursor_RAAS"
-raas <- as.numeric(dat[,raas.col])
+raas <- as.numeric(hdat[,raas.col])
 ## No Inf in current SAAP data
 ##raas[raas==-Inf] <- min(raas[is.finite(raas)]) -1
 ##raas[raas== Inf] <- max(raas[is.finite(raas)]) +1
@@ -73,7 +84,7 @@ head(raas$n)
 ## * protein length
 
 ## ADD PROTEIN LENGTH
-len <- dat$len
+len <- hdat$len
 len.lst <- split(len, f=mids)
 len.lst <- lapply(len.lst, function(x) trimws(x[x!=""]))
 len.lst <- lapply(len.lst, unique)
@@ -111,7 +122,7 @@ rn[rn>10] <- 11
 ## counts
 rcnt <- table(rn)
 ## percent of total SAAPs
-rprc <- rcnt/nrow(dat)
+rprc <- rcnt/nrow(hdat)
 ## percent of total proteins
 pprc <- rcnt/nrow(raas)
 
@@ -120,7 +131,7 @@ png(file.path(fig.path,"saap_per_protein.png"),
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(rcnt, xlab="unique SAAP/protein",
         ylab="# proteins")
-legend("topright",c(paste0("unique SAAP: ", nrow(dat)),
+legend("topright",c(paste0("unique SAAP: ", nrow(hdat)),
                     paste0("unique proteins: ", nrow(raas))))
 dev.off()
 
@@ -129,7 +140,7 @@ png(file.path(fig.path,"saap_per_protein_percent_saap.png"),
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(rprc, xlab="unique SAAP/protein",
         ylab="% of total unique SAAP")
-legend("topright",c(paste0("unique SAAP: ", nrow(dat)),
+legend("topright",c(paste0("unique SAAP: ", nrow(hdat)),
                     paste0("unique proteins: ", nrow(raas))))
 dev.off()
 png(file.path(fig.path,"saap_per_protein_percent_protein.png"),
@@ -137,7 +148,7 @@ png(file.path(fig.path,"saap_per_protein_percent_protein.png"),
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(pprc, xlab="unique SAAP/protein",
         ylab="% of total unique proteins")
-legend("topright",c(paste0("unique SAAP: ", nrow(dat)),
+legend("topright",c(paste0("unique SAAP: ", nrow(hdat)),
                     paste0("unique proteins: ", nrow(raas))))
 dev.off()
 
@@ -185,26 +196,37 @@ plotCor(raas$mean, log10(raas$n), xlab="mean RAAS", ##cor.method="spearman",
         ylab=expression(log[10](SAAP/protein)), colf=viridis::viridis)
 dev.off()
 
-
-plotdev(file.path(fig.path,"saap_length_log"),
+plotdev(file.path(fig.path,"saap_raas_number_bins"),
         height=3.5, width=3.5, res=200)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log10(raas$len), log10(raas$n), xlab="protein length/AA",
-        ylab="SAAP/protein", colf=viridis::viridis)
+par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
+boxplot(log10(raas$n) ~ raas$bin, ylab=expression(log[10](SAAP/protein)),
+        xlab=NA, las=2, at=seq_along(levels(raas$bin)))
+axis(3, at=seq_along(levels(raas$bin)), labels=table(raas$bin),las=2)
+mtext("mean RAAS", 1, 2.5)
 dev.off()
 
-plotdev(file.path(fig.path,"saap_length"),
+plotdev(file.path(fig.path,"saap_length_number_log"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(raas$len, raas$n, log="xy", xlab="protein length/AA",
-        ylab="SAAP/protein", colf=viridis::viridis)
+plotCor(log10(raas$len), log10(raas$n),
+        xlab=expression(log[10](protein~length)),
+        ylab=expression(log[10](SAAP/protein)),
+        colf=viridis::viridis)
 dev.off()
+
 
 plotdev(file.path(fig.path,"saap_raas_length"),
         height=3.5, width=3.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(raas$mean, raas$len, xlab="mean RAAS",
         ylab="protein length/AA", colf=viridis::viridis)
+dev.off()
+
+plotdev(file.path(fig.path,"saap_raas_length_log"),
+        height=3.5, width=3.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(raas$mean, log10(raas$len), xlab="mean RAAS",
+        ylab=expression(log[10](protein~length)), colf=viridis::viridis)
 dev.off()
 
 plotdev(file.path(fig.path,"saap_raas_length_bins"),
@@ -216,12 +238,6 @@ axis(3, at=seq_along(levels(raas$bin)), labels=table(raas$bin),las=2)
 mtext("mean RAAS", 1, 2.5)
 dev.off()
 
-plotdev(file.path(fig.path,"saap_raas_length_log"),
-        height=3.5, width=3.5, res=200)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(raas$mean, log10(raas$len), xlab="mean RAAS",
-        ylab=expression(log[10](protein~length)), colf=viridis::viridis)
-dev.off()
 
 ## ENRICHMENT TESTS
 go.path <- file.path(fig.path,"annotation")
@@ -358,7 +374,7 @@ for ( ct in 1:ncol(cls.mat) ) {
 
     ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
     ovll <- runGost(cls, organism="hsapiens", cls.srt=cl.srt, evcodes=FALSE,
-                    custom_bg=rownames(got))
+                    custom_bg=rownames(got), categories="KEGG")
 ###, significant=FALSE, evcodes=FALSE)
     
     ## plot enrichments
@@ -381,6 +397,9 @@ for ( ct in 1:ncol(cls.mat) ) {
             p.filt <- 1e-5
             cut <- TRUE
         } else if ( ctgy=="TF" ) {
+            p.filt <- 1e-5
+            cut <- TRUE
+        } else if ( ctgy=="KEGG" ) {
             p.filt <- 1e-5
             cut <- TRUE
         }
