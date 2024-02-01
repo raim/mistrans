@@ -122,7 +122,7 @@ x <- rnorm(n, mean=2000, sd=1000)
 y <- rnorm(n, mean=6000, sd=500)
 
 ## sum(x)/n / sum(y)/n = sum(x)/sum(y)
-## sum(x/n)/n / sum(y/n)/n
+## sum(x/y)/n
 
 mean(x)/mean(y)
 mean(x/y)
