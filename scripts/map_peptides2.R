@@ -116,9 +116,19 @@ dense2d(tmnr, dat$Mean_precursor_RAAS,
         ylab="mean RAAS from summary file")
 abline(a=0, b=1, col=1)
 
+## TODO mean of ratios vs. ratio of means
+n <- 100
+x <- rnorm(n, mean=2000, sd=1000)
+y <- rnorm(n, mean=6000, sd=500)
+
+## sum(x)/n / sum(y)/n = sum(x)/sum(y)
+## sum(x/n)/n / sum(y/n)/n
+
+mean(x)/mean(y)
+mean(x/y)
+
 ## TODO: log of means vs. mean of logs
-tmp <- c(rnorm(100, mean=2000, sd=1000),
-         rnorm(100, mean=6000, sd=500))
+tmp <- c(x,y)
 tmp <- tmp[tmp>0] 
 hist(tmp)
 abline(v=10^mean(log10(tmp)), col=4, lwd=2)
