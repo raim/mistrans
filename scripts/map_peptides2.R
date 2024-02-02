@@ -27,7 +27,7 @@ proj.path <- "/home/raim/data/mistrans"
 
 gen.path <- file.path(mam.path, "originalData")
 dat.path <- file.path(proj.path,"originalData")
-fig.path <- file.path(proj.path,"figures","saap_analysis")
+fig.path <- file.path(proj.path,"figures","saap_mapping")
 out.path <- file.path(proj.path,"processedData")
 
 ## global human feature file
@@ -71,11 +71,13 @@ rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
 rm <- rm | dat$"Hemoglobin_Albumin"
 dat$remove <- rm
 
+##dat <- dat[!rm,]
+
 cat(paste("tagged", sum(rm),
           "potentially false positives; now:",nrow(dat),"\n"))
 
-## GET MEAN RAAS FOR UNIQUE SAAP FROM RAW DATA
-## get raw RAAS data
+
+## ANALYZING MEAN TMT RAAS AT DIFFERENT LEVELS
 
 tmtf <- read_xlsx(tmt.file)
 tmtf$RAAS <- as.numeric(tmtf$RAAS)
@@ -84,35 +86,118 @@ rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
 
+summary.types <- cbind(s4=tmtf$SAAP,
+                       s3=paste0(tmtf$SAAP,"_",tmtf$BP),
+                       s2=paste0(tmtf$Dataset,"_",tmtf$SAAP),
+                       s1=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP))
 
+for ( i in 1:ncol(summary.types) ) {
 
+    id <- colnames(summary.types)[i]
+    CL <- summary.types[,i]
+    ## DATASET/SAAP/BP: mean/median/sd over different tissues
+    tmt <- split(tmtf$RAAS, CL)
+    ## map to main data
+    ##unid <- paste0(dat$Dataset,"_",dat$SAAP,"_",dat$BP)
+    ##cat(paste("didn't find", sum(!unid%in%names(tmt)),
+    ##          "dataset/saap/bp in TMT file\n"))
+###tmt <- tmt[unid]
+##names(tmt) <- unid
 
-tmt <- split(tmtf$RAAS, paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP))
-## map to main data
-unid <- paste0(dat$Dataset,"_",dat$SAAP,"_",dat$BP)
-cat(paste("didn't find", sum(!unid%in%names(tmt)),
-          "dataset/saap/bp in TMT file\n"))
-tmt <- tmt[unid]
+    ## delog for stats
+    tmtl <- lapply(tmt, function(x) x^10) # delog
+    tlen <- unlist(lapply(tmtl, length))
+    tmds <- unlist(lapply(tmtl, median, na.rm=FALSE))
+    tmns <- unlist(lapply(tmtl, mean, na.rm=FALSE))
+    tdev <- unlist(lapply(tmtl, sd, na.rm=FALSE))
+    tcvs <- tdev/tmns
+    
+    ## calculate mean RAAS from raw data for each of the SAAP
+    ## don't delog first, to reproduce shiri's values
+    tmnr <- unlist(lapply(tmt, mean, na.rm=FALSE))
+    tmdr <- lapply(tmt, median, na.rm=TRUE)
+    tmdr <- unlist(lapply(tmdr, function(x) ifelse(length(x)==0, NA, x)))
+    tsdr <- unlist(lapply(tmt, sd, na.rm=TRUE))
 
+    ## collect number of times this SAAP/BP was found per cancer type
+    tmtf$count <- tlen[CL]
 
-## delog for stats
-tmtl <- lapply(tmt, function(x) x^10) # delog
-tlen <- unlist(lapply(tmtl, length))
-tmds <- unlist(lapply(tmtl, median, na.rm=FALSE))
-tmns <- unlist(lapply(tmtl, mean, na.rm=FALSE))
-tdev <- unlist(lapply(tmtl, sd, na.rm=FALSE))
-tcvs <- tdev/tmns
+    ## confirm consistency of means
+    ## check: still duplicates?
+   #sum(duplicated(names(tmnr)))
+   #png(file.path(fig.path,paste0(id,"_raas_mean_reproduction.png")),
+   #    res=300, width=3.5, height=3.5, units="in")
+   #par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+   #dense2d(tmnr, dat$Mean_precursor_RAAS,
+   #        xlab="mean RAAS from TMT level file",
+   #        ylab="mean RAAS from summary file")
+   #abline(a=0, b=1, col=1)
+   #dev.off()
+    
+    
+    png(file.path(fig.path,paste0(id,"_raas_means_delogged.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(log10(tmns), tmnr, xlab=expression(log[10](mean(10^RAAS))),
+            ylab="mean RAAS from TMT level file")
+    abline(a=0, b=1, col=1)
+    dev.off()
 
-## calculate mean RAAS from raw data for each of the SAAP
-## don't delog first, to reproduce shiri's values
-tmnr <- unlist(lapply(tmt, mean, na.rm=FALSE))
-tmdr <- lapply(tmt, median, na.rm=TRUE)
-tmdr <- unlist(lapply(tmdr, function(x) ifelse(length(x)==0, NA, x)))
+    ## regression to mean problem
+    png(file.path(fig.path,paste0(id,"_raas_means_datasets.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    df <- data.frame(mean=tmnr, n=tlen)
+    df <- df[df$n>0,]
+    dense2d(df$mean, log10(df$n),
+            ylab="count of unique TMT rows", cex=.6,
+            xlab="mean TMT level RAAS", axes=FALSE, xlim=c(-6,4))
+    axis(1)
+    axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+    axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+    dev.off()
+    
+    ## regression to mean 
+    png(file.path(fig.path,paste0(id,"_raas_means_datasets_all.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(tmtf$RAAS, log10(tmtf$count), cex=.2,
+            xlab="TMT level RAAS", ylab="count of unique TMT rows", axes=FALSE,
+            xlim=c(-6,4))
+    axis(1)
+    axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+    axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+    dev.off()
+    
+    png(file.path(fig.path,paste0(id,"_raas_means_datasets_counts.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    lgcnt <- table(log10(tmtf$count))
+    plot(names(lgcnt), lgcnt, type="h", axes=FALSE,
+         xlab="count of unique TMT rows", ylab="total count")
+    axis(2)
+    axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+    axis(1, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+    dev.off()
+    
+    
+    ## regression to the MEDIAN 
+    png(file.path(fig.path,paste0(id,"_raas_medians_datasets.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    df <- data.frame(mean=tmdr, n=tlen)
+    df <- df[df$n>0,]
+    dense2d(df$mean, log10(df$n),
+            ylab="count of unique TMT rows", cex=.6,
+            xlab="median TMT level RAAS", axes=FALSE, xlim=c(-6,4))
+    axis(1)
+    axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
+    axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
+    dev.off()
+}
+###
 
-## collect number of times this SAAP/BP was found per cancer type
-tmtf$count <- tlen[paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP)]
-
-## get list of mean RAAS values over cancer types
+## get list of mean RAAS values for unique SAAP
 slst <- split(10^unlist(dat[,PRAAS]), f=dat$SAAP)
 slst <- slst[dat$SAAP] # map to main data
 slen <- unlist(lapply(slst, length))
@@ -130,85 +215,6 @@ dense2d(log10(smns[slen>1]), smns.nrm[slen>1])
 abline(a=0, b=1)
 dev.off()
 
-## confirm consistency of means
-## TODO: why differences?
-png(file.path(fig.path,"raas_means.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(tmnr, dat$Mean_precursor_RAAS,
-        xlab="mean RAAS from TMT level file",
-        ylab="mean RAAS from summary file")
-abline(a=0, b=1, col=1)
-dev.off()
-
-
-png(file.path(fig.path,"raas_means_delogged.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(log10(tmns), tmnr, xlab=expression(log[10](mean(10^RAAS))),
-        ylab="mean RAAS from TMT level file")
-abline(a=0, b=1, col=1)
-dev.off()
-
-## regression to mean problem
-png(file.path(fig.path,"raas_means_datasets.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-df <- data.frame(mean=tmnr, n=tlen)
-## remove healthy
-df <- df[-grep("Healthy", names(tmnr)),]
-df <- df[df$n>0,]
-dense2d(df$mean, log10(df$n),
-        ylab="#unique Dataset/SAAP/BP", cex=.6,
-        xlab="mean TMT level RAAS", axes=FALSE, xlim=c(-6,4))
-axis(1)
-axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
-axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
-dev.off()
-
-cptac <- tmtf$Dataset!="Healthy"
-## regression to mean problem
-png(file.path(fig.path,"raas_means_datasets_all_RAAS.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(tmtf$RAAS[cptac], log10(tmtf$count[cptac]), cex=.2,
-        xlab="TMT level RAAS", ylab="#unique Dataset/SAAP/BP", axes=FALSE,
-        xlim=c(-6,4))
-axis(1)
-axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
-axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
-dev.off()
-
-idx <- which(tmtf$count>60 & cptac)[1]
-id <- names(idx)
-vls <- unlist(tmtf[which(paste0(tmtf$Dataset,"_",
-                                tmtf$SAAP,"_",tmtf$BP)==id),"RAAS"])
-range(vls)
-
-if ( interactive() )
-    for ( cnt in unique(tmtf$count) )
-        if ( sum(tmtf$count==cnt &cptac)>0 ) {
-            hist(unlist(tmtf[which(tmtf$count==cnt & cptac),"RAAS"]), main=cnt)
-            Sys.sleep(1)
-        }
-
-## regression to the MEDIAN problem
-png(file.path(fig.path,"raas_medians_datasets.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-df <- data.frame(mean=tmdr, n=tlen)
-## remove healthy
-df <- df[-grep("Healthy", names(tmdr)),]
-df <- df[df$n>0,]
-dense2d(df$mean, log10(df$n),
-        ylab="#unique Dataset/SAAP/BP", cex=.6,
-        xlab="median TMT level RAAS", axes=FALSE, xlim=c(-6,4))
-axis(1)
-axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
-axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
-dev.off()
-
-
 ## duplicate SAAP/datatype
 idx <- which(duplicated(paste(dat$SAAP, dat$Dataset, dat$BP)))
 head(dat[dat$SAAP==dat$SAAP[idx[1]],1:10])
@@ -217,9 +223,10 @@ head(dat[dat$SAAP==dat$SAAP[idx[1]],1:10])
 dups <- slen > 1
 cat(paste("tagged", sum(dups), "duplicated SAAP\n"))
 
-## attach mean and CV RAAS to duplicate-filtered list
+## attach mean and CV RAAS for each unique SAAP
 dat <- cbind(dat, RAAS.median=log10(smds),
              RAAS.mean=log10(smns), RAAS.cv=scvs, RAAS.n=slen)
+## TODO: calculate RAAS means for unique SAAP for raw data!
 
 ### RESOLVE MAPPED PROTEINS
 
@@ -622,45 +629,7 @@ if ( interactive() ) {
     ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
     ## slight enrichment of beta/alpha
     barplot(ss.tab, beside=TRUE, legend=TRUE)
-
-    ## TODO: why negative iup?
-
-
-
-    ## slight positive trend of unstructured/anchor vs RAAS
-    plotCor(iup, iubg) # positive correlation to background
-
-    hist(iup, border=NA, col=NA)
-    hist(iubg, col=1, border=1, add=TRUE)
-    hist(iup, border=2, col=paste0(rgb(t(col2rgb(2))/255),77), add=TRUE)
-    legend("topright", paste0("p=",signif(wilcox.test(iup, iubg)$p.value,2)))
-    
-    layout(t(1:2), widths=c(1,.25))
-    par(mai=c(.5,.5,.1,.1),yaxs="i")
-    plotCor(dat$Mean_precursor_RAAS, iup, na.rm=TRUE)
-    iubgh <- hist(iubg, breaks=0:10/10, plot=FALSE)
-    par(mai=c(.5,0,.1,.2),yaxs="i")
-    barplot(iubgh$counts,names.arg=iubgh$mids, horiz=TRUE, las=2, space=0)
-
-    plotCor(anc, anbg) # positive correlation to background
-
-    hist(anc, border=NA, col=NA)
-    hist(anbg, col=1, border=1, add=TRUE)
-    hist(anc, border=2, col=paste0(rgb(t(col2rgb(2))/255),77), add=TRUE)
-    legend("topright", paste0("p=",signif(wilcox.test(anc, anbg)$p.value,2)))
-
-    layout(t(1:2), widths=c(1,.25))
-    par(mai=c(.5,.5,.1,.1))
-    plotCor(dat$Mean_precursor_RAAS, anc, na.rm=TRUE)
-    anbgh <- hist(anbg, breaks=0:10/10, plot=FALSE)
-    par(mai=c(.5,0,.1,.2),yaxs="i")
-    barplot(anbgh$counts,names.arg=anbgh$mids, horiz=TRUE, las=2, space=0)
-    axis(4)
-
-    plotCor(dat$Mean_precursor_RAAS, anc/anbg, na.rm=TRUE)
-    plotCor(dat$Mean_precursor_RAAS, iup/iubg, na.rm=TRUE)
-
- }
+}
 
 ## missing position - no match found from peptide in protein!!
 ## TODO: perhaps test LONGEST of the leading razor proteins.

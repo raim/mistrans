@@ -58,6 +58,7 @@ dat <- read.delim(in.file)
 PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
 MRAAS <- "RAAS.median"
 
+
 ## TODO: calculate mean/median RAAS here from raw data
 ##       at the required level
 
@@ -75,32 +76,6 @@ ACODONS <- paste0(names(CODONS),": ", CODONS)
 names(ACODONS) <- aa
 
 
-#### FILTER DATA, with QC plots at each level
-
-## QC plots: mean of means over duplicate SAAPs?
-png(file.path(fig.path,"duplicates.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mfcol=c(2,1), mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(log10(dat$RAAS.median[dat$RAAS.n > 1]), main=NA,
-     xlab=paste("mean of RAAS over duplicate SAAP"))
-hist(dat$RAAS.cv[dat$RAAS.n > 1], main=NA,
-     xlab=paste("CV of RAAS over duplicate SAAP"))
-dev.off()
-
-png(file.path(fig.path,"duplicates_CV.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(dat$RAAS.n[dat$RAAS.n > 1], dat$RAAS.cv[dat$RAAS.n > 1],
-        xlab="number of samples with duplicate SAAP",
-        ylab=paste("CV of RAAS over duplicate SAAP"))
-dev.off()
-
-png(file.path(fig.path,"duplicates_mean.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(dat[dat$RAAS.n > 1,PRAAS], dat$RAAS.median[dat$RAAS.n > 1], xlab=PRAAS,
-        ylab=paste("mean over duplicate SAAP"), na.rm=TRUE)
-dev.off()
 
 
 ### HOTSPOTS
@@ -169,6 +144,18 @@ legend("topright", c("patient","TMT","unique SAAP w codon"),
        col=c(2,3,1), lty=1)
 dev.off()
 
+## get RAAS coloring scheme
+## TODO: use tmt level RAAS
+png(file.path(fig.path,"raas_colors.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+raas.col <- selectColors(unlist(tmt),
+                         q=0, mx=1, mn=-4,
+                         colf=viridis::viridis, plot=TRUE,
+                         mai=c(.5,.5,.1,.1),
+                         xlab="All TMT level RAAS",
+                         n=40)
+dev.off()
 
 
 ## t-tests over codons
@@ -329,7 +316,6 @@ dev.off()
 
 ## t-tests over AA
 
-
 ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
                    rows="to", cols="from", use.test=use.test, do.plots=FALSE)
 
@@ -366,16 +352,6 @@ dense2d(tmv, tpv,
 abline(v=mean(unlist(tmt)))
 dev.off()
 
-png(file.path(fig.path,"raas_colors.png"),
-    res=300, width=3, height=3, units="in")
-par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-raas.col <- selectColors(cdat$RAAS.median[!is.na(cdat$RAAS.median)],
-                         q=0, mx=1, mn=-4,
-                         colf=viridis::viridis, plot=TRUE,
-                         mai=c(.5,.5,.1,.1),
-                         xlab=PRAAS,
-                         n=40)
-dev.off()
 
 ## TODO:
 ## * store codon context,-1,+1,
@@ -384,6 +360,15 @@ dev.off()
 ## * load codon usage table, AA usage table,
 
 ###  CODONS
+
+## use DiffLogo as for Behle et al.! 
+require(DiffLogo)
+## with pwm1: AAS enriched codon,
+##      pwm2: global human, local proteins, local peptides.
+## dlogo <- createDiffLogoObject(pwm1 = pwm1, pwm2 = pwm2)
+## dlogo <- enrichDiffLogoObjectWithPvalues(dlogo,n1=n1, n2=n2)
+## see 20201204_RM_topA_promoters.R for plot
+ 
 
 
 
@@ -419,6 +404,8 @@ barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
         args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
         xlab="codon position", col=ntcols)
 dev.off()
+
+## TODO: get codon-level RAAS means
 
 png(file.path(fig.path,"codons_pos_raas.png"),
     res=300, width=3, height=3, units="in")
