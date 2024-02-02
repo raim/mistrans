@@ -78,6 +78,9 @@ cat(paste("tagged", sum(rm),
 
 
 ## get list of mean RAAS values for unique SAAP
+## NOTE: keeping this for now, but in fact, we
+## are calculating a mean/median RAAS at each
+## level of analysis.
 slst <- split(10^unlist(dat[,PRAAS]), f=dat$SAAP)
 slst <- slst[dat$SAAP] # map to main data
 slen <- unlist(lapply(slst, length))

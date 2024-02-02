@@ -32,10 +32,21 @@ rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
 
+## remove duplicted
+unq <- paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
+              "_",tmtf$"TMT/Tissue")
+rm <- duplicated(unq)
+tmtf <- tmtf[!rm,]
+cat(paste("removed",sum(rm), "duplicated entries\n"))
+
 summary.types <- cbind(s4=tmtf$SAAP,
                        s3=paste0(tmtf$SAAP,"_",tmtf$BP),
                        s2=paste0(tmtf$Dataset,"_",tmtf$SAAP),
-                       s1=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP))
+                       s1=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP),
+                       s0=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
+                                 "_",tmtf$"TMT/Tissue"))
+
+
 
 for ( i in 1:ncol(summary.types) ) {
 
@@ -45,9 +56,13 @@ for ( i in 1:ncol(summary.types) ) {
     ## split by summary type
     tmt <- split(tmtf$RAAS, CL)
 
+    ## RAAS VALUES per category
+    tlen <- unlist(lapply(tmt, length))
+
+    if ( all(tlen<2) ) break
+
     ## delog for CV
     tmtl <- lapply(tmt, function(x) x^10) # delog
-    tlen <- unlist(lapply(tmtl, length))
     tmds <- unlist(lapply(tmtl, median, na.rm=FALSE))
     tmns <- unlist(lapply(tmtl, mean, na.rm=FALSE))
     tdev <- unlist(lapply(tmtl, sd, na.rm=FALSE))
@@ -78,7 +93,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tcvs, log10(tlen), axes=FALSE,
             xlab=expression(CV==sdev/mean), cex=.6,
-            ylab="count of unique TMT rows")
+            ylab="number of values per mean")
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
     axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
@@ -100,7 +115,7 @@ for ( i in 1:ncol(summary.types) ) {
     df <- data.frame(mean=tmnr, n=tlen)
     df <- df[df$n>0,]
     dense2d(df$mean, log10(df$n),
-            ylab="count of unique TMT rows", cex=.6,
+            ylab="number of values per mean", cex=.6,
             xlab="mean TMT level RAAS", axes=FALSE, xlim=c(-6,4))
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
@@ -112,7 +127,7 @@ for ( i in 1:ncol(summary.types) ) {
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tmtf$RAAS, log10(tmtf$count), cex=.2,
-            xlab="TMT level RAAS", ylab="count of unique TMT rows", axes=FALSE,
+            xlab="TMT level RAAS", ylab="number of values per mean", axes=FALSE,
             xlim=c(-6,4))
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
@@ -125,7 +140,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     lgcnt <- table(log10(tmtf$count))
     plot(names(lgcnt), lgcnt, type="h", axes=FALSE,
-         xlab="count of unique TMT rows", ylab=NA)
+         xlab="number of values per mean", ylab=NA)
     corners = par("usr") 
     text(x = corners[1]-mean(corners[1:2])/4, y = mean(corners[3:4]),
          "total count", srt=-90, xpd=TRUE)
@@ -141,7 +156,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tsdr, log10(tlen), axes=FALSE,
             xlab=expression(standard~deviation), cex=.6,
-            ylab="count of unique TMT rows")
+            ylab="number of values per mean")
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
     axis(2, at=log10(c(1,10,50,100,200)), labels=c(1,10,50,100,200))
@@ -153,7 +168,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tcvr, log10(tlen), axes=FALSE,
             xlab=NA,
-            cex=.6, ylab="count of unique TMT rows")
+            cex=.6, ylab="number of values per mean")
     mtext(expression(CV==sqrt(10^(ln(10)*var(x)) -1)), 1, 1.5)
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)
@@ -167,7 +182,7 @@ for ( i in 1:ncol(summary.types) ) {
     df <- data.frame(mean=tmdr, n=tlen)
     df <- df[df$n>0,]
     dense2d(df$mean, log10(df$n),
-            ylab="count of unique TMT rows", cex=.6,
+            ylab="number of values per mean", cex=.6,
             xlab="median TMT level RAAS", axes=FALSE, xlim=c(-6,4))
     axis(1)
     axis(2, at=log10(c(1:10,1:10*10,1:10*100)), labels=NA, tcl=par("tcl")/2)

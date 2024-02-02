@@ -113,7 +113,7 @@ dev.off()
 dat$aacodon <- paste(dat$from,dat$codon, sep="-")
 
 hdat <- dat[!dat$remove,]
-cdat <- hdat[hdat$codon!="" & !is.na(hdat$RAAS.median),]
+cdat <- hdat[hdat$codon!="",] # NOTE: this filters out duplicated SAAP
 
 
 ## get raw RAAS data
@@ -130,6 +130,11 @@ tmtf$RAAS <- as.numeric(tmtf$RAAS)
 ## exclude NA or Inf
 rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
+tmtf <- tmtf[!rm,]
+unq <- paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
+              "_",tmtf$"TMT/Tissue")
+rm <- duplicated(unq)
+cat(paste("removing", sum(rm), "duplicated from TMT level\n"))
 tmtf <- tmtf[!rm,]
 tmt <- split(as.numeric(tmtf$RAAS), tmtf$SAAP)
 
@@ -172,20 +177,31 @@ w.test <- function(x,y) {
 
 
 
+## volcano plot function for overlap class
+## produced by raasProfile
+volcano <- function(ovl, cut=15, value="mean", ...) {
+
+    tmv <- c(ovl[[value]])
+    tpv <- -log10(c(ova$p.value))
+    tpv[tpv>cut] <- cut
+
+    dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
+}
+
 raasProfile <- function(x=cdat, id="SAAP", values=tmt,
                         rows="to", cols="aacodon", use.test=use.test,
                         do.plots=interactive()) {
 
-    aas <- sort(unique(cdat[,rows]))
-    acod <- sort(unique(cdat[,cols]))
+    aas <- sort(unique(x[,rows]))
+    acod <- sort(unique(x[,cols]))
     codt <- list()
     
     tt <- matrix(0, ncol=length(acod), nrow=length(aas))
     colnames(tt) <- acod
     rownames(tt) <- aas
-    tc <- tp <- tm <- tt
+    tc <- tp <- tm <- td <- tt
     tp[] <- 1
-    tm[] <- NA
+    tm[] <- td[] <- NA
 
 
     min.obs=2
@@ -196,9 +212,9 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             cod <- acod[j]
         
             ## get all SAAP for this codon
-            idx <- cdat[,cols]==cod & cdat[,rows]==aa
+            idx <- x[,cols]==cod & x[,rows]==aa
             
-            csap <- unique(cdat[idx,id])
+            csap <- unique(x[idx,id])
 
             if ( sum(idx)==0 ) next
             
@@ -218,7 +234,8 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             if ( length(y)==0 ) next
             
             tm[i,j] <- mean(y)
-            
+            td[i,j] <- median(y)
+           
             if ( sum(!is.na(y)) >= min.obs ) {
                 tts <- use.test(y, X)
                 codt[[cod]] <- tts
@@ -237,10 +254,11 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
     ova$p.value <- tp
     ova$statistic <- tt
     ova$count <- tc
-    ova$mean <- round(tm,1) #
+    ova$mean <- tm
+    ova$median <- td
 
-    ## unique from main data table
-    ova$unique <- table(cdat[,rows], cdat[,cols])[rownames(tp),colnames(tp)]
+    ## unique SAAP from main data table
+    ova$unique <- table(x[,rows], x[,cols])[rownames(tp),colnames(tp)]
     
     sg <- sign(tt)
     sg[is.na(sg)] <- 1
@@ -251,46 +269,27 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
     
     ## TODO: add counts
     ova$num.target <-
-        t(as.matrix(table(cdat[,cols])[colnames(tp)]))
+        t(as.matrix(table(x[,cols])[colnames(tp)]))
     ova$num.query <-
-        as.matrix(table(cdat[,rows]))[rownames(tp),,drop=FALSE]
+        as.matrix(table(x[,rows]))[rownames(tp),,drop=FALSE]
     
     class(ova) <- "clusterOverlaps"
     ova
 }
 
 ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
-                   rows="to", cols="aacodon", use.test=w.test, do.plots=FALSE)
-
-ovu <- ova
-ovu$count <- ova$unique
-
-png(file.path(fig.path,"codons_all_wtests.png"),
-    res=300, width=15, height=5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
-plotOverlaps(ovu, p.min=1e-10, p.txt=1e-5,
-             text.cex=.7, axis=1:3, ##type="unique",
-             ylab="mistranslated AA",
-             xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
-axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
-dev.off()
-
-ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
                    rows="to", cols="aacodon", use.test=t.test, do.plots=FALSE)
-
-ovu <- ova
-ovu$count <- ova$unique
 
 png(file.path(fig.path,"codons_all_ttests.png"),
     res=300, width=15, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 par(mai=c(.7,.5,.7,3))
-plotOverlaps(ovu, p.min=1e-10, p.txt=1e-5,
-             text.cex=.7, axis=1:3, ##type="unique",
+plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
+             text.cex=.8, axis=1:3, ##type="unique",
              ylab="mistranslated AA",
              xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
 axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
+figlabel(pos="bottomright", text="p value/t-test", cex=1.5, font=2)
 dev.off()
 
 png(file.path(fig.path,"codons_all_ttests_legend.png"),
@@ -299,17 +298,103 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlapsLegend(p.min=1e-10, p.txt=1e-5, type=2, col=ttcols)
 dev.off()
 
+ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
+                   rows="to", cols="aacodon", use.test=w.test, do.plots=FALSE)
+
+png(file.path(fig.path,"codons_all_wtests.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
+             text.cex=.7, axis=1:3, ##type="unique",
+             ylab="mistranslated AA",
+             xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
+axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
+figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
+dev.off()
+
+
+## median RAAS
+png(file.path(fig.path,"codons_all_raas_median.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$median< -2, "white","black")
+image_matrix(ova$median, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:3, text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="", text.cex=.8)
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+figlabel(pos="bottomright", text="median RAAS", cex=1.5, font=2)
+dev.off()
+
+## mean RAAS
+png(file.path(fig.path,"codons_all_raas_mean.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$mean< -2, "white","black")
+image_matrix(ova$mean, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:3, text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="", text.cex=.8)
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+figlabel(pos="bottomright", text="mean RAAS", cex=1.5, font=2)
+dev.off()
+
+## total count
+png(file.path(fig.path,"codons_all_count.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+cnt <- ova$count
+cnt[cnt==0] <- NA
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$count>300,"white","black")
+image_matrix(cnt, col=gcols, axis=1:3,
+             text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="", text.cex=.8)
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+figlabel(pos="bottomright", text="total count", cex=1.5, font=2)
+dev.off()
+
+png(file.path(fig.path,"codons_all_count_unique.png"),
+    res=300, width=15, height=5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,.5,.7,3))
+cnt <- ova$unique
+cnt[cnt==0] <- NA
+txt <- ova$unique
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$unique>100,"white","black")
+image_matrix(cnt, col=gcols, axis=1:3,
+             text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="", text.cex=.8)
+axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+figlabel(pos="bottomright", text="unique SAAP count", cex=1.5, font=2)
+dev.off()
+
+df <- data.frame(freq=c(ova$count), raas=c(ova$median))
+png(file.path(fig.path,"codons_all_raas_frequency.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(df$raas, log10(df$freq), ylab="codon->AA count",
+        xlab="median RAAS", axes=FALSE)
+axis(1)
+axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)), labels=FALSE, tcl=par("tcl")/2)
+axis(2, at=log10(10^(0:5)), labels=10^(0:5))
+dev.off()
+
 ## VOLCANO PLOT
-tmv <- c(ova$mean)
-tpv <- -log10(c(ova$p.value))
-tpv[tpv>15] <- 15
+
 
 png(file.path(fig.path,"codons_all_ttests_volcano.png"),
     res=300, width=5, height=3, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(tmv, tpv,
-        ylab=expression(-log[10](p)),
-        xlab="mean RAAS")
+volcano(ova, xlab="median RAAS", value="median")
 abline(v=mean(unlist(tmt)))
 dev.off()
 
@@ -317,19 +402,17 @@ dev.off()
 ## t-tests over AA
 
 ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
-                   rows="to", cols="from", use.test=use.test, do.plots=FALSE)
-
-ovu <- ova
-ovu$count <- ova$unique
+                   rows="to", cols="from", use.test=t.test, do.plots=FALSE)
 
 png(file.path(fig.path,"AA_all_ttests.png"),
     res=300, width=5, height=5, units="in")
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovu, p.min=1e-10, p.txt=1e-5,
+plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
              text.cex=.7, axis=1:2,
              ylab="mistranslated AA",
              xlab="encoded AA", col=ttcols,
              show.total=TRUE)#, rmz =FALSE, short=FALSE)
+figlabel(pos="bottomright", text="p value/t-test", cex=1.5, font=2)
 dev.off()
 
 png(file.path(fig.path,"AA_all_ttests_legend.png"),
@@ -338,31 +421,121 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlapsLegend(p.min=1e-10, p.txt=1e-5, type=2, col=ttcols)
 dev.off()
 
-## VOLCANO PLOT
-tmv <- c(ova$mean)
-tpv <- -log10(c(ova$p.value))
-tpv[tpv>15] <- 15
+ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
+                   rows="to", cols="from", use.test=w.test, do.plots=FALSE)
 
+png(file.path(fig.path,"AA_all_wtests.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
+             text.cex=.7, axis=1:2,
+             ylab="mistranslated AA",
+             xlab="encoded AA", col=ttcols,
+             show.total=TRUE)#, rmz =FALSE, short=FALSE)
+figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
+dev.off()
+
+png(file.path(fig.path,"AA_all_wtests_raas.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+ovr <- ova
+ovr$count <- round(ovr$median,1)
+ovr$count[is.na(ovr$count)] <- ""
+plotOverlaps(ovr, p.min=1e-10, p.txt=1e-5,
+             text.cex=.7, axis=1:2,
+             ylab="mistranslated AA",
+             xlab="encoded AA", col=ttcols,
+             show.total=TRUE, rmz =FALSE, short=FALSE)
+figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
+dev.off()
+
+## VOLCANO PLOT
 png(file.path(fig.path,"AA_all_ttests_volcano.png"),
     res=300, width=5, height=3, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(tmv, tpv,
-        ylab=expression(-log[10](p)),
-        xlab="mean RAAS")
-abline(v=mean(unlist(tmt)))
+volcano(ova, xlab="median RAAS", value="median")
+abline(v=median(unlist(tmt)))
 dev.off()
 
 
-## TODO:
-## * store codon context,-1,+1,
-## * check consistency of dat$from and dat$codon,
-##   -> requires to account for genomic mutations?
-## * load codon usage table, AA usage table,
+
+## median RAAS
+png(file.path(fig.path,"AA_all_raas_median.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$median< -2, "white","black")
+image_matrix(ova$median, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:2, text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="encoded AA", , text.cex=.8)
+figlabel(pos="bottomright", text="median RAAS", cex=1.5, font=2)
+dev.off()
+
+## mean RAAS
+png(file.path(fig.path,"AA_all_raas_mean.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$mean< -2, "white","black")
+image_matrix(ova$mean, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+             axis=1:2, text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="encoded AA", text.cex=.8)
+figlabel(pos="bottomright", text="mean RAAS", cex=1.5, font=2)
+dev.off()
+
+## total count
+png(file.path(fig.path,"AA_all_count.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+cnt <- ova$count
+cnt[cnt==0] <- NA
+txt <- ova$count
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$count>300,"white","black")
+image_matrix(cnt, col=gcols, axis=1:2,
+             text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="encoded AA", text.cex=.8)
+figlabel(pos="bottomright", text="total count", cex=1.5, font=2)
+dev.off()
+
+png(file.path(fig.path,"AA_all_count_unique.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+cnt <- ova$unique
+cnt[cnt==0] <- NA
+txt <- ova$unique
+txt[txt==0] <- ""
+txt.col <- ifelse(ova$unique>100,"white","black")
+image_matrix(cnt, col=gcols, axis=1:2,
+             text=txt, text.col=txt.col, ylab="mistranslated",
+             xlab="encoded AA", text.cex=.8)
+figlabel(pos="bottomright", text="unique SAAP count", cex=1.5, font=2)
+dev.off()
+
+df <- data.frame(freq=c(ova$count), raas=c(ova$median))
+png(file.path(fig.path,"AA_all_raas_frequency.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(df$raas, log10(df$freq), ylab="AA->AA count",
+        xlab="median RAAS", axes=FALSE)
+axis(1)
+axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)), labels=FALSE, tcl=par("tcl")/2)
+axis(2, at=log10(10^(0:5)), labels=10^(0:5))
+dev.off()
+
+
+
+
 
 ###  CODONS
 
 ## use DiffLogo as for Behle et al.! 
-require(DiffLogo)
+  library(seqLogo)
+    require(ggplot2)
+    require(ggseqlogo)
+  require(DiffLogo)
 ## with pwm1: AAS enriched codon,
 ##      pwm2: global human, local proteins, local peptides.
 ## dlogo <- createDiffLogoObject(pwm1 = pwm1, pwm2 = pwm2)
@@ -370,6 +543,11 @@ require(DiffLogo)
 ## see 20201204_RM_topA_promoters.R for plot
  
 
+## TODO:
+## * store codon context,-1,+1,
+## * check consistency of dat$from and dat$codon,
+##   -> requires to account for genomic mutations?
+## * load codon usage table, AA usage table,
 
 
 
@@ -390,37 +568,56 @@ cpos <- strsplit(cdat$codon,"")
 c1 <- factor(unlist(lapply(cpos, function(x) x[1])), levels=c("A","T","G","C"))
 c2 <- factor(unlist(lapply(cpos, function(x) x[2])), levels=c("A","T","G","C"))
 c3 <- factor(unlist(lapply(cpos, function(x) x[3])), levels=c("A","T","G","C"))
+cm <- cbind(c1=as.character(c1), c2=as.character(c2), c3=as.character(c3))
+
 
 cfrq <- rbind("1"=table(c1),
               "2"=table(c2),
               "3"=table(c3))
 cfrq <- cfrq[,c("A","T","G","C")]
 
+pwm <- t(cfrq)
+pwm <- t(t(pwm)/apply(pwm,2,sum))
+
+seqLogo(makePWM(pwm), ic.scale=FALSE)
+
+## TODO: difflogo for each codon, AAS vs. rest of dataset,
+## sequence logos of AAs and nucleotides surrounding AAS.
+
+      
+
+## GET CODON-LEVEL RAAS MEANS from tmt level
+cp.lst <- list()
+for ( pos in 1:3 ) {
+    cp.lst[[paste0("c",pos)]] <- list()
+    for ( nt in names(ntcols) ) 
+        cp.lst[[paste0("c",pos)]][[nt]] <-
+            unlist(tmt[cdat$SAAP[cm[,pos]==nt]])
+}
 
 png(file.path(fig.path,"codons_pos.png"),
     res=300, width=3, height=1.5, units="in")
-par(mai=c(.25,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.25,.5,.2,.25), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
         args.legend=list(x="top",ncol=4, inset=c(-.02,-.1), bty="n"),
         xlab="codon position", col=ntcols)
 dev.off()
 
-## TODO: get codon-level RAAS means
-
 png(file.path(fig.path,"codons_pos_raas.png"),
     res=300, width=3, height=3, units="in")
 par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-par(mai=c(.5,.5,.15,.1))
-boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, boxwex=.75, at=1:4,
-        names=NA, xlab=NA, xlim=c(0.25,14), axes=FALSE,
+par(mai=c(.5,.5,.15,.25))
+boxplot(cp.lst[[1]], ylab="all TMT RAAS", boxwex=.75, at=1:4,
+        names=NA, xlab=NA, axes=FALSE, xlim=c(0.25,14), 
         col=ntcols, cex=.5)
 axis(2)
-boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 + 4.5, boxwex=.75,
+boxplot(cp.lst[[2]], ylab=NA, add=TRUE, at=1:4 + 4.5, boxwex=.75,
         names=NA, axes=FALSE, col=ntcols, cex=.5)
-boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 + 9, boxwex=.75,
+boxplot(cp.lst[[3]], ylab=NA, add=TRUE, at=1:4 + 9, boxwex=.75,
         names=NA, axes=FALSE, col=ntcols, cex=.5)
 axis(1, at=c(2.5,7,11.5), labels=1:3, col=NA)
 mtext("codon position", 1, 1.3)
+axis(4)
 dev.off()
 
 png(file.path(fig.path,"codons_type.png"),
@@ -435,146 +632,35 @@ png(file.path(fig.path,"codons_type_raas.png"),
     res=300, width=3, height=3, units="in")
 par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
 par(mai=c(.5,.5,.15,.1))
-boxplot(cdat[,PRAAS] ~ c1, ylab=PRAAS, at=1:4 -.5, boxwex=.18,
+boxplot(cp.lst[[1]], ylab="all TMT RAAS", at=1:4 -.5, boxwex=.18,
         names=rep(1,4), xlab=NA, xlim=c(.4,4.05), axes=FALSE, col=cd.col[1])
 axis(2)
-boxplot(cdat[,PRAAS] ~ c2, ylab=PRAAS, add=TRUE, at=1:4 -.3, boxwex=.18,
+boxplot(cp.lst[[2]], ylab=NA, add=TRUE, at=1:4 -.3, boxwex=.18,
         names=rep(2,4), axes=FALSE, col=cd.col[2])
-boxplot(cdat[,PRAAS] ~ c3, ylab=PRAAS, add=TRUE, at=1:4 -.1, boxwex=.18,
+boxplot(cp.lst[[3]], ylab=NA, add=TRUE, at=1:4 -.1, boxwex=.18,
         names=rep(3,4), axes=FALSE, col=cd.col[3])
 axis(1, at=1:4 -.3, mgp=c(10,1.3,0), tcl=0, labels=levels(c1))
 dev.off()
 
-## full codon table
-
-png(file.path(fig.path,"AA_all.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-fta <- table(cdat$to, cdat$from)
-txt <- fta
-txt[txt==0] <- ""
-fta[fta==0] <- NA
-image_matrix(fta, axis=1:2, text=txt, text.cex=.6, 
-             ylab="mistranslated", xlab="encoded", col=gcols,
-             text.col=ifelse(fta>100, "white","black"))
-dev.off()
 
 
-## median RAAS
-fta.raas <- table(cdat$to,cdat$from)
-txt <- fta.raas
-txt[txt==0] <- ""
-for ( i in 1:nrow(fta) ) {
-    for ( j in 1:ncol(fta) ) {
-        idx <- cdat$to==rownames(fta)[i] & cdat$from==colnames(fta)[j]
-        fta.raas[i,j] <- median(cdat$RAAS.median[idx], na.rm=TRUE)
-    }
-}
-
-png(file.path(fig.path,"AA_raas.png"),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-image_matrix(fta.raas, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
-             axis=2, text=txt, text.cex=.6, text.col="darkgray",
-             ylab="mistranslated AA",
-             xlab="templated AA")
-axis(1, 1:ncol(fta), labels=colnames(fta), las=2)
-dev.off()
-
-df <- data.frame(freq=c(fta), raas=c(fta.raas))
-png(file.path(fig.path,"AA_raas_frequency.png"),
-    res=300, width=3, height=3, units="in")
-par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log10(df$freq),df$raas, xlab="AA->AA count",
-        ylab="median RAAS", axes=FALSE)
-axis(2)
-axis(1, at=log10(1:300), labels=FALSE, tcl=par("tcl")/2)
-axis(1, at=log10(10^(0:4)), labels=10^(0:4))
-dev.off()
 
 
-## actual codons
-png(file.path(fig.path,"codons_all.png"),
-    res=300, width=15, height=5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
-ftc <- table(cdat$to,cdat$aacodon)
-txt <- ftc
-txt[txt==0] <- ""
-ftc[ftc==0] <- NA
-image_matrix(ftc, axis=1:3, text=txt, ylab="mistranslated",
-             text.cex=.7, xlab="", col=gcols,
-             text.col=ifelse(ftc>100, "white","black"))
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
-dev.off()
-
-## median RAAS
-ftc.raas <- table(cdat$to,cdat$aacodon)
-txt <- ftc.raas
-txt[txt==0] <- ""
-for ( i in 1:nrow(ftc) ) {
-    for ( j in 1:ncol(ftc) ) {
-        idx <- cdat$to==rownames(ftc)[i] & cdat$aacodon==colnames(ftc)[j]
-        ftc.raas[i,j] <- median(cdat$RAAS.median[idx], na.rm=TRUE)
-    }
-}
-png(file.path(fig.path,"codons_all_raas.png"),
-    res=300, width=15, height=5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
-image_matrix(ftc.raas, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
-             axis=1:3, text=txt, ylab="mistranslated",
-             xlab="")
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
-dev.off()
-
-
-df <- data.frame(freq=c(ftc), raas=c(ftc.raas))
-png(file.path(fig.path,"codons_all_raas_frequency.png"),
-    res=300, width=3, height=3, units="in")
-par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log10(df$freq),df$raas, xlab="codon->AA count",
-        ylab="median RAAS", axes=FALSE)
-axis(2)
-axis(1, at=log10(1:300), labels=FALSE, tcl=par("tcl")/2)
-axis(1, at=log10(10^(0:4)), labels=10^(0:4))
-dev.off()
-
-
-## max RAAS
-ftc.max <- table(cdat$to,cdat$aacodon)
-txt <- ftc.max
-txt[txt==0] <- ""
-for ( i in 1:nrow(ftc) ) {
-    for ( j in 1:ncol(ftc) ) {
-        idx <- cdat$to==rownames(ftc)[i] & cdat$aacodon==colnames(ftc)[j]
-        ftc.max[i,j] <- max(cdat$RAAS.median[idx], na.rm=TRUE)
-    }
-}
-ftc.max[is.infinite(ftc.max)] <- NA
-
-png(file.path(fig.path,"codons_all_raas_max.png"),
-    res=300, width=15, height=5, units="in")
-par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
-image_matrix(ftc.max, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
-             axis=1:3, text=txt, ylab="mistranslated",
-             xlab="")
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
-dev.off()
-
-## TODO: codon efficiency - 
-## 
+## RAAS by all codons
+aa.lst <- list()
+for ( aac in sort(unique(cdat$aacodon)) )
+    aa.lst[[aac]] <- unlist(tmt[cdat$SAAP[cdat$aacodon==aac]])
 
 
 png(file.path(fig.path,"codons_raas.png"),
     res=300, width=12.1, height=5, units="in")
 par(mai=c(.7,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
 #par(mai=c(.7,.5,.7,3))
-boxplot(cdat$RAAS.median ~ cdat$aacodon, las=2,
+boxplot(aa.lst, las=2,
         xlab=NA, ylab="RAAS")
 tb <- table(cdat$aacodon)
-axis(3, at=1:length(tb), labels=tb, las=2)
+tt <- unlist(lapply(aa.lst, length))
+axis(3, at=1:length(tt), labels=tb, las=2)
 dev.off()
 
 
