@@ -325,7 +325,7 @@ txt.col <- ifelse(ova$median< -2, "white","black")
 image_matrix(ova$median, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
              axis=1:3, text=txt, text.col=txt.col, ylab="mistranslated",
              xlab="", text.cex=.8)
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
 figlabel(pos="bottomright", text="median RAAS", cex=1.5, font=2)
 dev.off()
 
@@ -340,7 +340,7 @@ txt.col <- ifelse(ova$mean< -2, "white","black")
 image_matrix(ova$mean, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
              axis=1:3, text=txt, text.col=txt.col, ylab="mistranslated",
              xlab="", text.cex=.8)
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
 figlabel(pos="bottomright", text="mean RAAS", cex=1.5, font=2)
 dev.off()
 
@@ -357,7 +357,7 @@ txt.col <- ifelse(ova$count>300,"white","black")
 image_matrix(cnt, col=gcols, axis=1:3,
              text=txt, text.col=txt.col, ylab="mistranslated",
              xlab="", text.cex=.8)
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
 figlabel(pos="bottomright", text="total count", cex=1.5, font=2)
 dev.off()
 
@@ -373,7 +373,7 @@ txt.col <- ifelse(ova$unique>100,"white","black")
 image_matrix(cnt, col=gcols, axis=1:3,
              text=txt, text.col=txt.col, ylab="mistranslated",
              xlab="", text.cex=.8)
-axis(4, nrow(ftc):1, labels=ACODONS[rownames(ftc)], las=2)
+axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
 figlabel(pos="bottomright", text="unique SAAP count", cex=1.5, font=2)
 dev.off()
 
@@ -579,7 +579,7 @@ cfrq <- cfrq[,c("A","T","G","C")]
 pwm <- t(cfrq)
 pwm <- t(t(pwm)/apply(pwm,2,sum))
 
-seqLogo(makePWM(pwm), ic.scale=FALSE)
+seqLogo::seqLogo(makePWM(pwm), ic.scale=FALSE)
 
 ## TODO: difflogo for each codon, AAS vs. rest of dataset,
 ## sequence logos of AAs and nucleotides surrounding AAS.
@@ -1010,29 +1010,33 @@ dev.off()
 
 #### REPLACED AA SIMILARITIES
 
+## TODO:
+## * plot for several selections, strong difference for unfiltered 22k,
+## * do on protein-level?
+
+## analyze AA similarity by different matrices
+## TODO: remove extra columns
+simmats <- c("BLOSUM62", "PAM250")
+sdat <- cdat
+
 ## first find mutated AA pairs
 ## (column AASin input mixes I/L)
 ## and split mutated AA pairs into from/to
-
 ## TODO: get this from the columns in the mapped file!
-saaps <- strsplit(dat$SAAP,"")
-bases <- strsplit(dat$BP, "")
+saaps <- strsplit(sdat$SAAP,"")
+bases <- strsplit(sdat$BP, "")
 fromto <- lapply(1:length(saaps), function(i) {
     pos <- which(saaps[[i]]!=bases[[i]])
     c(from=bases[[i]][pos], to=saaps[[i]][pos])
 })
 
 
-## analyze AA similarity by different matrices
-## TODO: remove extra columns
-simmats <- c("BLOSUM62", "PAM250")
-
 ## reporter vs. precursor RAAS
 
 png(file.path(fig.path,paste0("raas_precursor_reporter.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(dat$Mean_reporter_RAAS, dat$Mean_precursor_RAAS, na.rm=TRUE,
+plotCor(sdat$Mean_reporter_RAAS, sdat$Mean_precursor_RAAS, na.rm=TRUE,
         xlab="mean reporter RAAS", ylab="mean precursor RAAS",
         colf=viridis::viridis)
 abline(a=0, b=1, col=1, lty=2, lwd=2)
@@ -1049,7 +1053,7 @@ for ( i in seq_along(simmats) ) {
     sim <- unlist(lapply(fromto, function(x) MAT[x[1],x[2]]))
 
     rid <- "Mean_precursor_RAAS"
-    raas <- unlist(dat[,rid])
+    raas <- unlist(sdat[,rid])
     
     brks <- c(-5,-3,-2,-1,0,1,4)
     raas_bins <- cut(raas, brks)
