@@ -40,22 +40,107 @@ rm <- duplicated(unq)
 tmtf <- tmtf[!rm,]
 cat(paste("removed",sum(rm), "duplicated entries\n"))
 
-png(file.path(fig.path,paste0("raas_distribution.png")),
+## analyze global distribution
+## TODO: stats of ratio of correlated values
+
+png(file.path(fig.path,paste0("tmt_raas_distribution.png")),
     res=300, width=5, height=5, units="in")
 par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(tmtf$RAAS, xlab=expression(RAAS==log[10](I[SAAP]/I[BP])),
-     main=basename(tmt.file))
+glob <- hist(tmtf$RAAS, xlab=expression(RAAS==log[10](I[SAAP]/I[BP])),
+             main=basename(tmt.file))
 legend("topright", paste("total", nrow(tmtf)), bty="n")
 dev.off()
+
+png(file.path(fig.path,paste0("tmt_abundance_distribution.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(log(tmtf$"BP abundance"), xlim=c(0,22), ylim=c(0,3000), main=NA,
+     xlab=expression(ln(I)), col="#00000077")
+hist(log(tmtf$"SAAP abundance"), add=TRUE, border=2, col="#ff000077", axes=FALSE)
+legend("topright", c("BP","SAAP"), col=c(1,2), lty=1, bty="n")
+dev.off()
+
+
+
+png(file.path(fig.path,paste0("tmt_raas_correlation_bp.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$RAAS, log(tmtf$"BP abundance"), xlab="RAAS",
+        ylab=expression(ln(I[BP])))
+
+dev.off()
+
+png(file.path(fig.path,paste0("tmt_raas_correlation_saap.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$RAAS, log(tmtf$"SAAP abundance"), xlab="RAAS",
+        ylab=expression(ln(I[SAAP])))
+dev.off()
+
+png(file.path(fig.path,paste0("tmt_abundance_correlation.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log(tmtf$"BP abundance"),  log(tmtf$"SAAP abundance"),
+        xlab=expression(ln(I[BP])), ylab=expression(ln(I[SAAP])),
+        xlim=c(0,22), ylim=c(0,22))
+dev.off()
+
+png(file.path(fig.path,paste0("tmt_raas_distribution_legend.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
+raas.col <- selectColors(tmtf$RAAS, colf=viridis::viridis, q=0,
+                         xlab="RAAS",
+                         heights = c(0.8, 0.2),
+                         mai = c(0.5, 0.5, 0.1, 0.1)) #mn=-4, mx=2, 
+dev.off()
+
+muBP <- mean(log(tmtf$"BP abundance"))
+muSP <- mean(log(tmtf$"SAAP abundance"))
+sdBP <- sd(log(tmtf$"BP abundance"))
+sdSP <- sd(log(tmtf$"SAAP abundance"))
+
+png(file.path(fig.path,paste0("tmt_abundance_correlation_raas.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(log(tmtf$"BP abundance"),  log(tmtf$"SAAP abundance"),
+     col=raas.col$x.col, pch=19, cex=.5,
+     xlab=expression(ln(I[BP])), ylab=expression(ln(I[SAAP])),
+     xlim=c(0,22), ylim=c(0,22))
+abline(a=0,b=1)
+abline(a=muBP+muSP, b=-1, col=2)
+legend("top", legend=c("color ~ RAAS",
+                       expression(intercept==mu[BP]+mu[SAAP])),
+       col=c(NA,2), lty=c(NA,1), bty="n")
+dev.off()
+
+
+## TODO: ABUNDANCE BY NUMBER OF REPLICATES
+repl <- paste0(tmtf$SAAP,"_",tmtf$BP)
+cnt <- c(table(repl)[repl])
+
+dense2d(log(tmtf$"BP abundance"), log(cnt))
+dense2d(log(tmtf$"SAAP abundance"), log(cnt))
+
+## dense2d(log(unlist(split(tmtf$"BP abundance",repl))), log(cnt))
+
+myraas <- log(tmtf$"SAAP abundance")/log(tmtf$"BP abundance")
+dense2d(tmtf$RAAS, myraas, xlab="RAAS", ylab=expression(ln(I[SAAP])/ln(I[BP])))
+abline(v=0);abline(h=1)
+
+### MEANS of RAAS
 
 summary.types <- cbind(s4=tmtf$SAAP,
                        s3=paste0(tmtf$SAAP,"_",tmtf$BP),
                        s2=paste0(tmtf$Dataset,"_",tmtf$SAAP),
-                       s1=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP))
+                       s1=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP),
+                       r1=paste0(tmtf$Dataset,"_",tmtf$SAAP,
+                                 "_",tmtf$BP)[sample(1:nrow(tmtf))],
+                       r3=paste0(tmtf$SAAP,"_",tmtf$BP)[sample(1:nrow(tmtf))])
 
 ##                       s0=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
 ##                                 "_",tmtf$"TMT/Tissue"))
-summary.names <- c(s4="SAAP",s3="SAAP/BP", s2="DS/SAPP", s1="DS/SAAP/BP")
+summary.names <- c(s4="SAAP",s3="SAAP/BP", s2="DS/SAPP", s1="DS/SAAP/BP",
+                   s1="DS/SAAP/BP randomized", r3="SAAP/BP randomized")
 
 
 for ( i in 1:ncol(summary.types) ) {

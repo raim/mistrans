@@ -281,9 +281,9 @@ ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
                    rows="to", cols="aacodon", use.test=t.test, do.plots=FALSE)
 
 png(file.path(fig.path,"codons_all_ttests.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
              text.cex=.8, axis=1:3, ##type="unique",
              ylab="mistranslated AA",
@@ -302,9 +302,9 @@ ova <- raasProfile(x=cdat, id="SAAP", values=tmt,
                    rows="to", cols="aacodon", use.test=w.test, do.plots=FALSE)
 
 png(file.path(fig.path,"codons_all_wtests.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
              text.cex=.7, axis=1:3, ##type="unique",
              ylab="mistranslated AA",
@@ -316,9 +316,9 @@ dev.off()
 
 ## median RAAS
 png(file.path(fig.path,"codons_all_raas_median.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 txt <- ova$count
 txt[txt==0] <- ""
 txt.col <- ifelse(ova$median< -2, "white","black")
@@ -331,9 +331,9 @@ dev.off()
 
 ## mean RAAS
 png(file.path(fig.path,"codons_all_raas_mean.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 txt <- ova$count
 txt[txt==0] <- ""
 txt.col <- ifelse(ova$mean< -2, "white","black")
@@ -346,9 +346,9 @@ dev.off()
 
 ## total count
 png(file.path(fig.path,"codons_all_count.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 cnt <- ova$count
 cnt[cnt==0] <- NA
 txt <- ova$count
@@ -362,9 +362,9 @@ figlabel(pos="bottomright", text="total count", cex=1.5, font=2)
 dev.off()
 
 png(file.path(fig.path,"codons_all_count_unique.png"),
-    res=300, width=15, height=5, units="in")
+    res=300, width=14, height=5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-par(mai=c(.7,.5,.7,3))
+par(mai=c(.7,.5,.7,2.7))
 cnt <- ova$unique
 cnt[cnt==0] <- NA
 txt <- ova$unique
@@ -532,10 +532,10 @@ dev.off()
 ###  CODONS
 
 ## use DiffLogo as for Behle et al.! 
-  library(seqLogo)
-    require(ggplot2)
-    require(ggseqlogo)
-  require(DiffLogo)
+library(seqLogo)
+require(ggplot2)
+require(ggseqlogo)
+require(DiffLogo)
 ## with pwm1: AAS enriched codon,
 ##      pwm2: global human, local proteins, local peptides.
 ## dlogo <- createDiffLogoObject(pwm1 = pwm1, pwm2 = pwm2)
@@ -579,7 +579,12 @@ cfrq <- cfrq[,c("A","T","G","C")]
 pwm <- t(cfrq)
 pwm <- t(t(pwm)/apply(pwm,2,sum))
 
+png(file.path(fig.path,"codons_logo.png"),
+    res=300, width=5, height=5, units="in")
+par(mai=c(.5,.5,.05,.05), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
 seqLogo::seqLogo(makePWM(pwm), ic.scale=FALSE)
+dev.off()
+##DiffLogo::seqLogo(makePWM(pwm), sparse=TRUE, ylim=c(0,.3))
 
 ## TODO: difflogo for each codon, AAS vs. rest of dataset,
 ## sequence logos of AAs and nucleotides surrounding AAS.
@@ -655,7 +660,6 @@ for ( aac in sort(unique(cdat$aacodon)) )
 png(file.path(fig.path,"codons_raas.png"),
     res=300, width=12.1, height=5, units="in")
 par(mai=c(.7,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-#par(mai=c(.7,.5,.7,3))
 boxplot(aa.lst, las=2,
         xlab=NA, ylab="RAAS")
 tb <- table(cdat$aacodon)
