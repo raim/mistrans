@@ -552,7 +552,7 @@ if ( length(rm)>0 ) {
 ### WRITE OUT TABLE with positions for downstream analysis
 sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
                "ensembl","protein","len","pos","rpos","from","to",
-               "codon","s4pred",
+               "codon","s4pred","C.protein","E.protein","H.protein",
                "iupred3","iupred3.protein",
                "anchor2","anchor2.protein",
                "remove","Hemoglobin.Albumin")]
