@@ -38,10 +38,14 @@ out.path <- file.path(proj.path,"processedData")
 in.file <- file.path(out.path,"saap_mapped.tsv")
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
+##tmt.file <- file.path(proj.path,"originalData",
+##                      "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
+##pat.file <- file.path(proj.path,"originalData",
+##                      "All_filtered_SAAP_patient_level_quant_df.xlsx")
 tmt.file <- file.path(proj.path,"originalData",
-                      "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
+                      "All_SAAP_TMTlevel_quant_df.txt")
 pat.file <- file.path(proj.path,"originalData",
-                      "All_filtered_SAAP_patient_level_quant_df.xlsx")
+                      "All_SAAP_patient_level_quant_df.txt")
 
 ## analysis parameters
 use.test <- stats::t.test # w.test
@@ -55,7 +59,9 @@ gcols <- grey.colors(n=100, start=.9, end=0)
 
 ## SAAP mapped to protein and codons
 dat <- read.delim(in.file)
-PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
+dat$Hemoglobin.Albumin <-
+    as.logical(dat$Hemoglobin.Albumin)
+PRAAS <- "Mean.precursor.RAAS" # precursor ion/experiment level
 MRAAS <- "RAAS.median"
 
 
@@ -112,31 +118,36 @@ dev.off()
 
 dat$aacodon <- paste(dat$from,dat$codon, sep="-")
 
-hdat <- dat[!dat$remove,]
+hdat <- dat[!(dat$remove | dat$Hemoglobin.Albumin),]
 cdat <- hdat[hdat$codon!="",] # NOTE: this filters out duplicated SAAP
 
 
-## get raw RAAS data
-patf <- read_xlsx(pat.file)
-patf$RAAS <- as.numeric(patf$RAAS)
+## get raw RAAS data patient level
+patf <- read.delim(pat.file)
+patf$Keep.SAAP <-  as.logical(patf$Keep.SAAP)
+## remove excluded
+cat(paste("removing", sum(!patf$Keep.SAAP),
+          "tagged as false positive on patient level\n"))
+patf <- patf[patf$Keep.SAAP,]
 ## exclude NA or Inf
 rm <- is.na(patf$RAAS) | is.infinite(patf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from patient level\n"))
 patf <- patf[!rm,]
 pat <- split(patf$RAAS, patf$SAAP)
 
-tmtf <- read_xlsx(tmt.file)
-tmtf$RAAS <- as.numeric(tmtf$RAAS)
+
+## get raw RAAS data TMT level
+tmtf <- read.delim(tmt.file)
+tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
+## remove excluded
+cat(paste("removing", sum(!tmtf$Keep.SAAP),
+          "tagged as false positive on TMT level\n"))
+tmtf <- tmtf[tmtf$Keep.SAAP,]
 ## exclude NA or Inf
 rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
-unq <- paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
-              "_",tmtf$"TMT/Tissue")
-rm <- duplicated(unq)
-cat(paste("removing", sum(rm), "duplicated from TMT level\n"))
-tmtf <- tmtf[!rm,]
-tmt <- split(as.numeric(tmtf$RAAS), tmtf$SAAP)
+tmt <- split(tmtf$RAAS, tmtf$SAAP)
 
 
 png(file.path(fig.path,"raas_distribution.png"),
@@ -673,13 +684,7 @@ dev.off()
 ## TODO: load background
 
 if ( interactive() ) {
-    boxplot(cdat$RAAS.median ~ cdat$s4pred)
-    plotCor(hdat$RAAS.median, hdat$iupred3)
-    plotCor(hdat$RAAS.median, hdat$anchor2)
-    
-    hist(hdat$anchor2)
-
-
+  
     ## explore s4pred results
     ##ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
     ##ss.tot <- ss.tot/sum(ss.tot)
@@ -691,7 +696,7 @@ if ( interactive() ) {
 }
 
 ## GET STRUCTURE SCORES
-    
+
 iup <- hdat$iupred3
 ## TODO: why negative IUPRED3??
 if ( min(iup,na.rm=TRUE)<0 )
@@ -708,6 +713,24 @@ plotCor(iup, iubg, xlab="iupred3 score  at AAS site",
         ylab="mean iupred3 score of protein") 
 dev.off()
 
+
+## bin score to compare to full list of RAAS
+iup.bins <- cut(iup, breaks=seq(0,1,.2))
+levels(iup.bins)
+iup.lst <- list()
+for ( iupl in levels(iup.bins) )
+    iup.lst[[iupl]] <- unlist(tmt[hdat$SAAP[as.character(iup.bins)==iupl]])
+
+png(file.path(fig.path,"structure_iupred3_raas.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(iup.lst, ylab="all TMT RAAS", xlab=NA,
+        las=2)
+axis(3, at=1:length(levels(iup.bins)), labels=unlist(lapply(iup.lst, length)),
+     las=2)
+figlabel("AAS iupred3", pos="bottomleft")
+dev.off()
+
 ## slight positive trend of unstructured/anchor vs RAAS
 png(file.path(fig.path,"structure_iupred3.png"),
     res=300, width=3.5, height=3.5, units="in")
@@ -722,17 +745,8 @@ legend("topright", c("AAS", "mean of protein",
        col=c(2,1,NA), lty=1, bty="n")
 dev.off()       
     
-png(file.path(fig.path,"structure_iupred3_raas.png"),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-layout(t(1:2), widths=c(1,.25))
-par(mai=c(.5,.5,.1,.1),yaxs="i")
-plotCor(hdat$RAAS.median, iup, na.rm=TRUE, xlab=paste("median RAAS"),
-        ylab="iupred3 score at AAS site")
-iubgh <- hist(iubg, breaks=0:10/10, plot=FALSE)
-par(mai=c(.5,0,.1,.2),yaxs="i")
-barplot(iubgh$counts,horiz=TRUE, las=2, space=0)
-dev.off()
+
+## anchor2
 
 png(file.path(fig.path,"structure_anchor2_bg.png"),
     res=300, width=3, height=3, units="in")
@@ -754,19 +768,25 @@ legend("topright", c("AAS", "mean of protein",
        col=c(2,1,NA), lty=1, bty="n")
 dev.off()
 
+## bin score to compare to full list of RAAS
+anc.bins <- cut(anc, breaks=seq(0,1,.2))
+levels(anc.bins)
+anc.lst <- list()
+for ( ancl in levels(anc.bins) )
+    anc.lst[[ancl]] <- unlist(tmt[hdat$SAAP[as.character(anc.bins)==ancl]])
+
 png(file.path(fig.path,"structure_anchor2_raas.png"),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-layout(t(1:2), widths=c(1,.25))
-par(mai=c(.5,.5,.1,.1))
-plotCor(hdat$RAAS.median, anc, , xlab=paste("median RAAS"),
-        ylab="anchor2 score at AAS site")
-anbgh <- hist(anbg, breaks=0:10/10, plot=FALSE)
-par(mai=c(.5,0,.1,.2),yaxs="i")
-barplot(anbgh$counts,names.arg=anbgh$mids, horiz=TRUE, las=2, space=0)
-axis(4)
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(anc.lst, ylab="all TMT RAAS", xlab=NA,
+        las=2)
+axis(3, at=1:length(levels(anc.bins)), labels=unlist(lapply(anc.lst, length)),
+     las=2)
+figlabel("AAS anchor2", pos="bottomleft")
 dev.off()
 
+
+## normalized AAS/protein
 png(file.path(fig.path,"structure_anchor2_raas_norm.png"),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
@@ -1040,7 +1060,7 @@ fromto <- lapply(1:length(saaps), function(i) {
 png(file.path(fig.path,paste0("raas_precursor_reporter.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(sdat$Mean_reporter_RAAS, sdat$Mean_precursor_RAAS, na.rm=TRUE,
+plotCor(sdat$Mean.reporter.RAAS, sdat$Mean.precursor.RAAS, na.rm=TRUE,
         xlab="mean reporter RAAS", ylab="mean precursor RAAS",
         colf=viridis::viridis)
 abline(a=0, b=1, col=1, lty=2, lwd=2)
@@ -1056,7 +1076,7 @@ for ( i in seq_along(simmats) ) {
     ## similarity of replaced AA
     sim <- unlist(lapply(fromto, function(x) MAT[x[1],x[2]]))
 
-    rid <- "Mean_precursor_RAAS"
+    rid <- "Mean.precursor.RAAS"
     raas <- unlist(sdat[,rid])
     
     brks <- c(-5,-3,-2,-1,0,1,4)

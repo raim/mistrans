@@ -42,7 +42,8 @@ ptlen <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all_lengths.tsv")
 tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
 
 ## s4pred
-s4pred <- file.path(mam.path,"processedData","Homo_sapiens.GRCh38.pep.large_s4pred.fas.gz")
+s4pred <- file.path(mam.path,"processedData",
+                    "Homo_sapiens.GRCh38.pep.large_s4pred.fas.gz")
 iupred <- file.path(mam.path,"processedData","iupred3")
 
 ## figures
@@ -54,24 +55,32 @@ dir.create(fig.path, showWarnings=FALSE)
 ## NOTE: input has changed significantly, proceed in a map_peptides2.R
 
 ##saap.file <- "All_MTP_BP_sharedPep_quant_03Oct23.xlsx"))
-saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_20240111.xlsx")
-tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
-pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
-PMATCH <- "Leading_razor_proteins__all_TMT_" # column with protein matches
-PRAAS <- "Mean_precursor_RAAS" # precursor ion/experiment level
-RRAAS <- "Mean_reporter_RAAS"  # reporter ion/patient level
+saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df.txt")
+tmt.file <- file.path(dat.path, "All_SAAP_TMTlevel_quant_df.txt")
+pat.file <- file.path(dat.path, "All_SAAP_patient_level_quant_df.txt")
+##saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_20240111.xlsx")
+##tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
+##pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
 
-dat <- data.frame(read_xlsx(saap.file))
-colnames(dat) <- gsub("\\.","_", colnames(dat))
+## COLUMN NAMES
+PMATCH <- "Leading.razor.proteins..all.TMT." # column with protein matches
+PRAAS <- "Mean.precursor.RAAS" # precursor ion/experiment level
+RRAAS <- "Mean.reporter.RAAS"  # reporter ion/patient level
+
+dat <- read.delim(saap.file) #data.frame(read_xlsx(saap.file))
+##colnames(dat) <- gsub("\\.","_", colnames(dat))
 
 ### FILTER
-## TODO: carry over to proteins for function analysis
-rm <- (dat$Potential_contaminant | dat$Immunoglobulin) |
-    (dat$"K_R_AAS" | dat$Potential_uncaptured_transcript) 
-rm <- rm | dat$"Hemoglobin_Albumin"
-dat$remove <- rm
+filtercols <- c("Potential.contaminant","Immunoglobulin",
+                "K.R.AAS","Potential.uncaptured.transcript")
+##filtercols <- c(filtercols, "Hemoglobin.Albumin")
 
-##dat <- dat[!rm,]
+## convert to logic
+for ( f in filtercols ) dat[,f] <- as.logical(dat[,f])
+
+## TODO: carry over to proteins for function analysis
+rm <- apply(dat[,filtercols], 1, any) 
+dat$remove <- rm
 
 cat(paste("tagged", sum(rm),
           "potentially false positives; now:",nrow(dat),"\n"))
@@ -546,7 +555,7 @@ sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
                "codon","s4pred",
                "iupred3","iupred3.protein",
                "anchor2","anchor2.protein",
-               "remove")]
+               "remove","Hemoglobin.Albumin")]
 write.table(sdat, file=file.path(out.path,"saap_mapped.tsv"),
             sep="\t", quote=FALSE, na="", row.names=FALSE)
 
@@ -586,7 +595,7 @@ for ( i in 1:nrow(dat) ) {
     }
 
     ## MAP ALL MAIN PETPTIDES
-    queries <- strsplit(dat$Peptides_associated_with_leading_razor_protein[i],
+    queries <- strsplit(dat$Peptides.associated.with.leading.razor.protein[i],
                         ",")
     queries <- unlist(lapply(queries, function(x) gsub("[^[:alnum:]]","",x)))
     apos <- rep(NA,length(queries))

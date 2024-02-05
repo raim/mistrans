@@ -19,3 +19,19 @@ https://pubs.acs.org/doi/full/10.1021/ac901541h?casa_token=_XVU6kJg9U8AAAAA%3AIs
 ### S -> BMAA
 
 * https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0075376#s1
+
+
+## meeting, 20240205
+
+* conservation in Raf,
+* AAS in ribosomal proteins,
+* evolutionary conservation,
+* protein domains.
+
+* UpSet diagram,
+* scatter plot, conservation rat:liver?
+* cancer vs. normal, variability between cancer.
+
+* large effect sizes that we really believe in.
+
+* ribosome density

@@ -44,7 +44,6 @@ tmtf <- tmtf[!rm,]
 ## remove excluded
 cat(paste("removing", sum(!tmtf$Keep.SAAP),
           "tagged as false positive TMT level\n"))
-
 tmtf <- tmtf[tmtf$Keep.SAAP,]
 
 ## remove duplicated: differ in PEP and q-value columns
@@ -133,8 +132,6 @@ dev.off()
 repl <- paste0(tmtf$SAAP,"_",tmtf$BP)
 cnt <- c(table(repl)[repl])
 
-ab.lst <- split(tmtf$SAAP, repl)
-ab.len <- unlist(lapply(ab.lst,length))
 
 png(file.path(fig.path,paste0("tmt_abundance_count_BP.png")),
     res=300, width=3.5, height=3.5, units="in")
