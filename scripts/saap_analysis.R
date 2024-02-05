@@ -683,17 +683,43 @@ dev.off()
 
 ## TODO: load background
 
-if ( interactive() ) {
-  
-    ## explore s4pred results
-    ##ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
-    ##ss.tot <- ss.tot/sum(ss.tot)
-    ss.aas <- table(cdat$s4pred)
-    ss.aas <- ss.aas/sum(ss.aas)
-    ss.tab <- rbind(AAS=ss.aas)#, total=ss.tot)
-    ## slight enrichment of beta/alpha
-    barplot(ss.tab, beside=TRUE, legend=TRUE)
-}
+## explore s4pred results
+ss.aas <- table(hdat$s4pred)
+ss.aas <- ss.aas/sum(ss.aas)
+
+ss.tot <- apply(hdat[,paste0(names(ss.aas),".protein")],2, sum,na.rm=TRUE)
+ss.tot <- ss.tot/sum(ss.tot)
+
+ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
+
+ss.nms <- c(C=expression(coil),
+            E=expression(beta),
+            H=expression(alpha))
+
+## slight enrichment of beta/alpha
+png(file.path(fig.path,"structure_s4pred.png"),
+    res=300, width=3, height=3, units="in")
+par(mai=c(.25,.5,.15,.25), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+barplot(ss.tab, beside=TRUE, legend=TRUE, ylab="fraction",
+        names.arg=ss.nms[colnames(ss.tab)])
+axis(4)
+dev.off()
+
+
+ss.lst <- list()
+for ( ssl in c("C","E","H") )
+    ss.lst[[ssl]] <- unlist(tmt[hdat$SAAP[cdat$s4pred==ssl]])
+
+png(file.path(fig.path,"structure_s4pred_raas.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(ss.lst, ylab="all TMT RAAS", xlab=NA, las=2, axes=FALSE)
+axis(2)
+axis(4)
+axis(1, at=1:length(ss.lst), labels=ss.nms[names(ss.lst)], las=1)
+figlabel("AAS s4pred", pos="bottomleft")
+dev.off()
+
 
 ## GET STRUCTURE SCORES
 
@@ -990,6 +1016,8 @@ mtext(expression(ecdf(x)), 4, 1.3)
 axis(4)
 dev.off()
 
+## TODO: different analysis for global RAAS,
+## e.g., position bins vs. all RAAS
 
 png(file.path(fig.path,"position_RAAS_absolute.png"),
     res=300, width=4, height=3, units="in")
