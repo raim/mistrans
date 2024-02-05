@@ -3,7 +3,7 @@
 
 ## TODO: why is 1 missing from SAAP - SAAP/BP summaries?
 
-library(readxl)
+##library(readxl)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
@@ -19,23 +19,37 @@ out.path <- file.path(proj.path,"processedData")
 ## figures
 dir.create(fig.path, showWarnings=FALSE)
 
-tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
-pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
+##tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
+##pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
 
+tmt.file <- file.path(dat.path, "All_SAAP_TMTlevel_quant_df.txt")
+pat.file <- file.path(dat.path, "All_SAAP_patient_level_quant_df.txt")
 
 
 ## ANALYZING MEAN TMT RAAS AT DIFFERENT LEVELS
 
-tmtf <- read_xlsx(tmt.file)
-tmtf$RAAS <- as.numeric(tmtf$RAAS)
+tmtf <- read.delim(tmt.file) #read_xlsx(tmt.file)
+##tmtf$RAAS <- as.numeric(tmtf$RAAS)
+tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
+
 ## exclude NA or Inf
-rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
-cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
+rm <- is.infinite(tmtf$RAAS)
+cat(paste("removing", sum(rm), "with infinite RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
+
+rm <- is.na(tmtf$RAAS)
+cat(paste("removing", sum(rm), "with NA RAAS from TMT level\n"))
+tmtf <- tmtf[!rm,]
+
+## remove excluded
+cat(paste("removing", sum(!tmtf$Keep.SAAP),
+          "tagged as false positive TMT level\n"))
+
+tmtf <- tmtf[tmtf$Keep.SAAP,]
 
 ## remove duplicated: differ in PEP and q-value columns
 unq <- paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
-              "_",tmtf$"TMT/Tissue")
+              "_",tmtf$"TMT.Tissue")
 rm <- duplicated(unq)
 tmtf <- tmtf[!rm,]
 cat(paste("removed",sum(rm), "duplicated entries\n"))
@@ -51,12 +65,13 @@ glob <- hist(tmtf$RAAS, xlab=expression(RAAS==log[10](I[SAAP]/I[BP])),
 legend("topright", paste("total", nrow(tmtf)), bty="n")
 dev.off()
 
-png(file.path(fig.path,paste0("tmt_abundance_distribution.png")),
+png(file.path(fig.path,paste0("tmt_abundances.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(log(tmtf$"BP abundance"), xlim=c(0,22), ylim=c(0,3000), main=NA,
-     xlab=expression(ln(I)), col="#00000077")
-hist(log(tmtf$"SAAP abundance"), add=TRUE, border=2, col="#ff000077", axes=FALSE)
+hist(log10(tmtf$BP.abundance), xlim=c(0,10), ylim=c(0,3500), main=NA,
+     xlab=expression(log[10](I)), col="#00000077")
+hist(log10(tmtf$SAAP.abundance), add=TRUE, border=2,
+     col="#ff000077", axes=FALSE)
 legend("topright", c("BP","SAAP"), col=c(1,2), lty=1, bty="n")
 dev.off()
 
@@ -65,47 +80,47 @@ dev.off()
 png(file.path(fig.path,paste0("tmt_raas_correlation_bp.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$RAAS, log(tmtf$"BP abundance"), xlab="RAAS",
-        ylab=expression(ln(I[BP])))
+plotCor(tmtf$RAAS, log10(tmtf$BP.abundance), xlab="RAAS",
+        ylab=expression(log[10](I[BP])))
 
 dev.off()
 
 png(file.path(fig.path,paste0("tmt_raas_correlation_saap.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$RAAS, log(tmtf$"SAAP abundance"), xlab="RAAS",
-        ylab=expression(ln(I[SAAP])))
+plotCor(tmtf$RAAS, log10(tmtf$SAAP.abundance), xlab="RAAS",
+        ylab=expression(log[10](I[SAAP])))
 dev.off()
 
 png(file.path(fig.path,paste0("tmt_abundance_correlation.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log(tmtf$"BP abundance"),  log(tmtf$"SAAP abundance"),
-        xlab=expression(ln(I[BP])), ylab=expression(ln(I[SAAP])),
-        xlim=c(0,22), ylim=c(0,22))
+plotCor(log10(tmtf$BP.abundance),  log10(tmtf$SAAP.abundance),
+        xlab=expression(log[10](I[BP])), ylab=expression(log[10](I[SAAP])),
+        xlim=c(0,10), ylim=c(0,10))
 dev.off()
 
 png(file.path(fig.path,paste0("tmt_raas_distribution_legend.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
 raas.col <- selectColors(tmtf$RAAS, colf=viridis::viridis, q=0,
-                         xlab="RAAS",
+                         xlab=expression(RAAS==log[10](I[SAAP]/I[BP])),
                          heights = c(0.8, 0.2),
-                         mai = c(0.5, 0.5, 0.1, 0.1)) #mn=-4, mx=2, 
+                         mai = c(0.5, 0.5, 0, 0.1)) #mn=-4, mx=2, 
 dev.off()
 
-muBP <- mean(log(tmtf$"BP abundance"))
-muSP <- mean(log(tmtf$"SAAP abundance"))
-sdBP <- sd(log(tmtf$"BP abundance"))
-sdSP <- sd(log(tmtf$"SAAP abundance"))
+muBP <- mean(log10(tmtf$BP.abundance))
+muSP <- mean(log10(tmtf$SAAP.abundance))
+sdBP <- sd(log10(tmtf$BP.abundance))
+sdSP <- sd(log10(tmtf$SAAP.abundance))
 
 png(file.path(fig.path,paste0("tmt_abundance_correlation_raas.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(log(tmtf$"BP abundance"),  log(tmtf$"SAAP abundance"),
+plot(log10(tmtf$BP.abundance),  log10(tmtf$SAAP.abundance),
      col=raas.col$x.col, pch=19, cex=.5,
-     xlab=expression(ln(I[BP])), ylab=expression(ln(I[SAAP])),
-     xlim=c(0,22), ylim=c(0,22))
+     xlab=expression(log[10](I[BP])), ylab=expression(log[10](I[SAAP])),
+     xlim=c(0,10), ylim=c(0,10))
 abline(a=0,b=1)
 abline(a=muBP+muSP, b=-1, col=2)
 legend("top", legend=c("color ~ RAAS",
@@ -118,14 +133,57 @@ dev.off()
 repl <- paste0(tmtf$SAAP,"_",tmtf$BP)
 cnt <- c(table(repl)[repl])
 
-dense2d(log(tmtf$"BP abundance"), log(cnt))
-dense2d(log(tmtf$"SAAP abundance"), log(cnt))
+ab.lst <- split(tmtf$SAAP, repl)
+ab.len <- unlist(lapply(ab.lst,length))
 
-## dense2d(log(unlist(split(tmtf$"BP abundance",repl))), log(cnt))
+png(file.path(fig.path,paste0("tmt_abundance_count_BP.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(log10(tmtf$BP.abundance), cnt, axes=FALSE, cex=.7,
+        xlab=expression(log[10](I[BP])), ylab="number of values per mean")
+axis(1)
+axis(2)
+dev.off()
 
-myraas <- log(tmtf$"SAAP abundance")/log(tmtf$"BP abundance")
-dense2d(tmtf$RAAS, myraas, xlab="RAAS", ylab=expression(ln(I[SAAP])/ln(I[BP])))
+png(file.path(fig.path,paste0("tmt_abundance_count_SAAP.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(log10(tmtf$SAAP.abundance), cnt, axes=FALSE, cex=.7,
+        xlab=expression(log[10](I[SAAP])), ylab="number of values per mean")
+axis(1)
+axis(2, at=c(1,seq(20,300,20)))
+dev.off()
+
+## total counts at each level
+png(file.path(fig.path,paste0("tmt_abundance_count.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(0,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
+lgcnt <- table(cnt)
+lgcnt <- lgcnt/as.numeric(names(lgcnt))
+plot(names(lgcnt), lgcnt, type="h", log="y", lwd=3, axes=FALSE,
+     xlab="number of values per mean", ylab=NA)
+corners = par("usr") 
+text(x = corners[1]-mean(corners[1:2])/4, y = mean(corners[4]),
+     "total count", srt=-90, xpd=TRUE, pos=1)
+axis(2, at=c(1,seq(20,300,20)))
+axis(4)
+##figlabel(pos="bottomleft", text=summary.names[id])
+dev.off()
+    
+
+## dense2d(log10(unlist(split(tmtf$BP.abundance,repl))), log10(cnt))
+
+myraas <- log10(tmtf$SAAP.abundance)/log10(tmtf$BP.abundance)
+png(file.path(fig.path,paste0("tmt_raas_lograas.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(tmtf$RAAS, myraas, xlab="RAAS",
+     ylab=expression(log[10](I[SAAP])/log[10](I[BP])),
+        col=raas.col$x.col, pch=19, cex=.5)
 abline(v=0);abline(h=1)
+dev.off()
+
+hist(myraas)
 
 ### MEANS of RAAS
 
@@ -137,10 +195,8 @@ summary.types <- cbind(s4=tmtf$SAAP,
                                  "_",tmtf$BP)[sample(1:nrow(tmtf))],
                        r3=paste0(tmtf$SAAP,"_",tmtf$BP)[sample(1:nrow(tmtf))])
 
-##                       s0=paste0(tmtf$Dataset,"_",tmtf$SAAP,"_",tmtf$BP,
-##                                 "_",tmtf$"TMT/Tissue"))
 summary.names <- c(s4="SAAP",s3="SAAP/BP", s2="DS/SAPP", s1="DS/SAAP/BP",
-                   s1="DS/SAAP/BP randomized", r3="SAAP/BP randomized")
+                   r1="DS/SAAP/BP randomized", r3="SAAP/BP randomized")
 
 
 for ( i in 1:ncol(summary.types) ) {
@@ -301,8 +357,8 @@ for ( i in 1:ncol(summary.types) ) {
 
 ###
 ## PATIENT LEVEL
-patf <- read_xlsx(pat.file)
-table(patf$Dataset, patf$"TMT set")
-table(patf$Dataset, patf$"Sample type")
-table(patf$"TMT set", patf$"Sample type")
+patf <- read.delim(pat.file)
+table(patf$Dataset, patf$TMT.set)
+table(patf$Dataset, patf$Sample.type)
+table(patf$TMT.set, patf$Sample.type)
 
