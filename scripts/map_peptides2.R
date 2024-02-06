@@ -507,6 +507,17 @@ barplot(apply(errors[!dat$remove,], 2, sum, na.rm=TRUE), las=2,
         main=paste(sum(!dat$remove),"included SAAP"))
 dev.off()
 
+## check: reporter vs. precursor RAAS
+
+png(file.path(fig.path,paste0("raas_precursor_reporter.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(dat$Mean.reporter.RAAS, dat$Mean.precursor.RAAS, na.rm=TRUE,
+        xlab="mean reporter RAAS", ylab="mean precursor RAAS",
+        colf=viridis::viridis)
+abline(a=0, b=1, col=1, lty=2, lwd=2)
+dev.off()
+
 ## FILTER DATA
 ## TODO: find sources!
 ## TODO: don't remove but carry over as background
