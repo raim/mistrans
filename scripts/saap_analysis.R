@@ -18,119 +18,7 @@
 ## * get more AA similarity measures, eg. Grentham's
 ## https://en.wikipedia.org/wiki/Amino_acid_replacement#Physicochemical_distances
 
-## t-tests over codons
-
-w.test <- function(x,y) {
-    res <- wilcox.test(x,y)
-    ## normalized U-statistic
-    tt <- res$statistic/(sum(!is.na(x))*sum(!is.na(y))) -0.5
-    rt <- list()
-    rt$statistic <- unlist(tt)
-    rt$p.value <- unlist(res$p.value)
-    rt
-}
-
-
-
-## volcano plot function for overlap class
-## produced by raasProfile
-volcano <- function(ovl, cut=15, value="mean", ...) {
-
-    tmv <- c(ovl[[value]])
-    tpv <- -log10(c(ova$p.value))
-    tpv[tpv>cut] <- cut
-
-    dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
-}
-
-raasProfile <- function(x=cdat, id="SAAP", values=tmt,
-                        rows="to", cols="aacodon", use.test=use.test,
-                        do.plots=interactive(), verb=FALSE) {
-
-    aas <- sort(unique(x[,rows]))
-    acod <- sort(unique(x[,cols]))
-    codt <- list()
-    
-    tt <- matrix(0, ncol=length(acod), nrow=length(aas))
-    colnames(tt) <- acod
-    rownames(tt) <- aas
-    tc <- tp <- tm <- td <- tt
-    tp[] <- 1
-    tm[] <- td[] <- NA
-
-
-    min.obs=2
-    for ( i in seq_along(aas) ) {
-        for ( j in seq_along(acod) ) {
-
-            aa <- aas[i]
-            cod <- acod[j]
-        
-            ## get all SAAP for this codon
-            idx <- x[,cols]==cod & x[,rows]==aa
-            
-            csap <- unique(x[idx,id])
-
-            if ( sum(idx)==0 ) next
-            
-            ##cat(paste("testing",cod,"to", aa, "\n"))
-            
-            ## get all RAAS values
-            rm <- !csap%in%names(values)
-            if ( sum(rm) & verb ) 
-                cat(paste0(aa, cod, ": ", sum(rm), " ID not found in values\n"))
-
-            csap <- csap[!rm]
-            y <- unlist(values[csap])
-            X <- unlist(values) 
-            
-            tc[i,j] <- length(y)
-
-            if ( length(y)==0 ) next
-            
-            tm[i,j] <- mean(y)
-            td[i,j] <- median(y)
-           
-            if ( sum(!is.na(y)) >= min.obs ) {
-                tts <- use.test(y, X)
-                codt[[cod]] <- tts
-                tt[i,j] <- tts$statistic
-                tp[i,j] <- tts$p.value
-                if ( do.plots ) {
-                    hist(y, freq=FALSE, border=2, xlim=range(X), ylim=c(0,.6))
-                    hist(X, freq=FALSE, add=TRUE, xlim=range(X))
-                }
-            }
-        }
-    }
-    
-    ## construct overlap object
-    ova <- list()
-    ova$p.value <- tp
-    ova$statistic <- tt
-    ova$count <- tc
-    ova$mean <- tm
-    ova$median <- td
-
-    ## unique SAAP from main data table
-    ova$unique <- table(x[,rows], x[,cols])[rownames(tp),colnames(tp)]
-    
-    sg <- sign(tt)
-    sg[is.na(sg)] <- 1
-    sg[sg==0] <- 1
-    ova$sign <- sg
-    
-    ##ova$statistic[is.na(ova$statistic)] <- ""
-    
-    ## TODO: add counts
-    ova$num.target <-
-        t(as.matrix(table(x[,cols])[colnames(tp)]))
-    ova$num.query <-
-        as.matrix(table(x[,rows]))[rownames(tp),,drop=FALSE]
-    
-    class(ova) <- "clusterOverlaps"
-    ova
-}
+source("~/work/mistrans/scripts/saap_utils.R")
 
 library(readxl)
 library(viridis)
@@ -210,7 +98,7 @@ use.test <- stats::t.test # w.test
 ## plot colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
-ttcols <- c(rev(docols), upcols)
+ttcols <- unique(c(rev(docols), upcols))
 
 gcols <- grey.colors(n=100, start=.9, end=0)
 
@@ -280,7 +168,6 @@ pat <- split(patf$RAAS, patf$SAAP)
 dat$aacodon <- paste(dat$from,dat$codon, sep="-")
 
 
-TMFT <- tmtf # raw RAAS data input
 
 hdat <- dat[!(dat$remove | dat$Hemoglobin.Albumin),]
 cdat <- hdat[hdat$codon!="",] # NOTE: this filters out duplicated SAAP
@@ -314,7 +201,8 @@ raas.col <- selectColors(unlist(tmt),
 dev.off()
 
 
-## fixed full matrices
+### CODONS vs. RAAS
+## LOOP OVER DATASETS
 for ( set in c(unique(cdat$Dataset),"all") ) {
 
     set.path <- file.path(fig.path, set)
@@ -359,18 +247,21 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ova <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
                    rows="to", cols="aacodon", use.test=t.test, do.plots=FALSE)
 
+    source("~/programs/segmenTools/R/clusterTools.R")
+    ##TODO: find bug in plotOverlaps for LSCC
     png(file.path(set.path,"codons_all_ttests.png"),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
-    plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
+    tmp <- plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
                  text.cex=.8, axis=1:3, ##type="unique",
                  ylab="mistranslated AA",
-                 xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
+                 xlab="", col=ttcols, cut=FALSE)#, rmz =FALSE, short=FALSE)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="p value/t-test", cex=1.5, font=2)
     figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
+
     
     png(file.path(set.path,"codons_all_ttests_legend.png"),
         res=300, width=2, height=2, units="in")
@@ -481,14 +372,18 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
 
     ## VOLCANO PLOT
 
-    
+    ##source("~/work/mistrans/scripts/saap_utils.R")
     png(file.path(set.path,"codons_all_ttests_volcano.png"),
         res=300, width=5, height=3, units="in")
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    volcano(ova, xlab="median RAAS", value="median")
+    par(mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    volcano(ova, xlab="median RAAS", value="median",
+            p.txt=5, v.txt=c(-4,-1),
+            mid=mean(unlist(s.tmt)))
     abline(v=mean(unlist(s.tmt)))
+    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
     
+
     
     ## t-tests over AA
     
@@ -553,8 +448,11 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     png(file.path(set.path,"AA_all_ttests_volcano.png"),
         res=300, width=5, height=3, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    volcano(ova, xlab="median RAAS", value="median")
+    volcano(ova, xlab="median RAAS", value="median",
+            p.txt=5, v.txt=c(-4,-1),
+            mid=mean(unlist(s.tmt)))
     abline(v=median(unlist(s.tmt)))
+    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
     
     
@@ -864,7 +762,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
 
 for ( set in c(unique(cdat$Dataset),"all") ) {
 
-    set.path <- file.path(set.path, set)
+    set.path <- file.path(fig.path, set)
     dir.create(set.path, showWarnings=FALSE)
 
     cat(paste(set,"\n"))
@@ -957,7 +855,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(iup.lst, ylab="all TMT RAAS", xlab=NA,
             las=2)
-    axis(3, at=1:length(levels(iup.bins)),
+    axis(3, at=1:length(iup.lst),
          labels=unlist(lapply(iup.lst, length)), las=2)
     figlabel("AAS iupred3", pos="bottomleft")
     dev.off()
@@ -1011,7 +909,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(anc.lst, ylab="all TMT RAAS", xlab=NA, las=2)
-    axis(3, at=1:length(levels(anc.bins)),
+    axis(3, at=1:length(anc.lst),
          labels=unlist(lapply(anc.lst, length)), las=2)
     figlabel("AAS anchor2", pos="bottomleft")
     dev.off()
