@@ -40,6 +40,8 @@ transcr <- file.path(mam.path,"processedData","coding.fa")#"Homo_sapiens.GRCh38.
 ptlen <- file.path(gen.path,"Homo_sapiens.GRCh38.pep.all_lengths.tsv")
 ## protein-transcript map
 tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
+## transcript structure
+exmap <- file.path(gen.path,"transcript_coordinates.tsv")
 
 ## s4pred
 s4pred <- file.path(mam.path,"processedData",
@@ -58,9 +60,6 @@ dir.create(fig.path, showWarnings=FALSE)
 saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df.txt")
 tmt.file <- file.path(dat.path, "All_SAAP_TMTlevel_quant_df.txt")
 pat.file <- file.path(dat.path, "All_SAAP_patient_level_quant_df.txt")
-##saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_20240111.xlsx")
-##tmt.file <- file.path(dat.path, "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
-##pat.file <- file.path(dat.path, "All_filtered_SAAP_patient_level_quant_df.xlsx")
 
 ## COLUMN NAMES
 PMATCH <- "Leading.razor.proteins..all.TMT." # column with protein matches
@@ -244,6 +243,10 @@ names(trfas) <- trids
 ## protein-transcript map
 trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
 
+## reverse map transcript-protein
+pamrt <- matrix(rownames(trmap), ncol=1)
+rownames(pamrt) <- trmap[,1]
+
 ## re-order transcripts for available proteins
 missing <- which(!names(fas)%in%rownames(trmap))
 ## TODO: required or do we valuable loose protein info
@@ -253,6 +256,11 @@ fas <- fas[-missing]
 trfas <- trfas[trmap[names(fas),1]]
 names(trfas) <- names(fas)
 
+## transcript exons genomic coordinates
+trexo <- read.delim(exmap)
+## only keep those where we have a protein
+trexo <- trexo[trexo$transcript%in%trmap[names(fas),1],]
+trexo$protein <- pamrt[trexo$transcript,1]
 
 ## s4pred
 s4p <- readFASTA(s4pred, grepID=TRUE)
@@ -415,7 +423,7 @@ for ( i in 1:nrow(dat) ) {
             anbg[i] <- mean(iud[, 4])
             iubg[i] <- mean(iud[, 3])
         }
-   }
+    }
     
     ## GET CODON
     ## protein:transcript mapping
@@ -450,17 +458,26 @@ for ( i in 1:nrow(dat) ) {
     }
     
     cdn[i] <- codon
-    ## GENETIC_CODE[codon]
-    tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
 
-    ## TODO: get secondary structure, disordered probability
-    
+    ## get genome coor-based data
+
+    gmap <- trexo[trexo$protein==gid,]
+
+    ## TODO:
+    ## load chromosome index chrS
+    ## load phastcons genomic data, convert with coor2index
+    ## do this externally, write fasta like file, but with numbers
+    ## for riboseq, phastcons, etc.
+ 
+     
     ## report
-    tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
-    if ( !interactive() )
+    if ( !interactive() ) {
+        tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
+        tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
         cat(paste("DONE:", i, codon, aaf[i], GENETIC_CODE[codon], "->", aat[i],
                   tcodons, tmp, "\n"))
-
+    }
+    
     if ( aas[i] != aaf[i] ) # doesnt happen since search is exact
         stop(paste("WARNING: BP pos", aaf[i], "vs",
                   aas[i], GENETIC_CODE[codon], "\n"))
@@ -519,20 +536,6 @@ abline(a=0, b=1, col=1, lty=2, lwd=2)
 dev.off()
 
 ## FILTER DATA
-## TODO: find sources!
-## TODO: don't remove but carry over as background
-
-## TODO: move the following interactive exploration to saap_analysis.R
-if ( interactive() ) {
-    ## explore s4pred results
-    ss.tot <- apply(sssbg,2, sum,na.rm=TRUE)
-    ss.tot <- ss.tot/sum(ss.tot)
-    ss.aas <- table(sss)
-    ss.aas <- ss.aas/sum(ss.aas)
-    ss.tab <- rbind(AAS=ss.aas, total=ss.tot)
-    ## slight enrichment of beta/alpha
-    barplot(ss.tab, beside=TRUE, legend=TRUE)
-}
 
 ## missing position - no match found from peptide in protein!!
 ## TODO: perhaps test LONGEST of the leading razor proteins.
