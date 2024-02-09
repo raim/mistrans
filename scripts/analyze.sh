@@ -19,7 +19,12 @@ if [ false ]; then
 	     >>  trasnfer_files.txt
     done < ~/data/mistrans/processedData/mapped_ensembl_proteins.dat
     cat trasnfer_files.txt |sort |uniq | xargs -I % cp % iupred3_selected/
-}
+fi
+
+## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA AND
+## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
+ 
+
  
 R --vanilla < scripts/saap_analysis.R 
 ## functional enrichment of SAAP-harboring proteins
