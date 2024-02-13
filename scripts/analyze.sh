@@ -26,7 +26,7 @@ fi
  
 
  
-R --vanilla < scripts/saap_analysis.R 
+R --vanilla < scripts/saap_analysis.R  > log/analysis.txt
 ## functional enrichment of SAAP-harboring proteins
 R --vanilla < scripts/saap_function.R
 
