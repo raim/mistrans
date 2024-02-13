@@ -252,9 +252,15 @@ missing <- which(!names(fas)%in%rownames(trmap))
 ## TODO: required or do we valuable loose protein info
 cat(paste("removing", length(missing), "proteins w/o matching transcript\n"))
 fas <- fas[-missing]
-## order by protein names via trmap
+
+## rename by protein names via trmap, for quick access
+## of protein-specific transcript
 trfas <- trfas[trmap[names(fas),1]]
 names(trfas) <- names(fas)
+## remember transcript ID
+trids <- trmap[names(fas),1]
+names(trids) <-
+    rownames(trmap[names(fas),,drop=FALSE])
 
 ## transcript exons genomic coordinates
 trexo <- read.delim(exmap)
@@ -562,10 +568,13 @@ if ( length(rm)>0 ) {
     cat(paste("WARNING:", length(rm), "SAAP w/o codon\n"))
 }
 
+dat$transcript <- trids[dat$ensembl]
+
 
 ### WRITE OUT TABLE with positions for downstream analysis
 sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
-               "ensembl","protein","len","pos","rpos","from","to",
+               "ensembl","protein","transcript",
+               "len","pos","rpos","from","to",
                "codon","s4pred","C.protein","E.protein","H.protein",
                "iupred3","iupred3.protein",
                "anchor2","anchor2.protein",
