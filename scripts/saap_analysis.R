@@ -59,6 +59,17 @@ for ( i in 1:nrow(gmat) )
                                               method="exact")[,3])
 GRANTHAM <- gmat
 
+## https://en.wikipedia.org/wiki/Amino_acid#/media/File:ProteinogenicAminoAcids.svg
+AAPROP <- list(charged=c("R","H","K","D","E"),
+               polar=c("S","T","N","Q"),
+               special=c("C","U","G","P"),
+               hydrophobic=c("A","V","I","L","M","F","Y","W"))
+tmp <- unlist(AAPROP)
+AAPROP <- sub("[0-9]+","", names(tmp))
+names(AAPROP) <- tmp
+
+### nucleotides and codons
+
 NTS <- c("A","T","G","C")
 ## note: same as genomebrowser
 ntcols <- c(A=rgb(85/255,107/255,47/255), ## green
@@ -82,6 +93,8 @@ out.path <- file.path(proj.path,"processedData")
 
 in.file <- file.path(out.path,"saap_mapped.tsv")
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
 
 ##tmt.file <- file.path(proj.path,"originalData",
 ##                      "All_filtered_SAAP_TMTlevel_quant_df.xlsx")
@@ -117,7 +130,8 @@ MRAAS <- "RAAS.median"
 genes <- read.delim(feature.file)
 ##genes <- genes[genes$type=="protein_coding",]
 
-
+## codon frequences
+codfrq <- read.delim(codon.file, row.names=1)
 
 ### HOTSPOTS
 
@@ -220,7 +234,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     }
     s.tmt <- split(s.tmtf$RAAS, s.tmtf$SAAP)
 
-    png(file.path(set.path,"raas_distribution.png"),
+    png(file.path(set.path,paste0(set,"_raas_distribution.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
     hist(unlist(pat), add=FALSE, border=2, main=NA)
@@ -234,7 +248,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     to.lst <- list()
     for ( tol in sort(unique(s.cdat$to)) )
         to.lst[[tol]] <- unlist(tmt[s.cdat$SAAP[s.cdat$to == tol]])
-    png(file.path(set.path,"raas_to.png"),
+    png(file.path(set.path,paste0(set,"_raas_to.png")),
         res=300, width=6, height=3, units="in")
     par(mai=c(.5,.5,.5,.15), mgp=c(1.4,.3,0), tcl=-.25)
     boxplot(to.lst,ylab="all TMT RAAS")
@@ -242,57 +256,65 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
     
-    ## TTESTS
+    ## TTESTS/WTESTS
 
+    
+    if ( !interactive() ) {
+        
+        ovw <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
+                           rows="to", cols="aacodon", use.test=w.test,
+                           do.plots=FALSE)
+        
+        png(file.path(set.path,paste0(set,"_codons_all_wtests.png")),
+            res=300, width=14, height=5, units="in")
+        par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        par(mai=c(.7,.5,.7,2.7))
+        plotOverlaps(ovw, p.min=1e-10, p.txt=1e-5,
+                     text.cex=.7, axis=1:3, ##type="unique",
+             ylab="mistranslated AA",
+             xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
+        axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)],
+             las=2)
+        figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
+        figlabel(pos="topright", text=set, cex=2, font=2)
+        dev.off()
+        
+        png(file.path(set.path,paste0(set,"_codons_all_wtests_volcano.png")),
+            res=300, width=5, height=3, units="in")
+        par(mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        volcano(ovw, xlab="median RAAS", value="median",
+                p.txt=5, v.txt=c(-4,-1),
+                mid=mean(unlist(s.tmt)))
+        abline(v=mean(unlist(s.tmt)))
+        figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+        dev.off()
+    }
+    
     ova <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
                    rows="to", cols="aacodon", use.test=t.test, do.plots=FALSE)
 
-    source("~/programs/segmenTools/R/clusterTools.R")
-    ##TODO: find bug in plotOverlaps for LSCC
-    png(file.path(set.path,"codons_all_ttests.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_ttests.png")),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
     tmp <- plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
-                 text.cex=.8, axis=1:3, ##type="unique",
-                 ylab="mistranslated AA",
-                 xlab="", col=ttcols, cut=FALSE)#, rmz =FALSE, short=FALSE)
+                        text.cex=.8, axis=1:3,## type="unique",
+                        ylab="mistranslated AA",
+                        xlab="", col=ttcols, cut=FALSE)#,rmz =FALSE,short=FALSE)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="p value/t-test", cex=1.5, font=2)
-    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+    figlabel(pos="topright", text=set, cex=2, font=2)
     dev.off()
 
     
-    png(file.path(set.path,"codons_all_ttests_legend.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_ttests_legend.png")),
         res=300, width=2, height=2, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlapsLegend(p.min=1e-10, p.txt=1e-5, type=2, col=ttcols)
     dev.off()
-    
-    if ( !interactive() ) {
-        
-        ova <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
-                           rows="to", cols="aacodon", use.test=w.test,
-                           do.plots=FALSE)
-        
-        png(file.path(set.path,"codons_all_wtests.png"),
-            res=300, width=14, height=5, units="in")
-        par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
-        par(mai=c(.7,.5,.7,2.7))
-        plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
-                     text.cex=.7, axis=1:3, ##type="unique",
-             ylab="mistranslated AA",
-             xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
-        axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)],
-             las=2)
-        figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
-        figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
-        dev.off()
-        
-    }
-    
+
     ## median RAAS
-    png(file.path(set.path,"codons_all_raas_median.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_raas_median.png")),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
@@ -304,11 +326,11 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
                  xlab="", text.cex=.8)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="median RAAS", cex=1.5, font=2)
-    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+    figlabel(pos="topright", text=set, cex=2, font=2)
     dev.off()
     
     ## mean RAAS
-    png(file.path(set.path,"codons_all_raas_mean.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_raas_mean.png")),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
@@ -320,11 +342,11 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
              xlab="", text.cex=.8)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="mean RAAS", cex=1.5, font=2)
-    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+    figlabel(pos="topright", text=set, cex=2, font=2)
     dev.off()
     
     ## total count
-    png(file.path(set.path,"codons_all_count.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_count.png")),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
@@ -338,10 +360,10 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
              xlab="", text.cex=.8)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="total count", cex=1.5, font=2)
-    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+    figlabel(pos="topright", text=set, cex=2, font=2)
     dev.off()
     
-    png(file.path(set.path,"codons_all_count_unique.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_count_unique.png")),
         res=300, width=14, height=5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.7,.5,.7,2.7))
@@ -349,23 +371,24 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     cnt[cnt==0] <- NA
     txt <- ova$unique
     txt[txt==0] <- ""
-    txt.col <- ifelse(ova$unique>100,"white","black")
+    txt.col <- ifelse(ova$unique>quantile(c(ova$unique),.95),"white","black")
     image_matrix(cnt, col=gcols, axis=1:3,
                  text=txt, text.col=txt.col, ylab="mistranslated",
                  xlab="", text.cex=.8)
     axis(4, nrow(ova$p.value):1, labels=ACODONS[rownames(ova$p.value)], las=2)
     figlabel(pos="bottomright", text="unique SAAP count", cex=1.5, font=2)
-    figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+    figlabel(pos="topright", text=set, cex=2, font=2)
     dev.off()
     
     df <- data.frame(freq=c(ova$count), raas=c(ova$median))
-    png(file.path(set.path,"codons_all_raas_frequency.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_raas_frequency.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(df$raas, log10(df$freq), ylab="codon->AA count",
             xlab="median RAAS", axes=FALSE)
     axis(1)
-    axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)), labels=FALSE, tcl=par("tcl")/2)
+    axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)),
+         labels=FALSE, tcl=par("tcl")/2)
     axis(2, at=log10(10^(0:5)), labels=10^(0:5))
     dev.off()
 
@@ -373,7 +396,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## VOLCANO PLOT
 
     ##source("~/work/mistrans/scripts/saap_utils.R")
-    png(file.path(set.path,"codons_all_ttests_volcano.png"),
+    png(file.path(set.path,paste0(set,"_codons_all_ttests_volcano.png")),
         res=300, width=5, height=3, units="in")
     par(mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ova, xlab="median RAAS", value="median",
@@ -390,7 +413,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ova <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
                        rows="to", cols="from", use.test=t.test, do.plots=FALSE)
     
-    png(file.path(set.path,"AA_all_ttests.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_ttests.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
@@ -402,7 +425,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
     
-    png(file.path(set.path,"AA_all_ttests_legend.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_ttests_legend.png")),
         res=300, width=2, height=2, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlapsLegend(p.min=1e-10, p.txt=1e-5, type=2, col=ttcols)
@@ -410,14 +433,14 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
     if ( !interactive() ) {
         
-        ova <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
+        ovw <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
                            rows="to", cols="from", use.test=w.test,
                            do.plots=FALSE)
         
-        png(file.path(set.path,"AA_all_wtests.png"),
+        png(file.path(set.path,paste0(set,"_AA_all_wtests.png")),
             res=300, width=5, height=5, units="in")
         par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-        plotOverlaps(ova, p.min=1e-10, p.txt=1e-5,
+        plotOverlaps(ovw, p.min=1e-10, p.txt=1e-5,
                      text.cex=.7, axis=1:2,
                      ylab="mistranslated AA",
                      xlab="encoded AA", col=ttcols,
@@ -426,10 +449,10 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
         dev.off()
         
-        png(file.path(set.path,"AA_all_wtests_raas.png"),
+        png(file.path(set.path,paste0(set,"_AA_all_wtests_raas.png")),
             res=300, width=5, height=5, units="in")
         par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-        ovr <- ova
+        ovr <- ovw
         ovr$count <- round(ovr$median,1)
         ovr$count[is.na(ovr$count)] <- ""
         plotOverlaps(ovr, p.min=1e-10, p.txt=1e-5,
@@ -441,11 +464,21 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
         dev.off()
         
+        ## VOLCANO PLOT
+        png(file.path(set.path,paste0(set,"_AA_all_wtests_volcano.png")),
+            res=300, width=5, height=3, units="in")
+        par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        volcano(ovw, xlab="median RAAS", value="median",
+                p.txt=5, v.txt=c(-4,-1),
+                mid=mean(unlist(s.tmt)))
+        abline(v=median(unlist(s.tmt)))
+        figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+        dev.off()
     }
     
     
     ## VOLCANO PLOT
-    png(file.path(set.path,"AA_all_ttests_volcano.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_ttests_volcano.png")),
         res=300, width=5, height=3, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ova, xlab="median RAAS", value="median",
@@ -458,7 +491,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
 
     ## median RAAS
-    png(file.path(set.path,"AA_all_raas_median.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_raas_median.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ova$count
@@ -472,7 +505,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     ## mean RAAS
-    png(file.path(set.path,"AA_all_raas_mean.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_raas_mean.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ova$count
@@ -486,7 +519,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     ## total count
-    png(file.path(set.path,"AA_all_count.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_count.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
     cnt <- ova$count
@@ -501,14 +534,14 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
     dev.off()
     
-    png(file.path(set.path,"AA_all_count_unique.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_count_unique.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
     cnt <- ova$unique
     cnt[cnt==0] <- NA
     txt <- ova$unique
     txt[txt==0] <- ""
-    txt.col <- ifelse(ova$unique>100,"white","black")
+    txt.col <- ifelse(ova$unique>quantile(c(ova$unique),.95),"white","black")
     image_matrix(cnt, col=gcols, axis=1:2,
                  text=txt, text.col=txt.col, ylab="mistranslated",
                  xlab="encoded AA", text.cex=.8)
@@ -517,33 +550,52 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     df <- data.frame(freq=c(ova$count), raas=c(ova$median))
-    png(file.path(set.path,"AA_all_raas_frequency.png"),
+    png(file.path(set.path,paste0(set,"_AA_all_raas_frequency.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(df$raas, log10(df$freq), ylab="AA->AA count",
             xlab="median RAAS", axes=FALSE)
     axis(1)
-    axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)), labels=FALSE, tcl=par("tcl")/2)
+    axis(2, at=log10(c(1:10,(1:10)*10,1:10*100)),
+         labels=FALSE, tcl=par("tcl")/2)
     axis(2, at=log10(10^(0:5)), labels=10^(0:5))
     dev.off()
     
-    
+}
     
 
     
-###  CODONS
-    
+###  CODON SIMILARITY
     ## use DiffLogo as for Behle et al.! 
-    library(seqLogo)
-    require(ggplot2)
-    require(ggseqlogo)
-    require(DiffLogo)
-    ## with pwm1: AAS enriched codon,
-    ##      pwm2: global human, local proteins, local peptides.
-    ## dlogo <- createDiffLogoObject(pwm1 = pwm1, pwm2 = pwm2)
-    ## dlogo <- enrichDiffLogoObjectWithPvalues(dlogo,n1=n1, n2=n2)
-    ## see 20201204_RM_topA_promoters.R for plot
+library(seqLogo)
+require(ggplot2)
+require(ggseqlogo)
+require(DiffLogo)
+## with pwm1: AAS enriched codon,
+##      pwm2: global human, local proteins, local peptides.
+## dlogo <- createDiffLogoObject(pwm1 = pwm1, pwm2 = pwm2)
+## dlogo <- enrichDiffLogoObjectWithPvalues(dlogo,n1=n1, n2=n2)
+## see 20201204_RM_topA_promoters.R for plot
+
+## LOOP OVER DATASETS
+for ( set in c(unique(cdat$Dataset),"all") ) {
     
+    set.path <- file.path(fig.path, set)
+    dir.create(set.path, showWarnings=FALSE)
+
+    cat(paste(set,"\n"))
+
+    ## EXPERIMENT FILTER
+    if ( set=="all" ) {
+        s.cdat <- cdat
+        s.tmtf <- tmtf
+    } else {
+        s.cdat <- cdat[cdat$Dataset==set,]
+        s.tmtf <- tmtf[tmtf$Dataset==set,]
+    }
+    s.tmt <- split(s.tmtf$RAAS, s.tmtf$SAAP)
+
+  
 
     ## TODO:
     ## * store codon context,-1,+1,
@@ -552,16 +604,29 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## * load codon usage table, AA usage table,
     
     
-    
-    
-    
+    ## all transcripts in set
+    setfrq <- codfrq[s.cdat$transcript,]
+    setfrq <- apply(setfrq,2,sum,na.rm=TRUE)
+
+    ## TODO: resolve by AA,
+    ## and consider what to calculate.
+    aasfrq <- setfrq
+    aasfrq[] <- 0
+    aasfrq[names(table(s.cdat$codon))] <- table(s.cdat$codon)
+    if ( interactive() ) {
+        plot(aasfrq/sum(aasfrq), setfrq/sum(setfrq), col=NA)
+        abline(a=0, b=1)
+        text(aasfrq/sum(aasfrq), setfrq/sum(setfrq), labels=names(setfrq),
+             xpd=TRUE)
+    }
+        
     ## codon positions
     cpos <- strsplit(s.cdat$codon,"")
     ## https://pubmed.ncbi.nlm.nih.gov/11164038/ A vs. U in 2nd
     c1 <- factor(unlist(lapply(cpos, function(x) x[1])), levels=NTS)
     c2 <- factor(unlist(lapply(cpos, function(x) x[2])), levels=NTS)
     c3 <- factor(unlist(lapply(cpos, function(x) x[3])), levels=NTS)
-    cm <- cbind(c1=as.character(c1), c2=as.character(c2), c3=as.character(c3))
+    cm <- do.call(rbind,cpos)
 
 
     cfrq <- rbind("1"=table(c1),
@@ -572,10 +637,11 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     pwm <- t(cfrq)
     pwm <- t(t(pwm)/apply(pwm,2,sum))
     
-    png(file.path(set.path,"codons_logo.png"),
+    png(file.path(set.path,paste0(set,"_codons_logo.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.05,.05), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     seqLogo::seqLogo(makePWM(pwm), ic.scale=FALSE)
+    ##figlabel(set, pos="topright", font=2)
     dev.off()
     ##DiffLogo::seqLogo(makePWM(pwm), sparse=TRUE, ylim=c(0,.3))
     
@@ -593,7 +659,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             unlist(s.tmt[s.cdat$SAAP[cm[,pos]==nt]])
     }
     
-    png(file.path(set.path,"codons_pos.png"),
+    png(file.path(set.path,paste0(set,"_codons_pos.png")),
         res=300, width=3, height=1.5, units="in")
     par(mai=c(.25,.5,.2,.25), mgp=c(1.3,.3,0), tcl=-.25)
     barplot(t(cfrq),beside=TRUE, legend.text=colnames(cfrq),
@@ -601,7 +667,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             xlab="codon position", col=ntcols)
     dev.off()
     
-    png(file.path(set.path,"codons_pos_raas.png"),
+    png(file.path(set.path,paste0(set,"_codons_pos_raas.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     par(mai=c(.5,.5,.15,.25))
@@ -618,7 +684,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     axis(4)
     dev.off()
     
-    png(file.path(set.path,"codons_type.png"),
+    png(file.path(set.path,paste0(set,"_codons_type.png")),
         res=300, width=3, height=1.5, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     par(mai=c(0.1,.5,.2,.1))
@@ -626,7 +692,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             args.legend=list(x="top",ncol=3, inset=c(-.02,-.1), bty="n",
                              title="codon position"))
     dev.off()
-    png(file.path(set.path,"codons_type_raas.png"),
+    png(file.path(set.path,paste0(set,"_codons_type_raas.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.2,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(mai=c(.5,.5,.15,.1))
@@ -646,7 +712,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         aa.lst[[aac]] <- unlist(s.tmt[s.cdat$SAAP[s.cdat$aacodon==aac]])
     
     
-    png(file.path(set.path,"codons_raas.png"),
+    png(file.path(set.path,paste0(set,"_codons_raas.png")),
         res=300, width=12.1, height=5, units="in")
     par(mai=c(.7,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(aa.lst, las=2,
@@ -664,27 +730,96 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## * SWITCH TO RAAS DISTRIBUTION.
 
 
-    ## first find mutated AA pairs
-    ## (column AASin input mixes I/L)
-    ## and split mutated AA pairs into from/to
-    ## TODO: get this from the columns in the mapped file!
-    saaps <- strsplit(s.cdat$SAAP,"")
-    bases <- strsplit(s.cdat$BP, "")
-    fromto <- lapply(1:length(saaps), function(i) {
-        pos <- which(saaps[[i]]!=bases[[i]])
-        c(from=bases[[i]][pos], to=saaps[[i]][pos])
-    })
-    
+    ## get AA->AA transition types
+    fromto <-
+        lapply(seq_len(nrow(s.cdat)),
+               function(i) as.character(s.cdat[i,c("from","to")]))
+    ft <- unlist(lapply(fromto, paste, collapse=":"))
+   
+    ## FROM->TO BY AA PROPERTY CLASSES
+    s.cdat$pfrom <- AAPROP[s.cdat$from]
+    s.cdat$pto <- AAPROP[s.cdat$to]
+    ovw <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
+                       rows="pto", cols="pfrom", use.test=w.test,
+                       do.plots=FALSE)
+        
+    png(file.path(set.path,paste0(set,"_AAprop_all_wtests.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovw, p.min=1e-10, p.txt=1e-5,
+                 text.cex=1, axis=1:2, ##type="unique",
+                 ylab=NA,
+                 xlab="", col=ttcols, show.total=TRUE)
+    mtext("mistranslated", 2, 3.5, adj=-.3, cex=1.2)
+    mtext("encoded", 1, 3.5, adj=-.3, cex=1.2)
+    figlabel(pos="bottomright", text=set, cex=2, font=2)
+    dev.off()
+    png(file.path(set.path,paste0(set,"_AAprop_all_raas_median.png")),
+        res=300, width=3.5, height=3.5, units="in")
+    par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    txt <- ovw$count
+    txt[txt==0] <- ""
+    txt.col <- ifelse(ovw$median< -2, "white","black")
+    image_matrix(ovw$median, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
+                 axis=1:2, text=txt, text.col=txt.col, ylab=NA,
+                 xlab="", text.cex=1)
+    axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
+    mtext("mistranslated", 2, 3.5, adj=-.3, cex=1.2)
+    mtext("encoded", 1, 3.5, adj=-.3, cex=1.2)
+    figlabel(pos="bottomright", text=set, cex=2, font=2)
+    dev.off()        
 
 
     ## analyze AA similarity by different matrices
     ## TODO: remove extra columns
     simmats <- c("BLOSUM62", "PAM250","GRANTHAM")
+    ## TODO: add coarse-grained classification: hydrophilic, bulky, etc.
     for ( i in seq_along(simmats) ) {
 
         mid <- simmats[i]
         MAT <- get(mid)[AA_STANDARD,AA_STANDARD]
+
+### TODO: fix this binning by similarity
         
+        ## BY AA SIM BINS
+        ## TODO : CORRECT FROM->TO DIRECTION
+        aadist <- gdata::unmatrix(MAT)
+        aadist <- (aadist-min(aadist))/(max(aadist)-min(aadist))
+        aabins <- cut(aadist, breaks=seq(0,1,.2))
+        names(aabins) <- names(aadist)
+
+        ## get all TMR RAAS for reach similarity bin
+        aab.lst <- list()
+        for ( aab in levels(aabins) )
+            aab.lst[[aab]] <-
+                unlist(s.tmt[s.cdat$SAAP[as.character(aabins[ft])==aab]])
+
+        ## plot by median RAAS from mapping file
+        png(file.path(set.path,paste0(set,"_AAS_",mid,"_bins_raas.png")),
+            res=300, width=3.5, height=3.5, units="in")
+        par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+        boxplot(s.cdat$RAAS.median ~ aabins[ft], xlab=NA,
+                ylab="median RAAS", las=2)
+        axis(3, at=1:length(levels(aabins)),
+             labels=table(aabins[ft]), las=2)
+        figlabel(mid, pos="bottomright")
+        figlabel(set, pos="bottomleft")
+        dev.off()
+
+        ## plot by all RAAS from TMT file
+        png(file.path(set.path,paste0(set,"_AAS_",mid,"_bins_raas_all.png")),
+        res=300, width=3.5, height=3.5, units="in")
+        par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+        boxplot(aab.lst, ylab="all TMT RAAS", xlab=NA,
+                las=2)
+        axis(3, at=1:length(aab.lst),
+             labels=unlist(lapply(aab.lst, length)), las=2)
+        figlabel(mid, pos="bottomright")
+        figlabel(set, pos="bottomleft")
+        dev.off()
+
+
+### OLD
         ylab <- "similarity between replaced AA" #"BLOSUM62 similarity"
         
         ## similarity of replaced AA
@@ -704,26 +839,26 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
                          sim=sim)
         df <- df[!is.na(raas),]# & !is.infinite(raas),]
         dff <- df[!is.infinite(df$raas),]
-        
-        
-        
-        png(file.path(set.path,paste0("AAS_",mid,"_raas_dense.png")),
+
+        png(file.path(set.path,paste0(set,"_AAS_",mid,"_raas_dense.png")),
         res=300, width=3.5, height=3.5, units="in")
         par(mai=c(.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
         plotCor(dff$sim, dff$raas, ylab=ylab, xlab=rid, colf=viridis::viridis)
         dev.off()
         
-        png(file.path(set.path,paste0("AAS_",mid,"_raas_boxplot.png")),
+        png(file.path(set.path,paste0(set,"_AAS_",mid,"_raas_boxplot.png")),
             res=300, width=5, height=3.5, units="in")
         par(mai=c(.75,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
         boxplot(sim ~ bins, data=df, ylab=ylab,
                 xlab=NA, las=2, at=seq_along(levels(df$bins)))
         axis(3, at=seq_along(levels(df$bins)), labels=table(df$bins),las=2)
         mtext(rid, 1, 2.5)
+        figlabel(set, pos="bottomleft")
         dev.off()
         
         
-        png(file.path(set.path,paste0("AAS_",mid,"_raas_boxplot_dual.png")),
+        png(file.path(set.path,
+                      paste0(set,"_AAS_",mid,"_raas_boxplot_dual.png")),
             res=300, width=3.75, height=3.75, units="in")
         b62 <- cbind.data.frame(MAT[lower.tri(MAT)],
                                 mid)
@@ -751,9 +886,11 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
              xpd=TRUE, pos=3)
         arrows(x0=1, y0=par("usr")[4], x1=2, angle=90, code=3,
                length=.05, xpd=TRUE)
+        figlabel(set, pos="bottomleft")
         dev.off()
         
-        png(file.path(set.path,paste0("AAS_",mid,"_similarities_hist.png")),
+        png(file.path(set.path,
+                      paste0(set,"_AAS_",mid,"_similarities_hist.png")),
             res=300, width=5, height=3.5, units="in")
         hist(MAT[lower.tri(MAT)])
         dev.off()
@@ -799,7 +936,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
                 H=expression(alpha))
     
     ## slight enrichment of beta/alpha
-    png(file.path(set.path,"structure_s4pred.png"),
+    png(file.path(set.path,paste0(set,"_structure_s4pred.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.25,.5,.15,.25), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     barplot(ss.tab, beside=TRUE, legend=TRUE, ylab="fraction",
@@ -810,9 +947,9 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
     ss.lst <- list()
     for ( ssl in c("C","E","H") )
-        ss.lst[[ssl]] <- unlist(s.tmt[s.hdat$SAAP[cdat$s4pred==ssl]])
+        ss.lst[[ssl]] <- unlist(s.tmt[s.hdat$SAAP[s.hdat$s4pred==ssl]])
     
-    png(file.path(set.path,"structure_s4pred_raas.png"),
+    png(file.path(set.path,paste0(set,"_structure_s4pred_raas.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(ss.lst, ylab="all TMT RAAS", xlab=NA, las=2, axes=FALSE)
@@ -834,7 +971,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     anc <- s.hdat$anchor2
     anbg <- s.hdat$anchor2.protein
     
-    png(file.path(set.path,"structure_iupred3_bg.png"),
+    png(file.path(set.path,paste0(set,"_structure_iupred3_bg.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotCor(iup, iubg, xlab="iupred3 score  at AAS site",
@@ -850,7 +987,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         iup.lst[[iupl]] <-
             unlist(s.tmt[s.hdat$SAAP[as.character(iup.bins)==iupl]])
 
-    png(file.path(set.path,"structure_iupred3_raas.png"),
+    png(file.path(set.path,paste0(set,"_structure_iupred3_raas.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(iup.lst, ylab="all TMT RAAS", xlab=NA,
@@ -861,7 +998,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     ## slight positive trend of unstructured/anchor vs RAAS
-    png(file.path(set.path,"structure_iupred3.png"),
+    png(file.path(set.path,paste0(set,"_structure_iupred3.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     hist(iubg, border=NA, col=NA, breaks=seq(0,1,.05), xlab="iupred3 score",
@@ -877,14 +1014,14 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
     ## anchor2
     
-    png(file.path(set.path,"structure_anchor2_bg.png"),
+    png(file.path(set.path,paste0(set,"_structure_anchor2_bg.png")),
         res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotCor(anc, anbg, xlab="anchor2 score  at AAS site",
             ylab="mean anchor2 score of protein") 
     dev.off()
     
-    png(file.path(set.path,"structure_anchor2.png"),
+    png(file.path(set.path,paste0(set,"_structure_anchor2.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     hist(anc, border=NA, col=NA, breaks=seq(0,1,.05), main=NA,
@@ -905,7 +1042,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         anc.lst[[ancl]] <-
             unlist(s.tmt[s.hdat$SAAP[as.character(anc.bins)==ancl]])
     
-    png(file.path(set.path,"structure_anchor2_raas.png"),
+    png(file.path(set.path,paste0(set,"_structure_anchor2_raas.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(anc.lst, ylab="all TMT RAAS", xlab=NA, las=2)
@@ -916,14 +1053,14 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
     
     ## normalized AAS/protein
-    png(file.path(set.path,"structure_anchor2_raas_norm.png"),
+    png(file.path(set.path,paste0(set,"_structure_anchor2_raas_norm.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotCor(s.hdat$RAAS.median, anc/anbg, xlab="median RAAS",
             ylab="normalized anchor2 score, AAS/protein")
     dev.off()
     
-    png(file.path(set.path,"structure_iupred3_raas_norm.png"),
+    png(file.path(set.path,paste0(set,"_structure_iupred3_raas_norm.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotCor(s.hdat$RAAS.median, iup/iubg, xlab="median RAAS",
@@ -946,7 +1083,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     legend("topright", c("BP position","protein length"), col=c(1,2), lty=1)
     
     
-    png(file.path(set.path,"position_length_total.png"),
+    png(file.path(set.path,paste0(set,"_position_length_total.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     hist(log10(s.hdat$len),
@@ -955,7 +1092,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     
-    png(file.path(set.path,"position_length_relative.png"),
+    png(file.path(set.path,paste0(set,"_position_length_relative.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(s.hdat$rpos, log10(s.hdat$len), colf=viridis::viridis,
@@ -965,7 +1102,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(h=log10(size.cutoff))
     dev.off()
     
-    png(file.path(set.path,"position_length_absolute.png"),
+    png(file.path(set.path,paste0(set,"_position_length_absolute.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
         xpd=TRUE)
@@ -979,7 +1116,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(v=size.cutoff)
     dev.off()
     
-    png(file.path(set.path,"position_hist_absolute.png"),
+    png(file.path(set.path,paste0(set,"_position_hist_absolute.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i",
         xpd=TRUE)
@@ -987,7 +1124,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     
-    png(file.path(set.path,"position_ecdf_relative_short.png"),
+    png(file.path(set.path,paste0(set,"_position_ecdf_relative_short.png")),
         res=300, width=2.5, height=2.5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     cdf <- ecdf(s.hdat$rpos[small]) 
@@ -997,7 +1134,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(a=0,b=1, col=1)
     dev.off()
     
-    png(file.path(set.path,"position_ecdf_relative_mid.png"),
+    png(file.path(set.path,paste0(set,"_position_ecdf_relative_mid.png")),
         res=300, width=2.5, height=2.5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     cdf <- ecdf(s.hdat$rpos[large])
@@ -1007,7 +1144,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(a=0,b=1, col=1)
     dev.off()
     
-    png(file.path(set.path,"position_ecdf_relative_long.png"),
+    png(file.path(set.path,paste0(set,"_position_ecdf_relative_long.png")),
         res=300, width=2.5, height=2.5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     cdf <- ecdf(s.hdat$rpos[huge])
@@ -1017,7 +1154,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(a=0,b=1, col=1)
     dev.off()
     
-    png(file.path(set.path,"position_ecdf_absolute.png"),
+    png(file.path(set.path,paste0(set,"_position_ecdf_absolute.png")),
         res=300, width=2.5, height=2.5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     cdf <- ecdf(s.hdat$pos)
@@ -1027,7 +1164,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(v=8.5, col=1)
     dev.off()
     
-    png(file.path(set.path,"position_ecdf_absolute_zoom.png"),
+    png(file.path(set.path,paste0(set,"_position_ecdf_absolute_zoom.png")),
         res=300, width=2.5, height=2.5, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     cdf <- ecdf(s.hdat$pos)
@@ -1037,7 +1174,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(v=10, col=1)
     dev.off()
     
-    png(file.path(set.path,"position_length_absolute_log.png"),
+    png(file.path(set.path,paste0(set,"_position_length_absolute_log.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", yaxs="i")
     dense2d(log10(s.hdat$len), log10(s.hdat$pos),
@@ -1047,7 +1184,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     abline(a=0,b=1)
     dev.off()
     
-    png(file.path(set.path,"position_hist_relative.png"),
+    png(file.path(set.path,paste0(set,"_position_hist_relative.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     hist(s.hdat$rpos, breaks=seq(0,1,0.1),
@@ -1060,7 +1197,8 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
 
     ## BACKGROUND: main peptides
     load(file.path(out.path, "mapped_peptides.rda"))
-    png(file.path(set.path,"position_hist_relative_main_peptides.png"),
+    png(file.path(set.path,paste0(set,
+                                  "_position_hist_relative_main_peptides.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
     hist(unlist(mpos), breaks=seq(0,1,0.1),
@@ -1076,7 +1214,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     dev.off()
     
     ## SMALL v LARGE PROTEINS
-    png(file.path(set.path,"position_hist_relative_short.png"),
+    png(file.path(set.path,paste0(set,"_position_hist_relative_short.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
     hist(s.hdat$rpos[small], breaks=seq(0,1,0.1),
@@ -1091,7 +1229,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     mtext(expression(ecdf(x)), 4, 1.3)
     axis(4)
     dev.off()
-    png(file.path(set.path,"position_hist_relative_long.png"),
+    png(file.path(set.path,paste0(set,"_position_hist_relative_long.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
     hist(s.hdat$rpos[huge], breaks=seq(0,1,0.1),
@@ -1106,7 +1244,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     mtext(expression(ecdf(x)), 4, 1.3)
     axis(4)
     dev.off()
-    png(file.path(set.path,"position_hist_relative_mid.png"),
+    png(file.path(set.path,paste0(set,"_position_hist_relative_mid.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
     hist(s.hdat$rpos[large], breaks=seq(0,1,0.1),
@@ -1126,7 +1264,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## TODO: different analysis for global RAAS,
     ## e.g., position bins vs. all RAAS
 
-    png(file.path(set.path,"position_RAAS_absolute.png"),
+    png(file.path(set.path,paste0(set,"_position_RAAS_absolute.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(s.hdat$pos, s.hdat[,PRAAS], colf=viridis::viridis,#xlim=c(0,1e4),
@@ -1135,7 +1273,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             ylab=PRAAS)
     dev.off()
     
-    png(file.path(set.path,"position_RAAS_relative.png"),
+    png(file.path(set.path,paste0(set,"_position_RAAS_relative.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(s.hdat$rpos, s.hdat[,PRAAS], colf=viridis::viridis,
@@ -1145,7 +1283,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             ylab=PRAAS)
     dev.off()
     
-    png(file.path(set.path,"protein_length_RAAS.png"),
+    png(file.path(set.path,paste0(set,"_protein_length_RAAS.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(s.hdat[,PRAAS], s.hdat$len, colf=viridis::viridis, na.rm=TRUE,
@@ -1155,7 +1293,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
             xlab=PRAAS)
     dev.off()
     
-    png(file.path(set.path,"protein_length_RAAS_log.png"),
+    png(file.path(set.path,paste0(set,"_protein_length_RAAS_log.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(s.hdat[,PRAAS], log10(s.hdat$len), colf=viridis::viridis,na.rm=TRUE,

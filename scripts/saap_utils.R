@@ -16,8 +16,8 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
 
     
     tmv <- gdata::unmatrix(t(ovl[[value]]))
-    tmv <- c(ovl[[value]])
-    tpv <- -log10(gdata::unmatrix(t(ova$p.value)))
+    ##tmv <- c(ovl[[value]])
+    tpv <- -log10(gdata::unmatrix(t(ovl$p.value)))
     tpv[tpv>cut] <- cut
 
     na <- is.na(tmv) | is.na(tpv)
@@ -39,9 +39,11 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
 }
 
 raasProfile <- function(x=cdat, id="SAAP", values=tmt,
-                        rows="to", cols="aacodon", use.test=use.test,
+                        rows="to", cols="aacodon",
+                        use.test=use.test,
                         do.plots=interactive(), verb=FALSE) {
 
+    ## TODO: use full genetic code for consistent columsn and rows!
     aas <- sort(unique(x[,rows]))
     acod <- sort(unique(x[,cols]))
     codt <- list()
