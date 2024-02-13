@@ -35,3 +35,26 @@ https://pubs.acs.org/doi/full/10.1021/ac901541h?casa_token=_XVU6kJg9U8AAAAA%3AIs
 * large effect sizes that we really believe in.
 
 * ribosome density
+
+# meeting, 20240212
+
+* jaccard distance matrix? SAAP shared between data sets.
+* LSCC: standard display set.
+* LUAD: higher ratios in tumor than normal throughout.
+
+* proteasome SAAP higher RAAS in all tumors,
+  subunit A, SAAP: AGSEELAHQK.
+
+* tissue-type specificity?
+
+* subset of substitutions that only require a wobble
+  -> codon vs. AA similarity.
+
+-> group AA-types by similarity, and plot their RAAS distribution
+
+
+* protein/nucleic acids sequences, 10
+  low medium high RAAS from one data set.
+
+-> frequency of each codon in all AAS transcripts,
+-> motif search: cut sequences from FASTA
