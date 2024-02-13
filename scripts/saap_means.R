@@ -274,6 +274,9 @@ for ( i in 1:ncol(summary.types) ) {
     png(file.path(fig.path,paste0(id,"_raas_means_datasets.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    hist(tmtf$RAAS, xlim=c(-6,4), axes=FALSE, main=NA, xlab=NA, ylab=NA,
+         col="#77777777", border=NA)
+    par(new=TRUE)
     df <- data.frame(mean=tmnr, n=tlen)
     ##df <- df[df$n>0,]
     dense2d(df$mean, df$n,
@@ -288,6 +291,9 @@ for ( i in 1:ncol(summary.types) ) {
     png(file.path(fig.path,paste0(id,"_raas_means_datasets_all.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    hist(tmtf$RAAS, xlim=c(-6,4), axes=FALSE, main=NA, xlab=NA, ylab=NA,
+         col="#77777777", border=NA)
+    par(new=TRUE)
     dense2d(tmtf$RAAS, tmtf$count, cex=.6,
             xlab="TMT level RAAS", ylab="number of values per mean", axes=FALSE,
             xlim=c(-6,4))
@@ -341,6 +347,9 @@ for ( i in 1:ncol(summary.types) ) {
     png(file.path(fig.path,paste0(id,"_raas_medians_datasets.png")),
         res=300, width=3.5, height=3.5, units="in")
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    hist(tmtf$RAAS, xlim=c(-6,4), axes=FALSE, main=NA, xlab=NA, ylab=NA,
+         col="#77777777", border=NA)
+    par(new=TRUE)
     df <- data.frame(mean=tmdr, n=tlen)
     ##df <- df[df$n>0,]
     dense2d(df$mean, df$n,
