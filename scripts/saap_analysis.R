@@ -275,8 +275,8 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
              xlab="", col=ttcols)#, rmz =FALSE, short=FALSE)
         axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)],
              las=2)
-        figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
-        figlabel(pos="topright", text=set, cex=2, font=2)
+        figlabel(pos="topright", text="p value/wilcox", cex=1.5, font=2)
+        figlabel(pos="bottomright", text=set, cex=2, font=2)
         dev.off()
         
         png(file.path(set.path,paste0(set,"_codons_all_wtests_volcano.png")),
@@ -445,8 +445,8 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
                      ylab="mistranslated AA",
                      xlab="encoded AA", col=ttcols,
                      show.total=TRUE)#, rmz =FALSE, short=FALSE)
-        figlabel(pos="bottomright", text="p value/wilcox", cex=1.5, font=2)
-        figlabel(pos="bottomleft", text=set, cex=1.5, font=2)
+        figlabel(pos="topright", text="p value/wilcox", cex=1.5, font=2)
+        figlabel(pos="bottomright", text=set, cex=2, font=2)
         dev.off()
         
         png(file.path(set.path,paste0(set,"_AA_all_wtests_raas.png")),
@@ -739,34 +739,58 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## FROM->TO BY AA PROPERTY CLASSES
     s.cdat$pfrom <- AAPROP[s.cdat$from]
     s.cdat$pto <- AAPROP[s.cdat$to]
+    srt <- c("charged","polar","hydrophobic","special")
+    source("~/work/mistrans/scripts/saap_utils.R")
+    fname <- file.path(set.path,paste0(set,"_AAprop_all_wtests_"))
     ovw <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
-                       rows="pto", cols="pfrom", use.test=w.test,
-                       do.plots=FALSE)
+                       rows="pto", cols="pfrom",
+                       row.srt=srt, col.srt=srt,
+                       use.test=w.test,
+                       do.plots=set=="PDAC", xlab="TMT level RAAS",
+                       fname=fname, verb=1)
         
     png(file.path(set.path,paste0(set,"_AAprop_all_wtests.png")),
-        res=300, width=3.5, height=3.5, units="in")
-    par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        res=300, width=3, height=3, units="in")
+    par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ovw, p.min=1e-10, p.txt=1e-5,
                  text.cex=1, axis=1:2, ##type="unique",
                  ylab=NA,
                  xlab="", col=ttcols, show.total=TRUE)
-    mtext("mistranslated", 2, 3.5, adj=-.3, cex=1.2)
-    mtext("encoded", 1, 3.5, adj=-.3, cex=1.2)
-    figlabel(pos="bottomright", text=set, cex=2, font=2)
+    mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
+    mtext("encoded", 1, 3.5, adj=-.7, cex=1.2)
+    figlabel(pos="bottomright", text=set, cex=1.5, font=2)
     dev.off()
-    png(file.path(set.path,paste0(set,"_AAprop_all_raas_median.png")),
-        res=300, width=3.5, height=3.5, units="in")
-    par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    png(file.path(set.path,paste0(set,"_AAprop_all_wtests_raas_median.png")),
+        res=300, width=3, height=3, units="in")
+    par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ovw$count
     txt[txt==0] <- ""
     txt.col <- ifelse(ovw$median< -2, "white","black")
     image_matrix(ovw$median, col=raas.col$col, cut=TRUE, breaks=raas.col$breaks,
                  axis=1:2, text=txt, text.col=txt.col, ylab=NA,
                  xlab="", text.cex=1)
-    axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
-    mtext("mistranslated", 2, 3.5, adj=-.3, cex=1.2)
-    mtext("encoded", 1, 3.5, adj=-.3, cex=1.2)
-    figlabel(pos="bottomright", text=set, cex=2, font=2)
+    ##axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
+    mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
+    mtext("encoded", 1, 3.5, adj=-.7, cex=1.2)
+    mtext("median TMT-level RAAS", 3, .5, cex=1.2)
+    figlabel(pos="bottomright", text=set, cex=1.5, font=2)
+    dev.off()        
+    png(file.path(set.path,paste0(set,"_AAprop_all_wtests_count_unique.png")),
+        res=300, width=3, height=3, units="in")
+    par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+    cnt <- ovw$unique
+    cnt[cnt==0] <- NA
+    txt <- ovw$unique
+    txt[txt==0] <- ""
+    txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
+    image_matrix(cnt, col=gcols, axis=1:2,
+                 text=txt, text.col=txt.col, ylab="",
+                 xlab="", text.cex=.8)
+    ##axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
+    mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
+    mtext("encoded", 1, 3.5, adj=-.7, cex=1.2)
+    mtext("# unique SAAP", 3, .5, cex=1.2)
+    figlabel(pos="bottomright", text=set, cex=1.5, font=2)
     dev.off()        
 
 
@@ -1304,3 +1328,149 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     
 }
 
+
+### TRACKING SPECIFIC CASES
+
+go.path <- file.path(fig.path, "function")
+dir.create(go.path, showWarnings=FALSE)
+
+set <- "PDAC"
+from <- c("T")
+to <- c("V")
+target <- paste0(paste(from,collapse="/"),">",
+                 paste(to,collapse="/"))
+cid <- paste0(set,":",target)
+
+filter1 <- cdat$Dataset%in%set 
+filter2 <- cdat$from%in%from & cdat$to%in%to
+filter <- filter1 & filter2
+
+    
+proteins <- unique(cdat$ensembl[filter])
+bgproteins <- unique(cdat$ensembl[filter1])
+aproteins <- unique(cdat$ensembl)
+
+
+uds <- sort(unique(cdat$Dataset))
+uds <- c("Healthy",uds[uds!="Healthy"])
+cls.srt <- c(uds[!uds%in%target], set, target)
+cls <- cdat$Dataset
+names(cls) <- cdat$ensembl
+cls[bgproteins] <- set
+cls[proteins] <- target
+
+## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
+
+ctgies <- c("KEGG","GO:BP","GO:MF","GO:CC")
+ovll <- runGost(cls, organism="hsapiens", cls.srt=cls.srt, evcodes=FALSE,
+                categories=ctgies)
+
+ctgy <- ctgies[1]
+for ( ctgy in ctgies ) {
+    
+    ovl <- ovll[[ctgy]]
+
+    ## filter large annotations such as GO
+    p.filt <- 1e-2
+    cut <- TRUE
+    if ( length(grep("^GO:",ctgy))>0 ) {
+        
+        ## 
+        trm.srt <- ovl$num.query[,1]
+        keep <- trm.srt > 10 & trm.srt <5e3
+        trm.srt <- names(trm.srt)[keep]
+        ovl <- sortOverlaps(ovl, srt=trm.srt)
+        
+        p.filt <- 1e-5
+        cut <- TRUE
+    } else if ( ctgy=="TF" ) {
+        p.filt <- 1e-5
+        cut <- TRUE
+    } else if ( ctgy=="KEGG" ) {
+        p.filt <- 1e-5
+        cut <- TRUE
+    }
+    
+    ## sort along clusters
+    ovc <- sortOverlaps(ovl, p.min=p.filt, cut=cut)
+    
+    if ( nrow(ovc$p.value)==0 ) {
+        cat(paste("NO SIGNIFICANT HITS REMAINING\n"))
+        next
+    }
+    
+    
+    ## calculate optimal figure height: result fields + figure margins (mai)
+    nh <- nrow(ovc$p.value) *.2 + 1
+    nw <- ncol(ovc$p.value) *.4 + 5
+    
+    if ( nrow(ovc$p.value) < 5 ) {
+        nh <- nh*2; nw <- nw*2
+    }
+    
+    ## plot figure
+    plotdev(file.path(go.path,paste0(cid,"_annot_",ctgy)),
+            height=nh, width=nw, res=200)
+    par(mai=c(.75,4.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, show.total=TRUE,
+             xlab=NA, ylab=NA)
+    axis(2, at=nrow(ovc$p.value)+1.5, label=ctgy,
+         cex.axis=1.2, font=2, xpd=TRUE, las=2)
+    figlabel(cid,pos="bottomleft", font=2, cex=1.5)
+    dev.off()
+}
+
+## get feature file and track down AAS in V/I/L degradation.
+
+## get indices of these proteins in gene table
+gnidx <- unlist(sapply(proteins, function(x) grep(x, genes$proteins)))
+
+## TODO: load full GO term list to search terms,
+## goslim doesnt contain branched chain amino acids
+
+goterm <- "GO:0009083" #branched-chain amino acid catabolic process
+goidx <- grep(goterm, genes$GO)
+
+intersect(goidx,gnidx) ## NONE FOUND!
+
+## TODO: get KEGG annotation used by gprofiler2, or detailed results
+## by gprofiler2
+goterm <- "GO:1901136" #carbohydrate derivative catabolic process
+goidx <- grep(goterm, genes$GO)
+
+intersect(goidx,gnidx) ## NONE FOUND!
+
+## VIA KEGG WEBSITE: associated GO terms
+goidx <- c(grep("GO:0006550",genes$GO),
+           grep("GO:0006552", genes$GO),
+           grep("GO:0006574", genes$GO))
+gidx <- intersect(goidx,gnidx) ## NONE FOUND!
+
+genes$name[gidx]
+
+## ACAT1/GO:0006550: This gene encodes a mitochondrially localized enzyme that
+## catalyzes the reversible formation of acetoacetyl-CoA from two
+## molecules of acetyl-CoA. Defects in this gene are associated with
+## 3-ketothiolase deficiency, an inborn error of isoleucine catabolism
+## characterized by urinary excretion of 2-methyl-3-hydroxybutyric
+## acid, 2-methylacetoacetic acid, tiglylglycine, and
+## butanone. [provided by RefSeq, Feb 2009]
+
+## find this in SAAP
+eid <- intersect(proteins, unlist(strsplit(genes$proteins[gidx],";")))
+cidx <- which(cdat$ensembl==eid)
+
+cdat[cidx,]
+
+## in PDAC: ENGTVTAANASTLNDGAAALVLMTADAAK -> TODO: blast this and get domain info
+
+## @Jiang2022: From the 48 BCAA-catabolism enzyme (BCE) genes, a
+## 5-gene risk-score (ABAT, ACAT1, BCAT1, BCAT2, and DBT)
+
+gois <- c("ABAT", "ACAT1", "BCAT1", "BCAT2", "DBT")
+
+## @Xin2009: Insulin-mediated regulation also involves ERK, p38MAPK,
+## and JNK signaling pathways.[16]
+
+## @Fan2014: Tyr phosphorylation of PDP1 toggles recruitment between
+## ACAT1 and SIRT3 to regulate the pyruvate dehydrogenase complex

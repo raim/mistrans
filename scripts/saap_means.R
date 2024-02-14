@@ -137,7 +137,7 @@ png(file.path(fig.path,paste0("tmt_abundance_count_BP.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(log10(tmtf$BP.abundance), cnt, axes=FALSE, cex=.7,
-        xlab=expression(log[10](I[BP])), ylab="number of values per mean")
+        xlab=expression(log[10](I[BP])), ylab="measurements per unique SAAP/BP")
 axis(1)
 axis(2)
 dev.off()
@@ -146,7 +146,7 @@ png(file.path(fig.path,paste0("tmt_abundance_count_SAAP.png")),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 dense2d(log10(tmtf$SAAP.abundance), cnt, axes=FALSE, cex=.7,
-        xlab=expression(log[10](I[SAAP])), ylab="number of values per mean")
+        xlab=expression(log[10](I[SAAP])), ylab="measurements per unique SAAP/BP")
 axis(1)
 axis(2, at=c(1,seq(20,300,20)))
 dev.off()
@@ -158,10 +158,10 @@ par(mai=c(0,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
 lgcnt <- table(cnt)
 lgcnt <- lgcnt/as.numeric(names(lgcnt))
 plot(names(lgcnt), lgcnt, type="h", log="y", lwd=3, axes=FALSE,
-     xlab="number of values per mean", ylab=NA)
+     xlab="measurements per unique SAAP/BP", ylab=NA)
 corners = par("usr") 
 text(x = corners[1]-mean(corners[1:2])/4, y = mean(corners[4]),
-     "total count", srt=-90, xpd=TRUE, pos=1)
+     "unique count", srt=-90, xpd=TRUE, pos=1)
 axis(2, at=c(1,seq(20,300,20)))
 axis(4)
 ##figlabel(pos="bottomleft", text=summary.names[id])
@@ -201,6 +201,8 @@ for ( i in 1:ncol(summary.types) ) {
     id <- colnames(summary.types)[i]
     CL <- summary.types[,i]
 
+    cat(paste("calculating", id, "\n"))
+    
     ## split by summary type
     tmt <- split(tmtf$RAAS, CL)
 
@@ -254,7 +256,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tcvs, tlen, axes=FALSE,
             xlab=expression(CV==sdev/mean), cex=.6,
-            ylab="number of values per mean")
+            ylab="measurements per unique SAAP/BP")
     axis(1)
     maxis()
     figlabel(pos="topright", text=summary.names[id])
@@ -280,7 +282,7 @@ for ( i in 1:ncol(summary.types) ) {
     df <- data.frame(mean=tmnr, n=tlen)
     ##df <- df[df$n>0,]
     dense2d(df$mean, df$n,
-            ylab="number of values per mean", cex=.6,
+            ylab="measurements per unique SAAP/BP", cex=.6,
             xlab="mean TMT level RAAS", axes=FALSE, xlim=c(-6,4))
     axis(1)
     maxis()
@@ -295,7 +297,7 @@ for ( i in 1:ncol(summary.types) ) {
          col="#77777777", border=NA)
     par(new=TRUE)
     dense2d(tmtf$RAAS, tmtf$count, cex=.6,
-            xlab="TMT level RAAS", ylab="number of values per mean", axes=FALSE,
+            xlab="TMT level RAAS", ylab="measurements per unique SAAP/BP", axes=FALSE,
             xlim=c(-6,4))
     axis(1)
     maxis()
@@ -308,10 +310,10 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(0,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
     lgcnt <- table(tlen)
     plot(names(lgcnt), lgcnt, type="h", log="y", lwd=3, axes=FALSE,
-         xlab="number of values per mean", ylab=NA)
+         xlab="measurements per unique SAAP/BP", ylab=NA)
     corners = par("usr") 
     text(x = corners[1]-mean(corners[1:2])/4, y = mean(corners[4]),
-         "total count", srt=-90, xpd=TRUE, pos=1)
+         "unique count    ", srt=-90, xpd=TRUE, pos=1)
     axis(2)
     axis(4)
     ##figlabel(pos="bottomleft", text=summary.names[id])
@@ -324,7 +326,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tsdr, tlen, axes=FALSE,
             xlab=expression(standard~deviation), cex=.6,
-            ylab="number of values per mean")
+            ylab="measurements per unique SAAP/BP")
     axis(1)
     maxis()
     figlabel(pos="topright", text=summary.names[id], cex=1.2)
@@ -336,7 +338,7 @@ for ( i in 1:ncol(summary.types) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dense2d(tcvr, tlen, axes=FALSE,
             xlab=NA,
-            cex=.6, ylab="number of values per mean")
+            cex=.6, ylab="measurements per unique SAAP/BP")
     mtext(expression(CV==sqrt(10^(ln(10)*var(x)) -1)), 1, 1.5)
     axis(1)
     maxis()
@@ -353,7 +355,7 @@ for ( i in 1:ncol(summary.types) ) {
     df <- data.frame(mean=tmdr, n=tlen)
     ##df <- df[df$n>0,]
     dense2d(df$mean, df$n,
-            ylab="number of values per mean", cex=.6,
+            ylab="measurements per unique SAAP/BP", cex=.6,
             xlab="median TMT level RAAS", axes=FALSE, xlim=c(-6,4))
     axis(1)
     maxis()

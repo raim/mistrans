@@ -40,12 +40,19 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
 
 raasProfile <- function(x=cdat, id="SAAP", values=tmt,
                         rows="to", cols="aacodon",
+                        row.srt, col.srt,
                         use.test=use.test,
-                        do.plots=interactive(), verb=FALSE) {
+                        do.plots=interactive(),
+                        xlab="value", fname="profile_",
+                        verb=FALSE) {
 
     ## TODO: use full genetic code for consistent columsn and rows!
-    aas <- sort(unique(x[,rows]))
-    acod <- sort(unique(x[,cols]))
+
+    if ( !missing(row.srt) ) aas <- row.srt
+    else aas <- sort(unique(x[,rows]))
+    if ( !missing(row.srt) ) acod <- col.srt
+    else acod <- sort(unique(x[,cols]))
+
     codt <- list()
     
     tt <- matrix(0, ncol=length(acod), nrow=length(aas))
@@ -93,9 +100,34 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
                 codt[[cod]] <- tts
                 tt[i,j] <- tts$statistic
                 tp[i,j] <- tts$p.value
+                
                 if ( do.plots ) {
-                    hist(y, freq=FALSE, border=2, xlim=range(X), ylim=c(0,.6))
-                    hist(X, freq=FALSE, add=TRUE, xlim=range(X))
+                    outfile <- paste0(fname,cod,"_",aa,".png")
+                    hcol <- ifelse(tts$statistic<0, "#0000ff","#ff0000")
+                    if ( verb>0 ) cat(paste("plotting", outfile, "\n"))
+                    png(outfile, width=3, height=2,
+                        units="in", res=100)
+                    par(mai=c(.5,.15,.25,.15), tcl=-.25, mgp=c(1.3,.3,0))
+                    brks <- seq(min(X), max(X), length.out=20)
+                    hist(y, freq=FALSE, border=NA,
+                         col=paste0(hcol,77),
+                         xlim=range(X), main=NA,
+                         xlab=xlab, breaks=brks, axes=FALSE)
+                    par(new=TRUE)
+                    hist(X, freq=FALSE, col="#77777777", border=NA,
+                         xlim=range(X), main=NA, xlab=NA, ylab=NA, axes=FALSE,
+                         breaks=brks)
+                    abline(v=median(X), col=1, lwd=2)
+                    abline(v=td[i,j], col=hcol, lwd=2)
+                    axis(1)
+                    mtext(as.expression(bquote(.(cod) %->% .(aa))),
+                          3,-.1, font=2, cex=1.5)
+                    legend(ifelse(tts$statistic<0, "topright","topleft"),
+                           c(paste0("n=", length(y)),
+                             paste0("u/t=", round(tts$statistic,1)),
+                             paste0("p=", signif(tts$p.value,1))),
+                           bty="n", seg.len=0, x.intersp=0)
+                    dev.off()
                 }
             }
         }
