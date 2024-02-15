@@ -39,6 +39,7 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
 }
 
 raasProfile <- function(x=cdat, id="SAAP", values=tmt,
+                        bg=FALSE, vid,
                         rows="to", cols="aacodon",
                         row.srt, col.srt,
                         use.test=use.test,
@@ -50,7 +51,7 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
 
     if ( !missing(row.srt) ) aas <- row.srt
     else aas <- sort(unique(x[,rows]))
-    if ( !missing(row.srt) ) acod <- col.srt
+    if ( !missing(col.srt) ) acod <- col.srt
     else acod <- sort(unique(x[,cols]))
 
     codt <- list()
@@ -78,15 +79,25 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             if ( sum(idx)==0 ) next
             
             ##cat(paste("testing",cod,"to", aa, "\n"))
+
+            ## if a local background is chosen, tmt
+            ## should be a table with the bg column
+            ## and we filtering TMT only for this subset
+            if ( bg ) {
+                cat(paste("getting subset of values",cod,"\n"))
+                vals <- values[values[,cols]==cod,]
+                vals <- split(vals[,vid], vals[,id])
+            } else vals <- values
+                
             
             ## get all RAAS values
-            rm <- !csap%in%names(values)
+            rm <- !csap%in%names(vals)
             if ( sum(rm) & verb ) 
                 cat(paste0(aa, cod, ": ", sum(rm), " ID not found in values\n"))
 
             csap <- csap[!rm]
-            y <- unlist(values[csap])
-            X <- unlist(values) 
+            y <- unlist(vals[csap])
+            X <- unlist(vals) 
             
             tc[i,j] <- length(y)
 

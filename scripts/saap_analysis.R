@@ -123,6 +123,26 @@ PRAAS <- "Mean.precursor.RAAS" # precursor ion/experiment level
 MRAAS <- "RAAS.median"
 
 
+saaps <- strsplit(hdat$SAAP,"")
+bases <- strsplit(hdat$BP, "")
+fromto <- lapply(1:length(saaps), function(i) {
+    pos <- which(saaps[[i]]!=bases[[i]])
+    c(from=bases[[i]][pos], to=saaps[[i]][pos])
+})
+fromto <- do.call(rbind, fromto)
+
+## replace from/to columns
+hdat$from <- fromto[,1]
+hdat$to <- fromto[,2]
+
+## fromto column
+hdat$fromto <- apply(fromto, 1, paste0, collapse=":")
+
+## generate columns by AA property
+hdat$pfrom <- aaprop[fromto[,1]]
+hdat$pto <- aaprop[fromto[,2]]
+hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
+
 ## TODO: calculate mean/median RAAS here from raw data
 ##       at the required level
 
@@ -577,6 +597,7 @@ require(DiffLogo)
 ## dlogo <- enrichDiffLogoObjectWithPvalues(dlogo,n1=n1, n2=n2)
 ## see 20201204_RM_topA_promoters.R for plot
 
+
 ## LOOP OVER DATASETS
 for ( set in c(unique(cdat$Dataset),"all") ) {
     
@@ -730,15 +751,12 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ## * SWITCH TO RAAS DISTRIBUTION.
 
 
-    ## get AA->AA transition types
-    fromto <-
-        lapply(seq_len(nrow(s.cdat)),
-               function(i) as.character(s.cdat[i,c("from","to")]))
-    ft <- unlist(lapply(fromto, paste, collapse=":"))
+    ## get AA->AA transition types as list and vector
+    fromtol <- lapply(seq_len(nrow(s.cdat)),
+                      function(i) as.character(s.cdat[i,c("from","to")]))
+    ft <- s.cdat$fromto
    
     ## FROM->TO BY AA PROPERTY CLASSES
-    s.cdat$pfrom <- AAPROP[s.cdat$from]
-    s.cdat$pto <- AAPROP[s.cdat$to]
     srt <- c("charged","polar","hydrophobic","special")
     source("~/work/mistrans/scripts/saap_utils.R")
     fname <- file.path(set.path,paste0(set,"_AAprop_all_wtests_"))
@@ -847,7 +865,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
         ylab <- "similarity between replaced AA" #"BLOSUM62 similarity"
         
         ## similarity of replaced AA
-        sim <- unlist(lapply(fromto, function(x) MAT[x[1],x[2]]))
+        sim <- unlist(lapply(fromtol, function(x) MAT[x[1],x[2]]))
         
         rid <- "Mean.precursor.RAAS"
         raas <- unlist(s.cdat[,rid])

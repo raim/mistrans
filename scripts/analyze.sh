@@ -6,6 +6,9 @@
 ## INPUT GENOME DATA IS GENERATED
 ## by from genomeBrowser/mammary/setup.sh
 
+## analyze data structure, different number of replicates per unique SAAP
+R --vanilla < scripts/saap_means.R > log/means.txt
+
 ## map each peptide to position in protein and transcript
 R --vanilla < scripts/map_peptides2.R > log/map.txt
 
@@ -21,9 +24,10 @@ if [ false ]; then
     cat trasnfer_files.txt |sort |uniq | xargs -I % cp % iupred3_selected/
 fi
 
-## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA AND
+## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
- 
+
+
 
  
 R --vanilla < scripts/saap_analysis.R  > log/analysis.txt
