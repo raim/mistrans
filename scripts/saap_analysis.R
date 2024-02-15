@@ -1330,32 +1330,38 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
 
 
 ### TRACKING SPECIFIC CASES
+## TODO; move/merge with saap_function.R
 
+
+godat <- cdat[cdat$Dataset!="Healthy",]
 go.path <- file.path(fig.path, "function")
 dir.create(go.path, showWarnings=FALSE)
 
-set <- "PDAC"
-from <- c("T")
-to <- c("V")
+set <- "all" # "LUAD" #"PDAC"
+from <- c("Q") # c("T")
+to <- c("G") #c("V")
 target <- paste0(paste(from,collapse="/"),">",
                  paste(to,collapse="/"))
 cid <- paste0(set,":",target)
 
-filter1 <- cdat$Dataset%in%set 
-filter2 <- cdat$from%in%from & cdat$to%in%to
+
+filter1 <- godat$Dataset%in%set 
+if ( set=="all") filter1 <- rep(TRUE, nrow(godat))
+filter2 <- godat$from%in%from & godat$to%in%to
 filter <- filter1 & filter2
 
     
-proteins <- unique(cdat$ensembl[filter])
-bgproteins <- unique(cdat$ensembl[filter1])
-aproteins <- unique(cdat$ensembl)
+proteins <- unique(godat$ensembl[filter])
+bgproteins <- unique(godat$ensembl[filter1])
+aproteins <- unique(godat$ensembl)
 
 
-uds <- sort(unique(cdat$Dataset))
+uds <- sort(unique(godat$Dataset))
 uds <- c("Healthy",uds[uds!="Healthy"])
-cls.srt <- c(uds[!uds%in%target], set, target)
-cls <- cdat$Dataset
-names(cls) <- cdat$ensembl
+cls.srt <- c(uds[!uds%in%set], set, target)
+cancer.srt <- cls.srt[cls.srt!="Healthy"]
+cls <- godat$Dataset
+names(cls) <- godat$ensembl
 cls[bgproteins] <- set
 cls[proteins] <- target
 
@@ -1370,6 +1376,11 @@ for ( ctgy in ctgies ) {
     
     ovl <- ovll[[ctgy]]
 
+    if ( ctgy!="KEGG" ) tmp.srt <- cancer.srt
+    else tmp.srt <- cls.srt
+
+    ovl <- sortOverlaps(ovl, axis=1, srt=tmp.srt)
+    
     ## filter large annotations such as GO
     p.filt <- 1e-2
     cut <- TRUE
@@ -1384,10 +1395,10 @@ for ( ctgy in ctgies ) {
         p.filt <- 1e-5
         cut <- TRUE
     } else if ( ctgy=="TF" ) {
-        p.filt <- 1e-5
+        p.filt <- 1e-3
         cut <- TRUE
     } else if ( ctgy=="KEGG" ) {
-        p.filt <- 1e-5
+        p.filt <- 1e-3
         cut <- TRUE
     }
     
