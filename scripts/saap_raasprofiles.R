@@ -369,3 +369,7 @@ plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
 figlabel(LAB, pos="bottomleft", cex=1.5)
 mtext("w/o freq.", 1, 2, cex=1.5, adj=-1)
 dev.off()
+
+filt <- hdat$Dataset=="PDAC" #hdat$Dataset!="Healthy"
+boxplot(hdat$iupred3[filt] ~ hdat$fromto[filt], las=2)
+boxplot(hdat$anchor2[filt] ~ hdat$fromto[filt], las=2)
