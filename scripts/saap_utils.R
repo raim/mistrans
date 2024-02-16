@@ -65,10 +65,14 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
 
 
     min.obs=2
+    allvals <- list()
     for ( i in seq_along(aas) ) {
+
+        aa <- aas[i]
+        allvals[[aa]] <- list()
+
         for ( j in seq_along(acod) ) {
 
-            aa <- aas[i]
             cod <- acod[j]
         
             ## get all SAAP for this codon
@@ -84,20 +88,30 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             ## should be a table with the bg column
             ## and we filtering TMT only for this subset
             if ( bg ) {
-                cat(paste("getting subset of values",cod,"\n"))
-                vals <- values[values[,cols]==cod,]
-                vals <- split(vals[,vid], vals[,id])
+
+                ## TODO: CHECK THIS: split by SAAP, get all RAAS
+                ## duplicate SAAP effect?
+                if ( verb>0 )
+                    cat(paste("getting subset of values:",
+                              cols, cod, vid, id,"\n"))
+                vals <- values[values[,cols]==cod,] ## FILTER DATASET
+                vals <- split(vals[,vid], vals[,id])## split RAAS/vid by SAAP/id
             } else vals <- values
                 
             
             ## get all RAAS values
             rm <- !csap%in%names(vals)
-            if ( sum(rm) & verb ) 
-                cat(paste0(aa, cod, ": ", sum(rm), " ID not found in values\n"))
-
+            if ( sum(rm) ) 
+                cat(paste("WARNING:", aa, cod, ":", sum(rm), "of", length(csap),
+                          "IDs not found in values:",
+                          paste(csap[rm],collapse=","),"\n"))
             csap <- csap[!rm]
+            
+            ## get all RAAS values
             y <- unlist(vals[csap])
-            X <- unlist(vals) 
+            X <- unlist(vals)
+
+            allvals[[aa]][[cod]] <- y
             
             tc[i,j] <- length(y)
 
@@ -167,6 +181,10 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
         t(as.matrix(table(x[,cols])[colnames(tp)]))
     ova$num.query <-
         as.matrix(table(x[,rows]))[rownames(tp),,drop=FALSE]
+
+
+    ## attach all raw values
+    ova$ALL <- allvals
     
     class(ova) <- "clusterOverlaps"
     ova

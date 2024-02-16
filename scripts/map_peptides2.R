@@ -1,4 +1,8 @@
 
+## TODO 20240216
+## * unify mapped proteins, eg. AMGIMNSFVNDIFER maps to
+##   five different histone H2B genes (different for each dataset).
+
 ## Q for shiri:
 ## * handle sublists with ; in Leading razor,
 ## * ENSP00000496574_I90L: no I at position 90,
@@ -71,11 +75,14 @@ dat <- read.delim(saap.file) #data.frame(read_xlsx(saap.file))
 
 ### FILTER
 filtercols <- c("Potential.contaminant","Immunoglobulin",
-                "K.R.AAS","Potential.uncaptured.transcript")
+                "K.R.AAS","Potential.uncaptured.transcript","Trypsin")
 ##filtercols <- c(filtercols, "Hemoglobin.Albumin")
-
+logic.cols <- c("Hemoglobin.Albumin","Keep.SAAP")
 ## convert to logic
-for ( f in filtercols ) dat[,f] <- as.logical(dat[,f])
+for ( f in c(filtercols,logic.cols) ) {
+    dat[,f] <- as.logical(dat[,f])
+    dat[is.na(dat[,f]),f] <- FALSE
+}
 
 ## TODO: carry over to proteins for function analysis
 rm <- apply(dat[,filtercols], 1, any) 
@@ -182,16 +189,24 @@ pids <- lapply(pids, function(x) x[grep("ENSP",x)])
 ## take FIRST of multiple
 pids <- unlist(lapply(pids, function(x) x[1]))
 
-## sublists: split and take first again
+## sublists: split, sort and take first again
+## NOTE: sorting may help to find the same protein
+## for identical SAAP in different Datasets
 ## TODO: handle sublists betters
 pids <- strsplit(pids, ";")
-pids <- unlist(lapply(pids, function(x) x[1]))
+pids <- unlist(lapply(pids, function(x) sort(x)[1]))
 
 ## remove mutation tag
 eids <- sub("_.*", "", pids)
 
 dat$protein <- pids
 dat$ensembl <- eids
+
+
+## TODO: UNIFY ENSEMBL FOR IDENTICAL BP! 
+## eg. collect all identical SAAP (before taking the first),
+## look up if one is MANE and take this. Inherit the currently
+## inconsistent tagging in TMT and Protein level files.
 
 ### TODO: mix approaches
 ##dat$protein <- pids  # first ensembl -mutation tags
@@ -578,7 +593,7 @@ sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
                "codon","s4pred","C.protein","E.protein","H.protein",
                "iupred3","iupred3.protein",
                "anchor2","anchor2.protein",
-               "remove","Hemoglobin.Albumin")]
+               "remove","Hemoglobin.Albumin","Keep.SAAP")]
 write.table(sdat, file=file.path(out.path,"saap_mapped.tsv"),
             sep="\t", quote=FALSE, na="", row.names=FALSE)
 
