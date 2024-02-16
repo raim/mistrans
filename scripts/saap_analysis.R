@@ -67,6 +67,7 @@ AAPROP <- list(charged=c("R","H","K","D","E"),
 tmp <- unlist(AAPROP)
 AAPROP <- sub("[0-9]+","", names(tmp))
 names(AAPROP) <- tmp
+aaprop <- sub("hydrophobic", "hphobic", AAPROP)
 
 ### nucleotides and codons
 
@@ -123,8 +124,8 @@ PRAAS <- "Mean.precursor.RAAS" # precursor ion/experiment level
 MRAAS <- "RAAS.median"
 
 
-saaps <- strsplit(hdat$SAAP,"")
-bases <- strsplit(hdat$BP, "")
+saaps <- strsplit(dat$SAAP,"")
+bases <- strsplit(dat$BP, "")
 fromto <- lapply(1:length(saaps), function(i) {
     pos <- which(saaps[[i]]!=bases[[i]])
     c(from=bases[[i]][pos], to=saaps[[i]][pos])
@@ -132,16 +133,16 @@ fromto <- lapply(1:length(saaps), function(i) {
 fromto <- do.call(rbind, fromto)
 
 ## replace from/to columns
-hdat$from <- fromto[,1]
-hdat$to <- fromto[,2]
+dat$from <- fromto[,1]
+dat$to <- fromto[,2]
 
 ## fromto column
-hdat$fromto <- apply(fromto, 1, paste0, collapse=":")
+dat$fromto <- apply(fromto, 1, paste0, collapse=":")
 
 ## generate columns by AA property
-hdat$pfrom <- aaprop[fromto[,1]]
-hdat$pto <- aaprop[fromto[,2]]
-hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
+dat$pfrom <- aaprop[fromto[,1]]
+dat$pto <- aaprop[fromto[,2]]
+dat$pfromto <- paste0(dat$pfrom,":",dat$pto)
 
 ## TODO: calculate mean/median RAAS here from raw data
 ##       at the required level
@@ -757,7 +758,7 @@ for ( set in c(unique(cdat$Dataset),"all") ) {
     ft <- s.cdat$fromto
    
     ## FROM->TO BY AA PROPERTY CLASSES
-    srt <- c("charged","polar","hydrophobic","special")
+    srt <- c("charged","polar","hphobic","special")
     source("~/work/mistrans/scripts/saap_utils.R")
     fname <- file.path(set.path,paste0(set,"_AAprop_all_wtests_"))
     ovw <- raasProfile(x=s.cdat, id="SAAP", values=s.tmt,
@@ -1356,8 +1357,8 @@ go.path <- file.path(fig.path, "function")
 dir.create(go.path, showWarnings=FALSE)
 
 set <- "all" # "LUAD" #"PDAC"
-from <- c("Q") # c("T")
-to <- c("G") #c("V")
+from <- c("T") # c("Q") # 
+to <- c("V") # c("G") #
 target <- paste0(paste(from,collapse="/"),">",
                  paste(to,collapse="/"))
 cid <- paste0(set,":",target)
@@ -1383,10 +1384,13 @@ names(cls) <- godat$ensembl
 cls[bgproteins] <- set
 cls[proteins] <- target
 
+cls.srt <-
+    cls.srt[cls.srt%in%unique(godat$Dataset)]
+
 ## ENRICHMENT OVER ALL CATEGORIES in gprofiler2
 
 ctgies <- c("KEGG","GO:BP","GO:MF","GO:CC")
-ovll <- runGost(cls, organism="hsapiens", cls.srt=cls.srt, evcodes=FALSE,
+ovll <- runGost(cls, organism="hsapiens", evcodes=FALSE,
                 categories=ctgies)
 
 ctgy <- ctgies[1]
@@ -1394,8 +1398,12 @@ for ( ctgy in ctgies ) {
     
     ovl <- ovll[[ctgy]]
 
-    if ( ctgy!="KEGG" ) tmp.srt <- cancer.srt
-    else tmp.srt <- cls.srt
+    if ( ctgy!="KEGG" )
+        tmp.srt <- cancer.srt
+    else
+        tmp.srt <- cls.srt
+
+    tmp.srt <- tmp.srt[tmp.srt%in%colnames(ovl$p.value)]
 
     ovl <- sortOverlaps(ovl, axis=1, srt=tmp.srt)
     

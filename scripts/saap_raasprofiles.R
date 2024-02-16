@@ -57,9 +57,9 @@ tmt.file <- file.path(proj.path,"originalData",
 p.min <- 1e-10
 p.txt <- 1e-5
 
-exclude.albumin <- FALSE #  TRUE # 
+exclude.albumin <- TRUE # FALSE #  
 exclude.frequent <- FALSE # TRUE # 
-frequent <- c("Q","W","H")
+frequent <- c("Q","W","H","S")
 
 LAB <- "all"
 fig.path <- file.path(proj.path,"figures","saap_raasprofiles")
@@ -85,17 +85,17 @@ dat$Hemoglobin.Albumin <- as.logical(dat$Hemoglobin.Albumin)
 
 #### TODO: missing values
 
-## NOTE: tagged to removed in TMT, all but Healthy, but NOT in protein level
+## NOTE: inconsistent remove tags
 if ( FALSE ) {
     saap <- "LGMFNIQHGK" # flagged Keep=FALSE in tmt but not in hdat?
     saap <- "WYNLAIGSTGPWLK"
-    ##saap <- "GVEAAGAMFLEAIPMSIPPEVK"
+    saap <- "HIADLAGNSEVILVVPAFNVINGGSHAGNK"
     tmtf[which(tmtf$SAAP==saap),c("Keep.SAAP","Dataset")]
     dat[which(dat$SAAP==saap),c("remove","Keep.SAAP","Dataset")]
 }
 
-## filter hard removes
-hdat <- dat[which(!dat$remove),]
+## remove excluded
+hdat <- dat[which(dat$Keep.SAAP),]
 
 
 ## get raw RAAS data TMT level
@@ -172,12 +172,8 @@ uds <- c("Healthy",uds[uds!="Healthy"])
 
 srt <- c("charged","polar","hphobic","special")
 srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
-axex <- rep("",length(srt))
-names(axex) <- srt
-for ( i in seq_along(srt) ) {
-    ft <- unlist(strsplit(srt[i],":"))
-    axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
-}
+
+axex <- ftlabels(srt) # axis labels with arrows
 
 fname <- file.path(fig.path,paste0("AAprop_wtests_"))
 source("~/work/mistrans/scripts/saap_utils.R")

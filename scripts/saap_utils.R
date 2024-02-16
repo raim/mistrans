@@ -1,3 +1,17 @@
+
+# from->to as expression, e.g. for axis labels
+ftlabels <- function(srt) {
+    axex <- rep("",length(srt))
+    names(axex) <- srt
+    for ( i in seq_along(srt) ) {
+        ft <- unlist(strsplit(srt[i],":"))
+        axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
+    }
+    axex
+}
+
+## wilcox test with normalized U-statistic, to
+## be used for statistical profile plots
 w.test <- function(x,y) {
     res <- wilcox.test(x,y)
     ## normalized U-statistic
@@ -38,6 +52,8 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
                    font=2, cex=.8, xpd=TRUE)
 }
 
+## calculate statistical profiles, similar to segmenTools::clusterProfiler,
+## but working on lists of unequal lengths instead of a matrix
 raasProfile <- function(x=cdat, id="SAAP", values=tmt,
                         bg=FALSE, vid,
                         rows="to", cols="aacodon",
@@ -157,6 +173,7 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             }
         }
     }
+    if ( verb>0 ) cat(paste("DONE\n"))
     
     ## construct overlap object
     ova <- list()
