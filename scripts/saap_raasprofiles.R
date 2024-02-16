@@ -5,6 +5,16 @@ library(viridis)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
+addPoints <- function(ovl, value="median") {
+    z <- t(apply(ovl[[value]], 2, rev))
+    cx <- c(z)
+    mx <- max(cx,na.rm=TRUE)
+    mn <- min(cx,na.rm=TRUE)
+    cx <- 3*(cx-mn)/(mx-mn)
+    points(x = rep(1:ncol(z), nrow(z)),
+           y = rep(nrow(z):1, each = ncol(z)), cex = cx)
+}
+
 ## TODO:
 ## * which AA are missing from mapped file and why? likely
 ## because BP didnt match, generate from SAAP/BP,
@@ -182,7 +192,6 @@ ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf,
                    bg=TRUE, vid="RAAS", row.srt=srt, col.srt=uds,
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    fname=fname, verb=0)
-
 ## common histogram with color by sign and
 
 ## first, calculate densities
@@ -250,6 +259,7 @@ par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1, ylab=NA, xlab="", col=ttcols, show.total=TRUE)
 axis(2, length(axex):1, labels=axex, las=2)
+addPoints(ovw)
 figlabel(LAB, pos="bottomleft", cex=1.5)
 dev.off()
 
