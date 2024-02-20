@@ -167,6 +167,14 @@ hdat$pfrom <- aaprop[fromto[,1]]
 hdat$pto <- aaprop[fromto[,2]]
 hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
 
+## MAP from/to to TMT Data
+idx <- match(tmtf$SAAP, hdat$SAAP)
+tmtf$from <- hdat$from[idx]
+tmtf$to <- hdat$to[idx]
+tmtf$pfrom <- hdat$pfrom[idx]
+tmtf$pto <- hdat$pto[idx]
+
+
 
 #### FILTER
 
@@ -688,6 +696,46 @@ mtext("median TMT-level RAAS", 3, .5, cex=1.2)
 figlabel(LAB, pos="bottomleft", cex=1.5)
 dev.off()
 
+### BY STRUCTURAL FEATURES
+
+## bin score to compare to full list of RAAS
+hdat$iupred3.bins <- as.character(cut(hdat$iupred3, breaks=seq(0,1,.2)))
+hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
+ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf, 
+                   rows="iupred3.bins", cols="Dataset",
+                   bg=TRUE, vid="RAAS", #row.srt=levels(hdat$iupred3.bins),
+                   col.srt=uds,
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=0, fname=file.path(fig.path,"iupred3_"))
+
+png(file.path(fig.path,paste0("structure_iupred3.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
+             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
+             show.total=TRUE)
+mtext("IUPRED3 BINS", 2, 3.3, cex=1.2)
+figlabel(LAB, pos="bottomleft", cex=1.5)
+dev.off()
+
+hdat$s4pred[hdat$s4pred==""] <- "na"
+ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf, 
+                   rows="s4pred", cols="Dataset",
+                   bg=TRUE, vid="RAAS",
+                   col.srt=uds,
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=0, fname=file.path(fig.path,"s4pred_"))
+
+png(file.path(fig.path,paste0("structure_s4pred.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
+             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
+             show.total=TRUE)
+mtext("S4PRED", 2, 3.3, cex=1.2)
+figlabel(LAB, pos="bottomleft", cex=1.5)
+dev.off()
+
 
 ### TEST IUPRED3 by AA CLASS
 
@@ -759,21 +807,15 @@ boxplot(df$RAAS ~ df$pfrom)
 library(lme4)
 library(lmerTest)
 
-## TODO: full TMT matric
-idx <- match(tmtf$SAAP, hdat$SAAP)
-tmtf$from <- hdat$from[idx]
-tmtf$to <- hdat$to[idx]
-tmtf$pfrom <- hdat$pfrom[idx]
-tmtf$pto <- hdat$pto[idx]
 
 ## TODO: can we use this?
 
 df <- data.frame(RAAS=tmtf$RAAS,
                  Dataset=tmtf$Dataset,
-                 from=hdat$from[idx],
-                 to=hdat$to[idx],
-                 pfrom=hdat$pfrom[idx],
-                 pto=hdat$pto[idx],
+                 from=tmtf$from,
+                 to=tmtf$to,
+                 pfrom=tmtf$pfrom,
+                 pto=tmtf$pto,
                  stringsAsFactors = TRUE)
 df$Dataset <- as.character(df$Dataset)
 
@@ -819,3 +861,31 @@ summary(mfaa)
 ##                               data = data, REML=T,
 ##                               control = lmerControl(optimizer="bobyqa", optCtr = list(maxfun = 1e9)))
 ##summary(frn_diff_parsimoniuous)
+
+### IUPRED3
+idat <- hdat[hdat$from=="Q",]
+itmt <- tmtf[tmtf$from=="Q",]
+stmt <- split(itmt$RAAS, itmt$SAAP)
+
+## bin score to compare to full list of RAAS
+iup.bins <- cut(idat$iupred3, breaks=seq(0,1,.2))
+levels(iup.bins)
+iup.lst <- list()
+for ( iupl in levels(iup.bins) )
+    iup.lst[[iupl]] <-
+        unlist(stmt[idat$SAAP[as.character(iup.bins)==iupl]])
+
+png(file.path(fig.path,paste0("fromQ","_structure_iupred3_raas.png")),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+boxplot(iup.lst, ylab="all TMT RAAS", xlab=NA,
+        las=2)
+axis(3, at=1:length(iup.lst),
+     labels=unlist(lapply(iup.lst, length)), las=2)
+figlabel("AAS iupred3", pos="bottomleft")
+dev.off()
+
+
+
+boxplot(hdat$iupred3 ~ hdat$from)
+boxplot(hdat$anchor2 ~ hdat$from)
