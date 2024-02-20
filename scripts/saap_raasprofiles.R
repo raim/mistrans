@@ -775,6 +775,7 @@ df <- data.frame(RAAS=tmtf$RAAS,
                  pfrom=hdat$pfrom[idx],
                  pto=hdat$pto[idx],
                  stringsAsFactors = TRUE)
+df$Dataset <- as.character(df$Dataset)
 
 fprp <- RAAS ~ pfrom*pto + (1|Dataset)
 mprp <- lmer(fprp, data = df, REML=TRUE,
@@ -789,6 +790,16 @@ mfaa <- lmer(faa, data = df, REML=TRUE,
                                    optCtr = list(maxfun = 1e9)))
 summary(mfaa)
 X <- model.matrix(fprp, df)
+
+
+## get by property class and see contributions
+sdf <- df[df$pfrom=="polar" & df$pto=="special",]
+
+faa <- RAAS ~ from*to + (1|Dataset)
+mfaa <- lmer(faa, data = sdf, REML=TRUE,
+             control = lmerControl(optimizer="bobyqa",
+                                   optCtr = list(maxfun = 1e9)))
+summary(mfaa)
 
 ##summary(frn_diff_parsimoniuous)
       
