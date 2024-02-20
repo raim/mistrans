@@ -22,11 +22,22 @@ w.test <- function(x,y) {
     rt
 }
 
+plotovl <- function(ovl, text="count", cut=TRUE, value="median",
+                    txt.cut=-2, ...) {
 
+    ## TODO: auto-select txt.cut, in image_matrix based on brightness,
+    ## as in 
+    txt <- ovl[[text]]
+    txt[txt==0] <- ""
+    txt.col <- ifelse(ovl[[value]]< txt.cut, "white","black")
+    image_matrix(ovl[[value]], cut=cut,
+                 text=txt, text.col=txt.col, ...)
+}
 
 ## volcano plot function for overlap class
 ## produced by raasProfile
-volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
+volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
+                    density=TRUE, ...) {
 
     
     tmv <- gdata::unmatrix(t(ovl[[value]]))
@@ -37,19 +48,27 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid=0, ...) {
     na <- is.na(tmv) | is.na(tpv)
     tpv <- tpv[!na]
     tmv <- tmv[!na]
-    
-    dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
+
+    if ( density ) {
+        dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
+    } else {
+        plot(tmv, tpv, ylab=expression(-log[10](p)), ...)
+    }
     axis(4)
 
+    ## indicate high
     show <- tpv>p.txt
     if ( !missing(v.txt) )
         show <- show & (tmv<v.txt[1] | tmv>v.txt[2])
 
     show <- which(show)
-    if ( length(show) )
+    if ( length(show) ){
+        if ( missing(mid) )
+            mid <- mean(ovl[[value]],na.rm=TRUE)
         shadowtext(tmv[show], tpv[show], labels=names(tpv)[show],
                    pos=ifelse(tmv[show]<mid, 2,4), col="red",
                    font=2, cex=.8, xpd=TRUE)
+    }
 }
 
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
@@ -70,6 +89,10 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
     if ( !missing(col.srt) ) acod <- col.srt
     else acod <- sort(unique(x[,cols]))
 
+    ## FILTER SRTS
+    aas <- aas[aas%in%x[,rows]]
+    acod <- acod[acod%in%x[,cols]]
+    
     codt <- list()
     
     tt <- matrix(0, ncol=length(acod), nrow=length(aas))
@@ -96,9 +119,10 @@ raasProfile <- function(x=cdat, id="SAAP", values=tmt,
             
             csap <- unique(x[idx,id])
 
-            if ( sum(idx)==0 ) next
+            if ( length(idx)==0 ) next
+            if ( sum(idx,na.rm=TRUE)==0 ) next
             
-            ##cat(paste("testing",cod,"to", aa, "\n"))
+            if (verb>0) cat(paste("testing",cod,"to", aa, "\n"))
 
             ## if a local background is chosen, tmt
             ## should be a table with the bg column

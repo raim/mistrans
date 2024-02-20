@@ -28,8 +28,13 @@ fi
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
 
 
+## with Albumin
+sed 's/^exclude.albumin.*/exclude.albumin=FALSE/;s/^exclude.frequent.*/exclude.frequent=FALSE/' scripts/saap_raasprofiles.R | R --vanilla
+## without Albumin
+sed 's/^exclude.albumin.*/exclude.albumin=TRUE/;s/^exclude.frequent.*/exclude.frequent=FALSE/' scripts/saap_raasprofiles.R | R --vanilla
+ ## without Albumin and without frequent
+sed 's/^exclude.albumin.*/exclude.albumin=TRUE/;s/^exclude.frequent.*/exclude.frequent=TRUE/' scripts/saap_raasprofiles.R | R --vanilla
 
- 
 R --vanilla < scripts/saap_analysis.R  > log/analysis.txt
 ## functional enrichment of SAAP-harboring proteins
 R --vanilla < scripts/saap_function.R
