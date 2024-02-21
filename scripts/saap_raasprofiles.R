@@ -698,54 +698,74 @@ dev.off()
 
 ### BY STRUCTURAL FEATURES
 
-## bin score to compare to full list of RAAS
-hdat$iupred3.bins <- as.character(cut(hdat$iupred3, breaks=seq(0,1,.2)))
+## IUPRED3
+iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
+rsrt <- levels(iupred3.bins)
+hdat$iupred3.bins <- as.character(iupred3.bins)
 hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
 ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf, 
                    rows="iupred3.bins", cols="Dataset",
-                   bg=TRUE, vid="RAAS", #row.srt=levels(hdat$iupred3.bins),
+                   bg=TRUE, vid="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"iupred3_"))
 
 png(file.path(fig.path,paste0("structure_iupred3.png")),
     res=300, width=4, height=3, units="in")
-par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
              show.total=TRUE)
-mtext("IUPRED3 BINS", 2, 3.3, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1.5)
+mtext("IUPRED3 SCORE", 2, 3.5, cex=1.2)
+figlabel(LAB, pos="bottomleft", cex=1.2)
 dev.off()
 
-hdat$s4pred[hdat$s4pred==""] <- "na"
+## ANCHOR2
+anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
+rsrt <- levels(anchor2.bins)
+hdat$anchor2.bins <- as.character(anchor2.bins)
+hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
 ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf, 
-                   rows="s4pred", cols="Dataset",
-                   bg=TRUE, vid="RAAS",
+                   rows="anchor2.bins", cols="Dataset",
+                   bg=TRUE, vid="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=0, fname=file.path(fig.path,"anchor2_"))
+
+png(file.path(fig.path,paste0("structure_anchor2.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
+             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
+             show.total=TRUE)
+mtext("ANCHOR2 SCORE", 2, 3.5, cex=1.2)
+figlabel(LAB, pos="bottomleft", cex=1.2)
+dev.off()
+
+## S4 PRED SECONDARY STRUCTURE
+ssrt <- c(E="sheet", H="helix", C="coil")
+hdat$sstruc <- ssrt[hdat$s4pred]
+hdat$sstruc[hdat$sstruc==""] <- "na"
+ovw <- raasProfile(x=hdat, id="SAAP", values=tmtf, 
+                   rows="sstruc", cols="Dataset",
+                   bg=TRUE, vid="RAAS", row.srt=rev(ssrt), col.srt=uds,
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
 png(file.path(fig.path,paste0("structure_s4pred.png")),
     res=300, width=4, height=3, units="in")
-par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(1,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
              show.total=TRUE)
-mtext("S4PRED", 2, 3.3, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1.5)
+mtext("S4PRED", 2, 3.5, cex=1.2)
+figlabel(LAB, pos="bottomleft", cex=1.2)
 dev.off()
 
-
-### TEST IUPRED3 by AA CLASS
-
-filt <- hdat$Dataset=="PDAC" #hdat$Dataset!="Healthy"
-boxplot(hdat$iupred3[filt] ~ hdat$fromto[filt], las=2)
-boxplot(hdat$anchor2[filt] ~ hdat$fromto[filt], las=2)
-
-boxplot(hdat$iupred3[filt] ~ hdat$pfromto[filt], las=2)
-boxplot(hdat$anchor2[filt] ~ hdat$pfromto[filt], las=2)
-
+## anchor2 and iupred3 correlation strongly
+dense2d(hdat$anchor2, hdat$iupred3)
+## and each correlates with protein mean
+dense2d(hdat$anchor2, hdat$anchor2.protein)
 
 ### TEST HPHOBIC->SPECIAL HIGH RAAS IN CCRCC
 
@@ -796,9 +816,6 @@ which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC")
 hdat$SAAP[which(!hdat$SAAP[filt]%in%tmtf$SAAP[tmtf$Dataset=="CCRCC"])]
 
 
-## SIMPLE BOXPLOTS
-
-boxplot(df$RAAS ~ df$pfrom)
 
 #### MIXED LINEAR MODEL:
 ## TODO: does this help to answer the question,
