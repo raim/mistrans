@@ -64,7 +64,6 @@ AAC <- AAC[AAC!="Stp"]
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
 ttcols <- unique(c(rev(docols), upcols))
-
 gcols <- grey.colors(n=100, start=.9, end=0)
 
 #### PATHS AND FILES
@@ -85,6 +84,7 @@ p.txt <- 1e-5
 exclude.albumin <- TRUE # FALSE #  
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
+only.unique <- FALSE
 
 LAB <- "all"
 fig.path <- file.path(proj.path,"figures","saap_raasprofiles")
@@ -97,6 +97,10 @@ if ( exclude.frequent ) {
     fig.path <- paste0(fig.path,"_", gsub(",","",tmp))
     LAB <- paste("no", tmp)
 }
+if ( only.unique ) {
+    fig.path <- paste0(fig.path,"_uniqueSAAP")
+    LAB <- paste("unique SAAP")
+}
 dir.create(fig.path, showWarnings=FALSE)
 
 ### START
@@ -105,30 +109,35 @@ dir.create(fig.path, showWarnings=FALSE)
 dat <- read.delim(in.file)
 tmtf <- read.delim(tmt.file)
 
-
+## convert to logical
+tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 dat$Hemoglobin.Albumin <- as.logical(dat$Hemoglobin.Albumin)
 
-#### TODO: missing values
+#### TODO: 
 
-## NOTE: inconsistent remove tags
-if ( FALSE ) {
-    saap <- "LGMFNIQHGK" # flagged Keep=FALSE in tmt but not in hdat?
-    saap <- "WYNLAIGSTGPWLK"
-    saap <- "HIADLAGNSEVILVVPAFNVINGGSHAGNK"
-    tmtf[which(tmtf$SAAP==saap),c("Keep.SAAP","Dataset")]
-    dat[which(dat$SAAP==saap),c("remove","Keep.SAAP","Dataset")]
-}
+
+## fuse all excluded tags for each unique SAAP
+alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
+              tmtf[,c("Keep.SAAP","SAAP")])
+alls <- split(alls$Keep.SAAP, alls$SAAP)
+
+## inconsistents
+##alls[which(unlist(lapply(alls, function(x) length(unique(x))))>1)]
+
+## UNIFY FILTER COLUMNS
+## remove if tagged so for any dataset
+keep <- unlist(lapply(alls, all))
+dat$keep <- keep[dat$SAAP]
+tmtf$keep <- keep[tmtf$SAAP]
 
 ## remove excluded
-hdat <- dat[which(dat$Keep.SAAP),]
-
+hdat <- dat[which(dat$keep),]
 
 ## get raw RAAS data TMT level
-tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 ## remove excluded
 cat(paste("removing", sum(!tmtf$Keep.SAAP),
           "tagged as false positive on TMT level\n"))
-tmtf <- tmtf[tmtf$Keep.SAAP,]
+tmtf <- tmtf[tmtf$keep,]
 ## exclude NA or Inf
 rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
@@ -159,6 +168,9 @@ fromto <- do.call(rbind, fromtol)
 hdat$from <- fromto[,1]
 hdat$to <- fromto[,2]
 
+## just useful for plots instead of raw codons
+hdat$aacodon <- paste(hdat$from, hdat$codon, sep="-")
+
 ## fromto column
 hdat$fromto <- apply(fromto, 1, paste0, collapse=":")
 
@@ -167,42 +179,64 @@ hdat$pfrom <- aaprop[fromto[,1]]
 hdat$pto <- aaprop[fromto[,2]]
 hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
 
-## MAP from/to to TMT Data
+hdat$frompto <- paste0(hdat$from, ":", hdat$pto)
+
+## STRUCTURE: add bins for numeric values
+## iupred3
+iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
+rsrt <- levels(iupred3.bins)
+hdat$iupred3.bins <- as.character(iupred3.bins)
+hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
+## anchor2
+anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
+rsrt <- levels(anchor2.bins)
+hdat$anchor2.bins <- as.character(anchor2.bins)
+hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
+## secondary structure by names
+ssrt <- c(E="sheet", H="helix", C="coil")
+hdat$sstruc <- ssrt[hdat$s4pred]
+hdat$sstruc[hdat$sstruc==""] <- "na"
+
+## MAP protein level info to TMT Data
 idx <- match(tmtf$SAAP, hdat$SAAP)
 tmtf$from <- hdat$from[idx]
 tmtf$to <- hdat$to[idx]
+tmtf$fromto <- hdat$fromto[idx]
 tmtf$pfrom <- hdat$pfrom[idx]
 tmtf$pto <- hdat$pto[idx]
+tmtf$pfromto <- hdat$pfromto[idx]
+tmtf$frompto <- hdat$frompto[idx]
+tmtf$codon <- hdat$codon[idx]
+tmtf$aacodon <- hdat$aacodon[idx]
+tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
+tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
+tmtf$sstruc <- hdat$sstruc[idx]
 
+tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 
-
-#### FILTER
-
+### FILTER
 if (  exclude.albumin ) {
-    ## TODO: also exclude from TMF level file!!!
-    rmsaap <- hdat$SAAP[hdat$Hemoglobin.Albumin]
+    rmsaap <- tmtf$SAAP[tmtf$albumin]
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
-    hdat <- hdat[!hdat$Hemoglobin.Albumin,]
 }
-
 if ( exclude.frequent ) {
-
-    ## TODO: MAKE SURE TO REMOVE THE SAME TYPES!!
-    ## this is probably not required since we
-    ## only look up SAAP that appear in hdat!
-
-    rmsaap <- hdat$SAAP[hdat$from%in%frequent]
+    rmsaap <- tmtf$SAAP[tmtf$from%in%frequent]
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
-
-    hdat <- hdat[!hdat$from%in%frequent,]
+}
+if ( only.unique ) {
+    ## FOR TESTING
+    ## just take the first of each SAAP per dataset
+    tmtf <- tmtf[!duplicated(paste(tmtf$SAAP,tmtf$Dataset)),]
 }
 
-## find which are missing
-##length(grep("NA",hdat$pfromto))
-##adat <- hdat[grep("NA",hdat$pfromto, invert=TRUE),]
+### TODO: merge unique SAAP here to test effects of multiple
+### measurements.
+
+## from this point on we only work with tmtf, which
+## now should have all information
 
 ## sorting and labels
-uds <- sort(unique(hdat$Dataset))
+uds <- sort(unique(tmtf$Dataset))
 uds <- c("Healthy",uds[uds!="Healthy"])
 
 srt <- c("charged","polar","hphobic","special")
@@ -214,13 +248,14 @@ dpath <- file.path(fig.path,"dists")
 dir.create(dpath, showWarnings=FALSE)
 fname <- file.path(dpath,paste0("AAprop_wtests_"))
 source("~/work/mistrans/scripts/saap_utils.R")
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
-                   rows="pfromto", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=srt, col.srt=uds,
-                   use.test=t.test, do.plots=TRUE, xlab="TMT level RAAS",
-                   fname=fname, verb=0)
-## common histogram with color by sign and
+ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
+                    delog=TRUE, rows="pfromto", cols="Dataset",
+                    bg=TRUE, row.srt=srt, col.srt=uds,
+                    use.test=t.test, do.plots=TRUE, xlab="TMT level RAAS",
+                    fname=fname, verb=1)
 
+
+## common histogram with color by sign and
 ## first, calculate densities
 dns <- ovw$ALL
 for ( i in 1:nrow(ovw$p.value) ) {
@@ -294,7 +329,7 @@ dev.off()
 png(file.path(fig.path,"raas_profile_colors.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-lraas.col <- selectColors(c(ovw$median),
+lraas.col <- selectColors(c(ovw$mean),
                           q=0.01, colf=viridis::viridis,
                           n=10,
                           xlim=c(-4,1),
@@ -337,8 +372,8 @@ png(file.path(fig.path,paste0("AAprop_volcano.png")),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
 volcano(ovw, cut=100, p.txt=5, v.txt=c(-Inf,-1), density=TRUE,
-        xlab="median TMT RAAS", value="median")
-abline(v=median(ovw$median,na.rm=TRUE))
+        xlab="mean TMT RAAS", value="mean")
+abline(v=mean(ovw$mean,na.rm=TRUE))
 dev.off()
 
 png(file.path(fig.path,paste0("AAprop_volcano_mean.png")),
@@ -367,9 +402,9 @@ figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
 
 
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
-                   bg=TRUE, vid="RAAS", col.srt=uds,
+                   bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 png(file.path(fig.path,paste0("fromAA_wtests.png")),
@@ -383,9 +418,9 @@ mtext("from", 2, 1.3)
 figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
 
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
-                   bg=TRUE, vid="RAAS", col.srt=uds,
+                   bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 png(file.path(fig.path,paste0("toAA_wtests.png")),
@@ -401,14 +436,14 @@ dev.off()
 
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(hdat$pfromto) ) {
+for ( ptype in unique(tmtf$pfromto) ) {
 
-    ddat <- hdat[hdat$pfromto==ptype,]
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=tmtf, 
+    dtmt <- tmtf[tmtf$pfromto==ptype,]
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
-                       bg=TRUE, vid="RAAS", col.srt=uds,
+                       bg=TRUE, value="RAAS", col.srt=uds,
                        use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
-                       verb=0)
+                       verb=1)
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *.2 + 1.4
     nw <- ncol(ovw$p.value) *.4 + 1.15
@@ -431,12 +466,12 @@ for ( ptype in unique(hdat$pfromto) ) {
 }
 
 ## plot 20 from plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(hdat$to) ) {
+for ( ptype in unique(tmtf$to) ) {
 
-    ddat <- hdat[hdat$to==ptype,]
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=tmtf, 
+    dtmt <- tmtf[tmtf$to==ptype,]
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
-                       bg=TRUE, vid="RAAS", col.srt=uds,
+                       bg=TRUE, value="RAAS", col.srt=uds,
                        use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
@@ -461,12 +496,12 @@ for ( ptype in unique(hdat$to) ) {
 }
 
 ## plot 20 from plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(hdat$from) ) {
+for ( ptype in unique(tmtf$from) ) {
 
-    ddat <- hdat[hdat$from==ptype,]
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=tmtf, 
+    dtmt <- tmtf[tmtf$from==ptype,]
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
-                       bg=TRUE, vid="RAAS", col.srt=uds,
+                       bg=TRUE, value="RAAS", col.srt=uds,
                        use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
@@ -491,13 +526,12 @@ for ( ptype in unique(hdat$from) ) {
 }
 
 ## plot 20 from plots for AA->AAprop
-hdat$frompto <- paste0(hdat$from, ":", hdat$pto)
-for ( ptype in unique(hdat$from) ) {
+for ( ptype in unique(tmtf$from) ) {
 
-    ddat <- hdat[hdat$from==ptype,]
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=tmtf, 
+    dtmt <- tmtf[tmtf$from==ptype,]
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="frompto", cols="Dataset",
-                       bg=TRUE, vid="RAAS", col.srt=uds,
+                       bg=TRUE, value="RAAS", col.srt=uds,
                        use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
@@ -522,14 +556,13 @@ for ( ptype in unique(hdat$from) ) {
 
 ## by AA->AA
 for ( ds in uds ) {
-    ddat <- hdat[hdat$Dataset==ds,]
-    dtmt <- tmtf[tmtf$Dataset==ds,]
-    dtmt <- split(dtmt$RAAS,  dtmt$SAAP)
 
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=dtmt, 
+    dtmt <- tmtf[tmtf$Dataset==ds,]
+
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="from",
-                       bg=FALSE, vid="RAAS", 
-                       use.test=w.test, do.plots=FALSE, 
+                       bg=FALSE, value="RAAS", 
+                       use.test=t.test, do.plots=FALSE, 
                        verb=0)
 
     png(file.path(fig.path,paste0(ds,"_AA_wtests.png")),
@@ -546,13 +579,13 @@ for ( ds in uds ) {
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ovw, cut=100, p.txt=3, v.txt=c(-Inf,-1), density=TRUE,
-            xlab="median TMT RAAS", value="median")
+            xlab="mean TMT RAAS", value="mean")
     dev.off()
 
     png(file.path(fig.path,paste0(ds,"_raas_profile_colors.png")),
                   res=300, width=3, height=3, units="in")
     par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-    lraas.col <- selectColors(c(ovw$median),
+    lraas.col <- selectColors(c(ovw$mean),
                               q=.05, colf=viridis::viridis,
 
                               n=100,
@@ -563,13 +596,13 @@ for ( ds in uds ) {
     figlabel(LAB, pos="bottomleft", cex=1)
     dev.off()
     
-    png(file.path(fig.path,paste0(ds,"_AA_raas_median.png")),
+    png(file.path(fig.path,paste0(ds,"_AA_raas_mean.png")),
         res=300, width=5, height=5, units="in")
     par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotovl(ovw, value="median", text="count", txt.cut=-2,
+    plotovl(ovw, value="mean", text="count", txt.cut=-2,
             col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
             axis=1:2, ylab=NA, xlab="", text.cex=.8)
-    mtext("median TMT-level RAAS", 3, .5, cex=1.2)
+    mtext("mean TMT-level RAAS", 3, .5, cex=1.2)
     figlabel(LAB, pos="bottomleft", cex=1)
     figlabel(ds, pos="bottomright", cex=1.5)
     dev.off()
@@ -594,19 +627,14 @@ for ( ds in uds ) {
 
 
 ## by codon 
-cdat <- hdat[hdat$codon!="",]
-## add useful aa/codon tag
-cdat$aacodon <- paste(cdat$from,cdat$codon, sep="-")
-
-
+ctmt <- tmtf[tmtf$codon!="",]
 for ( ds in uds ) {
-    ddat <- cdat[cdat$Dataset==ds,]
-    dtmt <- tmtf[tmtf$Dataset==ds,]
-    dtmt <- split(dtmt$RAAS,  dtmt$SAAP)
 
-    ovw <- raasProfile.old(x=ddat, id="SAAP", values=dtmt, 
+    dtmt <- tmtf[ctmt$Dataset==ds,]
+
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="aacodon",
-                       bg=FALSE, use.test=w.test, do.plots=FALSE, 
+                       bg=FALSE, use.test=t.test, do.plots=FALSE, 
                        verb=0)
 
     png(file.path(fig.path,paste0(ds,"_codon_wtests.png")),
@@ -616,17 +644,17 @@ for ( ds in uds ) {
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
                  text.cex=.8, axis=1:3, ylab=NA, xlab="", col=ttcols,
                  show.total=FALSE)
-    axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)],
-         las=2)
+    axis(4, nrow(ovw$p.value):1,
+         labels=ACODONS[rownames(ovw$p.value)], las=2)
     figlabel(LAB, pos="topright", cex=1.5)
     figlabel(pos="bottomright", text=ds, cex=2, font=2)
     dev.off()
- 
+    
     png(file.path(fig.path,paste0(ds,"_codon_volcano.png")),
         res=300, width=4, height=3, units="in")
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ovw, cut=100, p.txt=3, v.txt=c(-Inf,-1), density=TRUE,
-            xlab="median TMT RAAS", value="median")
+            xlab="mean TMT RAAS", value="mean")
     figlabel(LAB, pos="topright", cex=1)
     dev.off()
 
@@ -650,21 +678,22 @@ for ( ds in uds ) {
     dev.off()
 }
 
+
 ### FIND MOST FREQUENT
 ## TODO: instead find strongest
 ## TODO: remove most frequent per Dataset, eg. N:M vs. T:V in PDAC
 
-ptype <- unique(hdat$pfromto)
+ptype <- unique(tmtf$pfromto)
 pmost <- sapply(ptype, function(x) {
-    names(which.max(table(hdat$fromto[hdat$pfromto==x])))
+    names(which.max(table(tmtf$fromto[tmtf$pfromto==x])))
 })[srt]
 
-tdat <- hdat[hdat$fromto%in%pmost,]
+tdat <- tmtf[tmtf$fromto%in%pmost,]
 
-ovw <- raasProfile.old(x=tdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tdat, id="SAAP", 
                    rows="fromto", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=pmost, col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   bg=TRUE, value="RAAS", row.srt=pmost, col.srt=uds,
+                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 
 png(file.path(fig.path,paste0("AAprop_wtests_best.png")),
@@ -700,12 +729,12 @@ figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
 
 ## remove most frequent
-tdat <- hdat[!hdat$fromto%in%pmost,]
+tdat <- tmtf[!tmtf$fromto%in%pmost,]
 
-ovw <- raasProfile.old(x=tdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tdat, id="SAAP", 
                    rows="pfromto", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=srt, col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   bg=TRUE, value="RAAS", row.srt=srt, col.srt=uds,
+                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 
 png(file.path(fig.path,paste0("AAprop_wtests_wo_best.png")),
@@ -740,18 +769,15 @@ mtext("median TMT-level RAAS", 3, .5, cex=1.2)
 figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
 
+
 ### BY STRUCTURAL FEATURES
 
 ## IUPRED3
-iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
-rsrt <- levels(iupred3.bins)
-hdat$iupred3.bins <- as.character(iupred3.bins)
-hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="iupred3.bins", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=rev(rsrt),
+                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"iupred3_"))
 
 png(file.path(fig.path,paste0("structure_iupred3.png")),
@@ -765,15 +791,11 @@ figlabel(LAB, pos="bottomleft", cex=.7)
 dev.off()
 
 ## ANCHOR2
-anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
-rsrt <- levels(anchor2.bins)
-hdat$anchor2.bins <- as.character(anchor2.bins)
-hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="anchor2.bins", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=rev(rsrt),
+                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
 png(file.path(fig.path,paste0("structure_anchor2.png")),
@@ -787,13 +809,10 @@ figlabel(LAB, pos="bottomleft", cex=.7)
 dev.off()
 
 ## S4 PRED SECONDARY STRUCTURE
-ssrt <- c(E="sheet", H="helix", C="coil")
-hdat$sstruc <- ssrt[hdat$s4pred]
-hdat$sstruc[hdat$sstruc==""] <- "na"
-ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf, 
+ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="sstruc", cols="Dataset",
-                   bg=TRUE, vid="RAAS", row.srt=rev(ssrt), col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
+                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
 png(file.path(fig.path,paste0("structure_s4pred.png")),
@@ -806,153 +825,4 @@ mtext("S4PRED", 2, 3.5, cex=1.2)
 figlabel(LAB, pos="bottomleft", cex=.7)
 dev.off()
 
-## anchor2 and iupred3 correlation strongly
-dense2d(hdat$anchor2, hdat$iupred3)
-## and each correlates with protein mean
-dense2d(hdat$anchor2, hdat$anchor2.protein)
 
-### TEST HPHOBIC->SPECIAL HIGH RAAS IN CCRCC
-
-filt <- hdat$Dataset=="CCRCC" & hdat$pfromto=="hphobic:special"
-cat(paste(nrow(hdat[filt,]), "unique hits\n"))
-table(hdat$fromto[filt])
-##A:G A:P L:P Y:G 
-##  8   2   1   2 
-ridx <- (which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC"))
-tmtf$RAAS[ridx]
-
-## most A:G at mean RAAS, extreme RAAS
-## comes from SAAP with three RAAS: L:P
-ridx <- (which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC"))
-tmtf$RAAS[ridx]
-filt <- hdat$Dataset=="CCRCC" & hdat$fromto=="L:P"
-ridx <- (which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC"))
-tmtf$RAAS[ridx]
-
-hdat[filt,] ## PROTEIN NOT MATCHED, missing from codons etc.
-## YTLPPGVDPTKVSSSLSPEGTLTVEAPMPK
-## BLAST: 
-##  	estrogen receptor-related protein [Homo sapiens] 	Homo sapiens 	91.8 	91.8 	100% 	2e-19 	96.67% 	78 	AAB20722.1
-## Select seq pdb|3Q9P|A 	Chain A, Heat shock protein beta-1 [Homo sapiens] 	Homo sapiens 	91.8 	91.8 	100% 	2e-19 	96.67% 	85 	3Q9P_A
-## Select seq emb|CAA34498.1| 	p24k-1 (AA 1-91) [Homo sapiens] 	Homo sapiens 	91.8 	91.8 	100% 	3e-19 	96.67% 	91 	CAA34498.1
-
-ridx <- (which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC"))
-tmtf$RAAS[ridx]
-
-## get max
-dtmt <- tmtf[ tmtf$Dataset=="CCRCC",]
-tmt <- split(dtmt$RAAS, dtmt$SAAP) 
-
-filt <- hdat$Dataset=="CCRCC" & hdat$pfromto=="hphobic:special"
-
-sid <- names(which.max(unlist(lapply(tmt[hdat$SAAP[filt]], function (x) max(x)))))
-##sid <- "IIHLGGK"
-hdat[hdat$SAAP==sid,]
-## Q96IR2 · ZN845_HUMAN <- max RAAS in set of 17 hphobic->special in CCRCC
-## Protein Zinc finger protein 845
-
-## NOTE: maximal value not in L:P
-
-## NOTE: only 7 RAAS at 8 hits for A:G
-filt <- hdat$Dataset=="CCRCC" & hdat$fromto=="A:G"
-table(hdat$SAAP[filt])
-which(tmtf$SAAP%in%hdat$SAAP[filt] & tmtf$Dataset=="CCRCC")
-hdat$SAAP[which(!hdat$SAAP[filt]%in%tmtf$SAAP[tmtf$Dataset=="CCRCC"])]
-
-
-
-#### MIXED LINEAR MODEL:
-
-if ( FALSE ) {
-    
-## TODO: does this help to answer the question,
-## whether amino acid properties or individual AA best explain
-## Dataset-specific high RAAS
-library(lme4)
-library(lmerTest)
-
-
-## TODO: can we use this?
-
-df <- data.frame(RAAS=tmtf$RAAS,
-                 Dataset=tmtf$Dataset,
-                 from=tmtf$from,
-                 to=tmtf$to,
-                 pfrom=tmtf$pfrom,
-                 pto=tmtf$pto,
-                 stringsAsFactors = TRUE)
-df$Dataset <- as.character(df$Dataset)
-
-fprp <- RAAS ~ pfrom*pto + (1|Dataset)
-mprp <- lmer(fprp, data = df, REML=TRUE,
-             control = lmerControl(optimizer="bobyqa",
-                                   optCtr = list(maxfun = 1e9)))
-summary(mprp)
-image_matrix(vcov(mprp), col=viridis::viridis(100), axis=1:2)
-X <- model.matrix(fprp, df)
-
-faa <- RAAS ~ from*to + (1|Dataset)
-mfaa <- lmer(faa, data = df, REML=TRUE,
-             control = lmerControl(optimizer="bobyqa",
-                                   optCtr = list(maxfun = 1e9)))
-summary(mfaa)
-
-
-## get by property class and see contributions
-sdf <- df[df$pfrom=="polar" & df$pto=="special",]
-
-faa <- RAAS ~ from*to + (1|Dataset)
-mfaa <- lmer(faa, data = sdf, REML=TRUE,
-             control = lmerControl(optimizer="bobyqa",
-                                   optCtr = list(maxfun = 1e9)))
-summary(mfaa)
-
-##summary(frn_diff_parsimoniuous)
-      
-## raas_value ~ globaleeigenschaft1*globaleeigenschaft2*globaleeigenschaft3 + (1+globaleeigenschaft1*globaleeigenschaft2*globaleeigenschaft3|Aminosäure)
-
-##ich benutz lme4 für lmer() und lmerTest damit da p-werte dabei stehen
-##alles ohne klammern und ohne | sind fixed effects
-##in der klammer dann die random effects
-
-##parsimonious_m_formula <- 
-##value ~ 1 + delay + valence + pe_unsigned_zero + delay:valence + 
-##    delay:pe_unsigned_zero + valence:pe_unsigned_zero + delay:valence:pe_unsigned_zero + 
-##    (1 + delay + valence + delay:valence + pe_unsigned_zero + 
-##        delay:pe_unsigned_zero | id) + (1 | electrode)
-
-##frn_diff_parsimoniuous <- lmer(parsimonious_m_formula,
-##                               data = data, REML=T,
-##                               control = lmerControl(optimizer="bobyqa", optCtr = list(maxfun = 1e9)))
-##summary(frn_diff_parsimoniuous)
-
-
-}
-
-### IUPRED3
-idat <- hdat[hdat$from=="Q",]
-itmt <- tmtf[tmtf$from=="Q",]
-stmt <- split(itmt$RAAS, itmt$SAAP)
-
-## bin score to compare to full list of RAAS
-iup.bins <- cut(idat$iupred3, breaks=seq(0,1,.2))
-levels(iup.bins)
-iup.lst <- list()
-for ( iupl in levels(iup.bins) )
-    iup.lst[[iupl]] <-
-        unlist(stmt[idat$SAAP[as.character(iup.bins)==iupl]])
-
-png(file.path(fig.path,paste0("fromQ","_structure_iupred3_raas.png")),
-    res=300, width=3.5, height=3.5, units="in")
-par(mai=c(.75,.5,.5,.15), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-boxplot(iup.lst, ylab="all TMT RAAS", xlab=NA,
-        las=2)
-axis(3, at=1:length(iup.lst),
-     labels=unlist(lapply(iup.lst, length)), las=2)
-figlabel("AAS iupred3", pos="bottomleft")
-dev.off()
-
-
-
-boxplot(hdat$iupred3 ~ hdat$from)
-boxplot(hdat$anchor2 ~ hdat$from)
