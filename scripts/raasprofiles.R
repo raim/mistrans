@@ -35,6 +35,10 @@ addPoints <- function(ovl, value="median") {
 ## FROM->TO BY AA PROPERTY CLASSES
 ## DONT FILTER FOR CODONS, use hdat
 
+## TODO 20240221
+## * calculate median of medians of unique SAAP,
+
+
 ## AA PROPERTY CLASSES
 ## https://en.wikipedia.org/wiki/Amino_acid#/media/File:ProteinogenicAminoAcids.svg
 AAPROP <- list(charged=c("R","H","K","D","E"),
@@ -81,13 +85,13 @@ tmt.file <- file.path(proj.path,"originalData",
 p.min <- 1e-10
 p.txt <- 1e-5
 
-exclude.albumin <- TRUE # FALSE #  
+exclude.albumin <- TRUE # FALSE # 
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
-only.unique <- FALSE
+only.unique <- TRUE # FALSE
 
 LAB <- "all"
-fig.path <- file.path(proj.path,"figures","saap_raasprofiles")
+fig.path <- file.path(proj.path,"figures","raasprofiles")
 if (  exclude.albumin ) {
     fig.path <- paste0(fig.path,"_noalb")
     LAB <- "no Alb./Hemog."
@@ -113,7 +117,8 @@ tmtf <- read.delim(tmt.file)
 tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 dat$Hemoglobin.Albumin <- as.logical(dat$Hemoglobin.Albumin)
 
-#### TODO: 
+#### TODO: find out which/how many TMT level SAAP are missing
+## from the protein level file, and why.
 
 
 ## fuse all excluded tags for each unique SAAP
