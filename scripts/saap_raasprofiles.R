@@ -751,8 +751,13 @@ ovw <- raasProfile.old(x=hdat, id="SAAP", values=tmtf,
                    rows="iupred3.bins", cols="Dataset",
                    bg=TRUE, vid="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"iupred3_"))
+
+## find difference to new version
+hdat$SAAP[hdat$Dataset=="LUAD" & hdat$iupred3.bins=="(0.6,0.8]"]
+sid="VDINSPDVDVHGPDWHLK" ## present in new, but missing from old
+## NOTE: values for duplicated SAAP where NOT inherited!
 
 png(file.path(fig.path,paste0("structure_iupred3.png")),
     res=300, width=4, height=2, units="in")

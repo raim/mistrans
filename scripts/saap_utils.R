@@ -22,6 +22,8 @@ w.test <- function(x,y) {
     rt
 }
 
+
+## plot p.values, RAAS, and count.
 plotovl <- function(ovl, text="count", cut=TRUE, value="median",
                     txt.cut=-2, ...) {
 
@@ -116,8 +118,10 @@ raasProfile.old <- function(x=cdat, id="SAAP", values=tmt,
         
             ## get all SAAP for this codon
             idx <- x[,cols]==cod & x[,rows]==aa
-            
-            csap <- unique(x[idx,id])
+
+            ## NOTE: unique SAAP!!
+            csap <- x[idx,id]
+            csap <- unique(csap)
 
             if ( length(idx)==0 ) next
             if ( sum(idx,na.rm=TRUE)==0 ) next
@@ -251,7 +255,8 @@ raasProfile <- function(x=tmtf, id="SAAP",
 
     ## check presence
     if ( any(!c(value, rows, cols)%in%colnames(tmtf)) )
-        stop("on of the requested values ", paste(value, rows, cols, collapse=";"),
+        stop("on of the requested values ",
+             paste(value, rows, cols, collapse=";"),
              " is not present in the data")
     
     ## sorting of row and column classes
@@ -312,7 +317,8 @@ raasProfile <- function(x=tmtf, id="SAAP",
                 bgidx <- bgidx & !idx
 
             if ( any(is.na(bgidx)) ) {
-                wrn <- paste0(sum(is.na(bgidx)), " NA in ", aa, "/", cod, "background")
+                wrn <- paste0(sum(is.na(bgidx)), " NA in ",
+                              aa, "/", cod, "background")
                 cat(paste0("WARNING: ", wrn,"\n"))
                 warning(wrn)
                 idx[is.na(idx)] <- FALSE

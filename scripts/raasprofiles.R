@@ -85,10 +85,10 @@ tmt.file <- file.path(proj.path,"originalData",
 p.min <- 1e-10
 p.txt <- 1e-5
 
-exclude.albumin <- TRUE # FALSE # 
+exclude.albumin <- FALSE # TRUE # 
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
-only.unique <- TRUE # FALSE
+only.unique <- TRUE # FALSE # 
 
 LAB <- "all"
 fig.path <- file.path(proj.path,"figures","raasprofiles")
@@ -102,8 +102,8 @@ if ( exclude.frequent ) {
     LAB <- paste("no", tmp)
 }
 if ( only.unique ) {
-    fig.path <- paste0(fig.path,"_uniqueSAAP")
-    LAB <- paste("unique SAAP")
+    fig.path <- paste0(fig.path,"_unique")
+    LAB <- paste0(LAB, ", unique SAAP")
 }
 dir.create(fig.path, showWarnings=FALSE)
 
@@ -136,11 +136,13 @@ dat$keep <- keep[dat$SAAP]
 tmtf$keep <- keep[tmtf$SAAP]
 
 ## remove excluded
+cat(paste("removing", sum(!dat$keep),
+          "tagged as false positive on protein level\n"))
 hdat <- dat[which(dat$keep),]
 
 ## get raw RAAS data TMT level
 ## remove excluded
-cat(paste("removing", sum(!tmtf$Keep.SAAP),
+cat(paste("removing", sum(!tmtf$keep),
           "tagged as false positive on TMT level\n"))
 tmtf <- tmtf[tmtf$keep,]
 ## exclude NA or Inf
@@ -183,7 +185,6 @@ hdat$fromto <- apply(fromto, 1, paste0, collapse=":")
 hdat$pfrom <- aaprop[fromto[,1]]
 hdat$pto <- aaprop[fromto[,2]]
 hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
-
 hdat$frompto <- paste0(hdat$from, ":", hdat$pto)
 
 ## STRUCTURE: add bins for numeric values
@@ -219,6 +220,19 @@ tmtf$sstruc <- hdat$sstruc[idx]
 
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 
+### MEAN AND MEDIAN RAAS
+## per data set and unique SAAP
+usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
+araas <- split(tmtf$RAAS, usaap)
+
+raas.median <- unlist(lapply(araas, median))
+raas.emean <- unlist(lapply(araas, mean))
+raas.mean <- unlist(lapply(araas, function(x) {log10(mean(10^x))}))
+
+tmtf$unique <- usaap
+tmtf$RAAS.mean <- raas.mean[usaap]
+tmtf$RAAS.median <- raas.median[usaap]
+
 ### FILTER
 if (  exclude.albumin ) {
     rmsaap <- tmtf$SAAP[tmtf$albumin]
@@ -232,6 +246,8 @@ if ( only.unique ) {
     ## FOR TESTING
     ## just take the first of each SAAP per dataset
     tmtf <- tmtf[!duplicated(paste(tmtf$SAAP,tmtf$Dataset)),]
+    tmtf$RAAS.orig <- tmtf$RAAS
+    tmtf$RAAS <- tmtf$RAAS.mean
 }
 
 ### TODO: merge unique SAAP here to test effects of multiple
@@ -256,7 +272,7 @@ source("~/work/mistrans/scripts/saap_utils.R")
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="pfromto", cols="Dataset",
                     bg=TRUE, row.srt=srt, col.srt=uds,
-                    use.test=t.test, do.plots=TRUE, xlab="TMT level RAAS",
+                    use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
                     fname=fname, verb=1)
 
 
@@ -410,7 +426,7 @@ dev.off()
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 png(file.path(fig.path,paste0("fromAA_wtests.png")),
     res=300, width=4, height=6, units="in")
@@ -426,7 +442,7 @@ dev.off()
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 png(file.path(fig.path,paste0("toAA_wtests.png")),
     res=300, width=4, height=6, units="in")
@@ -447,7 +463,7 @@ for ( ptype in unique(tmtf$pfromto) ) {
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
                        bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=1)
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *.2 + 1.4
@@ -477,7 +493,7 @@ for ( ptype in unique(tmtf$to) ) {
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
                        bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *.2 + 1.4
@@ -507,7 +523,7 @@ for ( ptype in unique(tmtf$from) ) {
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="fromto", cols="Dataset",
                        bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *.2 + 1.4
@@ -537,7 +553,7 @@ for ( ptype in unique(tmtf$from) ) {
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="frompto", cols="Dataset",
                        bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *.2 + 1.4
@@ -548,8 +564,8 @@ for ( ptype in unique(tmtf$from) ) {
     }
     
     ## plot figure
-      png(file.path(fig.path,paste0("pfromAA_",ptype, "_AA_wtests.png")),
-          height=nh, width=nw, res=300, units="in")
+    png(file.path(fig.path,paste0("pfromAA_",ptype, "_AA_wtests.png")),
+        height=nh, width=nw, res=300, units="in")
     par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
                  text.cex=.8, axis=1:2, ylab=NA, xlab="",
@@ -567,7 +583,7 @@ for ( ds in uds ) {
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="from",
                        bg=FALSE, value="RAAS", 
-                       use.test=t.test, do.plots=FALSE, 
+                       use.test=w.test, do.plots=FALSE, 
                        verb=0)
 
     png(file.path(fig.path,paste0(ds,"_AA_wtests.png")),
@@ -635,11 +651,11 @@ for ( ds in uds ) {
 ctmt <- tmtf[tmtf$codon!="",]
 for ( ds in uds ) {
 
-    dtmt <- tmtf[ctmt$Dataset==ds,]
+    dtmt <- ctmt[ctmt$Dataset==ds,]
 
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="aacodon",
-                       bg=FALSE, use.test=t.test, do.plots=FALSE, 
+                       bg=FALSE, use.test=w.test, do.plots=FALSE, 
                        verb=0)
 
     png(file.path(fig.path,paste0(ds,"_codon_wtests.png")),
@@ -698,7 +714,7 @@ tdat <- tmtf[tmtf$fromto%in%pmost,]
 ovw <- raasProfile(x=tdat, id="SAAP", 
                    rows="fromto", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=pmost, col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 
 png(file.path(fig.path,paste0("AAprop_wtests_best.png")),
@@ -739,7 +755,7 @@ tdat <- tmtf[!tmtf$fromto%in%pmost,]
 ovw <- raasProfile(x=tdat, id="SAAP", 
                    rows="pfromto", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=srt, col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
 
 png(file.path(fig.path,paste0("AAprop_wtests_wo_best.png")),
@@ -782,8 +798,9 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    rows="iupred3.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"iupred3_"))
+
 
 png(file.path(fig.path,paste0("structure_iupred3.png")),
     res=300, width=4, height=2, units="in")
@@ -800,7 +817,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    rows="anchor2.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
 png(file.path(fig.path,paste0("structure_anchor2.png")),
@@ -817,7 +834,7 @@ dev.off()
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="sstruc", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
-                   use.test=t.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
 png(file.path(fig.path,paste0("structure_s4pred.png")),
