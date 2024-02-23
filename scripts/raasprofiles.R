@@ -35,9 +35,11 @@ addPoints <- function(ovl, value="median") {
 ## FROM->TO BY AA PROPERTY CLASSES
 ## DONT FILTER FOR CODONS, use hdat
 
-## TODO 20240221
-## * calculate median of medians of unique SAAP,
-
+## TODO 20240222
+## * plotovl: plot all function,
+## * fall back on median,
+## * re-blast saap, re-annotate,
+## * Healthy: untangle tissues and collapse cancer.
 
 ## AA PROPERTY CLASSES
 ## https://en.wikipedia.org/wiki/Amino_acid#/media/File:ProteinogenicAminoAcids.svg
@@ -85,10 +87,11 @@ tmt.file <- file.path(proj.path,"originalData",
 p.min <- 1e-10
 p.txt <- 1e-5
 
-exclude.albumin <- FALSE # TRUE # 
+exclude.albumin <- TRUE # FALSE # 
+only.unique <- TRUE # FALSE # 
+
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
-only.unique <- TRUE # FALSE # 
 
 LAB <- "all"
 fig.path <- file.path(proj.path,"figures","raasprofiles")
@@ -804,7 +807,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 
 png(file.path(fig.path,paste0("structure_iupred3.png")),
     res=300, width=4, height=2, units="in")
-par(mai=c(.7,1,.01,.5), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
              show.total=TRUE)
@@ -822,7 +825,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 
 png(file.path(fig.path,paste0("structure_anchor2.png")),
     res=300, width=4, height=2, units="in")
-par(mai=c(.7,1,.01,.5), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
              show.total=TRUE)
@@ -838,8 +841,8 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
 png(file.path(fig.path,paste0("structure_s4pred.png")),
-    res=300, width=4, height=1.5, units="in")
-par(mai=c(.7,1,.01,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    res=300, width=4, height=1.75, units="in")
+par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
              text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
              show.total=TRUE)
