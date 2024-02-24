@@ -23,6 +23,141 @@ w.test <- function(x,y) {
 }
 
 
+plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
+                         fw=.3, fh=.2,
+                         ttcols=ttcols,p.min=1e-10, p.txt=1e-5,
+                         value="median", vcols, vbrks,
+                         count="unique", gcols=gcols,
+                         fname="profile", mtxt, mtxt.line=1.3, llab, rlab) {
+
+    ## replace row labels with arrows
+    rows <- rownames(ovw$p.value)
+    axex <- rep("",length(rows))
+    names(axex) <- rows
+    for ( i in seq_along(rows) ) {
+        if ( length(grep(":",rows[i])) ) {
+            ft <- unlist(strsplit(rows[i],":"))
+            axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
+        } else axex[i] <- as.expression(bquote(.(rows[i])))
+    }
+  
+    
+    ## calculate optimal figure height: result fields + figure margins (mai)
+    nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
+    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+
+    ## p-value profiles
+    segmenTools::plotdev(paste0(fname,"_wtests"),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
+                 text.cex=.8, axis=1, ylab=NA, xlab=NA,
+                 col=ttcols, show.total=TRUE)
+    axis(2, length(axex):1, labels=axex, las=2)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    dev.off()
+
+    if ( missing(vbrks) ) {
+        vals <- ovw[[value]]
+        vals <- vals[!is.na(vals)]
+        vbrks <- seq(min(vals), max(vals), length.out=101)
+        vcols <- viridis::viridis(100)
+    }
+
+    segmenTools::plotdev(paste0(fname,"_raas_",value),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    txt <- ovw[["count"]]
+    txt[txt==0] <- ""
+    q1 <- quantile(ovw[[value]], probs=.4, na.rm=TRUE)
+    txt.col <- ifelse(ovw[[value]]<q1, "white","black")
+    image_matrix(ovw[[value]], col=vcols, breaks=vbrks, axis=1,
+                 text=txt, text.col=txt.col, xlab=NA, ylab=NA, text.cex=.8)
+    axis(2, length(axex):1, labels=axex, las=2)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    dev.off()
+    
+    segmenTools::plotdev(paste0(fname,"_count_unique"),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    cnt <- ovw$unique
+    cnt[cnt==0] <- NA
+    txt <- ovw$unique
+    txt[txt==0] <- ""
+    txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
+    image_matrix(cnt, col=gcols, axis=1,
+                 text=txt, text.col=txt.col, ylab=NA, xlab=NA, text.cex=.8)
+    axis(2, length(axex):1, labels=axex, las=2)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    dev.off()
+
+    segmenTools::plotdev(paste0(fname,"_volcano"),
+                         height=3, width=4, res=300)
+    par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
+    volcano(ovw, cut=100, p.txt=-log10(p.txt),
+            v.txt=c(-Inf,-1), density=TRUE,
+            xlab="median TMT RAAS", value=value)
+    abline(v=mean(ovw[[value]],na.rm=TRUE))
+    dev.off()
+    
+    ## common histogram with color by sign and
+    ## first, calculate densities
+    dns <- ovw$ALL
+    for ( i in 1:nrow(ovw$p.value) ) {
+        for ( j in 1:ncol(ovw$p.value) ) {
+            rw <- rownames(ovw$p.value)[i]
+            cl <- colnames(ovw$p.value)[j]
+            vls <- ovw$ALL[[rw]][[cl]]
+            if (length(vls)>1 ) {
+            dns[[rw]][[cl]] <- density(vls)
+            }
+        }
+    }
+    ## get max
+    mxs <- rep(NA, length(dns))
+    for ( i in seq_along(dns) )
+        mxs[i] <- max(unlist(lapply(dns[[i]],
+                                    function(z)
+                                        ifelse("y"%in%names(z),
+                                               max(unlist(z["y"])),-10))))
+    
+    segmenTools::plotdev(paste0(fname,"_densities"),
+                         res=300, width=4, height=2)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    dns <- ovw$ALL
+    hist(unlist(dns), col="#77777755", border=NA, 
+         xlim=c(-6,4),
+         xlab="TMT level RAAS", ylab=NA, main=NA, axes=FALSE)
+    par(new=TRUE)
+    plot(1, col=NA, xlim=c(-6,4), ylim=c(0,max(mxs)),
+         xlab=NA, ylab=NA, axes=FALSE)
+    for ( i in 1:nrow(ovw$p.value) ) {
+        for ( j in 1:ncol(ovw$p.value) ) {
+            rw <- rownames(ovw$p.value)[i]
+            cl <- colnames(ovw$p.value)[j]
+            vls <- ovw$ALL[[rw]][[cl]]
+            if (length(vls)>1 ) {
+                dns[[rw]][[cl]] <- density(vls)
+                if ( ovw$p.value[i,j] <1e-3 )
+                    lines(dns[[rw]][[cl]],
+                          col=ifelse(ovw$sign[i,j]==-1,"blue","red"),
+                          lwd=-log10(ovw$p.value[i,j])/-log10(p.min))
+                ## TODO: annotate
+            }
+        }
+    }
+    axis(2)#, labels=NA)
+    mtext("density",2,1.3)
+    axis(1)
+    dev.off()
+}
+
 ## plot p.values, RAAS, and count.
 plotovl <- function(ovl, text="count", cut=TRUE, value="median",
                     txt.cut=-2, ...) {

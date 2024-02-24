@@ -108,7 +108,12 @@ if ( only.unique ) {
     fig.path <- paste0(fig.path,"_unique")
     LAB <- paste0(LAB, ", unique SAAP")
 }
+
+## figure output paths
 dir.create(fig.path, showWarnings=FALSE)
+## folder for detailed distributions
+dpath <- file.path(fig.path,"dists")
+dir.create(dpath, showWarnings=FALSE)
 
 ### START
 
@@ -268,195 +273,74 @@ srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
 
 axex <- ftlabels(srt) # axis labels with arrows
 
-dpath <- file.path(fig.path,"dists")
-dir.create(dpath, showWarnings=FALSE)
+
+## by AA properties
 fname <- file.path(dpath,paste0("AAprop_wtests_"))
-source("~/work/mistrans/scripts/saap_utils.R")
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="pfromto", cols="Dataset",
                     bg=TRUE, row.srt=srt, col.srt=uds,
                     use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
                     fname=fname, verb=1)
 
-
-## common histogram with color by sign and
-## first, calculate densities
-dns <- ovw$ALL
-for ( i in 1:nrow(ovw$p.value) ) {
-    for ( j in 1:ncol(ovw$p.value) ) {
-        rw <- rownames(ovw$p.value)[i]
-        cl <- colnames(ovw$p.value)[j]
-        vls <- ovw$ALL[[rw]][[cl]]
-        if (length(vls)>1 ) {
-            dns[[rw]][[cl]] <- density(vls)
-        }
-    }
-}
-## get max
-mxs <- rep(NA, length(dns))
-for ( i in seq_along(dns) )
-    mxs[i] <- max(unlist(lapply(dns[[i]],
-                                function(z)
-                                    ifelse("y"%in%names(z),
-                                           max(unlist(z["y"])),-10))))
-
-png(file.path(fig.path,paste0("AAprop_densities.png")),
-    res=300, width=4, height=2, units="in")
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(tmtf$RAAS, col="#77777755", border=NA, 
-     xlim=c(-6,4),
-     xlab="TMT level RAAS", ylab=NA, main=NA, axes=FALSE)
-dns <- ovw$ALL
-par(new=TRUE)
-plot(1, col=NA, xlim=c(-6,4), ylim=c(0,.75),#max(mxs)),
-     xlab=NA, ylab=NA, axes=FALSE)
-for ( i in 1:nrow(ovw$p.value) ) {
-    for ( j in 1:ncol(ovw$p.value) ) {
-        rw <- rownames(ovw$p.value)[i]
-        cl <- colnames(ovw$p.value)[j]
-        vls <- ovw$ALL[[rw]][[cl]]
-        if (length(vls)>1 ) {
-            dns[[rw]][[cl]] <- density(vls)
-            if ( ovw$p.value[i,j] <1e-3 )
-                lines(dns[[rw]][[cl]],
-                      col=ifelse(ovw$sign[i,j]==-1,"blue","red"),
-                      lwd=-log10(ovw$p.value[i,j])/-log10(p.min))
-            ## TODO: annotate
-            
-        }# else abline(v=vls)
-    }
-}
-axis(2, labels=NA)
-mtext("density",2,.5)
-axis(1)
-dev.off()
-
-
-
-png(file.path(fig.path,paste0("AAprop_wtests_legend.png")),
-    res=300, width=2, height=2, units="in")
-par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_wtests.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1, ylab=NA, xlab="", col=ttcols, show.total=TRUE)
-axis(2, length(axex):1, labels=axex, las=2)
-##addPoints(ovw)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
 ## local raas colors
 png(file.path(fig.path,"raas_profile_colors.png"),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-lraas.col <- selectColors(c(ovw$mean),
+lraas.col <- selectColors(c(ovw$median),
                           q=0.01, colf=viridis::viridis,
-                          n=10,
-                          xlim=c(-4,1),
-                          plot=TRUE,
+                          n=10, xlim=c(-4,1), plot=TRUE,
                           mai=c(.5,.5,.1,.1), xlab="All TMT level RAAS")
 axis(1, at=seq(-4,4,.5), labels=FALSE)
 figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
 
-
-png(file.path(fig.path,paste0("AAprop_raas_mean.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="mean", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1, ylab=NA, xlab="", text.cex=.8)
-axis(2, length(axex):1, labels=axex, las=2)
-mtext("mean TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
+## legend for all wtests
+png(file.path(fig.path,paste0("wtests_legend.png")),
+    res=300, width=2, height=2, units="in")
+par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
 dev.off()
 
+## plot all
+plotProfiles(ovw, fname=file.path(fig.path,"AAprop"),
+             mai=c(.8,1.5,.5,.5),
+             ttcols=ttcols, value="median",
+             rlab=LAB, llab="",
+             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
-png(file.path(fig.path,paste0("AAprop_raas_median.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="median", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1, ylab=NA, xlab="", text.cex=.8)
-axis(2, length(axex):1, labels=axex, las=2)
-mtext("median TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
+## TODO: median vs. p-value as a measure of effect size
+if ( interactive() ) {
+    plot(ovw$count, ovw$median, xlab="count", ylab="RAAS median")
+    plot(ovw$count, -log(ovw$p.value), xlab="count", ylab=expression(-log(p)))
+    plot(ovw$median, -log(ovw$p.value))
+}
 
-### median vs. p-value as a measure of effect size
-plot(ovw$count, ovw$median, xlab="count", ylab="RAAS median")
-plot(ovw$count, -log(ovw$p.value), xlab="count", ylab=expression(-log(p)))
-plot(ovw$median, -log(ovw$p.value))
-
-png(file.path(fig.path,paste0("AAprop_volcano.png")),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
-volcano(ovw, cut=100, p.txt=5, v.txt=c(-Inf,-1), density=TRUE,
-        xlab="mean TMT RAAS", value="mean")
-abline(v=mean(ovw$mean,na.rm=TRUE))
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_volcano_mean.png")),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
-volcano(ovw, cut=100, p.txt=5, v.txt=c(-Inf,-1), density=TRUE,
-        xlab="mean TMT RAAS", value="mean")
-abline(v=mean(ovw$mean,na.rm=TRUE))
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_count_unique.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-cnt <- ovw$unique
-cnt[cnt==0] <- NA
-txt <- ovw$unique
-txt[txt==0] <- ""
-txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
-image_matrix(cnt, col=gcols, axis=1:2,
-             text=txt, text.col=txt.col, ylab="",
-             xlab="", text.cex=.8)
-##axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
-mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
-mtext("# unique SAAP", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-
+## by "from" amino acid
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
-png(file.path(fig.path,paste0("fromAA_wtests.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="",
-             col=ttcols, show.total=TRUE)
-mtext("from", 2, 1.3)
-##addPoints(ovw)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
+plotProfiles(ovw, fname=file.path(fig.path,"fromAA"),
+             mtxt="encoded AA",
+             mai=c(.8,.5,.5,.5),
+             ttcols=ttcols, value="median",
+             rlab=LAB, llab="",
+             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
+## by "to" amino acid
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
-png(file.path(fig.path,paste0("toAA_wtests.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="",
-             col=ttcols, show.total=TRUE)
-mtext("to", 2, 1.3)
-##addPoints(ovw)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
+plotProfiles(ovw, fname=file.path(fig.path,"toAA"),
+             mai=c(.8,.5,.5,.5),
+             mtxt="substituted AA", ttcols=ttcols, value="median",
+             rlab=LAB, llab="", vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
@@ -467,116 +351,15 @@ for ( ptype in unique(tmtf$pfromto) ) {
                        rows="fromto", cols="Dataset",
                        bg=TRUE, value="RAAS", col.srt=uds,
                        use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                       verb=1)
-    ## calculate optimal figure height: result fields + figure margins (mai)
-    nh <- nrow(ovw$p.value) *.2 + 1.4
-    nw <- ncol(ovw$p.value) *.4 + 1.15
-    
-    if ( nrow(ovw$p.value) < 5 ) {
-        nh <- nh*2; nw <- nw*2
-    }
-    
-    ## plot figure
-      png(file.path(fig.path,paste0("type_",ptype, "_AA_wtests.png")),
-          height=nh, width=nw, res=300, units="in")
-    par(mai=c(1,.75,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab="",
-                 col=ttcols, show.total=TRUE)
-    mtext("from:to", 2, 2)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(ptype, pos="bottomright", cex=1.5)
-    dev.off()
-}
-
-## plot 20 from plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(tmtf$to) ) {
-
-    dtmt <- tmtf[tmtf$to==ptype,]
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="fromto", cols="Dataset",
-                       bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                        verb=0)
-    ## calculate optimal figure height: result fields + figure margins (mai)
-    nh <- nrow(ovw$p.value) *.2 + 1.4
-    nw <- ncol(ovw$p.value) *.4 + 1.15
-    
-    if ( nrow(ovw$p.value) < 5 ) {
-        nh <- nh*2; nw <- nw*2
-    }
-    
-    ## plot figure
-      png(file.path(fig.path,paste0("toAA_",ptype, "_AA_wtests.png")),
-          height=nh, width=nw, res=300, units="in")
-    par(mai=c(1,.75,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab="",
-                 col=ttcols, show.total=TRUE)
-    mtext("from:to", 2, 2)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(paste("to",ptype), pos="bottomright", cex=1.5)
-    dev.off()
+    plotProfiles(ovw, fname=file.path(fig.path,paste0(ptype)),
+                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 rlab=LAB, llab=ptype,
+                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 gcols=gcols)
 }
 
-## plot 20 from plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(tmtf$from) ) {
 
-    dtmt <- tmtf[tmtf$from==ptype,]
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="fromto", cols="Dataset",
-                       bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                       verb=0)
-    ## calculate optimal figure height: result fields + figure margins (mai)
-    nh <- nrow(ovw$p.value) *.2 + 1.4
-    nw <- ncol(ovw$p.value) *.4 + 1.15
-    
-    if ( nrow(ovw$p.value) < 5 ) {
-        nh <- nh*2; nw <- nw*2
-    }
-    
-    ## plot figure
-    png(file.path(fig.path,paste0("fromAA_",ptype, "_AA_wtests.png")),
-        height=nh, width=nw, res=300, units="in")
-    par(mai=c(1,.75,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab="",
-                 col=ttcols, show.total=TRUE)
-    mtext("from:to", 2, 2)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(paste("from",ptype), pos="bottomright", cex=1.5)
-    dev.off()
-}
-
-## plot 20 from plots for AA->AAprop
-for ( ptype in unique(tmtf$from) ) {
-
-    dtmt <- tmtf[tmtf$from==ptype,]
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="frompto", cols="Dataset",
-                       bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                       verb=0)
-    ## calculate optimal figure height: result fields + figure margins (mai)
-    nh <- nrow(ovw$p.value) *.2 + 1.4
-    nw <- ncol(ovw$p.value) *.4 + 1.4
-    
-    if ( nrow(ovw$p.value) < 2 ) {
-        nh <- nh*2; nw <- nw*2
-    }
-    
-    ## plot figure
-    png(file.path(fig.path,paste0("pfromAA_",ptype, "_AA_wtests.png")),
-        height=nh, width=nw, res=300, units="in")
-    par(mai=c(1,1,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab="",
-                 col=ttcols, show.total=TRUE)
-        figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(ptype, pos="bottomright", cex=1.5)
-    dev.off()
-}
 
 ## by AA->AA
 for ( ds in uds ) {
@@ -589,64 +372,12 @@ for ( ds in uds ) {
                        use.test=w.test, do.plots=FALSE, 
                        verb=0)
 
-    png(file.path(fig.path,paste0(ds,"_AA_wtests.png")),
-        res=300, width=5, height=5, units="in")
-    par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-                 show.total=TRUE)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(pos="bottomright", text=ds, cex=2, font=2)
-    dev.off()
-    
-    png(file.path(fig.path,paste0(ds,"_AA_volcano.png")),
-        res=300, width=4, height=3, units="in")
-    par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
-    volcano(ovw, cut=100, p.txt=3, v.txt=c(-Inf,-1), density=TRUE,
-            xlab="mean TMT RAAS", value="mean")
-    dev.off()
+    plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",ds)),
+                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 rlab=LAB, llab=ds,
+                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 gcols=gcols)
 
-    png(file.path(fig.path,paste0(ds,"_raas_profile_colors.png")),
-                  res=300, width=3, height=3, units="in")
-    par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-    lraas.col <- selectColors(c(ovw$mean),
-                              q=.05, colf=viridis::viridis,
-
-                              n=100,
-                              xlim=c(-4,1),
-                              plot=TRUE,
-                              mai=c(.5,.5,.1,.1), xlab="All TMT level RAAS")
-    axis(1, at=seq(-4,4,.5), labels=FALSE)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    dev.off()
-    
-    png(file.path(fig.path,paste0(ds,"_AA_raas_mean.png")),
-        res=300, width=5, height=5, units="in")
-    par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    plotovl(ovw, value="mean", text="count", txt.cut=-2,
-            col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-            axis=1:2, ylab=NA, xlab="", text.cex=.8)
-    mtext("mean TMT-level RAAS", 3, .5, cex=1.2)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    figlabel(ds, pos="bottomright", cex=1.5)
-    dev.off()
-    
-    png(file.path(fig.path,paste0(ds,"_AA_count_unique.png")),
-        res=300, width=5, height=5, units="in")
-    par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    cnt <- ovw$unique
-    cnt[cnt==0] <- NA
-    txt <- ovw$unique
-    txt[txt==0] <- ""
-    txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
-    image_matrix(cnt, col=gcols, axis=1:2,
-                 text=txt, text.col=txt.col, ylab="",
-                 xlab="", text.cex=.8)
-    ##axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
-    mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
-    mtext("# unique SAAP", 3, .5, cex=1.2)
-    figlabel(LAB, pos="bottomleft", cex=1)
-    dev.off()
 }
 
 
@@ -661,137 +392,13 @@ for ( ds in uds ) {
                        bg=FALSE, use.test=w.test, do.plots=FALSE, 
                        verb=0)
 
-    png(file.path(fig.path,paste0(ds,"_codon_wtests.png")),
-        res=300, width=14, height=5, units="in")
-    par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    par(mai=c(.7,.5,.7,2.7))
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1:3, ylab=NA, xlab="", col=ttcols,
-                 show.total=FALSE)
-    axis(4, nrow(ovw$p.value):1,
-         labels=ACODONS[rownames(ovw$p.value)], las=2)
-    figlabel(LAB, pos="topright", cex=1.5)
-    figlabel(pos="bottomright", text=ds, cex=2, font=2)
-    dev.off()
-    
-    png(file.path(fig.path,paste0(ds,"_codon_volcano.png")),
-        res=300, width=4, height=3, units="in")
-    par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
-    volcano(ovw, cut=100, p.txt=3, v.txt=c(-Inf,-1), density=TRUE,
-            xlab="mean TMT RAAS", value="mean")
-    figlabel(LAB, pos="topright", cex=1)
-    dev.off()
-
-    png(file.path(fig.path,paste0(ds,"_codon_count_unique.png")),
-        res=300, width=14, height=5, units="in")
-    par(mai=c(.5,.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-    par(mai=c(.7,.5,.7,2.7))
-    cnt <- ovw$unique
-    cnt[cnt==0] <- NA
-    txt <- ovw$unique
-    txt[txt==0] <- ""
-    txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.99),"white","black")
-    image_matrix(cnt, col=gcols, axis=1:2,
-                 text=txt, text.col=txt.col, ylab="",
-                 xlab="", text.cex=.8)
-    ##axis(4, nrow(ovw$p.value):1, labels=ACODONS[rownames(ovw$p.value)], las=2)
-    mtext("mistranslated", 2, 3.5, adj=-1.7, cex=1.2)
-    mtext("# unique SAAP", 3, .5, cex=1.2)
-    figlabel(LAB, pos="topright", cex=1.5)
-    figlabel(pos="bottomright", text=ds, cex=2, font=2)
-    dev.off()
+    ## TODO: re-create previous codon plots
+    plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",ds)),
+                 fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 rlab=LAB, llab=ds,
+                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 gcols=gcols)
 }
-
-
-### FIND MOST FREQUENT
-## TODO: instead find strongest
-## TODO: remove most frequent per Dataset, eg. N:M vs. T:V in PDAC
-
-ptype <- unique(tmtf$pfromto)
-pmost <- sapply(ptype, function(x) {
-    names(which.max(table(tmtf$fromto[tmtf$pfromto==x])))
-})[srt]
-
-tdat <- tmtf[tmtf$fromto%in%pmost,]
-
-ovw <- raasProfile(x=tdat, id="SAAP", 
-                   rows="fromto", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=pmost, col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                   verb=0)
-
-png(file.path(fig.path,paste0("AAprop_wtests_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-             show.total=TRUE)
-mtext("most frequent", 2, 3, cex=1.5)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_raas_mean_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="mean", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1:2, ylab=NA, xlab="", text.cex=.8)
-mtext("most frequent", 2, 3, cex=1.5)
-mtext("mean TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_raas_median_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="median", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1:2, ylab=NA, xlab="", text.cex=.8)
-mtext("most frequent", 2, 3, cex=1.5)
-mtext("median TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-## remove most frequent
-tdat <- tmtf[!tmtf$fromto%in%pmost,]
-
-ovw <- raasProfile(x=tdat, id="SAAP", 
-                   rows="pfromto", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=srt, col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                   verb=0)
-
-png(file.path(fig.path,paste0("AAprop_wtests_wo_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-             show.total=TRUE)
-mtext("w/o freq.", 1, 2, cex=1.5, adj=-1)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_raas_mean_wo_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="mean", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1:2, ylab=NA, xlab="", text.cex=.8)
-mtext("w/o freq.", 1, 2, cex=1.5, adj=-1)
-mtext("mean TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
-
-png(file.path(fig.path,paste0("AAprop_raas_median_wo_best.png")),
-    res=300, width=4, height=6, units="in")
-par(mai=c(1,1.5,.4,.4), mgp=c(1.3,.3,0), tcl=-.25)
-plotovl(ovw, value="median", text="count", txt.cut=-2,
-        col=lraas.col$col, cut=TRUE, breaks=lraas.col$breaks,
-        axis=1:2, ylab=NA, xlab="", text.cex=.8)
-mtext("w/o freq.", 1, 2, cex=1.5, adj=-1)
-mtext("median TMT-level RAAS", 3, .5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
 
 
 ### BY STRUCTURAL FEATURES
@@ -804,16 +411,11 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"iupred3_"))
 
-
-png(file.path(fig.path,paste0("structure_iupred3.png")),
-    res=300, width=4, height=2, units="in")
-par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-             show.total=TRUE)
-mtext("IUPRED3", 2, 3.5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=.7)
-dev.off()
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_iupred3")),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             rlab=LAB, mtxt="IUPRED3", mtxt.line=3.3,
+             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
 ## ANCHOR2
 ovw <- raasProfile(x=tmtf, id="SAAP", 
@@ -823,15 +425,11 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
-png(file.path(fig.path,paste0("structure_anchor2.png")),
-    res=300, width=4, height=2, units="in")
-par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-             show.total=TRUE)
-mtext("ANCHOR2", 2, 3.5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=.7)
-dev.off()
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2")),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             rlab=LAB, mtxt="ANCHOR2", mtxt.line=3.3,
+             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
 ## S4 PRED SECONDARY STRUCTURE
 ovw <- raasProfile(x=tmtf, id="SAAP", 
@@ -840,14 +438,10 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
-png(file.path(fig.path,paste0("structure_s4pred.png")),
-    res=300, width=4, height=1.75, units="in")
-par(mai=c(.7,1,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-             text.cex=.8, axis=1:2, ylab=NA, xlab="", col=ttcols,
-             show.total=TRUE)
-mtext("S4PRED", 2, 3.5, cex=1.2)
-figlabel(LAB, pos="bottomleft", cex=.7)
-dev.off()
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred")),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             rlab=LAB, mtxt="SPRED4", mtxt.line=3.3,
+             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             gcols=gcols)
 
 
