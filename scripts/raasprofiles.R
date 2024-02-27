@@ -87,8 +87,12 @@ tmt.file <- file.path(proj.path,"originalData",
 p.min <- 1e-10
 p.txt <- 1e-5
 
+use.test <- t.test
+
+healthy <- FALSE
+
 exclude.albumin <- TRUE # FALSE # 
-only.unique <- TRUE # FALSE # 
+only.unique <- FALSE # TRUE # 
 
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
@@ -108,6 +112,9 @@ if ( only.unique ) {
     fig.path <- paste0(fig.path,"_unique")
     LAB <- paste0(LAB, ", unique SAAP")
 }
+
+SETID <- ifelse(healthy,"tissues","cancer")
+
 
 ## figure output paths
 dir.create(fig.path, showWarnings=FALSE)
@@ -222,11 +229,20 @@ tmtf$pfromto <- hdat$pfromto[idx]
 tmtf$frompto <- hdat$frompto[idx]
 tmtf$codon <- hdat$codon[idx]
 tmtf$aacodon <- hdat$aacodon[idx]
+tmtf$iupred3 <- hdat$iupred3[idx]
+tmtf$anchor2 <- hdat$anchor2[idx]
 tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
 tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
 tmtf$sstruc <- hdat$sstruc[idx]
 
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
+
+### CHOOSE DATASETS
+if ( healthy ) {
+    ds <- tmtf$Dataset
+    tmtf$Dataset[ds=="Healthy"] <- tmtf$TMT.Tissue[ds=="Healthy"]
+    tmtf$Dataset[ds!="Healthy"] <- "Cancer"
+}
 
 ### MEAN AND MEDIAN RAAS
 ## per data set and unique SAAP
@@ -240,6 +256,11 @@ raas.mean <- unlist(lapply(araas, function(x) {log10(mean(10^x))}))
 tmtf$unique <- usaap
 tmtf$RAAS.mean <- raas.mean[usaap]
 tmtf$RAAS.median <- raas.median[usaap]
+
+raas.bins <- cut(tmtf$RAAS.median, breaks=seq(-6,4,.5))
+raas.srt <- levels(raas.bins)
+tmtf$raas.bins <- as.character(raas.bins)
+tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
 
 ### FILTER
 if (  exclude.albumin ) {
@@ -267,6 +288,8 @@ if ( only.unique ) {
 ## sorting and labels
 uds <- sort(unique(tmtf$Dataset))
 uds <- c("Healthy",uds[uds!="Healthy"])
+uds <- c("Cancer",uds[uds!="Cancer"])
+uds <- uds[uds%in%tmtf$Dataset]
 
 srt <- c("charged","polar","hphobic","special")
 srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
@@ -275,15 +298,15 @@ axex <- ftlabels(srt) # axis labels with arrows
 
 
 ## by AA properties
-fname <- file.path(dpath,paste0("AAprop_wtests_"))
+fname <- file.path(dpath,paste0(SETID,"_AAprop_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="pfromto", cols="Dataset",
                     bg=TRUE, row.srt=srt, col.srt=uds,
-                    use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
+                    use.test=use.test, do.plots=TRUE, xlab="TMT level RAAS",
                     fname=fname, verb=1)
 
 ## local raas colors
-png(file.path(fig.path,"raas_profile_colors.png"),
+png(file.path(fig.path,paste0(SETID,"raas_profile_colors.png")),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(c(ovw$median),
@@ -302,7 +325,7 @@ plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
 dev.off()
 
 ## plot all
-plotProfiles(ovw, fname=file.path(fig.path,"AAprop"),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
              mai=c(.8,1.5,.5,.5),
              ttcols=ttcols, value="median",
              rlab=LAB, llab="",
@@ -320,9 +343,9 @@ if ( interactive() ) {
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
-plotProfiles(ovw, fname=file.path(fig.path,"fromAA"),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("fromAA_",SETID)),
              mtxt="encoded AA",
              mai=c(.8,.5,.5,.5),
              ttcols=ttcols, value="median",
@@ -334,9 +357,9 @@ plotProfiles(ovw, fname=file.path(fig.path,"fromAA"),
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0)
-plotProfiles(ovw, fname=file.path(fig.path,"toAA"),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("toAA_",SETID)),
              mai=c(.8,.5,.5,.5),
              mtxt="substituted AA", ttcols=ttcols, value="median",
              rlab=LAB, llab="", vcols=lraas.col$col, vbrks=lraas.col$breaks,
@@ -344,74 +367,137 @@ plotProfiles(ovw, fname=file.path(fig.path,"toAA"),
 
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
-for ( ptype in unique(tmtf$pfromto) ) {
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="fromto", cols="Dataset",
+                   bg=TRUE, value="RAAS", col.srt=uds,
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=1)
 
-    dtmt <- tmtf[tmtf$pfromto==ptype,]
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="fromto", cols="Dataset",
-                       bg=TRUE, value="RAAS", col.srt=uds,
-                       use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
-                       verb=0)
-    plotProfiles(ovw, fname=file.path(fig.path,paste0(ptype)),
-                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+## plot only signficant
+ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
+if ( nrow(ovwp$p.value)>0 )
+    plotProfiles(ovwp,
+                 fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
+                 mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
                  rlab=LAB, llab=ptype,
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
-}
+for ( ptype in unique(tmtf$pfromto) ) {
 
+    ## sort by to
+    qsrt <- sort(unique(tmtf$fromto[tmtf$pfromto==ptype]))
+    ft <- unlist(lapply(strsplit(qsrt,":"), function(x) x[2]))
+    qsrt <- qsrt[order(ft)]
+                 
+    ovwp <- sortOverlaps(ovw, srt=qsrt)
 
-
-## by AA->AA
-for ( ds in uds ) {
-
-    dtmt <- tmtf[tmtf$Dataset==ds,]
-
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="to", cols="from",
-                       bg=FALSE, value="RAAS", 
-                       use.test=w.test, do.plots=FALSE, 
-                       verb=0)
-
-    plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",ds)),
-                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-                 rlab=LAB, llab=ds,
+    plotProfiles(ovwp, fname=file.path(fig.path,paste0(ptype,"_",SETID)),
+                 mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                 rlab=LAB, llab=ptype,
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
-
+    ## cut
+    ovwp <- sortOverlaps(ovwp, axis=2, p.min=1e-5, cut=TRUE)
+    if ( nrow(ovwp$p.value)>0 )
+        plotProfiles(ovwp,
+                     fname=file.path(fig.path,paste0(ptype,"_",SETID,"_cut")),
+                     mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                     rlab=LAB, llab=ptype,
+                     vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                     gcols=gcols)
 }
 
 
-## by codon 
+
+## by codon->AA
 ctmt <- tmtf[tmtf$codon!="",]
 for ( ds in uds ) {
+
+
+    ## TODO: understand background
 
     dtmt <- ctmt[ctmt$Dataset==ds,]
 
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="aacodon",
-                       bg=FALSE, use.test=w.test, do.plots=FALSE, 
+                       bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
     ## TODO: re-create previous codon plots
-    plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",ds)),
+    plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
                  rlab=LAB, llab=ds,
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
 }
 
+## by AA->AA
+for ( ds in uds ) {
+
+    ## TODO: understand background
+
+    dtmt <- tmtf[tmtf$Dataset==ds,]
+
+    ovw <- raasProfile(x=dtmt, id="SAAP", 
+                       rows="to", cols="from",
+                       bg=FALSE, value="RAAS", 
+                       use.test=use.test, do.plots=FALSE, 
+                       verb=1)
+
+    plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",SETID,"_",ds)),
+                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 rlab=LAB, llab=ds,
+                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 gcols=gcols)
+
+}
+
+
 
 ### BY STRUCTURAL FEATURES
+
+for ( ds in uds ) {
+
+    tmtd <- tmtf
+    if ( ds!="all" )
+        tmtd <- tmtf[tmtf$Dataset==ds,]
+    ovl <- clusterCluster(paste0(tmtd$raas.bins), tmtd$iupred3.bins,
+                          cl1.srt=rev(raas.srt))
+    par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
+             xlab="IUPRED3", ylab="median RAAS")
+    
+    plotCor(tmtd$RAAS.median, tmtd$iupred3, xlab="median RAAS", ylab="IUPRED3")
+
+    ovl <- clusterCluster(paste0(tmtd$raas.bins), tmtd$anchor2.bins,
+                          cl1.srt=rev(raas.srt))
+    par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
+             xlab="ANCHOR2", ylab="median RAAS")
+    
+    plotCor(tmtd$RAAS.median, tmtd$anchor2, xlab="median RAAS", ylab="ANCHOR2")
+
+}
+
+## IUPRED3 vs. RAAS bins
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="iupred3.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=0)
+
 
 ## IUPRED3
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="iupred3.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=w.test, do.plots=TRUE, xlab="TMT level RAAS",
-                   verb=0, fname=file.path(fig.path,"iupred3_"))
+                   use.test=use.test, do.plots=TRUE, xlab="TMT level RAAS",
+                   verb=0, 
+                   fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
 
-plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_iupred3")),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_iupred3_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
              rlab=LAB, mtxt="IUPRED3", mtxt.line=3.3,
              vcols=lraas.col$col, vbrks=lraas.col$breaks,
@@ -422,10 +508,10 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    rows="anchor2.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
-plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2")),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
              rlab=LAB, mtxt="ANCHOR2", mtxt.line=3.3,
              vcols=lraas.col$col, vbrks=lraas.col$breaks,
@@ -435,10 +521,10 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2")),
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="sstruc", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
-                   use.test=w.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
-plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred")),
+plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
              rlab=LAB, mtxt="SPRED4", mtxt.line=3.3,
              vcols=lraas.col$col, vbrks=lraas.col$breaks,

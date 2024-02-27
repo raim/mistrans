@@ -30,13 +30,25 @@ fi
 ### CALCULATE RAAS PROFILES
 ## TODO: log files
 ## with Albumin
-sed 's/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
 ## without Albumin
-sed 's/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
 ## unique SAAP without Albumin 
-sed 's/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
 ## unique SAAP with Albumin 
-sed 's/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla
+
+## same for healthy tissues
+## with Albumin
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+## without Albumin
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+## unique SAAP without Albumin 
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
+## unique SAAP with Albumin 
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla
+
+
 
 R --vanilla < scripts/saap_analysis.R  > log/analysis.txt
 ## functional enrichment of SAAP-harboring proteins

@@ -24,7 +24,7 @@ w.test <- function(x,y) {
 
 
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
-                         fw=.3, fh=.2,
+                         fw=.25, fh=.2,
                          ttcols=ttcols,p.min=1e-10, p.txt=1e-5,
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
@@ -89,9 +89,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     txt <- ovw$unique
     txt[txt==0] <- ""
     txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
-    image_matrix(cnt, col=gcols, axis=1,
+    image_matrix(cnt, col=gcols, axis=1:2,
                  text=txt, text.col=txt.col, ylab=NA, xlab=NA, text.cex=.8)
-    axis(2, length(axex):1, labels=axex, las=2)
+    ##axis(2, length(axex):1, labels=axex, las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -102,8 +102,10 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ovw, cut=100, p.txt=-log10(p.txt),
             v.txt=c(-Inf,-1), density=TRUE,
-            xlab="median TMT RAAS", value=value)
-    abline(v=mean(ovw[[value]],na.rm=TRUE))
+            xlab=paste(value,"TMT RAAS"), value=value)
+    abline(v=get(value, mode="function")(ovw[[value]],na.rm=TRUE))
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     dev.off()
     
     ## common histogram with color by sign and
