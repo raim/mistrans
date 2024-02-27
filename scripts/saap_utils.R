@@ -28,7 +28,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          ttcols=ttcols,p.min=1e-10, p.txt=1e-5,
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
-                         fname="profile", mtxt, mtxt.line=1.3, llab, rlab) {
+                         fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
+                         verb=0) {
 
     ## replace row labels with arrows
     rows <- rownames(ovw$p.value)
@@ -41,6 +42,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         } else axex[i] <- as.expression(bquote(.(rows[i])))
     }
   
+
+    if (verb>0) cat(paste("plotting test profile\n"))
     
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
@@ -66,12 +69,14 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         vcols <- viridis::viridis(100)
     }
 
+    if (verb>0) cat(paste("plotting",value,"RAAS\n"))
+    
     segmenTools::plotdev(paste0(fname,"_raas_",value),
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ovw[["count"]]
     txt[txt==0] <- ""
-    q1 <- quantile(ovw[[value]], probs=.4, na.rm=TRUE)
+    q1 <- quantile(c(ovw[[value]]), probs=.4, na.rm=TRUE)
     txt.col <- ifelse(ovw[[value]]<q1, "white","black")
     image_matrix(ovw[[value]], col=vcols, breaks=vbrks, axis=1,
                  text=txt, text.col=txt.col, xlab=NA, ylab=NA, text.cex=.8)
@@ -80,7 +85,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     dev.off()
-    
+
+    if (verb>0) cat(paste("plotting unique number\n"))
+   
     segmenTools::plotdev(paste0(fname,"_count_unique"),
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
@@ -97,6 +104,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     dev.off()
 
+    if (verb>0) cat(paste("plotting volcano\n"))
+
     segmenTools::plotdev(paste0(fname,"_volcano"),
                          height=3, width=4, res=300)
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
@@ -108,6 +117,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     dev.off()
     
+    if (verb>0) cat(paste("plotting histograms\n"))
+
     ## common histogram with color by sign and
     ## first, calculate densities
     dns <- ovw$ALL
@@ -188,6 +199,9 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
     tpv <- tpv[!na]
     tmv <- tmv[!na]
 
+    if ( length(tmv)<2 ) 
+        density <- FALSE
+    
     if ( density ) {
         dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
     } else {
