@@ -47,6 +47,9 @@ tpmap <- file.path(gen.path,"protein_transcript_map.tsv")
 ## transcript structure
 exmap <- file.path(gen.path,"transcript_coordinates.tsv")
 
+## BP re-blast results
+bpmap <- file.path(out.path,"bp_mapped.tsv")
+
 ## s4pred
 s4pred <- file.path(mam.path,"processedData",
                     "Homo_sapiens.GRCh38.pep.large_s4pred.fas.gz")
@@ -109,13 +112,17 @@ scvs <- sdev/smns
 png(file.path(fig.path,"raas_means_duplicate_saap_delogged.png"),
     res=300, width=3.5, height=3.5, units="in")
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(log10(smns[slen>1]), smns.nrm[slen>1])
+dense2d(smns.nrm[slen>1], log10(smns[slen>1]),
+        ylab=expression(log[10](mean(RAAS))),
+        xlab=expression(mean(log[10]*RAAS)))
 abline(a=0, b=1)
 dev.off()
 
 ## duplicate SAAP/datatype
-idx <- which(duplicated(paste(dat$SAAP, dat$Dataset, dat$BP)))
-head(dat[dat$SAAP==dat$SAAP[idx[1]],1:10])
+if ( FALSE ) {
+    idx <- which(duplicated(paste(dat$SAAP, dat$Dataset, dat$BP)))
+    head(dat[dat$SAAP==dat$SAAP[idx[1]],1:10])
+}
 
 ## tag duplicates
 dups <- slen > 1
@@ -179,28 +186,40 @@ if ( FALSE ) {
 
 
 ## old simple approach of just taking the first ensembl
-pids <- gsub("'","",
-             sub("\\[","",
-                 sub("\\]","", dat[,PMATCH])))
-pids <- lapply(strsplit(pids, ","), trimws)
+pids <- dat[,PMATCH]
+pids <- gsub("\\[","", gsub("\\]","", pids))
+pids <- lapply(strsplit(pids, "', '"), trimws)
+## remove leading and trailing '
+pids <- lapply(pids, function(x) gsub("'","", x))
+## split other type of list present in some cases
+pids <- lapply(pids, function(x) unlist(strsplit(x,";")))
+
 ## remove all non ENSEMBL proteins
 pids <- lapply(pids, function(x) x[grep("ENSP",x)])
 
 ## take FIRST of multiple
-pids <- unlist(lapply(pids, function(x) x[1]))
+pids <- lapply(pids, function(x) x[1])
 
-## sublists: split, sort and take first again
-## NOTE: sorting may help to find the same protein
-## for identical SAAP in different Datasets
-## TODO: handle sublists betters
-pids <- strsplit(pids, ";")
-pids <- unlist(lapply(pids, function(x) sort(x)[1]))
+## fill empty
+pids[unlist(lapply(pids, length))==0] <- list(NA)
+
+pids <- unlist(pids)
 
 ## remove mutation tag
 eids <- sub("_.*", "", pids)
 
 dat$protein <- pids
 dat$ensembl <- eids
+
+## LOAD RE-BLAST
+bpm <- read.delim(bpmap)
+
+bp2dat <- match(dat$BP, bpm$BP)
+bpm <- bpm[bp2dat, c("ensembl", "sstart","send",
+                     "gene","MANE","match",
+                     "IG","albumin","globin","extracellular","exclude")]
+colnames(bpm) <- paste0("reblast.", colnames(bpm))
+dat <- cbind(dat, bpm)
 
 
 ## TODO: UNIFY ENSEMBL FOR IDENTICAL BP! 
@@ -222,16 +241,13 @@ names(fas) <- sub("\\.[0-9]+", "", names(fas))
 
 
 ## only take proteins where Top_leading_protein is present in fasta
-mids <- sub("_.*","",dat$protein)
-keep <- mids%in%names(fas)
+keep <- sub("_.*","",dat$protein)%in%names(fas)
 
 dat$no_protein <- !keep
 
 cat(paste("tagged", sum(!keep),
           "proteins where we don't have a sequence; now:", nrow(dat), "\n"))
 
-## refresh mids: remove mutation annotation
-mids <- sub("_.*","", dat$protein)
 
 ## get mutations
 notmutated <- grep("_", dat$protein, invert=TRUE)
@@ -310,9 +326,9 @@ testit <- TRUE # TEST whether the mutation position is correct
 ## count errors
 mform <- merr <- nomatch <- noens <- noprt <-
     noseq <- wcodon <- wsss <- wiup <- character()
-errors <- matrix(0, nrow=nrow(dat), ncol=7)
+errors <- matrix(0, nrow=nrow(dat), ncol=8)
 colnames(errors) <- c("noens", "noprt",
-                      "mform", "merr", 
+                      "mform", "merr", "mreblast",
                       "nomatch",
                       "noseq", "wcodon")
 for ( i in 1:nrow(dat) ) {
@@ -328,8 +344,13 @@ for ( i in 1:nrow(dat) ) {
     }
     
     oid <- dat$protein[i] # ID with mutation index
-    gid <- mids[i] # original gene ID
+    gid <- dat$ensembl[i] # original gene ID
 
+    if ( is.na(oid) ) { # no mapped ensembl protein, check re-blast
+        oid <- gid <- dat$reblast.ensembl[i]
+        cat(paste("WARNING:",i, "using re-blast ensembl hit\n"))
+        errors[i,"mreblast"] <- 1
+    }
     if ( is.na(oid) ) { # no mapped ensembl protein
         cat(paste("WARNING:",i, "no protein identified\n"))
         noens <- c(noens, paste(i, gid, muts[[i]]))
@@ -337,7 +358,7 @@ for ( i in 1:nrow(dat) ) {
         next
     }
     
-    j <- grep(mids[i], names(fas),value=FALSE, fixed=TRUE)
+    j <- grep(gid, names(fas),value=FALSE, fixed=TRUE)
     if ( length(j)==0 ) { # atm not appearing
         cat(paste("WARNING:",i, oid, "no protein sequence found\n"))
         noprt <- c(noprt, paste(i, gid, muts[[i]]))
@@ -401,7 +422,7 @@ for ( i in 1:nrow(dat) ) {
         ntarg <- sub(query,saap,target)
         if ( strsplit(target,"")[[1]][pos[i]] ==
              strsplit(ntarg,"")[[1]][pos[i]] ) {
-            stop(i, mids[i], j, names(fas)[j], "error: no mutation detected\n")
+            stop(i, gid, j, names(fas)[j], "error: no mutation detected\n")
         }
     }
 
@@ -609,7 +630,8 @@ miss <- mpos
 for ( i in 1:nrow(dat) ) {
 
     oid <- dat$protein[i]
-    j <- grep(mids[i], names(fas),value=FALSE, fixed=TRUE)
+    gid <- dat$ensembl[i]
+    j <- grep(gid, names(fas),value=FALSE, fixed=TRUE)
     
     if ( length(j)==0 ) {
         cat(paste(i, oid, "not found\n"))

@@ -15,15 +15,20 @@ THIS=${HOME}/work/mistrans
 ## analyze data structure, different number of replicates per unique SAAP
 R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt
 
-## map each peptide to position in protein and transcript
-R --vanilla < ${THIS}/scripts/map_peptides2.R > log/map.txt
 
 ## ANNOTATE ALL BP/SAAP
 
-## 1) collect all BP
+## 1) collect all BP and SAAP/BP pairs
+
+## BP as fasta for blast
 cut -f 5 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
 cut -f 5 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
 cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |uniq | awk '{print ">" $0 ORS $0}' - > ${MISDATA}/processedData/unique_bp.fas
+
+## BP/SAAP as simple table, basis for search in proteins
+cut -f 4,5 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
+cut -f 4,5 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
+cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv > ${MISDATA}/processedData/unique_saap.tsv
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 
@@ -35,23 +40,15 @@ blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 $blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot
 ## blast - filter full length hit alignment length=query length,
 ## and at least 75% identity with awk.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "7 qseqid sacc pident mismatch length qlen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp.tsv
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp.tsv
 
-## 4) find best match
+## 4) find best matching protein
 R --vanilla < ${THIS}/scripts/get_protein_match.R
 
 
-## copy required files to a new directory
-## much smaller for easier transfer
-if [ false ]; then
-    cut -f 12 ~/data/mistrans/processedData/saap_mapped.tsv | sed '/^$/d' | tail -n +2 > ~/data/mistrans/processedData/mapped_ensembl_proteins.dat
-    while read p; do
-	echo "$p" 
-	find ~/data/mammary/processedData/iupred3 -name "${p}*_iupred3.tsv.gz" \
-	     >>  trasnfer_files.txt
-    done < ~/data/mistrans/processedData/mapped_ensembl_proteins.dat
-    cat trasnfer_files.txt |sort |uniq | xargs -I % cp % iupred3_selected/
-fi
+## map each peptide to position in protein and transcript
+R --vanilla < ${THIS}/scripts/map_peptides2.R > log/map.txt
+
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES

@@ -75,6 +75,7 @@ cat(paste0("MUTATION REPLACEMENT SUMMARY:\n",
            "\tsuccessful replacements:", length(nseq),"\n"))
 
 ## fix names for blast
+onames <- names(nseq)
 names(nseq) <- gsub(",","_", names(nseq))
 
 ## cut names at length 47, incl. duplicate tags <50 for blastdb
@@ -85,8 +86,8 @@ nnms <- sapply(names(nseq),
 nnms <- tagDuplicates(nnms)
 
 ## write out short/long name mapping
-longnms <- cbind(names(nseq), nnms)
-write.table(file=sub(".fa", ".tsv", out.file),
+longnms <- cbind(onames, nnms)
+write.table(file=sub(".fa", ".tsv", out.file), sep="\t",
             x=longnms, quote=FALSE, col.names=FALSE, row.names=FALSE)
 
 ## rename fasta
@@ -100,3 +101,5 @@ sink(file=file(out.file, open = "wt"))
 for ( i in seq_along(ofas) ) 
     cat(paste0(">", names(ofas)[i], "\n", ofas[[i]]$seq, "\n"))
 sink()
+
+
