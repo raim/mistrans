@@ -28,7 +28,7 @@ cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |u
 ## BP/SAAP as simple table, basis for search in proteins
 cut -f 4,5 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
 cut -f 4,5 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
-cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv > ${MISDATA}/processedData/unique_saap.tsv
+cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort | uniq > ${MISDATA}/processedData/unique_saap.tsv
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 

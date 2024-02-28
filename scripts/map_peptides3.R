@@ -89,14 +89,17 @@ colnames(dat) <- c("SAAP","BP")
 bmap <- read.delim(bpmap)
 dat <- merge(dat, bmap, by="BP")
 
+
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
 pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
 colnames(sssbg) <- c("C","E","H")
-mpos <- list() ## main peptide positions
+
+
 testit <- TRUE # TEST whether the mutation position is correct
+use.regex <- FALSE # use TRUE to test blast results vs. direct regex
 
 ## count errors
 mform <- merr <- nomatch <- noens <- noprt <-
@@ -127,28 +130,29 @@ for ( i in 1:nrow(dat) ) {
 
     ## GET POSITION OF MUTATION
     ## 1: MAP PETPTIDE - TODO: cross-check or replace by blast result
-    res <- gregexpr(query, target)
-    if ( res[[1]][1]==-1 ) {
-        cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],"\n"))
-        nomatch <- c(nomatch, paste(i, gid, query))
-        errors[i,"nomatch"] <- 1
-        next
-    }
-    if ( length(res)>1 ) {
-        stop(paste("PROBLEM:", i, oid, 
-                  "more than two hits in",j, names(fas)[j],
-                  "; taking first\n"))
-    }
-    if ( res[[1]][1] != dat[i,"sstart"] ) {
-          stop(paste("PROBLEM:", i, oid, 
-                  "regex doesn't match blast\n"))
-      
-    }
+    if ( use.regex ) {
+        res <- gregexpr(query, target)
+        if ( res[[1]][1]==-1 ) {
+            cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],"\n"))
+            nomatch <- c(nomatch, paste(i, gid, query))
+            errors[i,"nomatch"] <- 1
+            next
+        }
+        if ( length(res)>1 ) 
+            stop(paste("PROBLEM:", i, oid, 
+                       "more than two hits in",j, names(fas)[j],
+                       "; taking first\n"))
+        if ( res[[1]][1] != dat[i,"sstart"] ) 
+            ## if this never occurs we can use blast
+            stop(paste("PROBLEM:", i, oid, 
+                       "regex doesn't match blast\n"))
+        AAS <- res[1][1]
+    } else AAS <- dat[i,"sstart"]
 
     ## 2: AAS within peptide
     saap <- unlist(dat[i,"SAAP"])
     mut <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
-    pos[i] <- res[[1]][1] + mut -1
+    pos[i] <- AAS + mut -1
     len[i] <- length(unlist(strsplit(target,"")))
 
     ## test location of mutation
