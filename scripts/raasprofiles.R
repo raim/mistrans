@@ -272,11 +272,11 @@ if ( exclude.frequent ) {
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
 }
 if ( only.unique ) {
-
-    ## just take the first of each SAAP/BP per Dataset
-    tmtf <- tmtf[!duplicated(tmtf$unique),]
+    ## FOR TESTING
+    ## just take the first of each SAAP per dataset
+    tmtf <- tmtf[!duplicated(paste(tmtf$SAAP,tmtf$Dataset)),]
     tmtf$RAAS.orig <- tmtf$RAAS
-    tmtf$RAAS <- tmtf$RAAS.median #TODO: use delogged mean?
+    tmtf$RAAS <- tmtf$RAAS.mean
 }
 
 ### TODO: merge unique SAAP here to test effects of multiple
@@ -296,25 +296,14 @@ srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
 
 axex <- ftlabels(srt) # axis labels with arrows
 
-### START ANALYSIS
 
-## global distribution by cancer type
-ylm <- range(tmtf$RAAS)
-par(mfcol=c(1,2))
-boxplot(tmtf$RAAS ~ factor(tmtf$Dataset, levels=uds), ylim=ylm)
-tmtu <- tmtf[!duplicated(tmtf$unique),]
-boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds), ylim=ylm)
-## TODO: pairs of same SAAP
-tmtl <- split(tmtf$Dataset, tmtf$SAAP)
-
-## RAAS profiles by AA properties
+## by AA properties
 fname <- file.path(dpath,paste0(SETID,"_AAprop_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="pfromto", cols="Dataset",
                     bg=TRUE, row.srt=srt, col.srt=uds,
                     use.test=use.test, do.plots=TRUE, xlab="TMT level RAAS",
-                    fname=fname, verb=0)
-ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
+                    fname=fname, verb=1)
 
 ## local raas colors
 png(file.path(fig.path,paste0(SETID,"raas_profile_colors.png")),
@@ -342,13 +331,6 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
              rlab=LAB, llab="",
              vcols=lraas.col$col, vbrks=lraas.col$breaks,
              gcols=gcols)
-if ( nrow(ovwp$p.value)>0 )
-    plotProfiles(ovwp,
-                 fname=file.path(fig.path,paste0("AAprop_",SETID,"_cut")),
-                 mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
-                 rlab=LAB, llab="",
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
-                 gcols=gcols)
 
 ## TODO: median vs. p-value as a measure of effect size
 if ( interactive() ) {
@@ -388,10 +370,8 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("toAA_",SETID)),
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="fromto", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=use.test, do.plots=TRUE,
-                   fname=file.path(dpath,paste0("AA_",SETID,"_")),
-                   xlab="TMT level RAAS",
-                   verb=0)
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=1)
 
 ## plot only signficant
 ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
@@ -399,7 +379,7 @@ if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
                  mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
-                 rlab=LAB, llab="",
+                 rlab=LAB, llab=ptype,
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
 for ( ptype in unique(tmtf$pfromto) ) {
@@ -462,7 +442,7 @@ for ( ds in uds ) {
                        rows="to", cols="from",
                        bg=FALSE, value="RAAS", 
                        use.test=use.test, do.plots=FALSE, 
-                       verb=0)
+                       verb=1)
 
     plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",SETID,"_",ds)),
                  mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
@@ -499,21 +479,21 @@ for ( ds in uds ) {
 
 }
 
-## TODO: IUPRED3 vs. RAAS bins
-##ovw <- raasProfile(x=tmtf, id="SAAP", 
-##                   rows="iupred3.bins", cols="Dataset",
-##                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
-##                   col.srt=uds,
-##                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
-##                   verb=0)
-##
+## IUPRED3 vs. RAAS bins
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="iupred3.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   verb=0)
+
 
 ## IUPRED3
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="iupred3.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=TRUE, xlab="TMT level RAAS",
                    verb=0, 
                    fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
 

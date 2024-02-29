@@ -10,6 +10,7 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 bp.file <- file.path(proj.path,"processedData","unique_bp.tsv")
 bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
@@ -25,6 +26,12 @@ bp$ensembl <- sub("_.*", "", bp$protein)
 features <- read.delim(feature.file)
 ## use number of GO annotations as a filter criterium: best annotated
 gol <- unlist(lapply(strsplit(features$GO, ";"),length))
+
+## load protein-transcript map
+tpmap <- read.delim(file=tpmap.file, header=FALSE, row.names=2)
+## reverse map transcript-protein
+pampt <- matrix(rownames(tpmap), ncol=1)
+rownames(pampt) <- tpmap[,1]
 
 ## map to genes
 ## takes long - store as file and reload
@@ -42,8 +49,21 @@ if ( file.exists(index.file) ) {
 }
 
 bp$gene <- features$ID[gidx[bp$ensembl]]
-bp$MANE <- features$MANE[gidx[bp$ensembl]]
+bp$transcript <- tpmap[bp$ensembl,1]
+
+## FUSE MANE and canonical annotation
+mains <- data.frame(MANE=features$MANE[gidx[bp$ensembl]],
+                    canonical=features$canonical[gidx[bp$ensembl]])
+mains[mains==""] <- NA
+tmp <- apply(mains,1, unique)
+tmp <- lapply(tmp, function(x) x[!is.na(x)])
+tmp <- lapply(tmp, function(x) {if (length(x)==0) x<-NA;x})
+
+bp$MANE <- unlist(tmp)
+bp$MANE.protein <- pampt[match(bp$MANE,rownames(pampt)),1]
+
 bp$numGO <- gol[gidx[bp$ensembl]]
+
 
 ## filter - only those where we found a gene
 all <- bp ## store to analyze missing below
@@ -52,10 +72,21 @@ bp <- bp[!is.na(bp$gene),] # proteins annotated to a scaffold
 ## filter too many mismatches
 bp <- bp[bp$mismatches<3,]
 
-## sort & filter - unique BP/protein pairs
-bp <- bp[order(bp$identity, bp$MANE, -bp$numGO, decreasing=TRUE),]
-bp <- bp[!duplicated(paste0(bp$BP,bp$gene)),]
+## SORT & FILTER
+## sort by
+## 1) identity,
+## 2) -mismatches (perhaps redundant?),
+## 3) whether protein is the annotated MANE, and
+## 4) number of annotations.
+## 5) remove duplicated after sorting!
+bp <- bp[order(bp$identity,
+               -bp$mismatches,
+               !is.na(bp$MANE.protein),
+               bp$protein==bp$MANE.protein,
+               bp$numGO, decreasing=TRUE),]
 
+## remove duplicated, which should appear below better hits!
+bp <- bp[!duplicated(paste0(bp$BP,bp$gene)),]
 
 ## first try to find best match MANE, then handle missing
 bad <- which(bp$mismatches >0 | bp$MANE=="" | bp$identity<100)
@@ -108,7 +139,7 @@ gots <- features$GO[gidx[best$ensembl]]
 best$extracellular <- FALSE
 best$extracellular[grep("GO:0005576", gots)] <- TRUE
 
-## exclude tag                   
+## exclude tag  - TODO: any K/R                 
 best$exclude <- best$globin|best$albumin|best$IG
 
 
