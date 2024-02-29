@@ -315,17 +315,11 @@ if ( length(rm)>0 ) {
     cat(paste("WARNING:", length(rm), "SAAP w/o codon\n"))
 }
 
+## TODO: bar plot with errors
 
 
 ### WRITE OUT TABLE with positions for downstream analysis
-sdat <- dat[,c(colnames(dat)[1:5],grep("RAAS",colnames(dat),value=TRUE),
-               "ensembl","protein","transcript",
-               "len","pos","rpos","from","to",
-               "codon","s4pred","C.protein","E.protein","H.protein",
-               "iupred3","iupred3.protein",
-               "anchor2","anchor2.protein",
-               "remove","Hemoglobin.Albumin","Keep.SAAP")]
-write.table(sdat, file=file.path(out.path,"saap_mapped.tsv"),
+write.table(dat, file=file.path(out.path,"saap_mapped3.tsv"),
             sep="\t", quote=FALSE, na="", row.names=FALSE)
 
 
