@@ -102,12 +102,11 @@ testit <- TRUE # TEST whether the mutation position is correct
 use.regex <- FALSE # use TRUE to test blast results vs. direct regex
 
 ## count errors
-mform <- merr <- nomatch <- noens <- noprt <-
+nomatch <- noprt <-
     noseq <- wcodon <- wsss <- wiup <- character()
-errors <- matrix(0, nrow=nrow(dat), ncol=7)
-colnames(errors) <- c("noens", "noprt",
-                      "mform", "merr", 
-                      "nomatch",
+errors <- matrix(0, nrow=nrow(dat), ncol=5)
+colnames(errors) <- c("noprt",
+                      "nomatch","nomut",
                       "noseq", "wcodon")
 for ( i in 1:nrow(dat) ) {
    
@@ -155,12 +154,16 @@ for ( i in 1:nrow(dat) ) {
     pos[i] <- AAS + mut -1
     len[i] <- length(unlist(strsplit(target,"")))
 
-    ## test location of mutation
-    if ( testit ) { # atm not happening!
+    ## test mutation
+    if ( testit ) { # 
         ntarg <- sub(query,saap,target)
         if ( strsplit(target,"")[[1]][pos[i]] ==
              strsplit(ntarg,"")[[1]][pos[i]] ) {
-            stop(i, gid, j, names(fas)[j], "error: no mutation detected\n")
+            cat(paste0("WARNING:", i, gid, j, names(fas)[j],
+                       "no mutation detected\n"))
+            nomatch <- c(nomatch, paste(i, gid, query))
+            errors[i,"nomut"] <- 1
+            ##next            
         }
     }
 
@@ -269,10 +272,6 @@ for ( i in 1:nrow(dat) ) {
 if ( !interactive() ) {
     cat(paste("PEPTIDE NOT MATCHED,",length(nomatch),":",
               paste(nomatch, collapse=" ; "),"\n"))
-    cat(paste("WRONG MUTATION FORMAT,",length(mform),":",
-              paste(mform, collapse=" ; "),"\n"))
-    cat(paste("MUTATION NOT FOUND,",length(merr),":",
-              paste(merr, collapse=" ; "),"\n"))
     cat(paste("NO TRANSCRIPT SEQUENCE,",length(noseq),":",
               paste(noseq, collapse=" ; "),"\n"))
     cat(paste("WRONG CODON,",length(wcodon),":",
