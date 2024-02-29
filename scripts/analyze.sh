@@ -43,11 +43,11 @@ $blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp.tsv
 
 ## 4) find best matching protein
-R --vanilla < ${THIS}/scripts/get_protein_match.R
+R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
 
 
 ## map each peptide to position in protein and transcript
-R --vanilla < ${THIS}/scripts/map_peptides2.R > log/map.txt
+R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
 
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and

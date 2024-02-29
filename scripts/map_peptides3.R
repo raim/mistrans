@@ -2,6 +2,9 @@
 ## MAP AAS TO ENSEMBL PROTEINS & TRANSCRIPTS
 ## and collect sequence & structure data at AAS.
 
+## TODO: also load full list of unique SAAP/BP and do
+## statistics on blast, AA and codon matching.
+
 library(segmenTools)
 library(Biostrings)
 options(stringsAsFactors=FALSE)
@@ -159,7 +162,7 @@ for ( i in 1:nrow(dat) ) {
         ntarg <- sub(query,saap,target)
         if ( strsplit(target,"")[[1]][pos[i]] ==
              strsplit(ntarg,"")[[1]][pos[i]] ) {
-            cat(paste0("WARNING:", i, gid, j, names(fas)[j],
+            cat(paste("WARNING:", i, gid, j, names(fas)[j],
                        "no mutation detected\n"))
             nomatch <- c(nomatch, paste(i, gid, query))
             errors[i,"nomut"] <- 1
