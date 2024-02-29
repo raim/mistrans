@@ -90,7 +90,7 @@ cat(paste("iupred3", sum(is.na(iufiles)), "proteins not found\n"))
 dat <- read.delim(saapf, header=FALSE)
 colnames(dat) <- c("SAAP","BP")
 bmap <- read.delim(bpmap)
-dat <- merge(dat, bmap, by="BP")
+dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
@@ -259,8 +259,7 @@ for ( i in 1:nrow(dat) ) {
  
      
     ## report
-    if ( !interactive() ) {
-        
+    if ( !interactive() ) {        
         tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
         cat(paste("DONE:", i, codon, aaf[i], GENETIC_CODE[codon], "->", aat[i],
                   tcodons,  "\n"))

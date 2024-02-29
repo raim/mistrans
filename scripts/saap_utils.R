@@ -49,6 +49,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
+
     ## p-value profiles
     segmenTools::plotdev(paste0(fname,"_wtests"),
                          height=nh, width=nw, res=300)
@@ -68,6 +69,29 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         vbrks <- seq(min(vals), max(vals), length.out=101)
         vcols <- viridis::viridis(100)
     }
+
+     ## combined effect size and p-value plot
+    
+    segmenTools::plotdev(paste0(fname,"_dotplot"),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    navals <- ovw[[value]]
+    navals[] <- NA
+    image_matrix(navals, breaks=lraas.col$breaks,
+                 col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
+    p <- -log10(ovw$p.value)
+    p[p>-log10(p.min)] <- -log10(p.min)
+    z <- p/-log10(p.min)
+    points(x = rep(1:ncol(z), nrow(z)),
+           y = rep(nrow(z):1, each= ncol(z)),
+           cex=1.5*c(t(z)), pch=19,
+           col=num2col(t(ovw[[value]]),limits=range(vbrks),
+                       colf=viridis::viridis, n=length(vcols)))
+    axis(2, length(axex):1, labels=axex, las=2)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    dev.off()
 
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
     
