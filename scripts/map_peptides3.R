@@ -257,10 +257,10 @@ for ( i in 1:nrow(dat) ) {
      
     ## report
     if ( !interactive() ) {
-        tmp <- ifelse(length(muts[[i]])==0, "", paste(muts[[i]], collapse=";"))
+        
         tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
         cat(paste("DONE:", i, codon, aaf[i], GENETIC_CODE[codon], "->", aat[i],
-                  tcodons, tmp, "\n"))
+                  tcodons,  "\n"))
     }
     
     if ( aas[i] != aaf[i] ) # doesnt happen since search is exact
