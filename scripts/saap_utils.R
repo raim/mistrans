@@ -26,6 +26,7 @@ w.test <- function(x,y) {
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          fw=.25, fh=.2,
                          ttcols=ttcols,p.min=1e-10, p.txt=1e-5,
+                         dot.sze=c(.1,1.5), p.dot=p.txt, ## TODO: legend
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
                          fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
@@ -61,6 +62,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    if ( length(grep("^codon_",basename(fname)))>0 )
+        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+               lwd=1, xpd=FALSE)
     dev.off()
 
     if ( missing(vbrks) ) {
@@ -70,7 +74,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         vcols <- viridis::viridis(100)
     }
 
-     ## combined effect size and p-value plot
+    ## combined effect size and p-value plot
     
     segmenTools::plotdev(paste0(fname,"_dotplot"),
                          height=nh, width=nw, res=300)
@@ -80,19 +84,22 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     image_matrix(navals, breaks=lraas.col$breaks,
                  col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
     p <- -log10(ovw$p.value)
-    p[p>-log10(p.txt)] <- -log10(p.txt)
-    z <- p/-log10(p.txt)
+    p[p>-log10(p.dot)] <- -log10(p.dot)
+    z <- p/-log10(p.dot)
     points(x = rep(1:ncol(z), nrow(z)),
            y = rep(nrow(z):1, each= ncol(z)),
-           cex=1.5*c(t(z)), pch=19,
+           cex=dot.sze[1]+dot.sze[2]*c(t(z)), pch=19,
            col=num2col(t(ovw[[value]]),limits=range(vbrks),
                        colf=viridis::viridis, n=length(vcols)))
+    box()
     axis(2, length(axex):1, labels=axex, las=2)
     axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
     axis(4, at=nrow(ovw$num.query):1, labels=ovw$num.query[,1],las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    if ( length(grep("^codon_",basename(fname)))>0 )
+        abline(v=.5+cumsum(table(sub("-.*","",colnames(p)))), lwd=1, xpd=FALSE)
     dev.off()
 
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
@@ -110,6 +117,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    if ( length(grep("^codon_",basename(fname)))>0 )
+        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+               lwd=1, xpd=FALSE)
     dev.off()
 
     if (verb>0) cat(paste("plotting unique number\n"))
@@ -128,6 +138,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    if ( length(grep("^codon_",basename(fname)))>0 )
+        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+               lwd=1, xpd=FALSE)
     dev.off()
 
     if (verb>0) cat(paste("plotting volcano\n"))

@@ -483,17 +483,14 @@ for ( ptype in unique(tmtf$pfromto) ) {
 ## by codon->AA
 ctmt <- tmtf[tmtf$codon!="",]
 codons <- read.delim(codon.file, row.names=1)
-for ( ds in uds ) {
+for ( ds in c(uds,"all") ) {
 
     ## TODO: add codon frequency two-sided bar plot
 
-    dtmt <- ctmt[ctmt$Dataset==ds,]
+    dtmt <- ctmt
+    if ( ds!="all" )
+        dtmt <- ctmt[ctmt$Dataset==ds,]
 
-    cod  <- codons[unique(dtmt$transcript),]
-    cods <- apply(cod,2,sum)
-    ## get codon frequencies per AA
-    cods <- split(cods, GENETIC_CODE[names(cods)])
-    cods <- unlist(lapply(cods, function(x) x/sum(x)))
 
     ## NOTE: bg=FALSE, no column-wise background !
     ovw <- raasProfile(x=dtmt, id="SAAP", 
@@ -501,34 +498,15 @@ for ( ds in uds ) {
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
-    ## TODO:
-    ## * align with an overlap plot
-    ## * show frequencies but color by odds-ratio,
-    ## * hypergeo stats on usage?
-    lcods <- apply(ovw$unique, 2, sum)
-    names(lcods) <- sub(".*-","",names(lcods))
-    lcods <- split(lcods, GENETIC_CODE[names(lcods)])
-    lcods <- unlist(lapply(lcods, function(x) x/sum(x)))
 
-    mai <- c(.8,.5,.1,.5)
-    fw=.25
-    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons")),
-            type="png", res=300, width=nw,height=1.5)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plot(log2(lcods/cods[names(lcods)]), type="h", axes=FALSE, xlab=NA,
-         ylab=expression(log[2](codon["AAS"]/codon["all"])))
-    axis(2)
-    axis(1, at=1:length(lcods), labels=names(lcods), las=2)
-    dev.off()
-    
+  
     aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
     ovw <- sortOverlaps(ovw, axis=2, srt=aasrt, cut=TRUE)
 
     ## TODO: re-create previous codon plots
     plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-                 rlab=LAB, llab=ds,
+                 rlab=LAB, llab=ds, mtxt="substituted AA",
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
 
@@ -541,6 +519,117 @@ for ( ds in uds ) {
                  vcols=lraas.col$col, vbrks=lraas.col$breaks,
                  gcols=gcols)
 
+    ## CUSTOM CODON FREQUENCY PLOTS
+    lcodt <- apply(ovw$unique, 2, sum)
+    names(lcodt) <- sub(".*-","",names(lcodt))
+    lcods <- split(lcodt, GENETIC_CODE[names(lcodt)])
+    lcods <- unlist(lapply(lcods, function(x) x/sum(x)))
+    
+    cod  <- codons[unique(dtmt$transcript),]
+    codt <- apply(cod,2,sum)
+    ## get codon frequencies per AA
+    cods <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
+    cods <- unlist(lapply(cods, function(x) x/sum(x)))
+    ##names(codt) <- paste0(GENETIC_CODE[names(codt)], ".", names(codt))
+    
+    mai <- c(.05,.5,.1,.5)
+    fw <- .2
+    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),
+            type="png", res=300, width=nw,height=1)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plot(1:length(lcods),
+         log2(lcods/cods[names(lcods)]), type="h", axes=FALSE, xlab=NA, lwd=3,
+         ylab=expression(log[2]~ratio),
+         xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-1,1))
+    abline(h=0)
+    axis(2)
+    abline(v=.5+cumsum(table(sub("\\..*","",names(lcods)))), lwd=1, xpd=TRUE)
+    dev.off()
+    
+    
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_barplot")),
+            type="png", res=300, width=nw,height=1)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", xpd=TRUE)
+    barplot(rbind(lcods,cods[names(lcods)]), axes=FALSE, xlab=NA, beside=TRUE,
+            ylab="", las=2,xaxt='n')
+    axis(2)
+    dev.off()
+    
+    ## hypergeo tests
+    aaa <- unique( GENETIC_CODE)
+    aam <- matrix(1, ncol=length(lcodt), nrow=1)
+    colnames(aam) <- names(lcodt)
+    aac <- aap <- aam
+    aac[] <- 0
+    
+    for ( aa in unique(aaa) ) {
+        alc <- names(GENETIC_CODE)[GENETIC_CODE==aa]
+        
+        if ( length(alc)<2 ) next
+        
+        for ( j in  seq_along(alc) ) {
+            
+            wcd <- alc[ j] # white balls
+            bcd <- alc[-j] # black balls
+            
+            if ( !wcd%in%names(lcodt) ) next
+            
+            m <- codt[wcd]; # number of white balls
+            n <- sum(codt[bcd], na.rm=TRUE); # number of black balls
+            q <- lcodt[wcd] # white balls drawn - CODON OF INTEREST
+            k <- sum(lcodt[alc], na.rm=TRUE) # number of balls drawn
+            
+            aac[,wcd] <- q
+            aam[,wcd] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+            aap[,wcd] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
+            cat(paste("testing", aa, wcd, signif(aam[,wcd]), "\n"))
+        }
+    }
+    
+    colnames(aam) <- colnames(aap) <- colnames(aac) <-
+        paste0(GENETIC_CODE[colnames(aam)],"-", colnames(aam))
+    
+    ovl <- list()
+    ovl$p.value <- aam
+    ovl$count <- aac
+    
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_enriched")),
+            type="png", res=300, width=nw,height=1)
+    par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
+                 col=upcols, text.cex=.7)
+    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=TRUE)
+    box()
+    dev.off()
+    
+    ovl$p.value <- aap
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_deprived")),
+            type="png", res=300, width=nw,height=1)
+    par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
+                 col=docols, text.cex=.7)
+    box()
+    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=TRUE)
+    dev.off()
+
+
+    ovl$p.value <- rbind(aam,aap)
+    rownames(ovl$p.value) <- c("more","less")
+    ovl$count <- rbind(aac,aac)
+    ovl$count[] <- 0
+    ovl$sign <- rbind(rep( 1,length(aam)),
+                      rep(-1,length(aam)))
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_hypergeo")),
+            type="png", res=300, width=nw,height=1)
+    par(mai=c(.05,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=2, xlab=NA, ylab=NA,
+                 text.cex=.7, col=ttcols)
+    axis(3, at=1:length(aac), labels=aac, las=2)
+    box()
+    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=FALSE)
+    dev.off()
+    
 }
 
 ## by AA->AA
