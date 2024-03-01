@@ -98,7 +98,7 @@ healthy <- FALSE # TRUE #
 exclude.extracellular <- FALSE # TRUE # 
 exclude.albumin <- TRUE # FALSE # 
 only.unique <- FALSE # TRUE # 
-include.kr <- TRUE # FALSE # 
+include.kr <- FALSE # TRUE # 
 
 exclude.frequent <- FALSE # TRUE # 
 frequent <- c("Q","W","T","S")
@@ -107,12 +107,12 @@ LAB <- "all"
 fig.path <- file.path(proj.path,"figures","raasprofiles3")
 if (  exclude.albumin ) {
     fig.path <- paste0(fig.path,"_noalb")
-    LAB <- "no Alb./Hemog."
+    LAB <- "-Alb./Hemog."
 }
 if ( exclude.frequent ) {
     tmp <- paste(frequent,collapse=",")
     fig.path <- paste0(fig.path,"_", gsub(",","",tmp))
-    LAB <- paste("no", tmp)
+    LAB <- paste0("-", tmp)
 }
 if ( only.unique ) {
     fig.path <- paste0(fig.path,"_unique")
@@ -120,7 +120,7 @@ if ( only.unique ) {
 }
 if ( exclude.extracellular ) {
     fig.path <- paste0(fig.path,"_no_extracellular")
-    LAB <- paste0(LAB, ", no extrac.")
+    LAB <- paste0(LAB, " -extracell.")
 }
 if ( include.kr ) {
     fig.path <- paste0(fig.path,"_wKR")
@@ -509,9 +509,18 @@ for ( ds in uds ) {
     names(lcods) <- sub(".*-","",names(lcods))
     lcods <- split(lcods, GENETIC_CODE[names(lcods)])
     lcods <- unlist(lapply(lcods, function(x) x/sum(x)))
-    plot(log2(lcods/cods[names(lcods)]), type="h", axes=FALSE)
+
+    mai <- c(.8,.5,.1,.5)
+    fw=.25
+    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons")),
+            type="png", res=300, width=nw,height=1.5)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plot(log2(lcods/cods[names(lcods)]), type="h", axes=FALSE, xlab=NA,
+         ylab=expression(log[2](codon["AAS"]/codon["all"])))
     axis(2)
     axis(1, at=1:length(lcods), labels=names(lcods), las=2)
+    dev.off()
     
     aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
     ovw <- sortOverlaps(ovw, axis=2, srt=aasrt, cut=TRUE)
@@ -641,22 +650,29 @@ if ( FALSE ) {
 plotOverlaps(ovw, p.min=p.min, p.txt=p.txt, txt.col=NA,
                  text.cex=.8, axis=1:2, ylab=NA, xlab=NA,
                  col=ttcols, show.total=TRUE)
+    mai=c(.8,.9,.5,.5)
+    value <- "median"
+    vcols <- lraas.col$col
+    vbrks <- lraas.col$breaks
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    navals <- ovw[[value]]
+    navals[] <- NA
+    image_matrix(navals, breaks=lraas.col$breaks,
+                 col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
+    p <- -log10(ovw$p.value)
+    p[p>-log10(p.min)] <- -log10(p.min)
+    z <- p/-log10(p.min)
+    points(x = rep(1:ncol(z), nrow(z)),
+           y = rep(nrow(z):1, each= ncol(z)),
+           cex=1.5*c(t(z)), pch=19,
+           col=num2col(t(ovw[[value]]),limits=range(vbrks),
+                       colf=viridis::viridis, n=length(vcols)))
+    axis(2, length(axex):1, labels=axex, las=2)
+    axis(4, at=nrow(ovw$num.query):1, labels=ovw$num.query[,1],las=2)
+    axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
 
-navals <- ovw[["median"]]
-navals[] <- NA
-image_matrix(navals, breaks=lraas.col$breaks,
-             col=lraas.col$col, axis=1:2)
-
-p <- ovw$p.value
-z <- -log10(p)/-log10(1e-5)
-
-points(x = rep(1:ncol(z), nrow(z)),
-       y = rep(nrow(z):1, each= ncol(z)),
-       cex=5*c(t(z)), pch=19,
-       col=num2col(t(ovw[["median"]]),q=c(.05,.95)))
-                   ##limits=range(lraas.col$breaks),
-                   ##colf=viridis::viridis, n=length(lraas.col$col)))
-points(x = rep(1:ncol(z), nrow(z)),
-       y = rep(nrow(z):1, each= ncol(z)),
-       cex=5*c(t(z)), pch=1, col=8)
+    
 }

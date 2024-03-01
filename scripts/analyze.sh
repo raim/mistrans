@@ -56,6 +56,8 @@ R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
 ## map each peptide to position in protein and transcript
 R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
 
+## get and analyze sequences surrounding the ASS
+R --vanilla < ${THIS}/scripts/get_aas_context.R
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
@@ -82,7 +84,7 @@ sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^on
 sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla
 
 
-
+## OLD and OBSOLETE - TODO: redo functional analysis
 R --vanilla < ${THIS}/scripts/saap_analysis.R  > log/analysis.txt
 ## functional enrichment of SAAP-harboring proteins
 R --vanilla < ${THIS}/scripts/saap_function.R

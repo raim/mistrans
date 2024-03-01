@@ -80,14 +80,16 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     image_matrix(navals, breaks=lraas.col$breaks,
                  col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
     p <- -log10(ovw$p.value)
-    p[p>-log10(p.min)] <- -log10(p.min)
-    z <- p/-log10(p.min)
+    p[p>-log10(p.txt)] <- -log10(p.txt)
+    z <- p/-log10(p.txt)
     points(x = rep(1:ncol(z), nrow(z)),
            y = rep(nrow(z):1, each= ncol(z)),
            cex=1.5*c(t(z)), pch=19,
            col=num2col(t(ovw[[value]]),limits=range(vbrks),
                        colf=viridis::viridis, n=length(vcols)))
     axis(2, length(axex):1, labels=axex, las=2)
+    axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
+    axis(4, at=nrow(ovw$num.query):1, labels=ovw$num.query[,1],las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
