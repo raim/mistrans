@@ -96,7 +96,7 @@ healthy <- FALSE # TRUE #
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.extracellular <- FALSE # TRUE # 
-exclude.albumin <- TRUE # FALSE # 
+exclude.albumin <- FALSE # TRUE # 
 only.unique <- FALSE # TRUE # 
 include.kr <- FALSE # TRUE # 
 
@@ -362,7 +362,8 @@ fname <- file.path(dpath,paste0("AAprop_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="pfromto", cols="Dataset",
                     bg=TRUE, row.srt=srt, col.srt=uds,
-                    use.test=use.test, do.plots=TRUE, xlab="TMT level RAAS",
+                    use.test=use.test, do.plots=TRUE,
+                    xlab=expression(TMT~level~log[10]*RAAS),
                     fname=fname, verb=0)
 ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
 
@@ -373,7 +374,8 @@ par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(c(ovw$median),
                           q=.01,colf=viridis::viridis,
                           n=20, plot=TRUE,
-                          mai=c(.5,.5,.1,.1), xlab="All TMT level RAAS")
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
 axis(1, at=seq(-4,4,.5), labels=FALSE)
 figlabel(LAB, pos="bottomleft", cex=1)
 dev.off()
@@ -411,7 +413,8 @@ if ( interactive() ) {
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0)
 plotProfiles(ovw, fname=file.path(fig.path,paste0("fromAA_",SETID)),
              mtxt="encoded AA",
@@ -425,7 +428,8 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("fromAA_",SETID)),
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0)
 plotProfiles(ovw, fname=file.path(fig.path,paste0("toAA_",SETID)),
              mai=c(.8,.5,.5,.5),
@@ -440,7 +444,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=use.test, do.plots=TRUE,
                    fname=file.path(dpath,paste0("AA_",SETID,"_")),
-                   xlab="TMT level RAAS",
+                   xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0)
 
 ## plot only signficant
@@ -512,12 +516,14 @@ for ( ds in c(uds,"all") ) {
 
     ## TODO: better AA (y-axis) pre-sorting by property
     ovwp <- sortOverlaps(ovw, axis=1, p.min=p.txt, cut=TRUE)
-    plotProfiles(ovwp,
-                 fname=file.path(fig.path,paste0("codon_",SETID,"_",ds,"_cut")),
-                 fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-                 rlab=LAB, llab=ds,
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
-                 gcols=gcols)
+    if ( nrow(ovwp$p.value)>1 & ncol(ovwp$p.value)>0 )
+        plotProfiles(ovwp,
+                     fname=file.path(fig.path,paste0("codon_",
+                                                     SETID,"_",ds,"_cut")),
+                     fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                     rlab=LAB, llab=ds,
+                     vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                     gcols=gcols)
 
     ## CUSTOM CODON FREQUENCY PLOTS
     lcodt <- apply(ovw$unique, 2, sum)
@@ -584,7 +590,7 @@ for ( ds in c(uds,"all") ) {
             aac[,wcd] <- q
             aam[,wcd] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
             aap[,wcd] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
-            cat(paste("testing", aa, wcd, signif(aam[,wcd]), "\n"))
+            ##cat(paste("testing", aa, wcd, signif(aam[,wcd]), "\n"))
         }
     }
     
@@ -595,7 +601,8 @@ for ( ds in c(uds,"all") ) {
     ovl$p.value <- aam
     ovl$count <- aac
     
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_enriched")),
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_enriched")),
             type="png", res=300, width=nw,height=1)
     par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
@@ -605,7 +612,8 @@ for ( ds in c(uds,"all") ) {
     dev.off()
     
     ovl$p.value <- aap
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_deprived")),
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_deprived")),
             type="png", res=300, width=nw,height=1)
     par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
@@ -619,12 +627,14 @@ for ( ds in c(uds,"all") ) {
     rownames(ovl$p.value) <- c("more","less")
     ovl$count <- rbind(aac,aac)
     ovl$count[] <- 0
+    ovl$count[ovl$p.value<1e-3] <- 1 
     ovl$sign <- rbind(rep( 1,length(aam)),
                       rep(-1,length(aam)))
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_hypergeo")),
-            type="png", res=300, width=nw,height=1)
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_hypergeo")),
+            type="png", res=300, width=nw, height=1)
     par(mai=c(.05,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=2, xlab=NA, ylab=NA,
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=2, xlab=NA, ylab=NA,
                  text.cex=.7, col=ttcols)
     axis(3, at=1:length(aac), labels=aac, las=2)
     box()
@@ -632,6 +642,8 @@ for ( ds in c(uds,"all") ) {
     dev.off()
     
 }
+
+
 
 ## by AA->AA
 for ( ds in uds ) {
@@ -666,7 +678,7 @@ for ( ds in uds ) {
                           cl1.srt=rev(raas.srt))
     par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
-             xlab="IUPRED3", ylab="median RAAS")
+             xlab="IUPRED3", ylab=expression(median~log[10]*RAAS))
     
     plotCor(tmtd$RAAS.median, tmtd$iupred3, xlab="median RAAS", ylab="IUPRED3")
 
@@ -674,9 +686,10 @@ for ( ds in uds ) {
                           cl1.srt=rev(raas.srt))
     par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
-             xlab="ANCHOR2", ylab="median RAAS")
+             xlab="ANCHOR2", ylab=expression(median~log[10]*RAAS))
     
-    plotCor(tmtd$RAAS.median, tmtd$anchor2, xlab="median RAAS", ylab="ANCHOR2")
+    plotCor(tmtd$RAAS.median, tmtd$anchor2,
+            xlab=expression(median~log[10]*RAAS), ylab="ANCHOR2")
 
 }
 
@@ -694,7 +707,8 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    rows="iupred3.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0, 
                    fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
 
@@ -709,7 +723,8 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    rows="anchor2.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=expression(median~log[10]*RAAS),
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2_",SETID)),
@@ -722,7 +737,8 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2_",SETID)),
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="sstruc", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
-                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0, fname=file.path(fig.path,"s4pred_"))
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred_",SETID)),

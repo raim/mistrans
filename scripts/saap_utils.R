@@ -185,7 +185,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     dns <- ovw$ALL
     hist(unlist(dns), col="#77777755", border=NA, 
          xlim=c(-6,4),
-         xlab="TMT level RAAS", ylab=NA, main=NA, axes=FALSE)
+         xlab=expression(TMT~level~log[10]*RAAS), ylab=NA, main=NA, axes=FALSE)
     par(new=TRUE)
     plot(1, col=NA, xlim=c(-6,4), ylim=c(0,max(mxs)),
          xlab=NA, ylab=NA, axes=FALSE)

@@ -65,23 +65,23 @@ R --vanilla < ${THIS}/scripts/get_aas_context.R
 ### CALCULATE RAAS PROFILES
 ## TODO: log files
 ## with Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles3.R | R --vanilla &
 ## without Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles3.R | R --vanilla &
 ## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles3.R | R --vanilla &
 ## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles3.R | R --vanilla &
 
 ## same for healthy tissues
 ## with Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles3.R | R --vanilla &
 ## without Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' scripts/raasprofiles3.R | R --vanilla &
 ## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles3.R | R --vanilla &
 ## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles.R | R --vanilla
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' scripts/raasprofiles3.R | R --vanilla
 
 
 ## OLD and OBSOLETE - TODO: redo functional analysis
