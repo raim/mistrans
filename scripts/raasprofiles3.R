@@ -543,7 +543,8 @@ for ( ds in c(uds,"all") ) {
          ylab=expression(log[2]~ratio),
          xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-1,1))
     abline(h=0)
-    axis(2)
+    axis(2, labels=FALSE)
+    axis(2, at=c(-1,1))
     abline(v=.5+cumsum(table(sub("\\..*","",names(lcods)))), lwd=1, xpd=TRUE)
     dev.off()
     
@@ -553,7 +554,7 @@ for ( ds in c(uds,"all") ) {
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", xpd=TRUE)
     barplot(rbind(lcods,cods[names(lcods)]), axes=FALSE, xlab=NA, beside=TRUE,
             ylab="", las=2,xaxt='n')
-    axis(2)
+    axis(2, las=2)
     dev.off()
     
     ## hypergeo tests

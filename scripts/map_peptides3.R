@@ -97,9 +97,14 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 ## brute force, each peptide
 pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
+
+## secondary structure frequencies in whole protein
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
 colnames(sssbg) <- c("C","E","H")
 
+## genomic coordinate of AAS
+gcoor <- matrix(NA, nrow=nrow(dat), ncol=3)
+colnames(gcoor) <- c("chr","coor","strand")
 
 testit <- TRUE # TEST whether the mutation position is correct
 use.regex <- FALSE # use TRUE to test blast results vs. direct regex
@@ -107,10 +112,11 @@ use.regex <- FALSE # use TRUE to test blast results vs. direct regex
 ## count errors
 nomatch <- noprt <-
     noseq <- wcodon <- wsss <- wiup <- character()
-errors <- matrix(0, nrow=nrow(dat), ncol=5)
+errors <- matrix(0, nrow=nrow(dat), ncol=6)
 colnames(errors) <- c("noprt",
                       "nomatch","nomut",
-                      "noseq", "wcodon")
+                      "noseq", "wcodon",
+                      "wcoor")
 for ( i in 1:nrow(dat) ) {
    
     oid <- dat$protein[i] # ID with mutation index
@@ -151,7 +157,7 @@ for ( i in 1:nrow(dat) ) {
         AAS <- res[1][1]
     } else AAS <- dat[i,"sstart"]
 
-    ## 2: AAS within peptide
+    ## 2: AAS within protein
     saap <- unlist(dat[i,"SAAP"])
     mut <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
     pos[i] <- AAS + mut -1
@@ -242,15 +248,38 @@ for ( i in 1:nrow(dat) ) {
         wcodon <- c(wcodon, paste(i, gid, aaf[i],
                                   "vs", codon, GENETIC_CODE[codon]))
         errors[i,"wcodon"] <- 1
-        next
+    } else {    
+        cdn[i] <- codon
     }
     
-    cdn[i] <- codon
-
-    ## get genome coor-based data
+    ## get genome coor-based data and add genomic position of AAS
 
     gmap <- trexo[trexo$protein==gid,]
+    chr <- unique(gmap[,"chr"])
+    strand <- unique(gmap[,"strand"])
 
+    ## order CDS/cons
+    gmap <- gmap[order(gmap[,"start"], decreasing=strand!="-"),]
+
+    ## CDS length
+    rlen <- gmap[,"end"]-gmap[,"start"]+1
+    
+    cds <- c(1,cumsum(rlen))
+    
+    if ( max(cds)/3-1 != len[i] ) {
+        cat(paste("WARNING:",i,"wrong CDS sum length", max(cds)/3-1,
+                  "vs", len[i],"in", gid, "on strand",strand,"\n"))
+        errors[i,"wcoor"] <- 1
+        ##stop(i, gid, ": wrong length of CDS map")
+    } else {
+        cds <- tail(which(cds<=npos), 1) # which exon in gmap?
+        ## genomic coordinate of AAS; 2nd codon position!
+        dst <- npos+1
+        coor <- gmap[cds, ifelse(strand=="-", "end","start")] +
+            ifelse(strand=="-", -1, 1)*dst
+        gcoor[i,] <- c(chr, coor, strand)
+    }
+    
     ## TODO:
     ## load chromosome index chrS
     ## load phastcons genomic data, convert with coor2index
@@ -265,9 +294,9 @@ for ( i in 1:nrow(dat) ) {
                   tcodons,  "\n"))
     }
     
-    if ( aas[i] != aaf[i] ) # doesnt happen since search is exact
-        stop(paste("WARNING: BP pos", aaf[i], "vs",
-                  aas[i], GENETIC_CODE[codon], "\n"))
+    if ( aas[i] != aaf[i] ) 
+        warning(paste("WARNING: BP pos from AA:", aaf[i], "vs",
+                  aas[i], GENETIC_CODE[codon], gid, "\n"))
 }
 
 
@@ -287,6 +316,7 @@ rpos <- pos/len
 ## bind to data frame
 colnames(sssbg) <- paste0(colnames(sssbg), ".protein")
 dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
+             gcoor,
              s4pred=sss, sssbg, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg)
 
