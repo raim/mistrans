@@ -108,7 +108,7 @@ healthy <- FALSE # TRUE #
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.extracellular <- FALSE # TRUE # 
-exclude.albumin <- TRUE # FALSE # 
+exclude.albumin <- FALSE # TRUE # 
 only.unique <- FALSE # TRUE # 
 include.kr <- FALSE # TRUE # 
 
@@ -368,7 +368,7 @@ png(file.path(fig.path,paste0("legend_raas.png")),
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(tmtf$RAAS,
                           mn=RAAS.MIN, mx=RAAS.MAX,colf=viridis::viridis,
-                          n=20, plot=TRUE,
+                          n=50, plot=TRUE,
                           mai=c(.5,.5,.1,.1),
                           xlab=expression(TMT~level~log[10]*RAAS))
 axis(1, at=seq(-4,4,.5), labels=FALSE)
@@ -655,37 +655,45 @@ for ( ds in c(uds,"all") ) {
     }
     abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
-    
+    mai.bar <- mai
+    mai.bar[c(2,4)] <- mai.bar[c(2,4)] +.05
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),
             type="png", res=300, width=nw,height=.75)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    barplot(y, axes=FALSE, xlab=NA, beside=TRUE,
-            ylab=expression(lg[2]~r), las=2,xaxt='n',
-            width=.5, space=.5, ylim=c(-ylm,ylm))
-    x2 <- par("usr")[2]-par("usr")[1]
-    rel.cnt <- cdn.cnt/max(cdn.cnt)
-    rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
-    abline(v=par("usr")[1]+x2*rel.cnt, lwd=1, xpd=TRUE)
+    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    bp <- barplot(y, axes=FALSE, xlab=NA, beside=TRUE,
+                  ylab=expression(lg[2]~r), las=2, xaxt='n', 
+                  width=.5, space=.5, ylim=c(-ylm,ylm))
+    ##abline(v=bp[2,cdn.cn]+  (bp[1,cdn.cn+1]-bp[2,cdn.cn])/2)
+    cdn.cn <- head(cdn.cnt, length(cdn.cnt)-1)
+    abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
+    ##abline(v=par("usr")[1]+unique(diff(bp)[,1])*cdn.cnt, lwd=1, xpd=TRUE)
+    ##x2 <- par("usr")[2]-par("usr")[1]
+    ##rel.cnt <- cdn.cnt/max(cdn.cnt)
+    ##rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
+    ##abline(v=par("usr")[1]+x2*rel.cnt, lwd=1, xpd=TRUE)
     abline(h=0)
     for ( ax in c(2,4) ) {
-        axis(ax, at=seq(-5,5,.1), labels=FALSE, tcl=par("tcl")/2)
-        axis(ax, at=seq(-5,5,.5), labels=FALSE)
+        axis(ax, at=seq(-5,5,.1), labels=FALSE, tcl=par("tcl")/2, line=.2)
+        axis(ax, at=seq(-5,5,.5), labels=FALSE, line=.2)
         axis(ax, at=c(-1,-.5,0,.5,1),
-             label=c("-1","0.5","0","0.5","1"), cex.axis=1, las=2)
+             label=c("-1","0.5","0","0.5","1"), cex.axis=1, las=2, line=.2)
     }
     dev.off()
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_barplot")),
             type="png", res=300, width=nw, height=.75)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", xpd=TRUE)
-    barplot(rbind(lcods,cods[names(lcods)]), axes=FALSE, xlab=NA, beside=TRUE,
-            ylab="", las=2,xaxt='n')
-    x2 <- par("usr")[2]
-    rel.cnt <- cdn.cnt/max(cdn.cnt)
-    rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
-    abline(v=.5+x2*rel.cnt, lwd=1, xpd=TRUE)
-    axis(2, las=2)
-    axis(4, las=2)
+    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    bp  <- barplot(rbind(lcods,cods[names(lcods)]),
+                   axes=FALSE, xlab=NA, beside=TRUE,
+                   ylab="", las=2, xaxt='n')
+    cdn.cn <- head(cdn.cnt, length(cdn.cnt)-1)
+    abline(v=bp[2,cdn.cn]+  (bp[1,cdn.cn+1]-bp[2,cdn.cn])/2)
+    ##x2 <- par("usr")[2]
+    ##rel.cnt <- cdn.cnt/max(cdn.cnt)
+    ##rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
+    ##abline(v=.5+x2*rel.cnt, lwd=1, xpd=TRUE)
+    axis(2, las=2, line=.2)
+    axis(4, las=2, line=.2)
     dev.off()
     
 

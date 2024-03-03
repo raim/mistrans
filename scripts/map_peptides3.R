@@ -33,6 +33,10 @@ transcr <- file.path(mam.path,"processedData","coding.fa")
 tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 ## transcript structure
 exmap <- file.path(mam.path,"originalData","transcript_coordinates.tsv")
+## CDS structure
+cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
+cdspos <- file.path(mam.path,"processedData","protein_cds_coordinates.tsv")
+
 
 ## structure predictions
 ## s4pred
@@ -69,6 +73,18 @@ trexo <- read.delim(exmap)
 ## only keep those where we have a protein
 trexo <- trexo[trexo$transcript%in%trmap[names(fas),1],]
 trexo$protein <- pamrt[trexo$transcript,1]
+
+## list of splice sites for each CDS
+cds <- read.delim(cdsmap,header=FALSE, row.names=1)
+cdl <- strsplit(cds[,1],";")
+names(cdl) <- rownames(cds)
+cdl <- lapply(cdl, as.numeric)
+## genomic position of CDS
+cpos <- read.delim(cdspos, header=FALSE, sep=" ")
+colnames(cpos) <- c("ID","chr","start","end","strand")
+posl <- split(cpos[,2:5], cpos[,1])
+posl <- lapply(posl, function(x) x[order(x$start,
+                                         decreasing=x$strand=="-"),])
 
 ## s4pred
 s4p <- readFASTA(s4pred, grepID=TRUE)
@@ -253,31 +269,32 @@ for ( i in 1:nrow(dat) ) {
     }
     
     ## get genome coor-based data and add genomic position of AAS
-
-    gmap <- trexo[trexo$protein==gid,]
-    chr <- unique(gmap[,"chr"])
-    strand <- unique(gmap[,"strand"])
-
-    ## order CDS/cons
-    gmap <- gmap[order(gmap[,"start"], decreasing=strand!="-"),]
-
-    ## CDS length
-    rlen <- gmap[,"end"]-gmap[,"start"]+1
-    
-    cds <- c(1,cumsum(rlen))
-    
-    if ( max(cds)/3-1 != len[i] ) {
-        cat(paste("WARNING:",i,"wrong CDS sum length", max(cds)/3-1,
-                  "vs", len[i],"in", gid, "on strand",strand,"\n"))
-        errors[i,"wcoor"] <- 1
-        ##stop(i, gid, ": wrong length of CDS map")
-    } else {
-        cds <- tail(which(cds<=npos), 1) # which exon in gmap?
-        ## genomic coordinate of AAS; 2nd codon position!
-        dst <- npos+1
-        coor <- gmap[cds, ifelse(strand=="-", "end","start")] +
-            ifelse(strand=="-", -1, 1)*dst
-        gcoor[i,] <- c(chr, coor, strand)
+    if(FALSE) { # todo use cds and cds.pos to get genomic position
+        gmap <- trexo[trexo$protein==gid,]
+        chr <- unique(gmap[,"chr"])
+        strand <- unique(gmap[,"strand"])
+        
+        ## order CDS/cons
+        gmap <- gmap[order(gmap[,"start"], decreasing=strand!="-"),]
+        
+        ## CDS length
+        rlen <- gmap[,"end"]-gmap[,"start"]+1
+        
+        cds <- c(1,cumsum(rlen))
+        
+        if ( max(cds)/3-1 != len[i] ) {
+            cat(paste("WARNING:",i,"wrong CDS sum length", max(cds)/3-1,
+                      "vs", len[i],"in", gid, "on strand",strand,"\n"))
+            errors[i,"wcoor"] <- 1
+            ##stop(i, gid, ": wrong length of CDS map")
+        } else {
+            cds <- tail(which(cds<=npos), 1) # which exon in gmap?
+            ## genomic coordinate of AAS; 2nd codon position!
+            dst <- npos+1
+            coor <- gmap[cds, ifelse(strand=="-", "end","start")] +
+                ifelse(strand=="-", -1, 1)*dst
+            gcoor[i,] <- c(chr, coor, strand)
+        }
     }
     
     ## TODO:
