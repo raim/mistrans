@@ -22,14 +22,36 @@ w.test <- function(x,y) {
     rt
 }
 
+dotprofile <- function(ovw, value, vbrks, vcols, p.dot, dot.sze, test=FALSE,
+                       ...) {
+    
+    navals <- ovw[[value]]
+    navals[] <- NA
+    image_matrix(navals, breaks=vbrks, col=vcols, ...)
+    
+    p <- -log10(ovw$p.value)
+    p[p>-log10(p.dot)] <- -log10(p.dot)
+    z <- p/-log10(p.dot)
+
+    if ( test )
+        points(x = rep(1:ncol(z), nrow(z)),
+               y = rep(nrow(z):1, each= ncol(z)))
+                                  
+    points(x = rep(1:ncol(z), nrow(z)),
+           y = rep(nrow(z):1, each= ncol(z)),
+           cex=dot.sze[1]+dot.sze[2]*c(t(z)), pch=19,
+           col=num2col(t(ovw[[value]]),limits=range(vbrks),
+                       colf=viridis::viridis, n=length(vcols)))
+}
 
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          fw=.25, fh=.2,
-                         ttcols=ttcols,p.min=1e-10, p.txt=1e-5,
-                         dot.sze=c(.1,1.5), p.dot=p.txt, ## TODO: legend
+                         ttcols=ttcols, p.min=p.min, p.txt=p.txt,
+                         dot.sze=dot.sze, p.dot=p.dot, ## TODO: legend
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
                          fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
+                         col.lines, # column classes - vertical lines
                          verb=0) {
 
     ## replace row labels with arrows
@@ -44,7 +66,6 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     }
   
 
-    if (verb>0) cat(paste("plotting test profile\n"))
     
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
@@ -52,7 +73,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
 
 
     ## p-value profiles
-    segmenTools::plotdev(paste0(fname,"_wtests"),
+    outf <- paste0(fname,"_wtests")
+    if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
+    segmenTools::plotdev(outf,
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
@@ -62,8 +85,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-    if ( length(grep("^codon_",basename(fname)))>0 )
-        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+    if ( !missing(col.lines) )
+        abline(v=.5+col.lines,
                lwd=1, xpd=FALSE)
     dev.off()
 
@@ -75,22 +98,13 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     }
 
     ## combined effect size and p-value plot
-    
+    if ( verb ) cat(paste("plotting dotplot\n"))
     segmenTools::plotdev(paste0(fname,"_dotplot"),
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-    navals <- ovw[[value]]
-    navals[] <- NA
-    image_matrix(navals, breaks=lraas.col$breaks,
-                 col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
-    p <- -log10(ovw$p.value)
-    p[p>-log10(p.dot)] <- -log10(p.dot)
-    z <- p/-log10(p.dot)
-    points(x = rep(1:ncol(z), nrow(z)),
-           y = rep(nrow(z):1, each= ncol(z)),
-           cex=dot.sze[1]+dot.sze[2]*c(t(z)), pch=19,
-           col=num2col(t(ovw[[value]]),limits=range(vbrks),
-                       colf=viridis::viridis, n=length(vcols)))
+    dotprofile(ovw=ovw, value=value, vbrks=vbrks,
+               vcols=vcols, p.dot=p.dot, dot.sze=dot.sze,
+               axis=1, xlab=NA, ylab=NA)
     box()
     axis(2, length(axex):1, labels=axex, las=2)
     axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
@@ -98,9 +112,10 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-    if ( length(grep("^codon_",basename(fname)))>0 )
-        abline(v=.5+cumsum(table(sub("-.*","",colnames(p)))), lwd=1, xpd=FALSE)
+    if ( !missing(col.lines) )
+        abline(v=.5+col.lines, lwd=1, xpd=FALSE)
     dev.off()
+    ##return(p)
 
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
     
@@ -117,8 +132,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-    if ( length(grep("^codon_",basename(fname)))>0 )
-        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+    if ( !missing(col.lines) )
+        abline(v=.5+col.lines,
                lwd=1, xpd=FALSE)
     dev.off()
 
@@ -138,8 +153,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-    if ( length(grep("^codon_",basename(fname)))>0 )
-        abline(v=.5+cumsum(table(sub("-.*","",colnames(ovw$p.value)))),
+    if ( !missing(col.lines) )
+        abline(v=.5+col.lines,
                lwd=1, xpd=FALSE)
     dev.off()
 

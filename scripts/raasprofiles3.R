@@ -61,6 +61,12 @@ names(CODONS) <- aa
 ACODONS <- paste0(names(CODONS),": ", CODONS)
 names(ACODONS) <- aa
 
+## SORT CODONS BY AA PROPERTY
+CODL <- strsplit(CODONS, ";")[names(aaprop)]
+CODL <- CODL[unlist(lapply(CODL, function(x) !is.null(x)))]
+CODL <- lapply(CODL, sort)
+COD.SRT <- paste(GENETIC_CODE[unlist(CODL)], unlist(CODL), sep="-")
+
 ## 3<->1 letter code
 AAC <- seqinr::aaa( seqinr::a())
 names(AAC) <-  seqinr::a()
@@ -87,8 +93,14 @@ tmt.file <- file.path(proj.path,"originalData",
 
 ### PARAMETERES
 
+RAAS.MIN <- -4
+RAAS.MAX <-  0
+
 p.min <- 1e-10
 p.txt <- 1e-5
+
+p.dot <- p.txt
+dot.sze <- c(.1,1.5)
 
 use.test <- t.test
 
@@ -96,7 +108,7 @@ healthy <- FALSE # TRUE #
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.extracellular <- FALSE # TRUE # 
-exclude.albumin <- FALSE # TRUE # 
+exclude.albumin <- TRUE # FALSE # 
 only.unique <- FALSE # TRUE # 
 include.kr <- FALSE # TRUE # 
 
@@ -348,7 +360,65 @@ axex <- ftlabels(srt) # axis labels with arrows
 
 ### START ANALYSIS
 
+## color legends
+
+## RAAS COLORS
+png(file.path(fig.path,paste0("legend_raas.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+lraas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MIN, mx=RAAS.MAX,colf=viridis::viridis,
+                          n=20, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(LAB, pos="bottomleft", cex=1)
+dev.off()
+
+## globally used RAAS colors!!
+vcols <- lraas.col$col
+vbrks <- lraas.col$breaks
+
+## legend for all two-sided statistics
+png(file.path(fig.path,paste0("legend_wtests.png")),
+    res=300, width=2, height=2, units="in")
+par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
+dev.off()
+
+## legend for dot plot
+pp <- seq(0, -log10(p.dot), length.out=6)
+rs <- seq(RAAS.MIN,RAAS.MAX+1, length.out=6)
+
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- rs
+    
+ovw <- list()
+ovw$p.value <- t(10^-pm)
+ovw$median <- t(rm)
+source("~/work/mistrans/scripts/saap_utils.R")
+
+mai <- c(.5,.5,.1,.1)
+fh <- fw <- .2
+nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+segmenTools::plotdev(file.path(fig.path,"legend_dotplot"),
+                     height=nh, width=nw, res=300)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=expression(log[10]~p),
+           xlab=expression(log[10]~RAAS))
+dev.off()
+
+           
 ## global distribution by cancer type
+           
 ylm <- range(tmtf$RAAS)
 par(mfcol=c(1,2))
 boxplot(tmtf$RAAS ~ factor(tmtf$Dataset, levels=uds), ylim=ylm)
@@ -367,39 +437,26 @@ ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     fname=fname, verb=0)
 ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
 
-## local raas colors
-png(file.path(fig.path,paste0("AAprop_",SETID,"_raas_colors.png")),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-lraas.col <- selectColors(c(ovw$median),
-                          q=.01,colf=viridis::viridis,
-                          n=20, plot=TRUE,
-                          mai=c(.5,.5,.1,.1),
-                          xlab=expression(TMT~level~log[10]*RAAS))
-axis(1, at=seq(-4,4,.5), labels=FALSE)
-figlabel(LAB, pos="bottomleft", cex=1)
-dev.off()
 
-## legend for all wtests
-png(file.path(fig.path,paste0("wtests_legend.png")),
-    res=300, width=2, height=2, units="in")
-par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
-dev.off()
 
 ## plot all
+source("~/work/mistrans/scripts/saap_utils.R")
 plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
              mai=c(.8,1.5,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
              rlab=LAB, llab="",
-             vcols=lraas.col$col, vbrks=lraas.col$breaks,
-             gcols=gcols)
+             vcols=vcols, vbrks=vbrks,
+             gcols=gcols, verb=1)
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AAprop_",SETID,"_cut")),
                  mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="",
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
 
 ## TODO: median vs. p-value as a measure of effect size
@@ -419,9 +476,11 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 plotProfiles(ovw, fname=file.path(fig.path,paste0("fromAA_",SETID)),
              mtxt="encoded AA",
              mai=c(.8,.5,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
              rlab=LAB, llab="",
-             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
 ## by "to" amino acid
@@ -433,8 +492,10 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    verb=0)
 plotProfiles(ovw, fname=file.path(fig.path,paste0("toAA_",SETID)),
              mai=c(.8,.5,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              mtxt="substituted AA", ttcols=ttcols, value="median",
-             rlab=LAB, llab="", vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             rlab=LAB, llab="", vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
 
@@ -453,8 +514,10 @@ if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
                  mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="",
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
 for ( ptype in unique(tmtf$pfromto) ) {
 
@@ -467,8 +530,10 @@ for ( ptype in unique(tmtf$pfromto) ) {
 
     plotProfiles(ovwp, fname=file.path(fig.path,paste0(ptype,"_",SETID)),
                  mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=ptype,
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
     ## cut
     ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
@@ -476,8 +541,10 @@ for ( ptype in unique(tmtf$pfromto) ) {
         plotProfiles(ovwp,
                      fname=file.path(fig.path,paste0(ptype,"_",SETID,"_cut")),
                      mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                     p.min=p.min, p.txt=p.txt,
+                     dot.sze=dot.sze, p.dot=p.dot,
                      rlab=LAB, llab=ptype,
-                     vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                     vcols=vcols, vbrks=vbrks,
                      gcols=gcols)
     
 }
@@ -502,17 +569,57 @@ for ( ds in c(uds,"all") ) {
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
+    ## TODO: expand ovw to ALL codons and AA to align plots!
 
-  
+    
+    ## sort by amino acid property!
     aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
     ovw <- sortOverlaps(ovw, axis=2, srt=aasrt, cut=TRUE)
+
+
+    ## CUSTOM CODON FREQUENCY PLOTS
+
+    ## CODON COUNTS AT THE AAS OF UNIQUE SAAP
+    lcodt <- apply(ovw$unique, 2, sum)
+    names(lcodt) <- sub(".*-","",names(lcodt))
+    ## AAS codon frequencies per AA
+    lcodl <- split(lcodt, GENETIC_CODE[names(lcodt)])
+    
+    lcodl <- lapply(lcodl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
+    lcodl <- lcodl[names(aaprop)] ## ##SORT BY AA PROP
+
+    lcods <- unlist(lapply(lcodl, function(x) x/sum(x)))
+
+    ## CODON COUNTS IN ALL UNIQUE TRANSCRIPTS 
+    cod  <- codons[unique(dtmt$transcript),]
+    codt <- apply(cod,2,sum)
+    ## transcript codon frequencies per AA
+    codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
+    codl <- codl
+    cods <- unlist(lapply(codl, function(x) x/sum(x)))
+
+    ## sort (AA property ->codon frequency)
+    cdsrt <- sub("\\.","-",names(unlist(lcodl)))
+    ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
+
+    ## codon class lines
+    cdn.cnt <- table(sub("-.*","",colnames(ovw$p.value)))[names(aaprop)]
+    cdn.cnt <- cumsum(cdn.cnt[!is.na(cdn.cnt)])
+    
+    ## SORT CODON FREQUENCIES as in main plots
+    names(cods) <- sub("\\.","-", names(cods))
+    names(lcods) <- sub("\\.","-", names(lcods))
+    lcods <- lcods[cdsrt]
+    cods <- cods[cdsrt]
 
     ## TODO: re-create previous codon plots
     plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=ds, mtxt="substituted AA",
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
-                 gcols=gcols)
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols, col.lines=cdn.cnt)
 
     ## TODO: better AA (y-axis) pre-sorting by property
     ovwp <- sortOverlaps(ovw, axis=1, p.min=p.txt, cut=TRUE)
@@ -521,48 +628,67 @@ for ( ds in c(uds,"all") ) {
                      fname=file.path(fig.path,paste0("codon_",
                                                      SETID,"_",ds,"_cut")),
                      fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                     p.min=p.min, p.txt=p.txt,
+                     dot.sze=dot.sze, p.dot=p.dot,
                      rlab=LAB, llab=ds,
-                     vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                     vcols=vcols, vbrks=vbrks,
                      gcols=gcols)
 
-    ## CUSTOM CODON FREQUENCY PLOTS
-    lcodt <- apply(ovw$unique, 2, sum)
-    names(lcodt) <- sub(".*-","",names(lcodt))
-    lcods <- split(lcodt, GENETIC_CODE[names(lcodt)])
-    lcods <- unlist(lapply(lcods, function(x) x/sum(x)))
-    
-    cod  <- codons[unique(dtmt$transcript),]
-    codt <- apply(cod,2,sum)
-    ## get codon frequencies per AA
-    cods <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
-    cods <- unlist(lapply(cods, function(x) x/sum(x)))
-    ##names(codt) <- paste0(GENETIC_CODE[names(codt)], ".", names(codt))
-    
+
     mai <- c(.05,.5,.1,.5)
     fw <- .2
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),
-            type="png", res=300, width=nw,height=1)
+    y <- log2(lcods/cods[names(lcods)]) # log2 ratio of codon frequencies
+    ylm <- max(abs(y),na.rm=TRUE)
+
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_ratio_old")),
+            type="png", res=300, width=nw,height=.75)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plot(1:length(lcods),
-         log2(lcods/cods[names(lcods)]), type="h", axes=FALSE, xlab=NA, lwd=3,
-         ylab=expression(log[2]~ratio),
-         xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-1,1))
+    plot(1:length(lcods), y, type="h", axes=FALSE, xlab=NA, lwd=3,
+         ylab=expression(lg[2]~r),
+         xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-ylm,ylm))
     abline(h=0)
-    axis(2, labels=FALSE)
-    axis(2, at=c(-1,1))
-    abline(v=.5+cumsum(table(sub("\\..*","",names(lcods)))), lwd=1, xpd=TRUE)
+    for ( ax in c(2,4) ) {
+        axis(ax, at=seq(-5,5,.5), labels=FALSE)
+        axis(ax, at=c(-.5,.5), cex.axis=1, las=2)
+    }
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
     
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),
+            type="png", res=300, width=nw,height=.75)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    barplot(y, axes=FALSE, xlab=NA, beside=TRUE,
+            ylab=expression(lg[2]~r), las=2,xaxt='n',
+            width=.5, space=.5, ylim=c(-ylm,ylm))
+    x2 <- par("usr")[2]-par("usr")[1]
+    rel.cnt <- cdn.cnt/max(cdn.cnt)
+    rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
+    abline(v=par("usr")[1]+x2*rel.cnt, lwd=1, xpd=TRUE)
+    abline(h=0)
+    for ( ax in c(2,4) ) {
+        axis(ax, at=seq(-5,5,.1), labels=FALSE, tcl=par("tcl")/2)
+        axis(ax, at=seq(-5,5,.5), labels=FALSE)
+        axis(ax, at=c(-1,-.5,0,.5,1),
+             label=c("-1","0.5","0","0.5","1"), cex.axis=1, las=2)
+    }
+    dev.off()
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_barplot")),
-            type="png", res=300, width=nw,height=1)
+            type="png", res=300, width=nw, height=.75)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", xpd=TRUE)
     barplot(rbind(lcods,cods[names(lcods)]), axes=FALSE, xlab=NA, beside=TRUE,
             ylab="", las=2,xaxt='n')
+    x2 <- par("usr")[2]
+    rel.cnt <- cdn.cnt/max(cdn.cnt)
+    rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
+    abline(v=.5+x2*rel.cnt, lwd=1, xpd=TRUE)
     axis(2, las=2)
+    axis(4, las=2)
     dev.off()
     
+
     ## hypergeo tests
     aaa <- unique( GENETIC_CODE)
     aam <- matrix(1, ncol=length(lcodt), nrow=1)
@@ -573,8 +699,7 @@ for ( ds in c(uds,"all") ) {
     for ( aa in unique(aaa) ) {
         alc <- names(GENETIC_CODE)[GENETIC_CODE==aa]
         
-        if ( length(alc)<2 ) next
-        
+        if ( length(alc)<1 ) next
         for ( j in  seq_along(alc) ) {
             
             wcd <- alc[ j] # white balls
@@ -596,6 +721,12 @@ for ( ds in c(uds,"all") ) {
     
     colnames(aam) <- colnames(aap) <- colnames(aac) <-
         paste0(GENETIC_CODE[colnames(aam)],"-", colnames(aam))
+
+    ## sort
+    aam <- aam[,cdsrt,drop=FALSE]
+    aap <- aap[,cdsrt,drop=FALSE]
+    aac <- aac[,cdsrt,drop=FALSE]
+
     
     ovl <- list()
     ovl$p.value <- aam
@@ -603,23 +734,23 @@ for ( ds in c(uds,"all") ) {
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_enriched")),
-            type="png", res=300, width=nw,height=1)
-    par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+            type="png", res=300, width=nw,height=.25)
+    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
                  col=upcols, text.cex=.7)
-    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=TRUE)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     box()
     dev.off()
     
     ovl$p.value <- aap
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_deprived")),
-            type="png", res=300, width=nw,height=1)
-    par(mai=c(.05,.5,.7,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+            type="png", res=300, width=nw,height=.25)
+    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
                  col=docols, text.cex=.7)
     box()
-    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=TRUE)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
 
 
@@ -632,15 +763,16 @@ for ( ds in c(uds,"all") ) {
                       rep(-1,length(aam)))
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_hypergeo")),
-            type="png", res=300, width=nw, height=1)
-    par(mai=c(.05,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+            type="png", res=300, width=nw, height=.5+.45)
+    par(mai=c(.5,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=2, xlab=NA, ylab=NA,
                  text.cex=.7, col=ttcols)
-    axis(3, at=1:length(aac), labels=aac, las=2)
+    axis(1, at=1:length(aac), labels=aac, las=2)
     box()
-    abline(v=.5+cumsum(table(sub("-.*","",colnames(aam)))), lwd=1, xpd=FALSE)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=FALSE)
     dev.off()
     
+
 }
 
 
@@ -659,8 +791,10 @@ for ( ds in uds ) {
 
     plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",SETID,"_",ds)),
                  mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=ds,
-                 vcols=lraas.col$col, vbrks=lraas.col$breaks,
+                 vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
 
 }
@@ -714,8 +848,10 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_iupred3_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, mtxt="IUPRED3", mtxt.line=3.3,
-             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
 ## ANCHOR2
@@ -729,22 +865,26 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, mtxt="ANCHOR2", mtxt.line=3.3,
-             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
 ## S4 PRED SECONDARY STRUCTURE
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="sstruc", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
+                   use.test=use.test, do.plots=TRUE,
                    xlab=expression(TMT~level~log[10]*RAAS),
-                   verb=0, fname=file.path(fig.path,"s4pred_"))
+                   verb=0, fname=file.path(dpath,"s4pred_"))
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, mtxt="SPRED4", mtxt.line=3.3,
-             vcols=lraas.col$col, vbrks=lraas.col$breaks,
+             vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
 
@@ -758,13 +898,13 @@ plotOverlaps(ovw, p.min=p.min, p.txt=p.txt, txt.col=NA,
                  col=ttcols, show.total=TRUE)
     mai=c(.8,.9,.5,.5)
     value <- "median"
-    vcols <- lraas.col$col
-    vbrks <- lraas.col$breaks
+    vcols <- vcols
+    vbrks <- vbrks
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     navals <- ovw[[value]]
     navals[] <- NA
-    image_matrix(navals, breaks=lraas.col$breaks,
-                 col=lraas.col$col, axis=1, xlab=NA, ylab=NA)
+    image_matrix(navals, breaks=vbrks,
+                 col=vcols, axis=1, xlab=NA, ylab=NA)
     p <- -log10(ovw$p.value)
     p[p>-log10(p.min)] <- -log10(p.min)
     z <- p/-log10(p.min)
