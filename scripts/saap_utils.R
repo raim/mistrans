@@ -36,12 +36,16 @@ dotprofile <- function(ovw, value, vbrks, vcols, p.dot, dot.sze, test=FALSE,
     if ( test )
         points(x = rep(1:ncol(z), nrow(z)),
                y = rep(nrow(z):1, each= ncol(z)))
-                                  
+
+    ## intersect data to colors
+    cols <- vcols[findInterval(t(ovw[[value]]),
+                               seq(min(vbrks), max(vbrks),
+                                   length.out=length(vbrks)),
+                               all.inside = TRUE)]
     points(x = rep(1:ncol(z), nrow(z)),
            y = rep(nrow(z):1, each= ncol(z)),
            cex=dot.sze[1]+dot.sze[2]*c(t(z)), pch=19,
-           col=num2col(t(ovw[[value]]),limits=range(vbrks),
-                       colf=viridis::viridis, n=length(vcols)))
+           col=cols)
 }
 
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
@@ -459,7 +463,7 @@ raasProfile <- function(x=tmtf, id="SAAP",
                         verb=FALSE) {
 
     ## check presence
-    if ( any(!c(value, rows, cols)%in%colnames(tmtf)) )
+    if ( any(!c(value, rows, cols)%in%colnames(x)) )
         stop("on of the requested values ",
              paste(value, rows, cols, collapse=";"),
              " is not present in the data")

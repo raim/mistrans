@@ -94,15 +94,26 @@ tmt.file <- file.path(proj.path,"originalData",
 ### PARAMETERES
 
 RAAS.MIN <- -4
-RAAS.MAX <-  0
+RAAS.MAX <-  1
+colors <- "custom" # "inferno" #"rocket"
+
+## generate colors similar to inferno but with
+## a better yellow (viridis)
+if ( colors=="custom" ) {
+    mcol <- inferno(5)
+    vcol <- viridis(5)
+    mcol[5] <- vcol[5]
+    custom <- colorRampPalette(mcol)
+}
+COLF <- get(colors)
 
 p.min <- 1e-10
 p.txt <- 1e-5
 
-p.dot <- p.txt
-dot.sze <- c(.1,1.5)
+p.dot <- p.min # p.txt
+dot.sze <- c(.3,2)
 
-use.test <- t.test
+use.test <- t.test # w.test # 
 
 healthy <- FALSE # TRUE # 
 
@@ -299,15 +310,16 @@ if ( healthy ) {
 usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
 araas <- split(tmtf$RAAS, usaap)
 
-raas.median <- unlist(lapply(araas, median))
+raas.emedian <- unlist(lapply(araas, median))
+raas.median <- unlist(lapply(araas, function(x) {log10(median(10^x))}))
 raas.emean <- unlist(lapply(araas, mean))
 raas.mean <- unlist(lapply(araas, function(x) {log10(mean(10^x))}))
 
 tmtf$unique <- usaap
-tmtf$RAAS.mean <- raas.mean[usaap]
-tmtf$RAAS.median <- raas.median[usaap]
+tmtf$RAAS.mean <- raas.emean[usaap]
+tmtf$RAAS.median <- raas.emedian[usaap]
 
-raas.bins <- cut(tmtf$RAAS.median, breaks=seq(-6,4,.5))
+raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3))
 raas.srt <- levels(raas.bins)
 tmtf$raas.bins <- as.character(raas.bins)
 tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
@@ -353,6 +365,11 @@ uds <- c("Healthy",uds[uds!="Healthy"])
 uds <- c("Cancer",uds[uds!="Cancer"])
 uds <- uds[uds%in%tmtf$Dataset]
 
+## additionally all and cancer-only
+auds <- c(uds,"all")
+if ( SETID=="cancer" )
+    auds <- c(auds, "cancer")
+
 srt <- c("charged","polar","hphobic","special")
 srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
 
@@ -361,18 +378,20 @@ axex <- ftlabels(srt) # axis labels with arrows
 ### START ANALYSIS
 
 ## color legends
+##RAAS.MIN <- median(tmtf$RAAS)*1.1
 
 ## RAAS COLORS
 png(file.path(fig.path,paste0("legend_raas.png")),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(tmtf$RAAS,
-                          mn=RAAS.MIN, mx=RAAS.MAX,colf=viridis::viridis,
+                          mn=RAAS.MIN, mx=RAAS.MAX,colf=COLF,
                           n=50, plot=TRUE,
                           mai=c(.5,.5,.1,.1),
                           xlab=expression(TMT~level~log[10]*RAAS))
 axis(1, at=seq(-4,4,.5), labels=FALSE)
-figlabel(LAB, pos="bottomleft", cex=1)
+figlabel(colors, pos="bottomleft", cex=1)
+figlabel(LAB, pos="bottomright", cex=1)
 dev.off()
 
 ## globally used RAAS colors!!
@@ -388,13 +407,13 @@ dev.off()
 
 ## legend for dot plot
 pp <- seq(0, -log10(p.dot), length.out=6)
-rs <- seq(RAAS.MIN,RAAS.MAX+1, length.out=6)
+rs <- seq(RAAS.MIN,RAAS.MAX, length.out=6)
 
 pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 
 colnames(pm) <- colnames(rm) <- -pp
-rownames(pm) <- rownames(rm) <- rs
+rownames(pm) <- rownames(rm) <- round(rs,1)
     
 ovw <- list()
 ovw$p.value <- t(10^-pm)
@@ -414,16 +433,61 @@ dotprofile(ovw, value="median",
            dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
            ylab=expression(log[10]~p),
            xlab=expression(log[10]~RAAS))
+figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
 
            
 ## global distribution by cancer type
            
 ylm <- range(tmtf$RAAS)
-par(mfcol=c(1,2))
-boxplot(tmtf$RAAS ~ factor(tmtf$Dataset, levels=uds), ylim=ylm)
+plotdev(file.path(fig.path,paste0("RAAS_distribution")),
+        type="png", res=300, width=3,height=2)
+par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+boxplot(tmtf$RAAS ~ factor(tmtf$Dataset, levels=uds), ylim=ylm, las=2,
+        xlab=NA, ylab=expression(log[10]*RAAS[TMT]), cex=.5, pch=19,
+        pars=list(outcol="#00000055"), axes=FALSE)
+for ( ax in c(2,4) ) axis(ax)
+axis(1, at=1:length(uds), labels=uds, las=2)
+figlabel(LAB, pos="bottomright", cex=.9)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("RAAS_distribution_density")),
+        type="png", res=300, width=3,height=2)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plot(density(tmtf$RAAS), ylim=c(0,.5), col=NA,
+     xlab=expression(log[10]*RAAS[TMT]), main=NA, xlim=ylm)
+for ( i in seq_along(uds) )
+    lines(density(tmtf$RAAS[tmtf$Dataset==uds[i]]), col=i, lwd=2)
+legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
+       ncol=1, cex=.8, y.intersp=.9)
+figlabel(LAB, pos="bottomleft", cex=.8)
+dev.off()
+
 tmtu <- tmtf[!duplicated(tmtf$unique),]
-boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds), ylim=ylm)
+plotdev(file.path(fig.path,paste0("RAAS_distribution_unique")),
+        type="png", res=300, width=3,height=2)
+par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds), ylim=ylm, las=2,
+        xlab=NA, ylab=expression(log[10]*bar(RAAS[unique])),
+        cex=.5, pch=19, pars=list(outcol="#00000055"), axes=FALSE)
+for ( ax in c(2,4) ) axis(ax)
+axis(1, at=1:length(uds), labels=uds, las=2)
+figlabel(LAB, pos="bottomright", cex=.9)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("RAAS_distribution_unique_density")),
+        type="png", res=300, width=3,height=2)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plot(density(tmtu$RAAS.median), ylim=c(0,.5), col=NA,
+     xlab=NA, main=NA, xlim=ylm)
+mtext(expression(log[10]*bar(RAAS[unique])), 1, 1.5)
+for ( i in seq_along(uds) )
+    lines(density(tmtu$RAAS.median[tmtu$Dataset==uds[i]]), col=i, lwd=2)
+legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
+       ncol=1, cex=.8, y.intersp=.9)
+figlabel(LAB, pos="bottomleft", cex=.8)
+dev.off()
+
 ## TODO: pairs of same SAAP
 tmtl <- split(tmtf$Dataset, tmtf$SAAP)
 
@@ -508,8 +572,10 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0)
 
-## plot only signficant
-ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
+## plot only significantly high RAAS
+ovwp <-ovw
+ovwp$p.value[ovw$sign<0] <- 1
+ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
@@ -529,10 +595,10 @@ for ( ptype in unique(tmtf$pfromto) ) {
     ovwp <- sortOverlaps(ovw, srt=qsrt)
 
     plotProfiles(ovwp, fname=file.path(fig.path,paste0(ptype,"_",SETID)),
-                 mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                 mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab=ptype,
+                 rlab=LAB, llab="", mtxt=ptype, mtxt.line=3,
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
     ## cut
@@ -540,10 +606,10 @@ for ( ptype in unique(tmtf$pfromto) ) {
     if ( nrow(ovwp$p.value)>1 ) #TODO: fix error with nrow=1 in 
         plotProfiles(ovwp,
                      fname=file.path(fig.path,paste0(ptype,"_",SETID,"_cut")),
-                     mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                     mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
                      p.min=p.min, p.txt=p.txt,
                      dot.sze=dot.sze, p.dot=p.dot,
-                     rlab=LAB, llab=ptype,
+                     rlab=LAB, llab="",mtxt=ptype, mtxt.line=3,
                      vcols=vcols, vbrks=vbrks,
                      gcols=gcols)
     
@@ -551,17 +617,60 @@ for ( ptype in unique(tmtf$pfromto) ) {
 
 
 
-## by codon->AA
+## BY CODON->AA
+## TODO:
+## * expand ovw to ALL codons and AA to align plots,
+## * plot log2 odds ratio vs. 
 ctmt <- tmtf[tmtf$codon!="",]
 codons <- read.delim(codon.file, row.names=1)
+
+## global analysis: codon frequency vs. RAAS
+## CODON COUNTS IN ALL UNIQUE TRANSCRIPTS 
+cod  <- codons[unique(ctmt$transcript),]
+codt <- apply(cod,2,sum)
+## transcript codon frequencies per AA
+codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
+codl <- codl
+cods <- unlist(lapply(codl, function(x) x/sum(x)))
+names(cods) <- sub("\\.","-",names(cods))
+
+## codon frequency bins
+ctmt$codon.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
+
+## remove single codon!
+ltmt <- ctmt#[!ctmt$from%in%c("W","M","H","D","E","N","Q","F","Y"),]
+
+## NOTE: bg=FALSE, no column-wise background !
+ovw <- raasProfile(x=ltmt, id="SAAP", 
+                   rows="codon.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", col.srt=uds,
+                   row.srt=rev(levels(ctmt$codon.bins)),
+                   use.test=use.test, do.plots=FALSE,
+                   fname=file.path(dpath,paste0("codon_bins_",SETID,"_")),
+                   xlab=expression(TMT~level~log[10]*RAAS),
+                   verb=1)
+plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_bins_",SETID)),
+             mai=c(.8,1,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             mtxt="codon frequency", mtxt.line=3.5,
+             ttcols=ttcols, value="median",
+             rlab=LAB, llab="", vcols=vcols, vbrks=vbrks,
+             gcols=gcols)
+
+
+## per codon profiles
 for ( ds in c(uds,"all") ) {
 
     ## TODO: add codon frequency two-sided bar plot
 
     dtmt <- ctmt
-    if ( ds!="all" )
-        dtmt <- ctmt[ctmt$Dataset==ds,]
-
+    if ( ds!="all" ) {
+        if ( ds!="cancer" )
+            dtmt <- ctmt[ctmt$Dataset==ds,]
+        else
+            dtmt <- ctmt[ctmt$Dataset!="Healthy",]
+    }
 
     ## NOTE: bg=FALSE, no column-wise background !
     ovw <- raasProfile(x=dtmt, id="SAAP", 
@@ -569,7 +678,6 @@ for ( ds in c(uds,"all") ) {
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
-    ## TODO: expand ovw to ALL codons and AA to align plots!
 
     
     ## sort by amino acid property!
@@ -602,6 +710,9 @@ for ( ds in c(uds,"all") ) {
     cdsrt <- sub("\\.","-",names(unlist(lcodl)))
     ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
 
+    ## codon frequency bins
+    codon.bins <- cut(lcods[dtmt$aacodon], seq(0,1,.2))
+
     ## codon class lines
     cdn.cnt <- table(sub("-.*","",colnames(ovw$p.value)))[names(aaprop)]
     cdn.cnt <- cumsum(cdn.cnt[!is.na(cdn.cnt)])
@@ -612,6 +723,12 @@ for ( ds in c(uds,"all") ) {
     lcods <- lcods[cdsrt]
     cods <- cods[cdsrt]
 
+    ## log2 ratio of frequencies
+    lratio <- log2(lcods/cods[names(lcods)]) # log2 ratio of codon frequencies
+    rlm <- max(abs(lratio),na.rm=TRUE)
+
+ 
+    
     ## TODO: re-create previous codon plots
     plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
@@ -621,33 +738,52 @@ for ( ds in c(uds,"all") ) {
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols, col.lines=cdn.cnt)
 
-    ## TODO: better AA (y-axis) pre-sorting by property
-    ovwp <- sortOverlaps(ovw, axis=1, p.min=p.txt, cut=TRUE)
-    if ( nrow(ovwp$p.value)>1 & ncol(ovwp$p.value)>0 )
-        plotProfiles(ovwp,
-                     fname=file.path(fig.path,paste0("codon_",
-                                                     SETID,"_",ds,"_cut")),
-                     fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-                     p.min=p.min, p.txt=p.txt,
-                     dot.sze=dot.sze, p.dot=p.dot,
-                     rlab=LAB, llab=ds,
-                     vcols=vcols, vbrks=vbrks,
-                     gcols=gcols)
 
 
     mai <- c(.05,.5,.1,.5)
     fw <- .2
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-    y <- log2(lcods/cods[names(lcods)]) # log2 ratio of codon frequencies
-    ylm <- max(abs(y),na.rm=TRUE)
 
+ 
+     ## relation codon base frequency and ratio AAS
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequency_ratio")),
+           type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(cods, lratio, density=FALSE,
+            ylab=expression(log[2](f[AAS]/f[bg])),
+            xlab=expression(f[bg]), xlim=c(0,1))
+    dev.off()
+    ## higher frequency tends to be above diagnal
+    ## TODO: better AA colors
+    if ( interactive() ) {
+        plot(cods, lcods, density=FALSE,
+             ylab=expression(f[AAS]),
+             xlab=expression(f[bg]), ylim=c(0,1),xlim=c(0,1),
+             col=as.factor(sub("-.*","",names(cods))),pch=19)
+        abline(a=0,b=1, col=2)
+    }
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequency_raas")),
+            type="png", res=300, width=nw,height=3)
+    par(mai=c(.8,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    boxplot(dtmt$RAAS ~ factor(dtmt$aacodon, levels=cdsrt),
+            las=2, xlab="", ylab=expression(TMT~level~log[10]*RAAS),
+            cex=.5, pch=19, pars=list(outcol="#00000055"))
+    axis(3, at=1:length(cdsrt), labels=round(lcods[cdsrt],2), las=2)
+    axis(4)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    dev.off()
+    
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_ratio_old")),
             type="png", res=300, width=nw,height=.75)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plot(1:length(lcods), y, type="h", axes=FALSE, xlab=NA, lwd=3,
+    plot(1:length(lcods), lratio, type="h", axes=FALSE, xlab=NA, lwd=3,
          ylab=expression(lg[2]~r),
-         xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-ylm,ylm))
+         xlim=c(0.5,length(lcods)+.5), col=2, ylim=c(-rlm,rlm))
     abline(h=0)
     for ( ax in c(2,4) ) {
         axis(ax, at=seq(-5,5,.5), labels=FALSE)
@@ -660,9 +796,9 @@ for ( ds in c(uds,"all") ) {
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),
             type="png", res=300, width=nw,height=.75)
     par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    bp <- barplot(y, axes=FALSE, xlab=NA, beside=TRUE,
+    bp <- barplot(lratio, axes=FALSE, xlab=NA, beside=TRUE,
                   ylab=expression(lg[2]~r), las=2, xaxt='n', 
-                  width=.5, space=.5, ylim=c(-ylm,ylm))
+                  width=.5, space=.5, ylim=c(-rlm,rlm))
     ##abline(v=bp[2,cdn.cn]+  (bp[1,cdn.cn+1]-bp[2,cdn.cn])/2)
     cdn.cn <- head(cdn.cnt, length(cdn.cnt)-1)
     abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
@@ -735,7 +871,7 @@ for ( ds in c(uds,"all") ) {
     aap <- aap[,cdsrt,drop=FALSE]
     aac <- aac[,cdsrt,drop=FALSE]
 
-    
+    ## construct overlap class
     ovl <- list()
     ovl$p.value <- aam
     ovl$count <- aac
@@ -810,29 +946,39 @@ for ( ds in uds ) {
 
 
 ### BY STRUCTURAL FEATURES
-
-for ( ds in uds ) {
+for ( ds in auds ) {
 
     tmtd <- tmtf
-    if ( ds!="all" )
-        tmtd <- tmtf[tmtf$Dataset==ds,]
-    ovl <- clusterCluster(paste0(tmtd$raas.bins), tmtd$iupred3.bins,
-                          cl1.srt=rev(raas.srt))
-    par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
+    if ( ds!="all" ) {
+        if ( ds!="cancer" )
+            tmtd <- tmtf[tmtf$Dataset==ds,]
+        else
+            tmtd <- tmtf[tmtf$Dataset!="Healthy",]
+    }
+    ovl <- clusterCluster(tmtd$iupred3.bins, paste0(tmtd$raas.bins), 
+                          cl1.srt=c(rev(levels(iupred3.bins)),"na"),
+                          cl2.srt=raas.srt)
+    plotdev(file.path(fig.path,paste0("structure_iupred3_",SETID,"_ovl_",ds)),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.9,.9,.4,.4), mgp=c(3.3,.3,0), tcl=-.25)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
-             xlab="IUPRED3", ylab=expression(median~log[10]*RAAS))
+                 xlab=NA, ylab=NA,
+                 show.total=TRUE)
+    mtext("IUPRED3", 2, 3.5)
+    mtext(expression(log[10]*bar(RAAS[unique])), 1, 2.7)
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    dev.off()
     
-    plotCor(tmtd$RAAS.median, tmtd$iupred3, xlab="median RAAS", ylab="IUPRED3")
-
-    ovl <- clusterCluster(paste0(tmtd$raas.bins), tmtd$anchor2.bins,
-                          cl1.srt=rev(raas.srt))
-    par(mai=c(1,1,.5,.5), mgp=c(3,.3,0), tcl=-.25)
-    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
-             xlab="ANCHOR2", ylab=expression(median~log[10]*RAAS))
-    
-    plotCor(tmtd$RAAS.median, tmtd$anchor2,
-            xlab=expression(median~log[10]*RAAS), ylab="ANCHOR2")
-
+    plotdev(file.path(fig.path,paste0("structure_iupred3_",SETID,"_cor_",ds)),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tmtd$RAAS.median, tmtd$iupred3,
+            xlab=NA, ylab="IUPRED3")
+    mtext(expression(log[10]*bar(RAAS[unique])), 1, 1.6)
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    dev.off()
 }
 
 ## TODO: IUPRED3 vs. RAAS bins
@@ -885,7 +1031,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    bg=TRUE, value="RAAS", row.srt=rev(ssrt), col.srt=uds,
                    use.test=use.test, do.plots=TRUE,
                    xlab=expression(TMT~level~log[10]*RAAS),
-                   verb=0, fname=file.path(dpath,"s4pred_"))
+                   verb=0, fname=file.path(dpath,"structure_s4pred_"))
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
@@ -896,7 +1042,6 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_s4pred_",SETID)),
              gcols=gcols)
 
 
-dev.off()
 
 if ( FALSE ) {
 

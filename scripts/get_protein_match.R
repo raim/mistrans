@@ -11,7 +11,7 @@ dat.path <- file.path(proj.path,"originalData")
 
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
-bp.file <- file.path(proj.path,"processedData","unique_bp.tsv")
+bp.file <- file.path(proj.path,"processedData","unique_bp_blast.tsv")
 bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
 out.file <- file.path(proj.path,"processedData","bp_mapped.tsv")

@@ -31,8 +31,6 @@ transcr <- file.path(mam.path,"processedData","coding.fa")
 
 ## protein-transcript map
 tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
-## transcript structure
-exmap <- file.path(mam.path,"originalData","transcript_coordinates.tsv")
 ## CDS structure
 cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
 cdspos <- file.path(mam.path,"processedData","protein_cds_coordinates.tsv")
@@ -68,11 +66,6 @@ rownames(pamrt) <- trmap[,1]
 ## of protein-specific transcript
 names(trfas) <- pamrt[names(trfas),1]
 
-## transcript exons genomic coordinates
-trexo <- read.delim(exmap)
-## only keep those where we have a protein
-trexo <- trexo[trexo$transcript%in%trmap[names(fas),1],]
-trexo$protein <- pamrt[trexo$transcript,1]
 
 ## list of splice sites for each CDS
 cds <- read.delim(cdsmap,header=FALSE, row.names=1)
@@ -83,6 +76,7 @@ cdl <- lapply(cdl, as.numeric)
 cpos <- read.delim(cdspos, header=FALSE, sep=" ")
 colnames(cpos) <- c("ID","chr","start","end","strand")
 posl <- split(cpos[,2:5], cpos[,1])
+## NOTE: reverse order for minus strand
 posl <- lapply(posl, function(x) x[order(x$start,
                                          decreasing=x$strand=="-"),])
 
@@ -123,16 +117,17 @@ gcoor <- matrix(NA, nrow=nrow(dat), ncol=3)
 colnames(gcoor) <- c("chr","coor","strand")
 
 testit <- TRUE # TEST whether the mutation position is correct
-use.regex <- FALSE # use TRUE to test blast results vs. direct regex
+use.regex <- TRUE #FALSE # use TRUE to test blast results vs. direct regex
 
 ## count errors
-nomatch <- noprt <-
-    noseq <- wcodon <- wsss <- wiup <- character()
-errors <- matrix(0, nrow=nrow(dat), ncol=6)
-colnames(errors) <- c("noprt",
-                      "nomatch","nomut",
-                      "noseq", "wcodon",
-                      "wcoor")
+wiup <- character()
+errors <- matrix(0, nrow=nrow(dat), ncol=8)
+colnames(errors) <- c("no protein",
+                      "using blast","no BP",
+                      "wrong s4pred len","wrong iupred3 len",
+                      "no transcript", "wrong codon",
+                      "AAS > CDS len")
+if ( !use.regex ) errors[,"using blast"] <- 1
 for ( i in 1:nrow(dat) ) {
    
     oid <- dat$protein[i] # ID with mutation index
@@ -141,8 +136,7 @@ for ( i in 1:nrow(dat) ) {
     j <- which(names(fas)==oid)
     if ( length(j)==0 ) { # 
         cat(paste("WARNING:",i, oid, "no protein sequence found\n"))
-        noprt <- c(noprt, paste(i, gid))
-        errors[i,"noprt"] <- 1
+        errors[i,"no protein"] <- 1
         next
     }
     if ( length(j)>1 ) { # atm not appearing
@@ -156,21 +150,19 @@ for ( i in 1:nrow(dat) ) {
     ## 1: MAP PETPTIDE - TODO: cross-check or replace by blast result
     if ( use.regex ) {
         res <- gregexpr(query, target)
-        if ( res[[1]][1]==-1 ) {
-            cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],"\n"))
-            nomatch <- c(nomatch, paste(i, gid, query))
-            errors[i,"nomatch"] <- 1
-            next
-        }
-        if ( length(res)>1 ) 
+        if ( length(res)>1 ) {
             stop(paste("PROBLEM:", i, oid, 
-                       "more than two hits in",j, names(fas)[j],
-                       "; taking first\n"))
-        if ( res[[1]][1] != dat[i,"sstart"] ) 
-            ## if this never occurs we can use blast
+                       "more than two hits in",j, names(fas)[j], "\n"))
+        } else if ( res[[1]][1]==-1 ) {
+            cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],
+                      ", using blast result.\n"))
+            errors[i,"using blast"] <- 1
+            AAS <- dat[i,"sstart"]
+        } else if ( res[[1]][1] != dat[i,"sstart"] ) {
+            ## if this never occurs we can use blast results!
             stop(paste("PROBLEM:", i, oid, 
                        "regex doesn't match blast\n"))
-        AAS <- res[1][1]
+        } else  AAS <- res[[1]][1]
     } else AAS <- dat[i,"sstart"]
 
     ## 2: AAS within protein
@@ -180,15 +172,19 @@ for ( i in 1:nrow(dat) ) {
     len[i] <- length(unlist(strsplit(target,"")))
 
     ## test mutation
-    if ( testit ) { # 
-        ntarg <- sub(query,saap,target)
-        if ( strsplit(target,"")[[1]][pos[i]] ==
-             strsplit(ntarg,"")[[1]][pos[i]] ) {
+    if ( testit ) { #
+        if ( length(grep(query,target))==0 ) {
             cat(paste("WARNING:", i, gid, j, names(fas)[j],
-                       "no mutation detected\n"))
-            nomatch <- c(nomatch, paste(i, gid, query))
-            errors[i,"nomut"] <- 1
-            ##next            
+                      "BP is not in target protein\n"))
+            errors[i,"no BP"] <- 1
+        } else {
+            ntarg <- sub(query,saap,target)
+            if ( strsplit(target,"")[[1]][pos[i]] ==
+                 strsplit(ntarg,"")[[1]][pos[i]] ) {
+                stop(paste("WARNING:", i, gid, j, names(fas)[j],
+                           "no mutation detected\n"))
+                
+            }
         }
     }
 
@@ -198,13 +194,13 @@ for ( i in 1:nrow(dat) ) {
     s4s <- s4p[[gid]]
     if ( is.null(s4s) ) {
         cat(paste("WARNING:", i, "no s4pred found for", oid, "\n"))
-        wsss <- c(wsss, paste(i, gid, "not found"))
+        errors[,"wrong s4pred len"] <- "no s4pred result"
     } else {
         ## test length
         if ( nchar(s4s$seq)!=len[i] ) {
             cat(paste("WARNING:", i, "s4 prediction has wrong length for",
                       oid, "\n"))
-            wsss <- c(wsss, paste(i, gid, "wrong length"))
+            errors[,"wrong s4pred len"] <- 1
         } else {
             sss[i] <- substr(s4s$seq, pos[i], pos[i])
             ## background: complete protein sequence
@@ -220,12 +216,13 @@ for ( i in 1:nrow(dat) ) {
     if ( is.na(iufile) )  {
         cat(paste("WARNING:", i, "no iupred3 found for", oid, "\n"))
         wiup <- c(wiup, paste(i, gid, "not found"))
+        errors[i,"wrong iupred3 len"] <- "no iupred3 result"
     } else {
         iud <- read.delim(file.path(iupred,iufile), header=FALSE)
         if ( nrow(iud)!=len[i] ) {
             cat(paste("WARNING:", i, "iupred3 prediction has wrong length for",
-                      oid, "\n"))
-            wiup <- c(wiup, paste(i, gid, "wrong length"))
+                      oid, "iupred:",nrow(iud), "vs. protein:", len[i],"\n"))
+            errors[i,"wrong iupred3 len"] <- 1
         } else {
             anc[i] <- iud[pos[i], 4]
             iup[i] <- iud[pos[i], 3]
@@ -241,8 +238,7 @@ for ( i in 1:nrow(dat) ) {
     nt <- trfas[[gid]]
     if ( is.null(nt) ) {
         cat(paste("WARNING:", i, "no transcript found for", oid, "\n"))
-        noseq <- c(noseq, paste(i, gid))
-        errors[i,"noseq"] <- 1
+        errors[i,"no transcript"] <- 1
         next
     }
 
@@ -261,42 +257,37 @@ for ( i in 1:nrow(dat) ) {
     if ( GENETIC_CODE[codon] != aaf[i] ) {
         cat(paste("WARNING:",i,"wrong codon", aaf[i],
                   "vs", codon, GENETIC_CODE[codon],"in", gid, "\n"))
-        wcodon <- c(wcodon, paste(i, gid, aaf[i],
-                                  "vs", codon, GENETIC_CODE[codon]))
-        errors[i,"wcodon"] <- 1
+        errors[i,"wrong codon"] <- 1
     } else {    
         cdn[i] <- codon
     }
     
-    ## get genome coor-based data and add genomic position of AAS
-    if(FALSE) { # todo use cds and cds.pos to get genomic position
-        gmap <- trexo[trexo$protein==gid,]
-        chr <- unique(gmap[,"chr"])
-        strand <- unique(gmap[,"strand"])
-        
-        ## order CDS/cons
-        gmap <- gmap[order(gmap[,"start"], decreasing=strand!="-"),]
-        
-        ## CDS length
-        rlen <- gmap[,"end"]-gmap[,"start"]+1
-        
-        cds <- c(1,cumsum(rlen))
-        
-        if ( max(cds)/3-1 != len[i] ) {
-            cat(paste("WARNING:",i,"wrong CDS sum length", max(cds)/3-1,
-                      "vs", len[i],"in", gid, "on strand",strand,"\n"))
-            errors[i,"wcoor"] <- 1
-            ##stop(i, gid, ": wrong length of CDS map")
-        } else {
-            cds <- tail(which(cds<=npos), 1) # which exon in gmap?
-            ## genomic coordinate of AAS; 2nd codon position!
-            dst <- npos+1
-            coor <- gmap[cds, ifelse(strand=="-", "end","start")] +
-                ifelse(strand=="-", -1, 1)*dst
-            gcoor[i,] <- c(chr, coor, strand)
-        }
-    }
+    ## get genomic position via CDS list and posl
+    cds <- cdl[[gid]]
+    coors <- posl[[gid]]
+
+    exon <- which(cds>=npos)[1]
+    if ( is.na(exon) ) {
+        cat(paste("WARNING:",i,"wrong genomic position", npos, "vs", max(cds),
+                  "in", gid, "\n"))
+         errors[i,"AAS > CDS len"] <- 1
+    } else {
     
+        chr <- unique(coors$chr)
+        strand <- unique(coors$strand)
+        ## get genomic position of AAS 2nd codon
+        rpos <- npos
+        if ( exon>1 ) # subtract prior exons/CDS
+            rpos <- npos-cds[exon-1]
+        if ( strand=="-") {
+            coor <- coors[exon, "end"] - rpos 
+        } else {
+            coor <- coors[exon, "start"] + rpos  
+        }
+        gcoor[i,] <-
+            c(chr, coor, strand)
+    }
+
     ## TODO:
     ## load chromosome index chrS
     ## load phastcons genomic data, convert with coor2index
@@ -317,24 +308,17 @@ for ( i in 1:nrow(dat) ) {
 }
 
 
-if ( !interactive() ) {
-    cat(paste("PEPTIDE NOT MATCHED,",length(nomatch),":",
-              paste(nomatch, collapse=" ; "),"\n"))
-    cat(paste("NO TRANSCRIPT SEQUENCE,",length(noseq),":",
-              paste(noseq, collapse=" ; "),"\n"))
-    cat(paste("WRONG CODON,",length(wcodon),":",
-              paste(wcodon, collapse=" ; "),"\n"))
-}
 
 
 
 ## relative position
 rpos <- pos/len
 ## bind to data frame
-colnames(sssbg) <- paste0(colnames(sssbg), ".protein")
+bgsss <- sssbg
+colnames(bgsss) <- paste0(colnames(bgsss), ".protein")
 dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
              gcoor,
-             s4pred=sss, sssbg, iupred3=iup, iupred3.protein=iubg,
+             s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg)
 
 ## FILTER DATA
@@ -364,11 +348,67 @@ if ( length(rm)>0 ) {
     cat(paste("WARNING:", length(rm), "SAAP w/o codon\n"))
 }
 
-## TODO: bar plot with errors
+## remove where no codon was assigned
+## no transcript found or wrong codon
+rm <- which(is.na(dat$chr))
+if ( length(rm)>0 ) {
+    ##dat <- dat[-rm,]
+    cat(paste("WARNING:", length(rm), "SAAP w/o genome coordinates\n"))
+}
+
+### ERROR AND RECOVERY STATS
+
+errs <- errors#[,apply(errors,2,sum)>0]
+er <- c(SAAP=nrow(dat),
+        table(dat$match)[c("good","bad","wrong")],
+        "with mutation"=sum(dat[,"protein"]!=dat[,"ensembl"],na.rm=TRUE),
+        apply(errs,2,sum))
+png(file.path(fig.path,"mapping_errors.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(1.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
+bp <- barplot(er,las=2)
+text(bp, er, er, pos=3, xpd=TRUE, cex=.8)
+dev.off()
+
+## TODO: better characterize matches to mutated proteins
+recovery <- c("SAAP"=nrow(dat),
+              "protein"=sum(!is.na(dat[,"protein"])),
+              ##"length"=sum(!is.na(dat[,"len"])),
+              "s4pred"=sum(!is.na(dat[,"s4pred"])),
+              "iupred3"=sum(!is.na(dat[,"iupred3"])),
+              "genome"=sum(!is.na(dat[,"chr"])),
+              "codon"=sum(!is.na(dat[,"codon"])))
+png(file.path(fig.path,"mapping_recovery.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
+bp <- barplot(recovery,las=2,ylab="")
+text(bp, recovery, recovery, pos=3, xpd=TRUE, cex=.8)
+dev.off()
+
+types <- c("SAAP"=nrow(dat),
+           "MANE"=sum(!is.na(dat[,"MANE.protein"])),
+           "extracellular"=sum(dat[,"extracellular"], na.rm=TRUE),
+           "IG"=sum(dat[,"IG"], na.rm=TRUE),
+           "albumin"=sum(dat[,"albumin"], na.rm=TRUE),
+           "globin"=sum(dat[,"globin"], na.rm=TRUE))
+
+types <- sort(types, decreasing=TRUE)
+png(file.path(fig.path,"mapping_types.png"),
+    res=300, width=3.5, height=3.5, units="in")
+par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25, cex=.8)
+bp <- barplot(types,las=2,ylab="")
+text(bp, types, types, pos=3, xpd=TRUE)
+dev.off()
+
+## inspect some overlaps
+table(dat[,"extracellular"], dat[,"globin"])
+table(dat[,"extracellular"], dat[,"albumin"])
+table(dat[,"extracellular"], dat[,"IG"])
 
 
 ### WRITE OUT TABLE with positions for downstream analysis
-write.table(dat, file=file.path(out.path,"saap_mapped3.tsv"),
-            sep="\t", quote=FALSE, na="", row.names=FALSE)
-
+if ( !interactive() ) {
+    write.table(dat, file=file.path(out.path,"saap_mapped3.tsv"),
+                sep="\t", quote=FALSE, na="", row.names=FALSE)
+}
 

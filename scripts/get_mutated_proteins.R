@@ -44,6 +44,7 @@ muts <- strsplit(muts, ",")
 ## loop over all mutated proteins, replace mutations
 ## and store full sequence
 
+
 nseq <- list()
 errors <- matrix(FALSE, nrow=length(muts), ncol=2)
 colnames(errors) <- c("mform","merr")
@@ -68,6 +69,7 @@ for ( i in seq_along(muts) ) {
                                               seq=ntar)
     }  
 }
+
 
 cat(paste0("MUTATION REPLACEMENT SUMMARY:\n",
            "\twrong mutation format:", sum(errors[,1]),"\n",
@@ -96,7 +98,7 @@ names(nseq) <- nnms
 ## add to fasta and write out
 ofas <- append(fas,nseq)
 
-## write out fast
+## write out fasta
 sink(file=file(out.file, open = "wt"))
 for ( i in seq_along(ofas) ) 
     cat(paste0(">", names(ofas)[i], "\n", ofas[[i]]$seq, "\n"))
