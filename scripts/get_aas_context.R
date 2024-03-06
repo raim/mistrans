@@ -140,7 +140,8 @@ for ( i in 1:nrow(filters) ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
     ggseqlogo(pwm[,as.character(-10:10)], method="probability")
     dev.off()
-    
+
+    apply(ctx[,20:31],1, paste, collapse="")
 }
 
-apply(ctx[,23:29],1, paste, collapse="")
+
