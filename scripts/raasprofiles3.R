@@ -72,6 +72,14 @@ AAC <- seqinr::aaa( seqinr::a())
 names(AAC) <-  seqinr::a()
 AAC <- AAC[AAC!="Stp"]
 
+## AA colors; most divergent from
+## https://stackoverflow.com/questions/15282580/how-to-generate-a-number-of-most-distinctive-colors-in-r
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+n <- length(CODL)
+set.seed(1)
+aa.cols <- sample(color, n)
+names(aa.cols) <- names(CODL)
+
 ## plot colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
@@ -756,13 +764,26 @@ for ( ds in c(uds,"all") ) {
     dev.off()
     ## higher frequency tends to be above diagnal
     ## TODO: better AA colors
-    if ( interactive() ) {
-        plot(cods, lcods, density=FALSE,
-             ylab=expression(f[AAS]),
-             xlab=expression(f[bg]), ylim=c(0,1),xlim=c(0,1),
-             col=as.factor(sub("-.*","",names(cods))),pch=19)
-        abline(a=0,b=1, col=2)
-    }
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plot(cods, lcods, 
+         ylab=expression(f[AAS]),
+         xlab=expression(f[bg]), ylim=c(0,1),xlim=c(0,1),
+         col=1,pch=19, lwd=2, cex=.6)
+    points(cods, lcods, pch=19, lwd=2, cex=.5,
+           col=aa.cols[sub("-.*","",names(cods))])
+    abline(a=0,b=1, col=2)
+    legend("topleft",unique(sub("-.*","",names(cods))),
+           col=1, pt.cex=.6, 
+           pch=19, ncol=2, cex=.6, y.intersp=.75)
+    legend("topleft",unique(sub("-.*","",names(cods))),
+           col=aa.cols[unique(sub("-.*","",names(cods)))],
+           pch=19, pt.cex=.5, ncol=2, cex=.6, y.intersp=.75,
+           bty="n")
+    dev.off()
+    
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequency_raas")),
             type="png", res=300, width=nw,height=3)
