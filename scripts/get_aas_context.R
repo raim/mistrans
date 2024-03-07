@@ -205,7 +205,7 @@ for ( i in 1:30 ) {
     aaf[names(tb),i] <- tb
 }
 aaf <- t(t(aaf)/apply(aaf,2,sum,na.rm=TRUE))
-matplot(t(aaf), type="l", col=1)
+matplot(t(aaf), type="l")
 
 ## MANUAL: clustalx and phylo tree
 
