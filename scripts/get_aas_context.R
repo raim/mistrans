@@ -200,12 +200,14 @@ aas <- sort(unique(GENETIC_CODE))
 aaf <- matrix(0, nrow=length(aas), ncol=30)
 rownames(aaf) <- aas
 for ( i in 1:30 ) {
-    tb <- table(unlist(lapply(strsplit(dat$BP,""),
+    tb <- table(unlist(lapply(strsplit(dat$BP[dat$from!="Q"],""),
                               function(x) ifelse(i<=length(x),x[i],NA))))
     aaf[names(tb),i] <- tb
 }
 aaf <- t(t(aaf)/apply(aaf,2,sum,na.rm=TRUE))
 matplot(t(aaf), type="l")
+points(aaf["Q",])
+points(aaf["A",],pch=4)
 
 ## MANUAL: clustalx and phylo tree
 
