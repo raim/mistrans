@@ -103,15 +103,15 @@ tmt.file <- file.path(proj.path,"originalData",
 
 RAAS.MIN <- -4
 RAAS.MAX <-  1
-colors <- "custom" # "inferno" #"rocket"
+colors <- "arno" # "inferno" #"rocket"
 
 ## generate colors similar to inferno but with
 ## a better yellow (viridis)
-if ( colors=="custom" ) {
+if ( colors=="arno" ) {
     mcol <- inferno(5)
     vcol <- viridis(5)
     mcol[5] <- vcol[5]
-    custom <- colorRampPalette(mcol)
+    arno <- colorRampPalette(mcol)
 }
 COLF <- get(colors)
 
@@ -779,6 +779,25 @@ for ( ds in c(uds,"all") ) {
            col=1, pt.cex=.6, 
            pch=19, ncol=2, cex=.6, y.intersp=.75)
     legend("topleft",unique(sub("-.*","",names(cods))),
+           col=aa.cols[unique(sub("-.*","",names(cods)))],
+           pch=19, pt.cex=.5, ncol=2, cex=.6, y.intersp=.75,
+           bty="n")
+    dev.off()
+
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_diff")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(cods, lcods-cods, density=FALSE,
+         ylab=expression(f[AAS]-f[bg]),
+         xlab=expression(f[bg]), xlim=c(0,1),
+         col=1,pch=19, lwd=2, cex=.6)
+    points(cods, lcods-cods, pch=19, lwd=2, cex=.5,
+           col=aa.cols[sub("-.*","",names(cods))])
+    legend("bottomright",unique(sub("-.*","",names(cods))),
+           col=1, pt.cex=.6, 
+           pch=19, ncol=2, cex=.6, y.intersp=.75)
+    legend("bottomright",unique(sub("-.*","",names(cods))),
            col=aa.cols[unique(sub("-.*","",names(cods)))],
            pch=19, pt.cex=.5, ncol=2, cex=.6, y.intersp=.75,
            bty="n")

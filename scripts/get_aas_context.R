@@ -16,16 +16,17 @@ require(ggseqlogo)
 ### PATHS AND FILES
 
 proj.path <- "/home/raim/data/mistrans"
-dat.path <- file.path(proj.path,"originalData")
-out.path <- file.path(proj.path,"processedData")
+dat.path <- file.path(proj.path,"processedData")
+out.path <- file.path(proj.path,"processedData","motifs")
 fig.path <- file.path(proj.path,"figures", "saap_context")
+dir.create(out.path, showWarnings=FALSE)
 dir.create(fig.path, showWarnings=FALSE)
 
 ## INPUT FILES
 ## list of SAAPs with coordinates
-in.file <- file.path(out.path,"saap_mapped3.tsv")
+in.file <- file.path(dat.path,"saap_mapped3.tsv")
 ## protein fasta
-fasta <- file.path(out.path,"all_proteins.fa")
+fasta <- file.path(dat.path,"all_proteins.fa")
 ## coding region fasta
 ##transcr <- file.path(mam.path,"processedData","coding.fa")
 
@@ -54,7 +55,7 @@ pctx <- sapply(1:nrow(dat), function(i) {
     nsq <- nchar(fsq)
     
     rrng <- seq(-dst,dst,1)
-    sq <- rep("",length(rrng))
+    sq <- rep("_",length(rrng))
     names(sq) <- rrng
 
     ## cut range to available
@@ -81,6 +82,8 @@ for ( i in 1:nrow(filters) ) {
     
     filt <- dat[,column]==pattern
     ctx <- pctx[filt,]
+    rownames(ctx) <-
+        paste0(dat$ensembl[filt],"_",dat$pos[filt]-dst,"_",dat$pos[filt]+dst)
 
     aa1 <- pattern
     if ( length(grep(":",aa1)) ) 
@@ -138,10 +141,28 @@ for ( i in 1:nrow(filters) ) {
                                       column,"_",pattern,"_logo_prob")),
             height=3.5, width=5, res=300)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-    ggseqlogo(pwm[,as.character(-10:10)], method="probability")
+    lg <- ggseqlogo(pwm[,as.character(-10:10)], method="probability")
+    print(lg)
     dev.off()
 
-    apply(ctx[,20:31],1, paste, collapse="")
+    sqs <- apply(ctx,1, paste, collapse="")
+    fname <- file.path(out.path,paste0("seqcontext_",
+                                       column,"_",pattern,".fa"))
+    out.rng <- as.character(-5:5)
+    if ( file.exists(fname) ) unlink(fname)
+    for ( i in 1:nrow(ctx) )
+        cat(paste0(">",rownames(ctx)[i],"\n",gsub("_","",paste0(ctx[i,out.rng],
+                                                    collapse="")),"\n"),
+            file=fname, append=TRUE)
+    fname <- file.path(out.path,paste0("seqcontext_",
+                                       column,"_",pattern,"_long.fa"))
+    out.rng <- as.character(-10:10)
+    if ( file.exists(fname) ) unlink(fname)
+    for ( i in 1:nrow(ctx) ) 
+        if ( sum(ctx[i,out.rng]!="_")>7 )
+            cat(paste0(">",rownames(ctx)[i],"\n",
+                       gsub("_","",paste0(ctx[i,out.rng],collapse="")),"\n"),
+                file=fname, append=TRUE)
 }
 
-
+sum(duplicated(apply(ctx,1, paste, collapse="")))
