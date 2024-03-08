@@ -33,9 +33,12 @@ fasta <- file.path(dat.path,"all_proteins.fa")
 dat <- read.delim(in.file)
 
 ## remove by exclude tag
-dat <- dat[!dat$exclude,]
+dat <- dat[!dat$exclude ,]
 ## remove those w/o protein info
 dat <- dat[!is.na(dat$pos), ]
+
+## tag trypsin 
+dat$KR <- dat$from%in%c("K","R")
 
 ## remove protein with substitutions at the same site
 ## TODO: more complex handling of this
@@ -80,6 +83,11 @@ filters <- rbind(c(column="from", pattern="Q"),
                  c(column="fromto", pattern="Q:G"))
 apats <- list(c(),
               c())
+##TODO:
+## 1. align with clustalw via msa(seq)
+## 2. split into well aligned subsets
+## 3. plot alignments of subsets using AA colors after
+## https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-3526-6
 for ( i in 1:nrow(filters) ) {
 
     column <- filters[i,"column"]
@@ -98,26 +106,36 @@ for ( i in 1:nrow(filters) ) {
     ## also plot most frequent at -1 and +1
     aa3 <- c("K","R")#names(which.max(table(ctx[,"1"])))
     aa2 <- c("E","D")#names(which.max(table(ctx[,"-1"])))
-    
+    aa4 <- c("M")#names(which.max(table(ctx[,"1"])))
+    aa5 <- c("A")#names(which.max(table(ctx[,"1"])))
+
     
     segmenTools::plotdev(file.path(fig.path,paste0("seqcontext_",
                                                    column,"_",pattern)),
                          height=3.5, width=5, res=300)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
     plot(-dst:dst,apply(ctx,2, function(x) mean(x%in%aa1)), ylim=c(0,1),
-         type="h", lwd=2,
+         type="h", lwd=2, xlim=c(-15,15),
          xlab="distance from AAS", ylab="AA frequency")
     axis(1, at=-1000:1000, tcl=par("tcl")/2, labels=FALSE)
     abline(h=mean(pctx%in%aa1))
     lines(-dst:dst-.2,apply(ctx,2, function(x) mean(x%in%aa2)),
           col=2, lwd=2, type="h")
     abline(h=mean(pctx%in%aa2),col=2)
-    lines(-dst:dst+.2,apply(ctx,2, function(x) mean(x%in%aa3)),
+    lines(-dst:dst-.1,apply(ctx,2, function(x) mean(x%in%aa3)),
           col=3, lwd=2, type="h")
     abline(h=mean(pctx%in%aa3),col=3)
+    lines(-dst:dst+.1,apply(ctx,2, function(x) mean(x%in%aa4)),
+          col=4, lwd=2, type="h")
+    abline(h=mean(pctx%in%aa4),col=4)
+    lines(-dst:dst+.2,apply(ctx,2, function(x) mean(x%in%aa5)),
+          col=5, lwd=2, type="h")
+    abline(h=mean(pctx%in%aa5),col=5)
     legend("topright", c(paste(aa1,collapse="|"),
                          paste(aa2,collapse="|"),
-                         paste(aa3,collapse="|")), col=c(1,2,3), lty=1,
+                         paste(aa3,collapse="|"),
+                         paste(aa4,collapse="|"),
+                         paste(aa5,collapse="|")), col=c(1,2,3,4,5), lty=1,
            title=paste0("n=",sum(filt)))
     figlabel(paste0(column,"==",pattern), pos="bottomleft")
     dev.off()
@@ -208,6 +226,7 @@ aaf <- t(t(aaf)/apply(aaf,2,sum,na.rm=TRUE))
 matplot(t(aaf), type="l")
 points(aaf["Q",])
 points(aaf["A",],pch=4)
+points(aaf["K",],pch=3, col=2)
 
 ## MANUAL: clustalx and phylo tree
 
