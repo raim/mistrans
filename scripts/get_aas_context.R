@@ -40,10 +40,98 @@ dat <- dat[!is.na(dat$pos), ]
 ## tag trypsin 
 dat$KR <- dat$from%in%c("K","R")
 
+## tag miscleavage
+bps <- substr(dat$BP,1,nchar(dat$BP)-2)
+dat$miscleavage <- rep(FALSE, nrow(dat))
+dat$miscleavage[grep("[KR]", bps)] <- TRUE
+
 ## remove protein with substitutions at the same site
 ## TODO: more complex handling of this
 dat <- dat[!duplicated(paste(dat$protein,dat$pos)),]
-           
+
+
+### ANALYZE MUTATION WITHIN PEPTIDE
+## only for unique BP
+bpd <- dat[!duplicated(dat$BP),]
+
+##bpd <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(bpd$site), xlab="position of AAS in peptide",las=2)
+hist(bpd$site/nchar(bpd$SAAP), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(nrow(bpd), "unique BP"))
+dev.off()
+
+## POSITION OF D/E IN PEPTIDE
+des <- gregexpr("[DE]", bpd$BP)
+der <- des
+for ( i in 1:nrow(bpd) ) {
+    der[[i]] <- der[[i]]/nchar(bpd$BP[i])
+}
+des <- unlist(des)
+der <- unlist(der)
+plotdev(file.path(fig.path,paste0("peptide_DE")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(des[des>0]), xlab="position of D|E in peptide",las=2)
+legend("topright", paste(length(des), "D|E"))
+hist(der[der>0], breaks=seq(0,1,.1),
+     xlab="relative position of D|E in peptide", main=NA)
+dev.off()
+
+
+### MISCLEAVAGE
+## remove all where K|R are the mutation
+bpk <- bpd[!bpd$KR,]
+## cut last two AA since this is mostly K|R cleavage site
+bps <- substr(bpk$BP,1,nchar(bpk$BP)-2)
+krs <- gregexpr("[KR]", bps)
+krs <- lapply(krs, function(x) as.numeric(x))
+## get first
+krf <- unlist(lapply(krs, function(x) x[1]))
+plotdev(file.path(fig.path,paste0("miscleavage_KR_vs_AAS")),
+        height=2, width=6, res=300)
+par(mfcol=c(1,3), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(krf[krf>0], bpk$site[krf>0],
+        xlab="position of first K|R in peptide",
+        ylab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
+abline(a=0, b=1)
+hist((krf[krf>0]- bpk$site[krf>0]), main=NA,
+     xlab="abs. dist. (K|R - AAS)", xlim=c(-10,10),
+     breaks=-100:100-.5)
+legend("topright", paste(sum(krf>1),"w K|R"), bty="n")
+hist((krf[krf>0]- bpk$site[krf>0])/nchar(bpk$BP)[krf>0], main=NA,
+     xlab="(K|R - AAS)/peptide length")
+dev.off()
+
+## distance to D|E
+## all where K|R are the mutation
+bpk <- bpd[!bpd$KR,]
+## don't cut last two AA since this is mostly K|R cleavage site
+bps <- bpk$BP #substr(bpk$BP,1,nchar(bpk$BP)-2)
+head(grep("[DE]", bps, value=TRUE))
+krs <- gregexpr("[DE]", bps)
+krs <- lapply(krs, function(x) as.numeric(x))
+## get first
+krf <- unlist(lapply(krs, function(x) mean(x)))
+plotdev(file.path(fig.path,paste0("miscleavage_DE_vs_AAS")),
+        height=2, width=6, res=300)
+par(mfcol=c(1,3), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+dense2d(krf[krf>0], bpk$site[krf>0],
+        xlab="position of first D|E in peptide",
+        ylab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
+abline(a=0, b=1)
+hist((krf[krf>0]- bpk$site[krf>0]), main=NA,
+     xlab="abs. dist. (D|E - AAS)", xlim=c(-30,30),
+     breaks=-100:100)
+legend("topright", paste(sum(krf>1),"w D|E"), bty="n")
+hist((krf[krf>0]- bpk$site[krf>0])/nchar(bpk$BP)[krf>0], main=NA,
+     xlab="(D|E - AAS)/peptide length")
+dev.off()
+
+### ANALYZE SEQUENCE CONTEXT OF MUTATION
 ## load fasta files, analyze frequencies, and write out
 ## fasta for sequence analysis.
 pfas <- readFASTA(fasta, grepID=TRUE)
@@ -75,9 +163,22 @@ pctx <- sapply(1:nrow(dat), function(i) {
 ##
 pctx <- do.call(rbind, pctx)
 
-dat$fromto <- paste0(dat$from, ":", dat$to)
 
-filters <- rbind(c(column="from", pattern="Q"),
+x <-c(table(c(pctx[,20:25]))[aas[aas!="*"]])
+y <-c(table(c(pctx[,26:31]))[aas[aas!="*"]])
+plot(x, y, col=NA)
+abline(a=0, b=1)
+text(x, y, names(x),xpd=TRUE)
+
+
+dat$fromto <- paste0(dat$from, ":", dat$to)
+dat$prev <- pctx[,"-1"]
+    
+filters <- rbind(c(column="all",pattern=""),
+                 c(column="miscleavage",pattern="TRUE"),
+                 c(column="prev", pattern="W"),
+                 c(column="from", pattern="W"),
+                 c(column="from", pattern="Q"),
                  c(column="fromto", pattern="S:G"),
                  c(column="fromto", pattern="T:V"),
                  c(column="fromto", pattern="Q:G"))
@@ -92,8 +193,13 @@ for ( i in 1:nrow(filters) ) {
 
     column <- filters[i,"column"]
     pattern <- filters[i,"pattern"]
+
+    if ( column=="all" ) {
+        filt <- rep(TRUE, nrow(dat))
+    } else {
+        filt <- as.character(dat[,column])==pattern
+    }
     
-    filt <- dat[,column]==pattern
     ctx <- pctx[filt,]
     rownames(ctx) <-
         paste0(dat$ensembl[filt],"_",dat$pos[filt]-dst,"_",dat$pos[filt]+dst)
@@ -103,6 +209,36 @@ for ( i in 1:nrow(filters) ) {
     if ( length(grep(":",aa1)) ) 
         aa1 <- strsplit(aa1,":")[[1]][1]
 
+    ## generate frequencies at each position
+    ctl <- apply(ctx, 2, table)
+    ## aaids
+    aaids <- unique(unlist(lapply(ctl, names)))
+    ctl <- do.call(cbind, lapply(ctl, function(x) x[aaids]))
+    rownames(ctl) <- aaids
+    ctl[is.na(ctl)] <- 0
+
+    ## remove empty positions
+    if ( "_" %in% rownames(ctl) ) {
+        empty <- ctl["_",]
+        ctl <- ctl[rownames(ctl)!="_",]
+    }
+    ## get frequency per position
+    ##ctl <- t(t(ctl)/apply(ctl,2,sum))
+
+    ## log2 mean ratio over all positions
+    ctm <- log2(ctl/apply(ctl,1,mean))
+
+    ## filter rare unusual U and X
+    ctm <- ctm[rownames(ctm)%in%aas,]
+    
+    plotdev(file.path(fig.path,paste0("seqcontext_",
+                                      column,"_",pattern, "_all")),
+            height=3.5, width=5, res=300)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    par(xpd=TRUE)
+    matplot(colnames(ctm),t(ctm), type="p", lty=1, pch=rownames(ctm))
+    dev.off()
+    
     ## also plot most frequent at -1 and +1
     aa3 <- c("K","R")#names(which.max(table(ctx[,"1"])))
     aa2 <- c("E","D")#names(which.max(table(ctx[,"-1"])))
@@ -110,9 +246,9 @@ for ( i in 1:nrow(filters) ) {
     aa5 <- c("A")#names(which.max(table(ctx[,"1"])))
 
     
-    segmenTools::plotdev(file.path(fig.path,paste0("seqcontext_",
-                                                   column,"_",pattern)),
-                         height=3.5, width=5, res=300)
+    plotdev(file.path(fig.path,paste0("seqcontext_",
+                                      column,"_",pattern)),
+            height=3.5, width=5, res=300)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
     plot(-dst:dst,apply(ctx,2, function(x) mean(x%in%aa1)), ylim=c(0,1),
          type="h", lwd=2, xlim=c(-15,15),
@@ -161,7 +297,8 @@ for ( i in 1:nrow(filters) ) {
                                       column,"_",pattern,"_logo_bits")),
             height=3.5, width=5, res=300)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-    ggseqlogo(pwm[,as.character(-10:10)], method="bits")
+    lg <- ggseqlogo(pwm[,as.character(-10:10)], method="bits")
+    print(lg)
     dev.off()
     
     plotdev(file.path(fig.path,paste0("seqcontext_",
@@ -207,6 +344,7 @@ for ( i in 1:nrow(filters) ) {
                        gsub("_","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 }
+
 sum(duplicated(apply(ctx,1, paste, collapse="")))
 
 ## TODO: tag SAAP WITH the identified motif and split Q:G by this,

@@ -105,7 +105,7 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 ## grep each base peptide (dat$BP) in the corresponding fasta
 ## brute force, each peptide
-pos <- len <- cdn <- aaf <- aat <-  aas <-
+mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
 
 ## secondary structure frequencies in whole protein
@@ -167,8 +167,8 @@ for ( i in 1:nrow(dat) ) {
 
     ## 2: AAS within protein
     saap <- unlist(dat[i,"SAAP"])
-    mut <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
-    pos[i] <- AAS + mut -1
+    mut[i] <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
+    pos[i] <- AAS + mut[i] -1
     len[i] <- length(unlist(strsplit(target,"")))
 
     ## test mutation
@@ -252,8 +252,8 @@ for ( i in 1:nrow(dat) ) {
 
     ## don't store wrong codon!
     aas[i] <- strsplit(target,"")[[1]][pos[i]]
-    aaf[i] <- strsplit(query,"")[[1]][mut]
-    aat[i] <- strsplit(saap,"")[[1]][mut]
+    aaf[i] <- strsplit(query,"")[[1]][mut[i]]
+    aat[i] <- strsplit(saap,"")[[1]][mut[i]]
     if ( GENETIC_CODE[codon] != aaf[i] ) {
         cat(paste("WARNING:",i,"wrong codon", aaf[i],
                   "vs", codon, GENETIC_CODE[codon],"in", gid, "\n"))
@@ -316,8 +316,9 @@ rpos <- pos/len
 ## bind to data frame
 bgsss <- sssbg
 colnames(bgsss) <- paste0(colnames(bgsss), ".protein")
-dat <- cbind(dat, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat, codon=cdn,
-             gcoor,
+dat <- cbind(dat,
+             site=mut, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat,
+             codon=cdn, gcoor, 
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg)
 
