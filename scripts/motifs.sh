@@ -1,8 +1,11 @@
 
+## TODO: link to specific installation
 
 meme -minw 2 -nmotifs 3 seqcontext_fromto_Q\:G_long.fa -o QG
 meme -minw 2 -nmotifs 3 seqcontext_fromto_T\:V_long.fa -o TV
+meme -minw 2 -nmotifs 3 seqcontext_from_W_long.fa -o W
 
 momo modl -o QG_momo seqcontext_fromto_Q\:G_motif.fa 
 momo modl -o TV_momo seqcontext_fromto_T\:V_motif.fa 
+momo modl -o W_momo seqcontext_from_W_motif.fa 
 ## NOTE: TM enriched; cf. https://www.nature.com/articles/srep40403

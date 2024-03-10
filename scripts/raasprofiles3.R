@@ -126,6 +126,7 @@ use.test <- t.test # w.test #
 healthy <- FALSE # TRUE # 
 
 ## TODO: extracellular is mostly album/globin - analyze
+exclude.nterm <- FALSE # TRUE # 
 exclude.extracellular <- FALSE # TRUE # 
 exclude.albumin <- FALSE # TRUE # 
 only.unique <- FALSE # TRUE # 
@@ -155,7 +156,11 @@ if ( exclude.extracellular ) {
 }
 if ( include.kr ) {
     fig.path <- paste0(fig.path,"_wKR")
-    LAB <- paste0(LAB, " +K/R")
+    LAB <- paste0(LAB, "+K/R")
+}
+if (  exclude.nterm ) {
+    fig.path <- paste0(fig.path,"_nterm")
+    LAB <- paste0(LAB, "-N2")
 }
 
 SETID <- ifelse(healthy,"tissues","cancer")
@@ -306,6 +311,10 @@ tmtf$protein <- hdat$protein[idx]
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 tmtf$extracellular <- hdat$extracellular[idx]
 
+tmtf$site <- hdat$site[idx]
+tmtf$rsite <- hdat$site[idx]/nchar(hdat$BP)[idx]
+tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2))
+
 ### CHOOSE DATASETS
 if ( healthy ) {
     ds <- tmtf$Dataset
@@ -359,6 +368,10 @@ if (  exclude.extracellular ) {
     rmsaap <- tmtf$SAAP[tmtf$extracellular]
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
 }
+if (  exclude.nterm ) {
+    rmsaap <- tmtf$site <3
+    tmtf <- tmtf[!rmsaap,]
+}
 
 
 ### TODO: merge unique SAAP here to test effects of multiple
@@ -383,10 +396,6 @@ srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
 
 axex <- ftlabels(srt) # axis labels with arrows
 
-### START ANALYSIS
-
-## color legends
-##RAAS.MIN <- median(tmtf$RAAS)*1.1
 
 ## RAAS COLORS
 png(file.path(fig.path,paste0("legend_raas.png")),
@@ -444,6 +453,7 @@ dotprofile(ovw, value="median",
 figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
 
+### START ANALYSIS
            
 ## global distribution by cancer type
            
@@ -497,7 +507,25 @@ figlabel(LAB, pos="bottomleft", cex=.8)
 dev.off()
 
 ## TODO: pairs of same SAAP
-tmtl <- split(tmtf$Dataset, tmtf$SAAP)
+##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
+
+## RAAS profiles by AAS site in peptides
+fname <- file.path(dpath,paste0("AASsite_",SETID,"_wtests_"))
+ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
+                    delog=TRUE, rows="rsite.bins", cols="Dataset",
+                    bg=TRUE, row.srt=rev(rsrt), col.srt=uds,
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=expression(TMT~level~log[10]*RAAS),
+                    fname=fname, verb=0)
+plotProfiles(ovw, fname=file.path(fig.path,paste0("AASsite_",SETID)),
+             mai=c(.8,1,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             ttcols=ttcols, value="median",
+             mtxt="relative AAS position", mtxt.line=3.5,
+             rlab=LAB, llab="",
+             vcols=vcols, vbrks=vbrks,
+             gcols=gcols, verb=1)
 
 ## RAAS profiles by AA properties
 fname <- file.path(dpath,paste0("AAprop_",SETID,"_wtests_"))
@@ -760,9 +788,13 @@ for ( ds in c(uds,"all") ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(cods, lratio, density=FALSE,
             ylab=expression(log[2](f[AAS]/f[bg])),
-            xlab=expression(f[bg]), xlim=c(0,1))
+            xlab=expression(f[bg]), xlim=c(0,1),
+            col=1,pch=19, lwd=2, cex=.6)
+    points(cods, lratio, pch=19, lwd=2, cex=.5,
+           col=aa.cols[sub("-.*","",names(cods))])
     dev.off()
-    ## higher frequency tends to be above diagnal
+
+    ## higher frequency tends to be above diagonal
     ## TODO: better AA colors
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequencies")),

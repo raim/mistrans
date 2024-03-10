@@ -41,7 +41,7 @@ dat <- dat[!is.na(dat$pos), ]
 dat$KR <- dat$from%in%c("K","R")
 
 ## tag miscleavage
-bps <- substr(dat$BP,1,nchar(dat$BP)-2)
+bps <- substr(dat$BP,1,nchar(dat$BP)-1)
 dat$miscleavage <- rep(FALSE, nrow(dat))
 dat$miscleavage[grep("[KR]", bps)] <- TRUE
 
@@ -64,6 +64,33 @@ hist(bpd$site/nchar(bpd$SAAP), breaks=seq(0,1,.1),
 legend("topright", paste(nrow(bpd), "unique BP"))
 dev.off()
 
+## POSITION OF K/R IN PEPTIDE - MIS-CLEAVAGE
+ncut <- 0
+ccut <- 
+bps <- substr(bpk$BP,ncut-1,nchar(bpk$BP)-ccut)
+des <- gregexpr("[KR]", bps) #bpd$BP)
+der <- des
+for ( i in 1:length(bps) ) {
+    der[[i]] <- (der[[i]]+ncut)/nchar(bps[i])
+}
+des <- unlist(des)
+der <- unlist(der)
+plotdev(file.path(fig.path,paste0("peptide_KR")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+
+tb1 <- table(bpd$qlen)
+tb2 <- table(des[des>0])
+tbn <- as.character(sort(as.numeric(unique(c(names(tb1), names(tb2))))))
+tb <- rbind(tb2[tbn], tb1[tbn])
+barplot(tb, beside=FALSE,
+        xlab="position of K|R in peptide",las=2,
+        col=c("#ff000099","#77777777"))
+legend("topright", paste(length(des), "K|R"))
+hist(der[der>0], #breaks=seq(0,1,.1),
+     xlab="relative position of K|R in peptide", main=NA)
+dev.off()
+
 ## POSITION OF D/E IN PEPTIDE
 des <- gregexpr("[DE]", bpd$BP)
 der <- des
@@ -75,7 +102,14 @@ der <- unlist(der)
 plotdev(file.path(fig.path,paste0("peptide_DE")),
         height=3, width=6, res=300)
 par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-barplot(table(des[des>0]), xlab="position of D|E in peptide",las=2)
+tb1 <- table(bpd$qlen)
+tb2 <- table(des[des>0])
+tbn <- as.character(sort(as.numeric(unique(c(names(tb1), names(tb2))))))
+tb <- rbind(tb2[tbn], tb1[tbn])
+barplot(tb, beside=FALSE,
+        xlab="position of D|E in peptide",las=2,
+        col=c("#ff000099","#77777777"))
+##barplot(table(des[des>0]), xlab="position of D|E in peptide",las=2)
 legend("topright", paste(length(des), "D|E"))
 hist(der[der>0], breaks=seq(0,1,.1),
      xlab="relative position of D|E in peptide", main=NA)
@@ -85,18 +119,21 @@ dev.off()
 ### MISCLEAVAGE
 ## remove all where K|R are the mutation
 bpk <- bpd[!bpd$KR,]
-## cut last two AA since this is mostly K|R cleavage site
-bps <- substr(bpk$BP,1,nchar(bpk$BP)-2)
+## cut FIRST and last AA since this is mostly K|R cleavage site
+## NOTE: why is above diagonal missing by cutting first?
+ncut <- 0
+ccut <- 1
+bps <- substr(bpk$BP, 1+ncut, nchar(bpk$BP)-ccut)
 krs <- gregexpr("[KR]", bps)
-krs <- lapply(krs, function(x) as.numeric(x))
-## get first
-krf <- unlist(lapply(krs, function(x) x[1]))
+krs <- lapply(krs, function(x) as.numeric(x[x>0]+ncut))
+## get mean (first) KR site
+krf <- unlist(lapply(krs, function(x) mean(x)))
 plotdev(file.path(fig.path,paste0("miscleavage_KR_vs_AAS")),
         height=2, width=6, res=300)
 par(mfcol=c(1,3), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(krf[krf>0], bpk$site[krf>0],
-        xlab="position of first K|R in peptide",
-        ylab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
+dense2d(bpk$site[krf>0], krf[krf>0],  ##colf=arno,
+        ylab="mean position of K|R in peptide",
+        xlab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
 abline(a=0, b=1)
 hist((krf[krf>0]- bpk$site[krf>0]), main=NA,
      xlab="abs. dist. (K|R - AAS)", xlim=c(-10,10),
@@ -109,19 +146,19 @@ dev.off()
 ## distance to D|E
 ## all where K|R are the mutation
 bpk <- bpd[!bpd$KR,]
-## don't cut last two AA since this is mostly K|R cleavage site
+## don't cut last two AA 
 bps <- bpk$BP #substr(bpk$BP,1,nchar(bpk$BP)-2)
 head(grep("[DE]", bps, value=TRUE))
 krs <- gregexpr("[DE]", bps)
 krs <- lapply(krs, function(x) as.numeric(x))
-## get first
+## get mean (first)
 krf <- unlist(lapply(krs, function(x) mean(x)))
 plotdev(file.path(fig.path,paste0("miscleavage_DE_vs_AAS")),
         height=2, width=6, res=300)
 par(mfcol=c(1,3), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-dense2d(krf[krf>0], bpk$site[krf>0],
-        xlab="position of first D|E in peptide",
-        ylab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
+dense2d(bpk$site[krf>0], krf[krf>0], 
+        ylab="mean position of D|E in peptide",
+        xlab="position of AAS in peptide", xlim=c(0,40), ylim=c(0,40), cex=.5)
 abline(a=0, b=1)
 hist((krf[krf>0]- bpk$site[krf>0]), main=NA,
      xlab="abs. dist. (D|E - AAS)", xlim=c(-30,30),
