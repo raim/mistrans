@@ -14,6 +14,14 @@ library(segmenTools)
 require(ggplot2)
 require(ggseqlogo)
 
+library(Biostrings)
+AAS <- sort(unique(GENETIC_CODE))
+AAT <- AAS[AAS!="*"]
+
+## p-value colors
+docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
+upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
+ttcols <- unique(c(rev(docols), upcols))
 
 ### PATHS AND FILES
 
@@ -32,6 +40,8 @@ fasta <- file.path(dat.path,"all_proteins.fa")
 ## coding region fasta
 ##transcr <- file.path(mam.path,"processedData","coding.fa")
 
+
+## GET SAAP/BP DATA
 dat <- read.delim(in.file)
 
 ## remove by exclude tag - IG/Albumin/globin
@@ -55,12 +65,15 @@ dat <-dat[dat$match=="good",]
 dat$KR <- dat$from%in%c("K","R")
 
 ## tag miscleavage
-bps <- substr(dat$BP,1,nchar(dat$BP)-1)
+ncut <- 2
+ccut <- 2
+bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
 dat$miscleavage <- rep(FALSE, nrow(dat))
 dat$miscleavage[grep("[KR]", bps)] <- TRUE
 
-## only for unique BP
+## FILTER ONLY UNIQUE BP
 bpd <- dat[!duplicated(dat$BP),]
+
 
 
 ### ANALYZE MUTATION WITHIN PEPTIDE
@@ -110,8 +123,11 @@ plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
 mtext("relative position in peptide", 1, 3.5)
 dev.off()
 
-asite.bins <- cut(bpd$site, c(seq(1,10,1),seq(20,50,30)))
-cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=levels(asite.bins))
+asite.bins <- as.character(bpd$site)
+asite.bins[bpd$site>10] <- ">10"
+asite.bins[bpd$site>20] <- ">20"
+asite.srt <- c(1:10,">10",">20")
+cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt)
 cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=5, res=300)
@@ -285,21 +301,51 @@ pctx <- sapply(1:nrow(bpd), function(i) {
     list(sq)
     ##}
 })
-##
+## as matrix
 pctx <- do.call(rbind, pctx)
 
+## gene names
+rownames(pctx) <-
+    paste0(bpd$name,"_",bpd$pos-dst,"_",bpd$pos+dst)
 
-x <-c(table(c(pctx[,20:25]))[aas[aas!="*"]])
-y <-c(table(c(pctx[,26:31]))[aas[aas!="*"]])
-plot(x, y, col=NA)
-abline(a=0, b=1)
-text(x, y, names(x),xpd=TRUE)
+if ( interactive() ) {
+    x <-c(table(c(pctx[,20:25]))[AAT])
+    y <-c(table(c(pctx[,26:31]))[AAT])
+    plot(x, y, col=NA)
+    abline(a=0, b=1)
+    text(x, y, names(x),xpd=TRUE)
+}
 
-
+## introduce required tags
 bpd$fromto <- paste0(bpd$from, ":", bpd$to)
 bpd$prev <- pctx[,"-1"]
-    
+
+## tag KRAQ motif specifically
+tctx <- pctx[,as.character(-5:5)]
+txsq <- apply(tctx,1, paste, collapse="")
+## grep K|RA.Q motif
+#kraqidx <- grep("[KR]A[A-Z]{0,1}Q",txsq)
+## grep K|RAQ motif
+kraqidx <- grep("[KR]AQ",txsq)
+## filter only those where Q is the AAS
+kraqidx <- kraqidx[bpd$from[kraqidx]=="Q"]
+bpd$KRAQ <- rep(FALSE, nrow(bpd))
+bpd$KRAQ[kraqidx] <- TRUE
+
+## tag M?TM? motif specifically
+tctx <- pctx[,as.character(-5:5)]
+txsq <- apply(tctx,1, paste, collapse="")
+## grep K|RAQ motif
+kraqidx <- unique(c(grep("MT",txsq),
+                    grep("TM",txsq)))
+## filter only those where T is the AAS
+kraqidx <- kraqidx[bpd$from[kraqidx]=="T"]
+bpd$TM <- rep(FALSE, nrow(bpd))
+bpd$TM[kraqidx] <- TRUE
+
 filters <- rbind(c(column="all",pattern=""),
+                 c(column="TM",pattern="TRUE"),
+                 c(column="KRAQ",pattern="TRUE"),
                  c(column="miscleavage",pattern="TRUE"),
                  c(column="prev", pattern="W"),
                  c(column="from", pattern="H"),
@@ -314,7 +360,7 @@ apats <- list(c(),
 ## 1. align with clustalw via msa(seq)
 ## 2. split into well aligned subsets
 ## 3. plot alignments of subsets using AA colors after
-## https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-3526-6
+##https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-3526-6
 for ( i in 1:nrow(filters) ) {
 
     column <- filters[i,"column"]
@@ -328,8 +374,8 @@ for ( i in 1:nrow(filters) ) {
     
     ctx <- pctx[filt,]
     rownames(ctx) <-
-        paste0(bpd$ensembl[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
-    saabp <- paste0(bpd$SAAP[filt], "/", bpd$BP[filt])
+        paste0(bpd$name[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
+
 
     aa1 <- pattern
     if ( length(grep(":",aa1)) ) 
@@ -355,7 +401,74 @@ for ( i in 1:nrow(filters) ) {
     ctm <- log2(ctl/apply(ctl,1,mean))
 
     ## filter rare unusual U and X
-    ctm <- ctm[rownames(ctm)%in%aas,]
+    ctm <- ctm[rownames(ctm)%in%AAS,]
+
+
+    ## HYPERGEO TESTS - tigther context
+    aam <- matrix(1, ncol=ncol(ctx), nrow=length(AAT))
+    rownames(aam) <- AAT
+    colnames(aam) <- colnames(ctx)
+    aac <- aap <- aam
+    aac[] <- 0
+    
+    for ( i2 in 1:nrow(aam)   ) {
+        for ( j in  1:ncol(aam) ) {
+
+            aa <- rownames(aam)[i2]
+            pos <- colnames(aam)[j]
+            
+            m <- sum(c(ctx)==aa) # white balls
+            n <- length(ctx)-m # black balls
+
+            q <- sum(ctx[,j]==aa) # white balls drawn - AT CURRENT POSITION
+            k <- sum(ctx[,j]%in%AAT)-q # number of balls drawn
+            
+            aac[i2,j] <- q
+            ## enriched
+            aam[i2,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+            ## deprived
+            aap[i2,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
+            ##cat(paste("testing", aa, wcd, signif(aam[,wcd]), "\n"))
+        }
+    }
+
+    ## construct overlap class
+    ovl <- list()
+    ovl$count <- aac
+    ovl$p.value <- aam
+    ovl$p.value[aap<aam] <- aap[aap<aam]
+    ovl$sign <- ifelse(aap<aam,-1,1)
+    ovl$num.query <-
+        t(t(table(c(ctx))[rownames(aam)]))
+    ovl$num.target <-
+        t(apply(ctx, 2, function(x) sum(x%in%rownames(aam))))
+
+    ## set 0 count to p=1
+    ##ovl$p.value[ovl$count==0] <- 1
+    
+    plotdev(file.path(fig.path,paste0("seqcontext_",
+                                      column,"_",pattern, "_overlap")),
+            type="png", res=300, width=15,height=5)
+    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovl, p.min=1e-20, p.txt=1e-10, xlab=NA,
+                 ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+    mtext("position relative to AAS", 1, 1.3)
+    figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+    figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
+    dev.off()
+
+    ovs <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
+    
+    plotdev(file.path(fig.path,paste0("seqcontext_",
+                                      column,"_",pattern, "_overlap_tight")),
+            type="png", res=300, width=5,height=5)
+    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovs, p.min=1e-20, p.txt=1e-10, xlab=NA,
+                 ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+    mtext("position relative to AAS", 1, 1.3)
+    figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+    figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
+    dev.off()
     
     plotdev(file.path(fig.path,paste0("seqcontext_",
                                       column,"_",pattern, "_all")),
@@ -368,14 +481,14 @@ for ( i in 1:nrow(filters) ) {
     figlabel(paste0(column,"==",pattern), pos="topleft",
              region="plot", font=2, cex=1.2)
     dev.off()
-    
+
+    ## CUSTOM
     ## also plot most frequent at -1 and +1
     aa3 <- c("K","R")#names(which.max(table(ctx[,"1"])))
     aa2 <- c("E","D")#names(which.max(table(ctx[,"-1"])))
     aa4 <- c("M")#names(which.max(table(ctx[,"1"])))
     aa5 <- c("A")#names(which.max(table(ctx[,"1"])))
-
-    
+   
     plotdev(file.path(fig.path,paste0("seqcontext_",
                                       column,"_",pattern)),
             height=3.5, width=5, res=300)
@@ -405,7 +518,7 @@ for ( i in 1:nrow(filters) ) {
            title=paste0("n=",sum(filt)))
     figlabel(paste0(column,"==",pattern), pos="topleft",
              region="plot", font=2, cex=1.2)
-##    figlabel(paste0(column,"==",pattern), pos="bottomleft")
+    ##    figlabel(paste0(column,"==",pattern), pos="bottomleft")
     dev.off()
     
     
@@ -440,6 +553,23 @@ for ( i in 1:nrow(filters) ) {
     lg <- ggseqlogo(pwm[,as.character(-10:10)], method="probability")
     print(lg)
     dev.off()
+}
+
+### WRITE OUT FASTA FILES
+
+for ( i in 1:nrow(filters) ) {
+     
+    column <- filters[i,"column"]
+    pattern <- filters[i,"pattern"]
+
+    if ( column=="all" ) {
+        filt <- rep(TRUE, nrow(bpd))
+    } else {
+        filt <- as.character(bpd[,column])==pattern
+    }
+    
+    ctx <- pctx[filt,]
+
 
     sqs <- apply(ctx,1, paste, collapse="")
     fname <- file.path(out.path,paste0("seqcontext_",
@@ -448,11 +578,10 @@ for ( i in 1:nrow(filters) ) {
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) {
         osq <- gsub("_","",paste0(ctx[j,out.rng], collapse=""))
-        cat(paste0(">", osq,"_", rownames(ctx)[j],"\n", osq, "\n"),
+        cat(paste0(">", rownames(ctx)[j],"\n", osq, "\n"),
             file=fname, append=TRUE)
     }
 
-    ## special subsets, post-discover
 
     ## required for meme
     fname <- file.path(out.path,paste0("seqcontext_",
@@ -476,8 +605,25 @@ for ( i in 1:nrow(filters) ) {
                        gsub("_","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 }
-
 sum(duplicated(apply(ctx,1, paste, collapse="")))
+
+## WRITE OUT FASTA FILES FOR IDENTIFIED PATTERNS ONLY
+
+## cut to tighter context
+tctx <- pctx[,as.character(-10:10)]
+txsq <- apply(tctx,1, paste, collapse="")
+## grep K|RA.Q motif
+#kraqidx <- grep("[KR]A[A-Z]{0,1}Q",txsq)
+## grep K|RAQ motif
+kraqidx <- grep("[KR]AQ",txsq)
+## filter only those where Q is the AAS
+kraqidx <- kraqidx[bpd$from[kraqidx]=="Q"]
+kraqsq <- txsq[kraqidx]
+fname <- file.path(out.path,paste0("seqcontext_KRAQ.fa"))
+if ( file.exists(fname) ) unlink(fname)
+for ( j in 1:length(kraqsq) ) 
+    cat(paste0(">",names(kraqsq)[j],"\n", # replace _ by proper gap
+               gsub("_","-",kraqsq[j]),"\n"), file=fname, append=TRUE)
 
 ## TODO: tag SAAP WITH the identified motif and split Q:G by this,
 ## GO analysis of motif-containing genes.
@@ -545,10 +691,8 @@ kctx <- do.call(rbind, kctx)
 
 
 ## CLEAVAGE BIASES?
-library(Biostrings)
-aas <- sort(unique(GENETIC_CODE))
-aaf <- matrix(0, nrow=length(aas), ncol=30)
-rownames(aaf) <- aas
+aaf <- matrix(0, nrow=length(AAS), ncol=30)
+rownames(aaf) <- AAS
 for ( i in 1:30 ) {
     tb <- table(unlist(lapply(strsplit(bpd$BP[bpd$from!="Q"],""),
                               function(x) ifelse(i<=length(x),x[i],NA))))
@@ -570,7 +714,6 @@ labels(x) <- sub("_.*", "", labels(x))
 par(cex=.7)
 plot(x, yaxt = "n", horiz=TRUE) #, type="triangle")
 
-plot(as.hclust(x))
 
 ##library(seqinr)
 ##virusaln  <- read.alignment(file = fname, format = "phylip")

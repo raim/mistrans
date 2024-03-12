@@ -142,8 +142,11 @@ best$extracellular[grep("GO:0005576", gots)] <- TRUE
 ## exclude tag  - TODO: any K/R                 
 best$exclude <- best$globin|best$albumin|best$IG
 
+## GENE NAME
+best$name <- features$name[gidx[best$ensembl]]
 
-write.table(best, file=out.file, sep="\t",
-            quote=FALSE, na="", row.names=FALSE)
+if ( !interactive() )
+    write.table(best, file=out.file, sep="\t",
+                quote=FALSE, na="", row.names=FALSE)
 
 

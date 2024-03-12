@@ -1,4 +1,6 @@
 
+require(segmenTools)
+
 # from->to as expression, e.g. for axis labels
 ftlabels <- function(srt) {
     axex <- rep("",length(srt))

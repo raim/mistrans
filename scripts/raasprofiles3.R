@@ -126,7 +126,7 @@ use.test <- t.test # w.test #
 healthy <- FALSE # TRUE # 
 
 ## TODO: extracellular is mostly album/globin - analyze
-exclude.nterm <- FALSE # TRUE # 
+exclude.nterm <- TRUE # FALSE # 
 exclude.extracellular <- FALSE # TRUE # 
 exclude.albumin <- FALSE # TRUE # 
 only.unique <- FALSE # TRUE # 
@@ -160,7 +160,7 @@ if ( include.kr ) {
 }
 if (  exclude.nterm ) {
     fig.path <- paste0(fig.path,"_nterm")
-    LAB <- paste0(LAB, "-N2")
+    LAB <- paste0(LAB, "-N3")
 }
 
 SETID <- ifelse(healthy,"tissues","cancer")
@@ -369,7 +369,7 @@ if (  exclude.extracellular ) {
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
 }
 if (  exclude.nterm ) {
-    rmsaap <- tmtf$site <3
+    rmsaap <- tmtf$site <4
     tmtf <- tmtf[!rmsaap,]
 }
 
@@ -441,7 +441,23 @@ mai <- c(.5,.5,.1,.1)
 fh <- fw <- .2
 nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-segmenTools::plotdev(file.path(fig.path,"legend_dotplot"),
+for ( colstyle in c("viridis","rocket","inferno","arno") ) {
+
+    scols <- get(colstyle, mode="function")(length(vcols))
+    
+    segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_",colstyle)),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    dotprofile(ovw, value="median",
+               vbrks=vbrks,
+               vcols=scols, 
+               dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+               ylab=expression(log[10]~p),
+               xlab=expression(log[10]~RAAS))
+    figlabel(colstyle, pos="bottomleft", cex=1)
+    dev.off()
+}
+segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot")),
                      height=nh, width=nw, res=300)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
@@ -452,6 +468,7 @@ dotprofile(ovw, value="median",
            xlab=expression(log[10]~RAAS))
 figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
+
 
 ### START ANALYSIS
            
@@ -750,7 +767,7 @@ ncod <- unlist(lapply(CODL, length))
 
 
 ## per codon profiles
-for ( ds in c(uds,"all") ) {
+for ( ds in auds ) {
 
     ## TODO: add codon frequency two-sided bar plot
 
@@ -1056,8 +1073,6 @@ for ( ds in c(uds,"all") ) {
     box()
     abline(v=.5+cdn.cnt, lwd=1, xpd=FALSE)
     dev.off()
-    
-
 }
 
 
