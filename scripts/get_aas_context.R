@@ -7,6 +7,8 @@
 
 ## TODO:
 ## * filter unique proteins?
+## * align at internal K,
+## * grep 
 
 library(segmenTools)
 require(ggplot2)
@@ -32,11 +34,23 @@ fasta <- file.path(dat.path,"all_proteins.fa")
 
 dat <- read.delim(in.file)
 
-## remove by exclude tag
-dat <- dat[!dat$exclude ,]
+## remove by exclude tag - IG/Albumin/globin
+dat <- dat[!dat$IG ,]
 ## remove those w/o protein info
 dat <- dat[!is.na(dat$pos), ]
 
+## remove protein with substitutions at the same site
+## TODO: more complex handling of this
+dat <- dat[!duplicated(paste(dat$protein, dat$pos)),]
+
+## rm AAS w/o from info
+## TODO: where do these come from?
+dat <- dat[dat$from!="",]
+
+## ONLY USE GOOD BLAST MATCHES
+dat <-dat[dat$match=="good",]
+
+## add new tags
 ## tag trypsin 
 dat$KR <- dat$from%in%c("K","R")
 
@@ -45,14 +59,11 @@ bps <- substr(dat$BP,1,nchar(dat$BP)-1)
 dat$miscleavage <- rep(FALSE, nrow(dat))
 dat$miscleavage[grep("[KR]", bps)] <- TRUE
 
-## remove protein with substitutions at the same site
-## TODO: more complex handling of this
-dat <- dat[!duplicated(paste(dat$protein,dat$pos)),]
+## only for unique BP
+bpd <- dat[!duplicated(dat$BP),]
 
 
 ### ANALYZE MUTATION WITHIN PEPTIDE
-## only for unique BP
-bpd <- dat[!duplicated(dat$BP),]
 
 ##bpd <- bpd[bpd$from!="Q",] # no difference
 plotdev(file.path(fig.path,paste0("peptide_AAS")),
@@ -64,11 +75,60 @@ hist(bpd$site/nchar(bpd$SAAP), breaks=seq(0,1,.1),
 legend("topright", paste(nrow(bpd), "unique BP"))
 dev.off()
 
+##bpd <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS_n2")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(bpd$site[bpd$site>2]), xlab="position of AAS in peptide",las=2)
+hist(bpd$site[bpd$site>2]/nchar(bpd$SAAP[bpd$site>2]), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(nrow(bpd), "unique BP"))
+dev.off()
+
+hist(nchar(bpd$SAAP), xlab="peptide length", main=NA, breaks=seq(1,60,1))
+
+## only for unique BP - w/o from Q
+bpnq <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS_noQ")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(bpnq$site), xlab="position of AAS in peptide",las=2)
+hist(bpnq$site/nchar(bpnq$SAAP), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(nrow(bpnq), "w/o 'from:Q'"))
+dev.off()
+
+## AA vs. position bins
+site.bins <- cut(bpd$site/nchar(bpd$SAAP), seq(0,1,.2))
+cls <- clusterCluster(bpd$from, site.bins, cl2.srt=levels(site.bins))
+cls <- sortOverlaps(cls, p.min=.1)
+plotdev(file.path(fig.path,paste0("peptide_AA_overlap")),
+        height=5, width=3, res=300)
+par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
+             show.total=TRUE, show.sig=FALSE)
+mtext("relative position in peptide", 1, 3.5)
+dev.off()
+
+asite.bins <- cut(bpd$site, c(seq(1,10,1),seq(20,50,30)))
+cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=levels(asite.bins))
+cls <- sortOverlaps(cls, p.min=.1)
+plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
+        height=5, width=5, res=300)
+par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
+             show.total=TRUE, show.sig=FALSE)
+mtext("absolute position in peptide", 1, 3.5)
+dev.off()
+
+
+
 ## POSITION OF K/R IN PEPTIDE - MIS-CLEAVAGE
 ncut <- 0
-ccut <- 
-bps <- substr(bpk$BP,ncut-1,nchar(bpk$BP)-ccut)
+ccut <- 0
+bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
 des <- gregexpr("[KR]", bps) #bpd$BP)
+des <- lapply(des, function(x) as.numeric(x[x>0]+ncut))
 der <- des
 for ( i in 1:length(bps) ) {
     der[[i]] <- (der[[i]]+ncut)/nchar(bps[i])
@@ -76,6 +136,34 @@ for ( i in 1:length(bps) ) {
 des <- unlist(des)
 der <- unlist(der)
 plotdev(file.path(fig.path,paste0("peptide_KR")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+
+tb1 <- table(bpd$qlen)
+tb2 <- table(des[des>0])
+tbn <- as.character(sort(as.numeric(unique(c(names(tb1), names(tb2))))))
+tb <- rbind(tb2[tbn], tb1[tbn])
+barplot(tb, beside=FALSE,
+        xlab="position of K|R in peptide",las=2,
+        col=c("#ff000099","#77777777"))
+legend("topright", paste(length(des), "K|R"))
+hist(der[der>0], #breaks=seq(0,1,.1),
+     xlab="relative position of K|R in peptide", main=NA)
+dev.off()
+
+## POSITION OF K/R IN PEPTIDE - CUT ENDS
+ncut <- 2
+ccut <- 2
+bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
+des <- gregexpr("[KR]", bps) #bpd$BP)
+des <- lapply(des, function(x) as.numeric(x[x>0]+ncut))
+der <- des
+for ( i in 1:length(bps) ) {
+    der[[i]] <- (der[[i]]+ncut)/nchar(bps[i])
+}
+des <- unlist(des)
+der <- unlist(der)
+plotdev(file.path(fig.path,paste0("peptide_KR_cut")),
         height=3, width=6, res=300)
 par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
 
@@ -121,8 +209,8 @@ dev.off()
 bpk <- bpd[!bpd$KR,]
 ## cut FIRST and last AA since this is mostly K|R cleavage site
 ## NOTE: why is above diagonal missing by cutting first?
-ncut <- 0
-ccut <- 1
+ncut <- 2
+ccut <- 2
 bps <- substr(bpk$BP, 1+ncut, nchar(bpk$BP)-ccut)
 krs <- gregexpr("[KR]", bps)
 krs <- lapply(krs, function(x) as.numeric(x[x>0]+ncut))
@@ -138,7 +226,7 @@ abline(a=0, b=1)
 hist((krf[krf>0]- bpk$site[krf>0]), main=NA,
      xlab="abs. dist. (K|R - AAS)", xlim=c(-10,10),
      breaks=-100:100-.5)
-legend("topright", paste(sum(krf>1),"w K|R"), bty="n")
+legend("topleft", paste(sum(krf>1,na.rm=TRUE),"w K|R"), bty="n")
 hist((krf[krf>0]- bpk$site[krf>0])/nchar(bpk$BP)[krf>0], main=NA,
      xlab="(K|R - AAS)/peptide length")
 dev.off()
@@ -174,13 +262,13 @@ dev.off()
 pfas <- readFASTA(fasta, grepID=TRUE)
 
 ## get only the required
-pfas <- pfas[dat$protein]
+pfas <- pfas[bpd$protein]
 
 dst <- 25  # left/right distance for frequency plots
 sdst <- 5 # left/right distance for fasta file
 mdst <- 3# left/right distance for PTM search with momo
 
-pctx <- sapply(1:nrow(dat), function(i) {
+pctx <- sapply(1:nrow(bpd), function(i) {
     ##for ( i in 1:nrow(dat) ){
     fsq <- pfas[[i]]$seq # protein sequence
     nsq <- nchar(fsq)
@@ -190,7 +278,7 @@ pctx <- sapply(1:nrow(dat), function(i) {
     names(sq) <- rrng
 
     ## cut range to available
-    rng <- (dat$pos[i]-dst):(dat$pos[i]+dst)
+    rng <- (bpd$pos[i]-dst):(bpd$pos[i]+dst)
     rrng <- rrng[rng>0 & rng<=nsq]
     rng <- rng[rng>0 & rng<=nsq]
     sq[as.character(rrng)] <- unlist(strsplit(fsq,""))[rng]
@@ -208,12 +296,13 @@ abline(a=0, b=1)
 text(x, y, names(x),xpd=TRUE)
 
 
-dat$fromto <- paste0(dat$from, ":", dat$to)
-dat$prev <- pctx[,"-1"]
+bpd$fromto <- paste0(bpd$from, ":", bpd$to)
+bpd$prev <- pctx[,"-1"]
     
 filters <- rbind(c(column="all",pattern=""),
                  c(column="miscleavage",pattern="TRUE"),
                  c(column="prev", pattern="W"),
+                 c(column="from", pattern="H"),
                  c(column="from", pattern="W"),
                  c(column="from", pattern="Q"),
                  c(column="fromto", pattern="S:G"),
@@ -232,15 +321,15 @@ for ( i in 1:nrow(filters) ) {
     pattern <- filters[i,"pattern"]
 
     if ( column=="all" ) {
-        filt <- rep(TRUE, nrow(dat))
+        filt <- rep(TRUE, nrow(bpd))
     } else {
-        filt <- as.character(dat[,column])==pattern
+        filt <- as.character(bpd[,column])==pattern
     }
     
     ctx <- pctx[filt,]
     rownames(ctx) <-
-        paste0(dat$ensembl[filt],"_",dat$pos[filt]-dst,"_",dat$pos[filt]+dst)
-    saabp <- paste0(dat$SAAP[filt], "/", dat$BP[filt])
+        paste0(bpd$ensembl[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
+    saabp <- paste0(bpd$SAAP[filt], "/", bpd$BP[filt])
 
     aa1 <- pattern
     if ( length(grep(":",aa1)) ) 
@@ -273,7 +362,11 @@ for ( i in 1:nrow(filters) ) {
             height=3.5, width=5, res=300)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     par(xpd=TRUE)
-    matplot(colnames(ctm),t(ctm), type="p", lty=1, pch=rownames(ctm))
+    matplot(colnames(ctm),t(ctm), type="p", lty=1, pch=rownames(ctm),
+            xlab="distance from AAS",
+            ylab=expression(log[2](AA[i]/bar(AA[51]))))
+    figlabel(paste0(column,"==",pattern), pos="topleft",
+             region="plot", font=2, cex=1.2)
     dev.off()
     
     ## also plot most frequent at -1 and +1
@@ -310,7 +403,9 @@ for ( i in 1:nrow(filters) ) {
                          paste(aa4,collapse="|"),
                          paste(aa5,collapse="|")), col=c(1,2,3,4,5), lty=1,
            title=paste0("n=",sum(filt)))
-    figlabel(paste0(column,"==",pattern), pos="bottomleft")
+    figlabel(paste0(column,"==",pattern), pos="topleft",
+             region="plot", font=2, cex=1.2)
+##    figlabel(paste0(column,"==",pattern), pos="bottomleft")
     dev.off()
     
     
@@ -387,13 +482,75 @@ sum(duplicated(apply(ctx,1, paste, collapse="")))
 ## TODO: tag SAAP WITH the identified motif and split Q:G by this,
 ## GO analysis of motif-containing genes.
 
+## CLEAVAGE BIAS?
+## remove all where K|R are the mutation
+bpk <- bpd[!bpd$KR,]
+## align at K|R
+ncut <- 1
+ccut <- 1
+bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
+
+## NOTE: 1 [KR]AQ vs. 0 [KR]AG
+grep("[KR]A[QG]",dat$BP, value=TRUE)
+grep("[KR]A[QG]",bps, value=TRUE)
+
+krs <- gregexpr("[KR]", bps) #bpd$BP)
+krs <- lapply(krs, function(x) as.numeric(x[x>0]+ncut))
+
+## only data where K|R appears
+haskr <- unlist(lapply(krs, length))>0
+krd <- bpk[haskr,]
+krs <- krs[haskr]
+## take only first!
+krs <- unlist(lapply(krs, function(x) x[1]))
+kfas <- pfas[krd$protein]
+
+##krs <- krs+krd$pos
+dense2d(krd$site, krs)
+abline(a=0, b=1)
+
+## TODO: plot to file - AAS accumulate left of K
+dff <- krd$site -krs
+par(yaxs="i")
+hist(dff, breaks=-100:100-.5, xlim=range(dff),
+     xlab="relative position AAS - K", col="#00000055",
+     main="distance of non-cleaved K from AAS")
+abline(v=0, col=2, lwd=3)
+dev.off()
+
+kctx <- sapply(1:nrow(krd), function(i) {
+    ##for ( i in 1:nrow(dat) ){
+    fsq <- kfas[[i]]$seq # protein sequence
+    nsq <- nchar(fsq)
+    
+    rrng <- seq(-dst,dst,1)
+    sq <- rep("_",length(rrng))
+    names(sq) <- rrng
+
+    ## K|R site
+    site <- krd$pos[i]-krd$site[i] + krs[i] 
+    ##unlist(strsplit(fsq,""))[site]
+    
+    ## cut range to available
+    rng <- (site-dst):(site+dst) 
+    rrng <- rrng[rng>0 & rng<=nsq]
+    rng <- rng[rng>0 & rng<=nsq]
+    asq <-  unlist(strsplit(fsq,""))
+    sq[as.character(rrng)] <- asq[rng]
+    list(sq)
+    ##}
+})
+##
+kctx <- do.call(rbind, kctx)
+
+
 ## CLEAVAGE BIASES?
 library(Biostrings)
 aas <- sort(unique(GENETIC_CODE))
 aaf <- matrix(0, nrow=length(aas), ncol=30)
 rownames(aaf) <- aas
 for ( i in 1:30 ) {
-    tb <- table(unlist(lapply(strsplit(dat$BP[dat$from!="Q"],""),
+    tb <- table(unlist(lapply(strsplit(bpd$BP[bpd$from!="Q"],""),
                               function(x) ifelse(i<=length(x),x[i],NA))))
     aaf[names(tb),i] <- tb
 }

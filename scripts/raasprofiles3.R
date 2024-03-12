@@ -510,6 +510,29 @@ dev.off()
 ##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
 
 ## RAAS profiles by AAS site in peptides
+## TODO: median RAAS of unique BP/SAAP vs. rel.position,
+##       similar to iupred3
+for ( ds in auds ) {
+
+    tmtd <- tmtf
+    if ( ds!="all" ) {
+        if ( ds!="cancer" )
+            tmtd <- tmtf[tmtf$Dataset==ds,]
+        else
+            tmtd <- tmtf[tmtf$Dataset!="Healthy",]
+    }
+    plotdev(file.path(fig.path,paste0("AASsite_",SETID,"_cor_",ds)),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tmtd$RAAS.median, tmtd$rsite,
+            xlab=NA,
+            ylab="relative AAS position in peptide")
+    mtext(expression(log[10]*bar(RAAS[unique])), 1, 1.6)
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    dev.off()
+}
+
 fname <- file.path(dpath,paste0("AASsite_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="rsite.bins", cols="Dataset",
@@ -667,9 +690,18 @@ codt <- apply(cod,2,sum)
 ## transcript codon frequencies per AA
 codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
 codl <- codl
-cods <- unlist(lapply(codl, function(x) x/sum(x)))
+codf <- lapply(codl, function(x) x/sum(x)) # codon frequency
+codr <- lapply(codl, function(x) round(6*rank(x)/length(x))) # codon rank
+codr$W[1] <- 0
+codr$M[1] <- 0
+cods <- unlist(codf)
 names(cods) <- sub("\\.","-",names(cods))
 
+## codon rank
+codr <- unlist(codr)
+names(codr) <- sub("\\.", "-", names(codr))
+ctmt$codon.rank <- as.character(codr[ctmt$aacodon])
+    
 ## codon frequency bins
 ctmt$codon.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
 
@@ -693,6 +725,28 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_bins_",SETID)),
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", vcols=vcols, vbrks=vbrks,
              gcols=gcols)
+
+## CODON FREQUENCY RANK
+ovw <- raasProfile(x=ltmt, id="SAAP", 
+                   rows="codon.rank", cols="Dataset",
+                   bg=TRUE, value="RAAS", col.srt=uds,
+                   ##row.srt=rev(levels(ctmt$codon.bins)),
+                   use.test=use.test, do.plots=FALSE,
+                   fname=file.path(dpath,paste0("codon_rank_",SETID,"_")),
+                   xlab=expression(TMT~level~log[10]*RAAS),
+                   verb=1)
+plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_rank_",SETID)),
+             mai=c(.8,.5,.5,.5),
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             mtxt="codon rank",# mtxt.line=3.5,
+             ttcols=ttcols, value="median",
+             rlab=LAB, llab="", vcols=vcols, vbrks=vbrks,
+             gcols=gcols)
+
+## TODO: do by 2|3, 4 or 6 codons
+cod.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
+ncod <- unlist(lapply(CODL, length))
 
 
 ## per codon profiles
@@ -835,6 +889,20 @@ for ( ds in c(uds,"all") ) {
            bty="n")
     dev.off()
     
+    ## TODO: get median RAAS for each codon and plot against codon frequency
+
+    ram <- sapply(cdsrt, function(cl) median(dtmt$RAAS[dtmt$aacodon==cl]))
+    ram <- ram[names(lcods)]
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(ram, lcods, density=FALSE, xlab=expression(median~log[10]*RAAS),
+            ylab="codon frequency")
+    points(ram, lcods, pch=19, lwd=2, cex=.5,
+           col=aa.cols[sub("-.*","",names(cods))])
+    dev.off()            
+    
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequency_raas")),
             type="png", res=300, width=nw,height=3)
@@ -848,6 +916,7 @@ for ( ds in c(uds,"all") ) {
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()
+
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_ratio_old")),
