@@ -360,6 +360,7 @@ bpd$TM <- rep(FALSE, nrow(bpd))
 bpd$TM[kraqidx] <- TRUE
 
 filters <- rbind(
+    c(column="site", pattern="1"),
     c(column="from", pattern="S"),
     c(column="from", pattern="T"),
     c(column="to", pattern="N"),
