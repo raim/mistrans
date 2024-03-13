@@ -642,3 +642,67 @@ raasProfile <- function(x=tmtf, id="SAAP",
     class(ova) <- "clusterOverlaps"
     ova
 }
+
+## calculated two-sided hypergeo tests for an amino acid
+## table, for each column
+#' @param x a matrix of character values, e.g. amino acids, where
+#' rows are protein sequences and columns relative positions
+#' @param abc list of characters to consider, e.g. all amino acids
+aaProfile <- function(x, abc, k=1, p.min, verb=0) {
+
+    if ( missing(abc) )
+        abc <- sort(unique(c(x)))
+
+    aam <- matrix(1, ncol=ncol(x), nrow=length(abc))
+    rownames(aam) <- abc
+    colnames(aam) <- colnames(x)
+    aac <- aap <- aam
+    aac[] <- 0
+    
+    for ( i in 1:nrow(aam)   ) {
+        if ( verb>0 ) cat(paste("testing", rownames(aam)[i], "\n"))
+        for ( j in  1:ncol(aam) ) {
+
+            if ( verb>1 ) cat(paste("\t", colnames(aam)[j], "\n"))
+            
+            aa <- rownames(aam)[i]
+            pos <- colnames(aam)[j]
+            
+            m <- sum(c(x)==aa) # white balls
+            n <- sum(x%in%abc)-m # black balls
+
+            q <- sum(x[,j]==aa)    # white balls drawn - AT CURRENT POSITION
+            k <- sum(x[,j]%in%abc) # number of balls drawn
+            
+            aac[i,j] <- q
+            ## enriched
+            aam[i,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+            ## deprived
+            aap[i,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
+        }
+    }
+    ## FILTER SIGNIFICANT
+    if ( !missing(p.min) ) {
+        pval <- aam
+        pval[aap<aam] <- aap[aap<aam]
+        sig <- apply(pval, 1, function(x) any(x<p.min))
+        aam <- aam[sig,]
+        aap <- aap[sig,]
+        aac <- aac[sig,]
+    }
+
+    ## construct overlap class
+    ovl <- list()
+    ovl$count <- aac
+    ovl$p.value <- aam
+    ovl$p.value[aap<aam] <- aap[aap<aam]
+    ovl$sign <- ifelse(aap<aam,-1,1)
+    ovl$num.query <-
+        t(t(table(c(x))[rownames(aam)]))
+    ovl$num.target <-
+        t(apply(x, 2, function(x) sum(x%in%rownames(aam))))
+
+    class(ovl) <- "clusterOverlaps"
+    
+    ovl
+}

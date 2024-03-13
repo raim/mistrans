@@ -8,7 +8,13 @@
 ## TODO:
 ## * filter unique proteins?
 ## * align at internal K,
-## * grep 
+## * grep
+
+## TODO:
+## * still contains some genes that may be filtered, eg. IGLL5,
+## * 
+
+source("~/work/mistrans/scripts/saap_utils.R")
 
 library(segmenTools)
 require(ggplot2)
@@ -18,6 +24,7 @@ options(stringsAsFactors=FALSE)
 library(Biostrings)
 AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
+diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
 ## p-value colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
@@ -52,7 +59,10 @@ dat <- dat[!is.na(dat$pos), ]
 
 ## remove protein with substitutions at the same site
 ## TODO: more complex handling of this
-dat <- dat[!duplicated(paste(dat$protein, dat$pos)),]
+dupls <- duplicated(paste(dat$protein, dat$pos))
+cat(paste("removing", sum(dupls),
+          "BP with equal position in proteins\n"))
+dat <- dat[!dupls,]
 
 ## rm AAS w/o from info
 ## TODO: where do these come from?
@@ -73,7 +83,9 @@ dat$miscleavage <- rep(FALSE, nrow(dat))
 dat$miscleavage[grep("[KR]", bps)] <- TRUE
 
 ## FILTER ONLY UNIQUE BP
-bpd <- dat[!duplicated(dat$BP),]
+dupls <- duplicated(dat$BP)
+cat(paste("removing", sum(dupls), "duplicated BP\n"))
+bpd <- dat[!dupls,]
 
 
 
@@ -114,28 +126,30 @@ dev.off()
 
 ## AA vs. position bins
 site.bins <- cut(bpd$site/nchar(bpd$SAAP), seq(0,1,.2))
-cls <- clusterCluster(bpd$from, site.bins, cl2.srt=levels(site.bins))
+cls <- clusterCluster(bpd$from, site.bins, cl2.srt=levels(site.bins),
+                      alternative="greater")
 cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap")),
         height=5, width=3, res=300)
 par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
-             show.total=TRUE, show.sig=FALSE)
-mtext("relative position in peptide", 1, 3.5)
+             show.total=TRUE, show.sig=FALSE)#, col=ttcols)
+mtext("relative position of AAS in peptide", 1, 3.5)
 dev.off()
 
 asite.bins <- as.character(bpd$site)
 asite.bins[bpd$site>10] <- ">10"
-asite.bins[bpd$site>20] <- ">20"
-asite.srt <- c(1:10,">10",">20")
-cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt)
+##asite.bins[bpd$site>20] <- ">20"
+asite.srt <- c(1:10,">10") #,">20")
+cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
+                      alternative="two.sided")
 cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=5, res=300)
 par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
              show.total=TRUE, show.sig=FALSE)
-mtext("absolute position in peptide", 1, 3.5)
+mtext("absolute position of AAS in peptide", 1, 3.5)
 dev.off()
 
 
@@ -291,7 +305,7 @@ pctx <- sapply(1:nrow(bpd), function(i) {
     nsq <- nchar(fsq)
     
     rrng <- seq(-dst,dst,1)
-    sq <- rep("_",length(rrng))
+    sq <- rep("-",length(rrng)) ## GAP
     names(sq) <- rrng
 
     ## cut range to available
@@ -320,6 +334,7 @@ if ( interactive() ) {
 ## introduce required tags
 bpd$fromto <- paste0(bpd$from, ":", bpd$to)
 bpd$prev <- pctx[,"-1"]
+bpd$nxt <- pctx[,"1"]
 
 ## tag KRAQ motif specifically
 tctx <- pctx[,as.character(-5:5)]
@@ -336,7 +351,7 @@ bpd$KRAQ[kraqidx] <- TRUE
 ## tag M?TM? motif specifically
 tctx <- pctx[,as.character(-5:5)]
 txsq <- apply(tctx,1, paste, collapse="")
-## grep K|RAQ motif
+## grep MTM motif
 kraqidx <- unique(c(grep("MT",txsq),
                     grep("TM",txsq)))
 ## filter only those where T is the AAS
@@ -344,17 +359,25 @@ kraqidx <- kraqidx[bpd$from[kraqidx]=="T"]
 bpd$TM <- rep(FALSE, nrow(bpd))
 bpd$TM[kraqidx] <- TRUE
 
-filters <- rbind(c(column="all",pattern=""),
-                 c(column="TM",pattern="TRUE"),
-                 c(column="KRAQ",pattern="TRUE"),
-                 c(column="miscleavage",pattern="TRUE"),
-                 c(column="prev", pattern="W"),
-                 c(column="from", pattern="H"),
-                 c(column="from", pattern="W"),
-                 c(column="from", pattern="Q"),
-                 c(column="fromto", pattern="S:G"),
-                 c(column="fromto", pattern="T:V"),
-                 c(column="fromto", pattern="Q:G"))
+filters <- rbind(
+    c(column="from", pattern="S"),
+    c(column="from", pattern="T"),
+    c(column="to", pattern="N"),
+    c(column="TM",pattern="TRUE"),
+    c(column="nxt", pattern="M"),
+    c(column="prev", pattern="M"),
+    c(column="prev", pattern="W"),
+    c(column="from", pattern="H"),
+    c(column="from", pattern="W"),
+    c(column="from", pattern="Q"),
+    c(column="fromto", pattern="S:G"),
+    c(column="fromto", pattern="G:S"),
+    c(column="fromto", pattern="T:V"),
+    c(column="fromto", pattern="Q:G"),
+    c(column="KRAQ",pattern="TRUE"),
+    c(column="miscleavage",pattern="TRUE"),
+    c(column="all",pattern="")
+    )
 apats <- list(c(),
               c())
 ##TODO:
@@ -366,6 +389,8 @@ for ( i in 1:nrow(filters) ) {
 
     column <- filters[i,"column"]
     pattern <- filters[i,"pattern"]
+
+    cat(paste("calculating", pattern, "in", column, "\n"))
 
     if ( column=="all" ) {
         filt <- rep(TRUE, nrow(bpd))
@@ -391,9 +416,9 @@ for ( i in 1:nrow(filters) ) {
     ctl[is.na(ctl)] <- 0
 
     ## remove empty positions
-    if ( "_" %in% rownames(ctl) ) {
-        empty <- ctl["_",]
-        ctl <- ctl[rownames(ctl)!="_",]
+    if ( "-" %in% rownames(ctl) ) {
+        empty <- ctl["-",]
+        ctl <- ctl[rownames(ctl)!="-",]
     }
     ## get frequency per position
     ##ctl <- t(t(ctl)/apply(ctl,2,sum))
@@ -406,44 +431,7 @@ for ( i in 1:nrow(filters) ) {
 
 
     ## HYPERGEO TESTS - tigther context
-    aam <- matrix(1, ncol=ncol(ctx), nrow=length(AAT))
-    rownames(aam) <- AAT
-    colnames(aam) <- colnames(ctx)
-    aac <- aap <- aam
-    aac[] <- 0
-    
-    for ( i2 in 1:nrow(aam)   ) {
-        for ( j in  1:ncol(aam) ) {
-
-            aa <- rownames(aam)[i2]
-            pos <- colnames(aam)[j]
-            
-            m <- sum(c(ctx)==aa) # white balls
-            n <- length(ctx)-m # black balls
-
-            q <- sum(ctx[,j]==aa) # white balls drawn - AT CURRENT POSITION
-            k <- sum(ctx[,j]%in%AAT)-q # number of balls drawn
-            
-            aac[i2,j] <- q
-            ## enriched
-            aam[i2,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
-            ## deprived
-            aap[i2,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
-            ##cat(paste("testing", aa, wcd, signif(aam[,wcd]), "\n"))
-        }
-    }
-
-    ## construct overlap class
-    ovl <- list()
-    ovl$count <- aac
-    ovl$p.value <- aam
-    ovl$p.value[aap<aam] <- aap[aap<aam]
-    ovl$sign <- ifelse(aap<aam,-1,1)
-    ovl$num.query <-
-        t(t(table(c(ctx))[rownames(aam)]))
-    ovl$num.target <-
-        t(apply(ctx, 2, function(x) sum(x%in%rownames(aam))))
-
+    ovl <- aaProfile(ctx, abc=AAT)
     ## set 0 count to p=1
     ##ovl$p.value[ovl$count==0] <- 1
     
@@ -470,6 +458,34 @@ for ( i in 1:nrow(filters) ) {
     figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
     figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
     dev.off()
+    
+    ## analyze dimer frequencies
+    if ( pattern%in%c("Q:G", "T:V") ) { # takes long, only do for selected
+        dictx <- character()
+        for ( i in 1:(ncol(ctx)-1) )
+            dictx <- cbind(dictx, apply(ctx[,i:(i+1)],1,paste,collapse=""))
+        colnames(dictx) <- head(colnames(ctx), ncol(ctx)-1)
+        rownames(dictx) <- rownames(ctx)
+
+        dovl <- aaProfile(dictx, verb=0, p.min=.005, abc=diAAT)
+        dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
+        dovs <- sortOverlaps(dovs, p.min=1e-5, cut=TRUE)
+        
+        plotdev(file.path(fig.path,paste0("seqcontext_",
+                                          column,"_",pattern,
+                                          "_overlap_dimer")),
+                type="png", res=300, width=5,
+                height=.25*nrow(dovs$p.value)+1)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.5,.3,0), tcl=-.25)
+        plotOverlaps(dovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
+                     ylab="di-amino acid", col=ttcols, show.total=TRUE,
+                     text.cex=.8)
+        mtext("position relative to AAS", 1, 1.3)
+        figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+        figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright",
+                 font=2, cex=1.2)
+        dev.off()
+    }
     
     plotdev(file.path(fig.path,paste0("seqcontext_",
                                       column,"_",pattern, "_all")),
@@ -578,7 +594,7 @@ for ( i in 1:nrow(filters) ) {
     out.rng <- as.character(-sdst:sdst)
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) {
-        osq <- gsub("_","",paste0(ctx[j,out.rng], collapse=""))
+        osq <- gsub("-","",paste0(ctx[j,out.rng], collapse=""))
         cat(paste0(">", rownames(ctx)[j],"\n", osq, "\n"),
             file=fname, append=TRUE)
     }
@@ -590,9 +606,9 @@ for ( i in 1:nrow(filters) ) {
     out.rng <- as.character(-sdst:sdst)
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="_")>7 )
+        if ( sum(ctx[j,out.rng]!="-")>7 )
             cat(paste0(">",rownames(ctx)[j],"\n",
-                       gsub("_","",paste0(ctx[j,out.rng],collapse="")),"\n"),
+                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 
     ## required for MoMo
@@ -601,9 +617,9 @@ for ( i in 1:nrow(filters) ) {
     out.rng <- as.character(-mdst:mdst)
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="_")==7 )
+        if ( sum(ctx[j,out.rng]!="-")==7 )
             cat(paste0(">",rownames(ctx)[j],"\n",
-                       gsub("_","",paste0(ctx[j,out.rng],collapse="")),"\n"),
+                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 }
 sum(duplicated(apply(ctx,1, paste, collapse="")))
@@ -623,8 +639,8 @@ kraqsq <- txsq[kraqidx]
 fname <- file.path(out.path,paste0("seqcontext_KRAQ.fa"))
 if ( file.exists(fname) ) unlink(fname)
 for ( j in 1:length(kraqsq) ) 
-    cat(paste0(">",names(kraqsq)[j],"\n", # replace _ by proper gap
-               gsub("_","-",kraqsq[j]),"\n"), file=fname, append=TRUE)
+    cat(paste0(">",names(kraqsq)[j],"\n", 
+               kraqsq[j],"\n"), file=fname, append=TRUE)
 
 ## TODO: tag SAAP WITH the identified motif and split Q:G by this,
 ## GO analysis of motif-containing genes.
@@ -633,8 +649,8 @@ for ( j in 1:length(kraqsq) )
 ## remove all where K|R are the mutation
 bpk <- bpd[!bpd$KR,]
 ## align at K|R
-ncut <- 1
-ccut <- 1
+ncut <- 2
+ccut <- 2
 bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
 
 ## NOTE: 1 [KR]AQ vs. 0 [KR]AG
@@ -656,7 +672,9 @@ kfas <- pfas[krd$protein]
 dense2d(krd$site, krs)
 abline(a=0, b=1)
 
-## TODO: plot to file - AAS accumulate left of K
+## TODO: plot to file - AAS accumulate left of miscleavage K
+## but this is likely an effect of short K-K peptides not being
+## mapped or lost already in MS.
 dff <- krd$site -krs
 par(yaxs="i")
 hist(dff, breaks=-100:100-.5, xlim=range(dff),
@@ -671,7 +689,7 @@ kctx <- sapply(1:nrow(krd), function(i) {
     nsq <- nchar(fsq)
     
     rrng <- seq(-dst,dst,1)
-    sq <- rep("_",length(rrng))
+    sq <- rep("-",length(rrng))
     names(sq) <- rrng
 
     ## K|R site
@@ -690,6 +708,51 @@ kctx <- sapply(1:nrow(krd), function(i) {
 ##
 kctx <- do.call(rbind, kctx)
 
+## CALCULATE POSITION-WISE ENRICHMENTS
+ovk <- aaProfile(kctx, abc=AAT)
+
+## set 0 count to p=1
+##ovk$p.value[ovk$count==0] <- 1
+
+ovs <- sortOverlaps(ovk, axis=1, srt=as.character(-7:7))
+
+plotdev(file.path(fig.path,paste0("miscleavage_AA_profile")),
+        type="png", res=300, width=5,height=5)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
+             ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+mtext("position relative to internal K|R", 1, 1.3)
+figlabel(paste0("Keil rules"), pos="bottomleft", font=2, cex=1.2)
+figlabel(bquote(n[seq]==.(nrow(kctx))), pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+### KMER ANALYSIS
+library(kmer)
+
+kbins <- as.AAbin(kctx)
+kmr.bg <- kcount(kbins, k=2)
+kmr <- table(apply(kctx[,as.character(0:1)],1,paste,collapse=""))
+sum(kmr.bg[,"KR"])
+
+## dimer ANALYSIS
+
+## convert AA matrix to diAA matrix
+dctx <- character()
+for ( i in 1:(ncol(kctx)-1) )
+    dctx <- cbind(dctx, apply(kctx[,i:(i+1)],1,paste,collapse=""))
+colnames(dctx) <- head(colnames(kctx), ncol(kctx)-1)
+rownames(dctx) <- rownames(kctx)
+
+## analyze dimer frequencies
+dovl <- aaProfile(dctx, verb=0, p.min=.005, abc=diAAT)
+dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
+
+plotdev(file.path(fig.path,paste0("miscleavage_diAA_profile")),
+        type="png", res=300, width=5,height=45)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(dovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
+             ylab="di-amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+dev.off()
 
 ## CLEAVAGE BIASES?
 aaf <- matrix(0, nrow=length(AAS), ncol=30)
