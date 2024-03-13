@@ -126,7 +126,7 @@ use.test <- t.test # w.test #
 healthy <- FALSE # TRUE # 
 
 ## TODO: extracellular is mostly album/globin - analyze
-exclude.nterm <- TRUE # FALSE # 
+exclude.nterm <- FALSE # TRUE # 
 exclude.extracellular <- FALSE # TRUE # 
 exclude.albumin <- FALSE # TRUE # 
 only.unique <- FALSE # TRUE # 

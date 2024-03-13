@@ -13,6 +13,7 @@
 library(segmenTools)
 require(ggplot2)
 require(ggseqlogo)
+options(stringsAsFactors=FALSE)
 
 library(Biostrings)
 AAS <- sort(unique(GENETIC_CODE))
@@ -67,7 +68,7 @@ dat$KR <- dat$from%in%c("K","R")
 ## tag miscleavage
 ncut <- 2
 ccut <- 2
-bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
+bps <- substr(dat$BP,1+ncut,nchar(dat$BP)-ccut)
 dat$miscleavage <- rep(FALSE, nrow(dat))
 dat$miscleavage[grep("[KR]", bps)] <- TRUE
 
@@ -142,7 +143,7 @@ dev.off()
 ## POSITION OF K/R IN PEPTIDE - MIS-CLEAVAGE
 ncut <- 0
 ccut <- 0
-bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
+bps <- substr(bpd$BP,1+ncut,nchar(bpd$BP)-ccut)
 des <- gregexpr("[KR]", bps) #bpd$BP)
 des <- lapply(des, function(x) as.numeric(x[x>0]+ncut))
 der <- des
@@ -170,7 +171,7 @@ dev.off()
 ## POSITION OF K/R IN PEPTIDE - CUT ENDS
 ncut <- 2
 ccut <- 2
-bps <- substr(bpk$BP,1+ncut,nchar(bpk$BP)-ccut)
+bps <- substr(bpd$BP,1+ncut,nchar(bpd$BP)-ccut)
 des <- gregexpr("[KR]", bps) #bpd$BP)
 des <- lapply(des, function(x) as.numeric(x[x>0]+ncut))
 der <- des
@@ -450,7 +451,7 @@ for ( i in 1:nrow(filters) ) {
                                       column,"_",pattern, "_overlap")),
             type="png", res=300, width=15,height=5)
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovl, p.min=1e-20, p.txt=1e-10, xlab=NA,
+    plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=NA,
                  ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
     mtext("position relative to AAS", 1, 1.3)
     figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
@@ -463,7 +464,7 @@ for ( i in 1:nrow(filters) ) {
                                       column,"_",pattern, "_overlap_tight")),
             type="png", res=300, width=5,height=5)
     par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovs, p.min=1e-20, p.txt=1e-10, xlab=NA,
+    plotOverlaps(ovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
                  ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
     mtext("position relative to AAS", 1, 1.3)
     figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
