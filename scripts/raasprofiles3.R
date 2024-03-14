@@ -906,6 +906,7 @@ for ( ds in auds ) {
            pch=aa.pchs[sub("-.*","",names(cods))])
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()
 
     ## higher frequency tends to be above diagonal
@@ -915,8 +916,8 @@ for ( ds in auds ) {
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(cods, lcods, density=FALSE,
-            ylab=expression(f[AAS]),
-            xlab=expression(f[bg]), xlim=c(0,1), ylim=c(0,1),
+            ylab=expression(codon~frequency~f[AAS]),
+            xlab=expression(codon~frequency~f[bg]), xlim=c(0,1), ylim=c(0,1),
             col=NA,pch=19, lwd=2, cex=.6)
     points(cods, lcods, lwd=1, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
@@ -929,6 +930,7 @@ for ( ds in auds ) {
            bty="n")
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()
 
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
@@ -942,13 +944,15 @@ for ( ds in auds ) {
     points(cods, lcods-cods, lwd=1, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
-    legend("bottomright",unique(sub("-.*","",names(cods))),
-           col=aa.cols[unique(sub("-.*","",names(cods)))],
-           pch=aa.pchs[unique(sub("-.*","",names(cods)))],
-           pt.cex=1, ncol=2, cex=.6, y.intersp=.75,
-           bty="n")
+    if ( FALSE )
+        legend("bottomright",unique(sub("-.*","",names(cods))),
+               col=aa.cols[unique(sub("-.*","",names(cods)))],
+               pch=aa.pchs[unique(sub("-.*","",names(cods)))],
+               pt.cex=1, ncol=2, cex=.6, y.intersp=.75,
+               bty="n")
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()
     
     ## TODO: get median RAAS for each codon and plot against codon frequency
@@ -966,6 +970,7 @@ for ( ds in auds ) {
            pch=aa.pchs[sub("-.*","",names(cods))])
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()            
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
@@ -980,6 +985,7 @@ for ( ds in auds ) {
     abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()
 
     

@@ -26,6 +26,10 @@ AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
 diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
+## threshold p-values
+p.min <- 1e-10
+p.txt <- 1e-5
+
 ## p-value colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
