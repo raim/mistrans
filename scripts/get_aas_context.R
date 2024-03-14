@@ -332,11 +332,24 @@ if ( interactive() ) {
 }
 
 ## introduce required tags
+
+## after some WQRK we found a KRAQ in our data, and
+## many other patterns, WIVL that soMe of those are
+## rather i'NST'ing
+
+## TODO: make useful previous/next filters
+## for M and W enrichments
+## from I|V|L : W context        - WIVL that soMe are
+## from S|T|P|N:M|E| : M context - i'NST'ing
 bpd$fromto <- paste0(bpd$from, ":", bpd$to)
 bpd$prev <- pctx[,"-1"]
 bpd$nxt <- pctx[,"1"]
 
 ## tag KRAQ motif specifically
+
+## TODO: grep only in correct position to avoid
+## spurious with different AAS?
+
 tctx <- pctx[,as.character(-5:5)]
 txsq <- apply(tctx,1, paste, collapse="")
 ## grep K|RA.Q motif
@@ -365,7 +378,8 @@ filters <- rbind(
     c(column="from", pattern="T"),
     c(column="to", pattern="N"),
     c(column="TM",pattern="TRUE"),
-    c(column="nxt", pattern="M"),
+    c(column="nxt", pattern="M"),  
+    c(column="nxt", pattern="W"),
     c(column="prev", pattern="M"),
     c(column="prev", pattern="W"),
     c(column="from", pattern="H"),
@@ -381,11 +395,19 @@ filters <- rbind(
     )
 apats <- list(c(),
               c())
+
+ft <- unique(bpd$fromto)
+ft <- cbind(column=rep("fromto", length(ft)),
+            pattern=ft)
+filters <- rbind(filters,ft)
+
 ##TODO:
-## 1. align with clustalw via msa(seq)
+## 1. align filtered sequences with clustalw via msa(seq)
 ## 2. split into well aligned subsets
 ## 3. plot alignments of subsets using AA colors after
 ##https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-3526-6
+
+## analyze AA frequencies
 for ( i in 1:nrow(filters) ) {
 
     column <- filters[i,"column"]
@@ -399,7 +421,7 @@ for ( i in 1:nrow(filters) ) {
         filt <- as.character(bpd[,column])==pattern
     }
     
-    ctx <- pctx[filt,]
+    ctx <- pctx[filt,,drop=FALSE]
     rownames(ctx) <-
         paste0(bpd$name[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
 
@@ -416,7 +438,7 @@ for ( i in 1:nrow(filters) ) {
     rownames(ctl) <- aaids
     ctl[is.na(ctl)] <- 0
 
-    ## remove empty positions
+    ## remove gaps
     if ( "-" %in% rownames(ctl) ) {
         empty <- ctl["-",]
         ctl <- ctl[rownames(ctl)!="-",]
@@ -447,19 +469,41 @@ for ( i in 1:nrow(filters) ) {
     figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
     dev.off()
 
+    ## FILTER BY P-VALUE
+    
+    ## sort w/o AAS
     ovs <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
+
+    ## only use enriched at AAS 
+    ## set p.values at AAS site to NA
+    ## TODO: base on used filter!
+    aasp <- ovs$sign #[,"0"]
+    ovs$p.value[aasp==-1] <- 1
     
-    plotdev(file.path(fig.path,paste0("seqcontext_",
-                                      column,"_",pattern, "_overlap_tight")),
-            type="png", res=300, width=5,height=5)
-    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
-                 ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
-    mtext("position relative to AAS", 1, 1.3)
-    figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
-    figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
-    dev.off()
-    
+    ovs <- sortOverlaps(ovs, axis=2, p.min=p.txt, cut=TRUE)
+    ## re sort with AAS
+    ovc <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
+    ovc <- sortOverlaps(ovc, axis=2, srt=rownames(ovs$p.value))
+
+    #ovs <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
+   
+
+    if ( nrow(ovc$p.value)>0 ) {
+       
+        plotdev(file.path(fig.path,paste0("seqcontext_",
+                                          column,"_",pattern,"_overlap_tight")),
+                type="png", res=300,
+                width=.3*ncol(ovc$p.value)+1,,height=.25*nrow(ovc$p.value)+1)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, xlab=NA,
+                     ylab="amino acid", col=ttcols, show.total=TRUE,text.cex=.8)
+        mtext("position relative to AAS", 1, 1.3)
+        figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+        figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
+        dev.off()
+    }
+}
+if (FALSE) { ## TODO: filter useful
     ## analyze dimer frequencies
     if ( pattern%in%c("Q:G", "T:V") ) { # takes long, only do for selected
         dictx <- character()

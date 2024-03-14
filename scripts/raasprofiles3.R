@@ -79,6 +79,46 @@ n <- length(CODL)
 set.seed(1)
 aa.cols <- sample(color, n)
 names(aa.cols) <- names(CODL)
+## clustal
+aa.cols[] <- "gray"
+aa.cols[c("G","P","S","T")] <- "orange"
+aa.cols[c("H","K","R")] <- "red"
+aa.cols[c("F","W","Y")] <- "blue"
+aa.cols[c("I","L","M","V")] <- "green"
+
+aa.pchs <- rep(5, length(aa.cols))
+names(aa.pchs) <- names(aa.cols)
+aa.pchs[c("G","P","S","T")] <- 1:4
+aa.pchs[c("H","K","R")] <- 1:3
+aa.pchs[c("F","W","Y")] <- 1:3
+aa.pchs[c("I","L","M","V")] <- 1:4
+
+## shapely
+aa.cols[c("D","E")]   <- "#E60A0A"
+aa.cols[c("C","M")]   <- "#E6E600"
+aa.cols[c("K","R")]   <- "#145AFF"
+aa.cols[c("S","T")]   <- "#FA9600"
+aa.cols[c("F","Y")]   <- "#3232AA"
+aa.cols[c("N","Q")]   <- "#00DCDC"
+aa.cols[c("G")]     <- "#EBEBEB" #light grey
+aa.cols[c("L","V","I")] <- "#0F820F"
+aa.cols[c("A")]     <- "#C8C8C8"
+aa.cols[c("W")]     <- "#B45AB4"
+aa.cols[c("H")]     <- "#8282D2"
+aa.cols[c("P")]     <- "#DC9682"
+
+aa.pchs[c("D","E")]   <- c(19,4)
+aa.pchs[c("C","M")]   <- c(4,19)
+aa.pchs[c("K","R")]   <- c(19,4)
+aa.pchs[c("S","T")]   <- c(19,4)
+aa.pchs[c("F","Y")]   <- c(19,4)
+aa.pchs[c("N","Q")]   <- c(19,4)
+aa.pchs[c("G")]     <- 19 #light grey
+aa.pchs[c("L","V","I")] <- c(19,2,4)
+aa.pchs[c("A")]     <- 19
+aa.pchs[c("W")]     <- 4
+aa.pchs[c("H")]     <- 19
+aa.pchs[c("P")]     <- 4
 
 ## plot colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
@@ -831,7 +871,7 @@ for ( ds in auds ) {
     cods <- cods[cdsrt]
 
     ## log2 ratio of frequencies
-    lratio <- log2(lcods/cods[names(lcods)]) # log2 ratio of codon frequencies
+    lratio <- (lcods/cods[names(lcods)]) # log2 ratio of codon frequencies
     rlm <- max(abs(lratio),na.rm=TRUE)
 
  
@@ -854,15 +894,18 @@ for ( ds in auds ) {
  
      ## relation codon base frequency and ratio AAS
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_frequency_ratio")),
+                                      "_codons_frequencies_ratio")),
            type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(cods, lratio, density=FALSE,
-            ylab=expression(log[2](f[AAS]/f[bg])),
+            ylab=expression(f[AAS]/f[bg]),
             xlab=expression(f[bg]), xlim=c(0,1),
-            col=1,pch=19, lwd=2, cex=.6)
-    points(cods, lratio, pch=19, lwd=2, cex=.5,
-           col=aa.cols[sub("-.*","",names(cods))])
+            col=NA,pch=19, lwd=2, cex=.6)
+    points(cods, lratio, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()
 
     ## higher frequency tends to be above diagonal
@@ -871,20 +914,21 @@ for ( ds in auds ) {
                                       "_codons_frequencies")),
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plot(cods, lcods, 
-         ylab=expression(f[AAS]),
-         xlab=expression(f[bg]), ylim=c(0,1),xlim=c(0,1),
-         col=1,pch=19, lwd=2, cex=.6)
-    points(cods, lcods, pch=19, lwd=2, cex=.5,
-           col=aa.cols[sub("-.*","",names(cods))])
-    abline(a=0,b=1, col=2)
-    legend("topleft",unique(sub("-.*","",names(cods))),
-           col=1, pt.cex=.6, 
-           pch=19, ncol=2, cex=.6, y.intersp=.75)
-    legend("topleft",unique(sub("-.*","",names(cods))),
+    plotCor(cods, lcods, density=FALSE,
+            ylab=expression(f[AAS]),
+            xlab=expression(f[bg]), xlim=c(0,1), ylim=c(0,1),
+            col=NA,pch=19, lwd=2, cex=.6)
+    points(cods, lcods, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+    ##abline(a=0,b=1, col=2)
+    legend("bottomright",unique(sub("-.*","",names(cods))),
            col=aa.cols[unique(sub("-.*","",names(cods)))],
-           pch=19, pt.cex=.5, ncol=2, cex=.6, y.intersp=.75,
+           pch=aa.pchs[unique(sub("-.*","",names(cods)))],
+           pt.cex=1, ncol=2, cex=.8, y.intersp=.75,
            bty="n")
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()
 
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
@@ -894,16 +938,17 @@ for ( ds in auds ) {
     plotCor(cods, lcods-cods, density=FALSE,
          ylab=expression(f[AAS]-f[bg]),
          xlab=expression(f[bg]), xlim=c(0,1),
-         col=1,pch=19, lwd=2, cex=.6)
-    points(cods, lcods-cods, pch=19, lwd=2, cex=.5,
-           col=aa.cols[sub("-.*","",names(cods))])
-    legend("bottomright",unique(sub("-.*","",names(cods))),
-           col=1, pt.cex=.6, 
-           pch=19, ncol=2, cex=.6, y.intersp=.75)
+         col=NA,pch=19, lwd=2, cex=.6)
+    points(cods, lcods-cods, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
     legend("bottomright",unique(sub("-.*","",names(cods))),
            col=aa.cols[unique(sub("-.*","",names(cods)))],
-           pch=19, pt.cex=.5, ncol=2, cex=.6, y.intersp=.75,
+           pch=aa.pchs[unique(sub("-.*","",names(cods)))],
+           pt.cex=1, ncol=2, cex=.6, y.intersp=.75,
            bty="n")
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()
     
     ## TODO: get median RAAS for each codon and plot against codon frequency
@@ -915,9 +960,12 @@ for ( ds in auds ) {
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(ram, lcods, density=FALSE, xlab=expression(median~log[10]*RAAS),
-            ylab="codon frequency")
-    points(ram, lcods, pch=19, lwd=2, cex=.5,
-           col=aa.cols[sub("-.*","",names(cods))])
+            ylab=expression(codon~frequency~f[AAS]), col=NA)
+    points(ram, lcods, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()            
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
