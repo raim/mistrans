@@ -30,6 +30,11 @@ diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 p.min <- 1e-10
 p.txt <- 1e-5
 
+## filtering with bonferoni correction
+p.sig <- .05
+l.sig <- 3
+p.flt <- p.sig/((l.sig*2+1)*20) # bonferoni-adjusted p.value filter
+
 ## p-value colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
@@ -478,6 +483,12 @@ for ( i in 1:nrow(filters) ) {
     ovl <- aaProfile(ctx, abc=AAT)
     ## set 0 count to p=1
     ##ovl$p.value[ovl$count==0] <- 1
+
+    ## ADJUST P-VALUES
+    if ( FALSE )  # removes a lot of informative structure from the plot
+        ovl$p.value[] <- p.adjust(ovl$p.value, method="hochberg")
+
+
     
     plotdev(file.path(fig.path,paste0("seqcontext_",
                                       column,"_",pattern, "_overlap")),
@@ -493,14 +504,15 @@ for ( i in 1:nrow(filters) ) {
     ## FILTER BY P-VALUE
     
     ## sort w/o AAS
-    ovs <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
+    ovs <- sortOverlaps(ovl, axis=1, srt=as.character(-5:5))
 
     ## only use enriched at AAS 
     ## set p.values at AAS site to NA
     ## TODO: base on used filter!
     aasp <- ovs$sign #[,"0"]
     ovs$p.value[aasp==-1] <- 1
-    
+
+    ## FILTER
     ovs <- sortOverlaps(ovs, axis=2, p.min=p.txt, cut=TRUE)
     ## re sort with AAS
     ovc <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
@@ -640,7 +652,8 @@ if (FALSE) { ## TODO: filter useful
 
 ### WRITE OUT FASTA FILES
 
-for ( i in 1:nrow(filters) ) {
+fidx <- which(filters[,"column"] %in% c("methionine","tryptophane"))
+for ( i in fidx ) {
      
     column <- filters[i,"column"]
     pattern <- filters[i,"pattern"]
