@@ -131,8 +131,8 @@ dev.off()
 ## AA vs. position bins
 site.bins <- cut(bpd$site/nchar(bpd$SAAP), seq(0,1,.2))
 cls <- clusterCluster(bpd$from, site.bins, cl2.srt=levels(site.bins),
-                      alternative="greater")
-cls <- sortOverlaps(cls, p.min=.1)
+                      alternative="two.sided")
+##cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap")),
         height=5, width=3, res=300)
 par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
@@ -147,7 +147,7 @@ asite.bins[bpd$site>10] <- ">10"
 asite.srt <- c(1:10,">10") #,">20")
 cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
-cls <- sortOverlaps(cls, p.min=.1)
+##cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=5, res=300)
 par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
@@ -376,8 +376,14 @@ kraqidx <- kraqidx[bpd$from[kraqidx]=="T"]
 bpd$TM <- rep(FALSE, nrow(bpd))
 bpd$TM[kraqidx] <- TRUE
 
+## branched chain AA encoded
+bpd$ftype <- bpd$from
+bpd$ftype[bpd$from%in%c("I","L","V")] <- "branched"
+
 filters <- rbind(
     c(column="site", pattern="1"),
+    c(column="site", pattern="2"),
+    c(column="ftype", pattern="branched"),
     c(column="from", pattern="S"),
     c(column="from", pattern="T"),
     c(column="to", pattern="N"),
@@ -402,6 +408,14 @@ apats <- list(c(),
 
 ft <- unique(bpd$fromto)
 ft <- cbind(column=rep("fromto", length(ft)),
+            pattern=ft)
+filters <- rbind(filters,ft)
+ft <- unique(bpd$from)
+ft <- cbind(column=rep("from", length(ft)),
+            pattern=ft)
+filters <- rbind(filters,ft)
+ft <- unique(bpd$to)
+ft <- cbind(column=rep("to", length(ft)),
             pattern=ft)
 filters <- rbind(filters,ft)
 
