@@ -376,29 +376,31 @@ kraqidx <- kraqidx[bpd$from[kraqidx]=="T"]
 bpd$TM <- rep(FALSE, nrow(bpd))
 bpd$TM[kraqidx] <- TRUE
 
+## filter methionine left and right
+bpd$methionine <- rep(FALSE, nrow(bpd))
+midx <- grep("M", apply(tctx[,c("-2","-1","1","2")],1, paste, collapse=""))
+bpd$methionine[midx] <- TRUE
+## filter tryptophane left and right
+bpd$tryptophane <- rep(FALSE, nrow(bpd))
+midx <- grep("W", apply(tctx[,c("-2","-1","1","2")],1, paste, collapse=""))
+bpd$tryptophane[midx] <- TRUE
+
 ## branched chain AA encoded
 bpd$ftype <- bpd$from
 bpd$ftype[bpd$from%in%c("I","L","V")] <- "branched"
 
+## custom filters
 filters <- rbind(
     c(column="site", pattern="1"),
     c(column="site", pattern="2"),
+    c(column="methionine", pattern="TRUE"),
+    c(column="tryptophane", pattern="TRUE"),
     c(column="ftype", pattern="branched"),
-    c(column="from", pattern="S"),
-    c(column="from", pattern="T"),
-    c(column="to", pattern="N"),
     c(column="TM",pattern="TRUE"),
     c(column="nxt", pattern="M"),  
     c(column="nxt", pattern="W"),
     c(column="prev", pattern="M"),
     c(column="prev", pattern="W"),
-    c(column="from", pattern="H"),
-    c(column="from", pattern="W"),
-    c(column="from", pattern="Q"),
-    c(column="fromto", pattern="S:G"),
-    c(column="fromto", pattern="G:S"),
-    c(column="fromto", pattern="T:V"),
-    c(column="fromto", pattern="Q:G"),
     c(column="KRAQ",pattern="TRUE"),
     c(column="miscleavage",pattern="TRUE"),
     c(column="all",pattern="")
@@ -406,6 +408,7 @@ filters <- rbind(
 apats <- list(c(),
               c())
 
+### all fromto, from and to
 ft <- unique(bpd$fromto)
 ft <- cbind(column=rep("fromto", length(ft)),
             pattern=ft)
