@@ -61,6 +61,11 @@ fasta <- file.path(dat.path,"all_proteins.fa")
 ## GET SAAP/BP DATA
 dat <- read.delim(in.file)
 
+## mahlon's degron candidates
+bpids <- c("LLIYTNNQRPSGVPDR", "EIASTLMESEMMEILSVLAK", "MDQPAGLQVDYVFR")
+
+dat[which(dat$BP%in%bpids),"name"]
+
 ## remove by exclude tag - IG/Albumin/globin
 dat <- dat[!dat$IG ,]
 ## remove those w/o protein info
@@ -146,6 +151,7 @@ plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
 mtext("relative position of AAS in peptide", 1, 3.5)
 dev.off()
 
+## TODO: categorize by N+i and C-i
 asite.bins <- as.character(bpd$site)
 asite.bins[bpd$site>10] <- ">10"
 ##asite.bins[bpd$site>20] <- ">20"
@@ -414,18 +420,21 @@ apats <- list(c(),
               c())
 
 ### all fromto, from and to
-ft <- unique(bpd$fromto)
-ft <- cbind(column=rep("fromto", length(ft)),
+if ( !interactive() ) {
+    
+    ft <- unique(bpd$fromto)
+    ft <- cbind(column=rep("fromto", length(ft)),
+                pattern=ft)
+    filters <- rbind(filters,ft)
+    ft <- unique(bpd$from)
+    ft <- cbind(column=rep("from", length(ft)),
             pattern=ft)
-filters <- rbind(filters,ft)
-ft <- unique(bpd$from)
-ft <- cbind(column=rep("from", length(ft)),
-            pattern=ft)
-filters <- rbind(filters,ft)
-ft <- unique(bpd$to)
-ft <- cbind(column=rep("to", length(ft)),
-            pattern=ft)
-filters <- rbind(filters,ft)
+    filters <- rbind(filters,ft)
+    ft <- unique(bpd$to)
+    ft <- cbind(column=rep("to", length(ft)),
+                pattern=ft)
+    filters <- rbind(filters,ft)
+}
 
 ##TODO:
 ## 1. align filtered sequences with clustalw via msa(seq)
@@ -488,6 +497,9 @@ for ( i in 1:nrow(filters) ) {
     if ( FALSE )  # removes a lot of informative structure from the plot
         ovl$p.value[] <- p.adjust(ovl$p.value, method="hochberg")
 
+    ## sort along N- to C-terminus
+    ## TODO: implement two-sided sort
+    ##ovl <- sortOverlaps(ovl, axis=2, p.min=p.min)
 
     
     plotdev(file.path(fig.path,paste0("seqcontext_",
@@ -514,6 +526,7 @@ for ( i in 1:nrow(filters) ) {
 
     ## FILTER
     ovs <- sortOverlaps(ovs, axis=2, p.min=p.txt, cut=TRUE)
+
     ## re sort with AAS
     ovc <- sortOverlaps(ovl, axis=1, srt=as.character(-7:7))
     ovc <- sortOverlaps(ovc, axis=2, srt=rownames(ovs$p.value))
@@ -536,6 +549,81 @@ for ( i in 1:nrow(filters) ) {
         dev.off()
     }
 }
+### WRITE OUT FASTA FILES
+
+fidx <- which(filters[,"column"] %in% c("methionine","tryptophane"))
+for ( i in fidx ) {
+     
+    column <- filters[i,"column"]
+    pattern <- filters[i,"pattern"]
+
+    if ( column=="all" ) {
+        filt <- rep(TRUE, nrow(bpd))
+    } else {
+        filt <- as.character(bpd[,column])==pattern
+    }
+    
+    ctx <- pctx[filt,]
+
+
+    sqs <- apply(ctx,1, paste, collapse="")
+    fname <- file.path(out.path,paste0("seqcontext_",
+                                       column,"_",pattern,".fa"))
+    out.rng <- as.character(-sdst:sdst)
+    if ( file.exists(fname) ) unlink(fname)
+    for ( j in 1:nrow(ctx) ) {
+        osq <- gsub("-","",paste0(ctx[j,out.rng], collapse=""))
+        cat(paste0(">", rownames(ctx)[j],"\n", osq, "\n"),
+            file=fname, append=TRUE)
+    }
+
+
+    ## required for meme
+    fname <- file.path(out.path,paste0("seqcontext_",
+                                       column,"_",pattern,"_long.fa"))
+    out.rng <- as.character(-sdst:sdst)
+    if ( file.exists(fname) ) unlink(fname)
+    for ( j in 1:nrow(ctx) ) 
+        if ( sum(ctx[j,out.rng]!="-")>7 )
+            cat(paste0(">",rownames(ctx)[j],"\n",
+                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
+                file=fname, append=TRUE)
+
+    ## required for MoMo
+    fname <- file.path(out.path,paste0("seqcontext_",
+                                       column,"_",pattern,"_motif.fa"))
+    out.rng <- as.character(-mdst:mdst)
+    if ( file.exists(fname) ) unlink(fname)
+    for ( j in 1:nrow(ctx) ) 
+        if ( sum(ctx[j,out.rng]!="-")==7 )
+            cat(paste0(">",rownames(ctx)[j],"\n",
+                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
+                file=fname, append=TRUE)
+}
+sum(duplicated(apply(ctx,1, paste, collapse="")))
+
+## WRITE OUT FASTA FILES FOR IDENTIFIED PATTERNS ONLY
+
+## cut to tighter context
+tctx <- pctx[,as.character(-10:10)]
+txsq <- apply(tctx,1, paste, collapse="")
+## grep K|RA.Q motif
+#kraqidx <- grep("[KR]A[A-Z]{0,1}Q",txsq)
+## grep K|RAQ motif
+kraqidx <- grep("[KR]AQ",txsq)
+## filter only those where Q is the AAS
+kraqidx <- kraqidx[bpd$from[kraqidx]=="Q"]
+kraqsq <- txsq[kraqidx]
+fname <- file.path(out.path,paste0("seqcontext_KRAQ.fa"))
+if ( file.exists(fname) ) unlink(fname)
+for ( j in 1:length(kraqsq) ) 
+    cat(paste0(">",names(kraqsq)[j],"\n", 
+               kraqsq[j],"\n"), file=fname, append=TRUE)
+
+## TODO: tag SAAP WITH the identified motif and split Q:G by this,
+## GO analysis of motif-containing genes.
+
+
 if (FALSE) { ## TODO: filter useful
     ## analyze dimer frequencies
     if ( pattern%in%c("Q:G", "T:V") ) { # takes long, only do for selected
@@ -650,79 +738,6 @@ if (FALSE) { ## TODO: filter useful
     dev.off()
 }
 
-### WRITE OUT FASTA FILES
-
-fidx <- which(filters[,"column"] %in% c("methionine","tryptophane"))
-for ( i in fidx ) {
-     
-    column <- filters[i,"column"]
-    pattern <- filters[i,"pattern"]
-
-    if ( column=="all" ) {
-        filt <- rep(TRUE, nrow(bpd))
-    } else {
-        filt <- as.character(bpd[,column])==pattern
-    }
-    
-    ctx <- pctx[filt,]
-
-
-    sqs <- apply(ctx,1, paste, collapse="")
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,".fa"))
-    out.rng <- as.character(-sdst:sdst)
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) {
-        osq <- gsub("-","",paste0(ctx[j,out.rng], collapse=""))
-        cat(paste0(">", rownames(ctx)[j],"\n", osq, "\n"),
-            file=fname, append=TRUE)
-    }
-
-
-    ## required for meme
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,"_long.fa"))
-    out.rng <- as.character(-sdst:sdst)
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="-")>7 )
-            cat(paste0(">",rownames(ctx)[j],"\n",
-                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
-                file=fname, append=TRUE)
-
-    ## required for MoMo
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,"_motif.fa"))
-    out.rng <- as.character(-mdst:mdst)
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="-")==7 )
-            cat(paste0(">",rownames(ctx)[j],"\n",
-                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
-                file=fname, append=TRUE)
-}
-sum(duplicated(apply(ctx,1, paste, collapse="")))
-
-## WRITE OUT FASTA FILES FOR IDENTIFIED PATTERNS ONLY
-
-## cut to tighter context
-tctx <- pctx[,as.character(-10:10)]
-txsq <- apply(tctx,1, paste, collapse="")
-## grep K|RA.Q motif
-#kraqidx <- grep("[KR]A[A-Z]{0,1}Q",txsq)
-## grep K|RAQ motif
-kraqidx <- grep("[KR]AQ",txsq)
-## filter only those where Q is the AAS
-kraqidx <- kraqidx[bpd$from[kraqidx]=="Q"]
-kraqsq <- txsq[kraqidx]
-fname <- file.path(out.path,paste0("seqcontext_KRAQ.fa"))
-if ( file.exists(fname) ) unlink(fname)
-for ( j in 1:length(kraqsq) ) 
-    cat(paste0(">",names(kraqsq)[j],"\n", 
-               kraqsq[j],"\n"), file=fname, append=TRUE)
-
-## TODO: tag SAAP WITH the identified motif and split Q:G by this,
-## GO analysis of motif-containing genes.
 
 ## CLEAVAGE BIAS?
 ## remove all where K|R are the mutation

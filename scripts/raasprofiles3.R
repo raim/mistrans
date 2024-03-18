@@ -134,6 +134,7 @@ out.path <- file.path(proj.path,"processedData")
 
 gen.path <- "~/data/mammary/"
 codon.file <- file.path(gen.path,"processedData","coding_codons.tsv")
+dana14.file <- file.path(gen.path,"originalData","dana14_codons.csv")
 
 in.file <- file.path(out.path,"saap_mapped3.tsv")
 tmt.file <- file.path(proj.path,"originalData",
@@ -740,6 +741,10 @@ for ( ptype in unique(tmtf$pfromto) ) {
 ctmt <- tmtf[tmtf$codon!="",]
 codons <- read.delim(codon.file, row.names=1)
 
+## Dana and Tuller 2014/2015
+## decoding time/sec -> 1/decoding rate
+decode <- 1/read.csv(dana14.file, row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
+
 ## global analysis: codon frequency vs. RAAS
 ## CODON COUNTS IN ALL UNIQUE TRANSCRIPTS 
 cod  <- codons[unique(ctmt$transcript),]
@@ -753,6 +758,20 @@ codr$W[1] <- 0
 codr$M[1] <- 0
 cods <- unlist(codf)
 names(cods) <- sub("\\.","-",names(cods))
+
+if ( interactive() ) {
+    plotCor(cods, decode[sub(".*-","", names(cods)),1], density=FALSE,
+            col=NA, xlab="codon frequency, all AAS transcripts",
+            ylab=expression(decoding~rate(codons/s)))
+    points(cods, decode[sub(".*-","", names(cods)),1], lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+    legend("top",unique(sub("-.*","",names(cods))),
+           col=aa.cols[unique(sub("-.*","",names(cods)))],
+           pch=aa.pchs[unique(sub("-.*","",names(cods)))],
+           pt.cex=1, ncol=2, cex=.8, y.intersp=.75,
+           bty="n")
+}
 
 ## codon rank
 codr <- unlist(codr)
@@ -819,6 +838,21 @@ for ( ds in auds ) {
             dtmt <- ctmt[ctmt$Dataset!="Healthy",]
     }
 
+## NOTE: bg=FALSE, no column-wise background !
+dtmt$all <- "all"
+    ova <- raasProfile(x=dtmt, id="SAAP", 
+                       rows="all", cols="aacodon",
+                       bg=FALSE, use.test=use.test, do.plots=FALSE, 
+                       verb=0)
+
+## NOTE: bg=FALSE, no column-wise background !
+    ovd <- raasProfile(x=dtmt, id="SAAP", 
+                       rows="Dataset", cols="aacodon",
+                       bg=FALSE, use.test=use.test, do.plots=FALSE, 
+                       verb=0)
+
+
+
     ## NOTE: bg=FALSE, no column-wise background !
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="aacodon",
@@ -843,6 +877,7 @@ for ( ds in auds ) {
     lcodl <- lapply(lcodl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
     lcodl <- lcodl[names(aaprop)] ## ##SORT BY AA PROP
 
+    ## AA-specific codon frequency
     lcods <- unlist(lapply(lcodl, function(x) x/sum(x)))
 
     ## CODON COUNTS IN ALL UNIQUE TRANSCRIPTS 
@@ -850,13 +885,21 @@ for ( ds in auds ) {
     codt <- apply(cod,2,sum)
     ## transcript codon frequencies per AA
     codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
-    codl <- codl
+    codl <- lapply(codl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
+    codl <- codl[names(aaprop)[names(aaprop)%in%names(codl)]] ## SORT BY AA PROP
     cods <- unlist(lapply(codl, function(x) x/sum(x)))
 
-    ## sort (AA property ->codon frequency)
-    cdsrt <- sub("\\.","-",names(unlist(lcodl)))
-    ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
+    ## sort by background (AA property ->codon frequency)
+    cdsrt <- sub("\\.","-",names(unlist(codl)))
 
+    ## filter available
+    cdsrt <- cdsrt[cdsrt%in%colnames(ovw$p.value)]
+
+    ## sort overlaps
+    ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
+    ovd <- sortOverlaps(ovd, axis=1, srt=cdsrt, cut=FALSE)
+    ova <- sortOverlaps(ova, axis=1, srt=cdsrt, cut=FALSE)
+    
     ## codon frequency bins
     codon.bins <- cut(lcods[dtmt$aacodon], seq(0,1,.2))
 
@@ -865,6 +908,7 @@ for ( ds in auds ) {
     cdn.cnt <- cumsum(cdn.cnt[!is.na(cdn.cnt)])
     
     ## SORT CODON FREQUENCIES as in main plots
+    ## TODO: constant sorting of  ALL codons 
     names(cods) <- sub("\\.","-", names(cods))
     names(lcods) <- sub("\\.","-", names(lcods))
     lcods <- lcods[cdsrt]
@@ -876,6 +920,27 @@ for ( ds in auds ) {
 
  
     
+    plotProfiles(ova, fname=file.path(fig.path,paste0("codon_",
+                                                      SETID,"_",ds,
+                                                      "_all")),
+                 fw=.2, mai=c(.05,.5,.05,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 rlab=LAB, llab=ds, mtxt="",
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols, col.lines=cdn.cnt)
+
+
+plotProfiles(ovd, fname=file.path(fig.path,paste0("codon_",
+                                                  SETID,"_",ds,"_Dataset")),
+                 fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 rlab=LAB, llab=ds, mtxt="",
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols, col.lines=cdn.cnt)
+
+
     ## TODO: re-create previous codon plots
     plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
@@ -971,7 +1036,52 @@ for ( ds in auds ) {
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
     for ( ax in 3:4 )  axis(ax, labels=FALSE)
-    dev.off()            
+dev.off()
+
+## TODO: mean has no correlation to RAAS, median does!
+plotCor(ova$median[,names(lcods)], lcods, density=FALSE, col=NA)
+    points(ova$median[,names(lcods)], lcods, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+plotCor(ova$mean[,names(lcods)], lcods, density=FALSE, col=NA)
+    points(ova$mean[,names(lcods)], lcods, lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+plotCor(ova$mean[,names(lcods)], ova$median[,names(lcods)],
+        density=FALSE, col=NA)
+    points(ova$mean[,names(lcods)], ova$median[,names(lcods)], lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+
+
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas_dana14")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(ram, decode[sub(".*-","",names(ram)),1],
+            density=FALSE, xlab=expression(median~log[10]*RAAS),
+            ylab=expression(decoding~rate/(codons/s)), col=NA)
+    points(ram, decode[sub(".*-","",names(ram)),1], lwd=1, cex=1,
+           col=aa.cols[sub("-.*","",names(cods))],
+           pch=aa.pchs[sub("-.*","",names(cods))])
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
+    dev.off()
+
+    ramm <- matrix(ram,nrow=1)
+    colnames(ramm) <- names(ram)
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_raas")),
+            type="png", res=300, width=nw, height=.25+.1)
+    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    image_matrix(ramm, col=vcols, breaks=vbrks,
+                 axis=NA, las=2, ylab=NA)
+    mtext(expression(bar(RAAS)), 2, .15, las=2, cex=1)
+    box()
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=FALSE, col="white")
+    dev.off()
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequency_raas")),
@@ -1085,48 +1195,45 @@ for ( ds in auds ) {
 
     ## construct overlap class
     ovl <- list()
-    ovl$p.value <- aam
+    pvl <- aam
+    pvl[aap<aam] <- aap[aap<aam]
+    ovl$p.value <- pvl
     ovl$count <- aac
+    ovl$sign <- ifelse(aam<aap, 1, -1)
     
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_enriched")),
-            type="png", res=300, width=nw,height=.25)
+                                      "_codons_hypergeo")),
+            type="png", res=300, width=nw, height=.25+.1)
     par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
-                 col=upcols, text.cex=.7)
-    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
-    box()
-    dev.off()
-    
-    ovl$p.value <- aap
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_deprived")),
-            type="png", res=300, width=nw,height=.25)
-    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    plotOverlaps(ovl, p.min=1e-5, p.txt=1e-2, axis=3, xlab=NA, ylab=NA,
-                 col=docols, text.cex=.7)
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=NA, xlab=NA, ylab=NA,
+                 text.cex=.7, col=ttcols)
+    ##axis(1, at=1:length(aac), labels=aac, las=2)
+    mtext(expression(f), 2, .25, las=2)
     box()
     abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
 
-
+    ## two roes
     ovl$p.value <- rbind(aam,aap)
     rownames(ovl$p.value) <- c("more","less")
     ovl$count <- rbind(aac,aac)
-    ovl$count[] <- 0
-    ovl$count[ovl$p.value<1e-3] <- 1 
+    ovl$count[1,aam>=aap] <- 0
+    ovl$count[2,aam< aap] <- 0 
     ovl$sign <- rbind(rep( 1,length(aam)),
                       rep(-1,length(aam)))
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_hypergeo")),
-            type="png", res=300, width=nw, height=.5+.45)
-    par(mai=c(.5,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+                                      "_codons_hypergeo2")),
+            type="png", res=300, width=nw, height=.35+.1)
+    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=2, xlab=NA, ylab=NA,
                  text.cex=.7, col=ttcols)
-    axis(1, at=1:length(aac), labels=aac, las=2)
+    ##axis(1, at=1:length(aac), labels=aac, las=2)
+    ##axis(1, at=1:length(aac), labels=aac, las=2)
+    ##mtext(expression(f), 2, .25, las=2)
     box()
-    abline(v=.5+cdn.cnt, lwd=1, xpd=FALSE)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
+    
 }
 
 
@@ -1151,6 +1258,8 @@ for ( ds in uds ) {
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
 
+
+ 
 }
 
 

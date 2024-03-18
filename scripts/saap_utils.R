@@ -460,7 +460,7 @@ raasProfile <- function(x=tmtf, id="SAAP",
                         rows="to", cols="aacodon",
                         row.srt, col.srt,
                         use.test=use.test,
-                        do.plots=interactive(),
+                        do.plots=FALSE,
                         xlab="value", fname="profile_",
                         verb=FALSE) {
 
