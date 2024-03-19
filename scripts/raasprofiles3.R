@@ -743,7 +743,9 @@ codons <- read.delim(codon.file, row.names=1)
 
 ## Dana and Tuller 2014/2015
 ## decoding time/sec -> 1/decoding rate
-decode <- 1/read.csv(dana14.file, row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
+if ( file.exists(dana14.file) )
+    decode <- 1/read.csv(dana14.file,
+                         row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
 
 ## global analysis: codon frequency vs. RAAS
 ## CODON COUNTS IN ALL UNIQUE TRANSCRIPTS 
@@ -1078,20 +1080,22 @@ for ( ds in auds ) {
                pch=aa.pchs[sub("-.*","",names(cods))])
     }
 
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_frequencies_raas_dana14")),
-            type="png", res=300, width=3,height=3)
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(ram, decode[sub(".*-","",names(ram)),1],
-            density=FALSE, xlab=expression(median~log[10]*RAAS),
-            ylab=expression(decoding~rate/(codons/s)), col=NA)
-    points(ram, decode[sub(".*-","",names(ram)),1], lwd=1, cex=1,
-           col=aa.cols[sub("-.*","",names(cods))],
-           pch=aa.pchs[sub("-.*","",names(cods))])
-    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
-    figlabel(LAB, pos="bottomright", cex=.7)
-    for ( ax in 3:4 )  axis(ax, labels=FALSE)
-    dev.off()
+    if ( exists("decode", mode="numeric") ) {
+        plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                          "_codons_frequencies_raas_dana14")),
+                type="png", res=300, width=3,height=3)
+        par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        plotCor(ram, decode[sub(".*-","",names(ram)),1],
+                density=FALSE, xlab=expression(median~log[10]*RAAS),
+                ylab=expression(decoding~rate/(codons/s)), col=NA)
+        points(ram, decode[sub(".*-","",names(ram)),1], lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(cods))],
+               pch=aa.pchs[sub("-.*","",names(cods))])
+        figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+        figlabel(LAB, pos="bottomright", cex=.7)
+        for ( ax in 3:4 )  axis(ax, labels=FALSE)
+        dev.off()
+    }
 
     ramm <- matrix(ram,nrow=1)
     colnames(ramm) <- names(ram)

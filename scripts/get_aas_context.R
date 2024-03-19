@@ -26,6 +26,35 @@ AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
 diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
+
+## shapely
+aa.cols <- character()
+aa.cols[c("D","E")]   <- "#E60A0A"
+aa.cols[c("C","M")]   <- "#E6E600"
+aa.cols[c("K","R")]   <- "#145AFF"
+aa.cols[c("S","T")]   <- "#FA9600"
+aa.cols[c("F","Y")]   <- "#3232AA"
+aa.cols[c("N","Q")]   <- "#00DCDC"
+aa.cols[c("G")]     <- "#EBEBEB" #light grey
+aa.cols[c("L","V","I")] <- "#0F820F"
+aa.cols[c("A")]     <- "#C8C8C8"
+aa.cols[c("W")]     <- "#B45AB4"
+aa.cols[c("H")]     <- "#8282D2"
+aa.cols[c("P")]     <- "#DC9682"
+aa.pchs <- numeric()
+aa.pchs[c("D","E")]   <- c(19,4)
+aa.pchs[c("C","M")]   <- c(4,19)
+aa.pchs[c("K","R")]   <- c(19,4)
+aa.pchs[c("S","T")]   <- c(19,4)
+aa.pchs[c("F","Y")]   <- c(19,4)
+aa.pchs[c("N","Q")]   <- c(19,4)
+aa.pchs[c("G")]     <- 19 #light grey
+aa.pchs[c("L","V","I")] <- c(19,2,4)
+aa.pchs[c("A")]     <- 19
+aa.pchs[c("W")]     <- 4
+aa.pchs[c("H")]     <- 19
+aa.pchs[c("P")]     <- 4
+
 ## threshold p-values
 p.min <- 1e-10
 p.txt <- 1e-5
@@ -105,39 +134,6 @@ bpd <- dat[!dupls,]
 
 ### ANALYZE MUTATION WITHIN PEPTIDE
 
-##bpd <- bpd[bpd$from!="Q",] # no difference
-plotdev(file.path(fig.path,paste0("peptide_AAS")),
-        height=3, width=6, res=300)
-par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-barplot(table(bpd$site), xlab="position of AAS in peptide",las=2)
-hist(bpd$site/nchar(bpd$SAAP), breaks=seq(0,1,.1),
-     xlab="relative position of AAS in peptide", main=NA)
-legend("topright", paste(nrow(bpd), "unique BP"))
-dev.off()
-
-##bpd <- bpd[bpd$from!="Q",] # no difference
-plotdev(file.path(fig.path,paste0("peptide_AAS_n2")),
-        height=3, width=6, res=300)
-par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-barplot(table(bpd$site[bpd$site>2]), xlab="position of AAS in peptide",las=2)
-hist(bpd$site[bpd$site>2]/nchar(bpd$SAAP[bpd$site>2]), breaks=seq(0,1,.1),
-     xlab="relative position of AAS in peptide", main=NA)
-legend("topright", paste(nrow(bpd), "unique BP"))
-dev.off()
-
-hist(nchar(bpd$SAAP), xlab="peptide length", main=NA, breaks=seq(1,60,1))
-
-## only for unique BP - w/o from Q
-bpnq <- bpd[bpd$from!="Q",] # no difference
-plotdev(file.path(fig.path,paste0("peptide_AAS_noQ")),
-        height=3, width=6, res=300)
-par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-barplot(table(bpnq$site), xlab="position of AAS in peptide",las=2)
-hist(bpnq$site/nchar(bpnq$SAAP), breaks=seq(0,1,.1),
-     xlab="relative position of AAS in peptide", main=NA)
-legend("topright", paste(nrow(bpnq), "w/o 'from:Q'"))
-dev.off()
-
 ## AA vs. position bins
 site.bins <- cut(bpd$site/nchar(bpd$SAAP), seq(0,1,.2))
 cls <- clusterCluster(bpd$from, site.bins, cl2.srt=levels(site.bins),
@@ -152,19 +148,20 @@ mtext("relative position of AAS in peptide", 1, 3.5)
 dev.off()
 
 ## Categorize by N+i and C-i
+mx <- 9
 nt <- bpd$site
 ct <- nchar(bpd$BP)-bpd$site +1
 ## fuse central AAS
-nt[nt>5] <- ct[ct>5] <- 6
+nt[nt>mx] <- ct[ct>mx] <- mx+1
 ## take smaller
 at <- paste0("N",nt)
 at[ct<nt] <- paste0("C",ct[ct<nt])
 ## re-name central AAS
-at[at=="N6"] <- ">5"
+at[at==paste0("N",mx+1)] <- paste0(">",mx)
 at.srt <- c(
-    paste0("N",1:5),
-    ">5",
-    paste0("C",5:1))
+    paste0("N",1:mx),
+    paste0(">",mx),
+    paste0("C",mx:1))
 
 asite.bins <- at
 asite.srt <- at.srt
@@ -172,11 +169,13 @@ cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 ##cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
-        height=5, width=5, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        height=5, width=mx/2+1, res=300)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.05,0), tcl=-.05)
 plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
-             show.total=TRUE, show.sig=FALSE)
-mtext("position of AAS in peptide", 1, 1.3)
+             show.total=TRUE, show.sig=FALSE, axis=1, text.cex=.8)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
+mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
@@ -185,6 +184,46 @@ OVL.AA <- cls
 
 ## TODO: plot frequency ratios at site==1 vs. miscleavage K|R +1
 ## negative correlation!
+
+
+##bpd <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS")),
+        height=3, width=3, res=300)
+par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+hist(bpd$site/nchar(bpd$SAAP), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(nrow(bpd), "unique BP"))
+dev.off()
+
+plotdev(file.path(fig.path,paste0("peptide_AAS_absolute")),
+        height=3, width=mx/2+1, res=300)
+par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.5,.05,0), tcl=.25, yaxs="i")
+barplot(table(asite.bins)[asite.srt], xlab="position of AAS in peptide",las=2)
+legend("topright", paste(nrow(bpd), "unique BP"))
+dev.off()
+
+##bpd <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS_n2")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(bpd$site[bpd$site>2]), xlab="position of AAS in peptide",las=2)
+hist(bpd$site[bpd$site>2]/nchar(bpd$SAAP[bpd$site>2]), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(sum(bpd$site>2,na.rm=TRUE), "unique BP"))
+dev.off()
+
+hist(nchar(bpd$SAAP), xlab="peptide length", main=NA, breaks=seq(1,60,1))
+
+## only for unique BP - w/o from Q
+bpnq <- bpd[bpd$from!="Q",] # no difference
+plotdev(file.path(fig.path,paste0("peptide_AAS_noQ")),
+        height=3, width=6, res=300)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+barplot(table(bpnq$site), xlab="position of AAS in peptide",las=2)
+hist(bpnq$site/nchar(bpnq$SAAP), breaks=seq(0,1,.1),
+     xlab="relative position of AAS in peptide", main=NA)
+legend("topright", paste(nrow(bpnq), "w/o 'from:Q'"))
+dev.off()
 
 
 ## POSITION OF K/R IN PEPTIDE - MIS-CLEAVAGE
@@ -841,22 +880,37 @@ dev.off()
 OVL.MIS <- ovk
 
 aa <- rownames(OVL.MIS$ratio)
-##aa <- aa[!aa%in%c("K","R")]
+aa <- aa[!aa%in%c("K","R")]
 mis <- OVL.MIS$ratio[aa,"1"]
 aas <- OVL.AA$ratio[aa,"N1"]
 ##mis <- -log10(mis)* OVL.MIS$sign[aa,"1"]
 ##aas <- -log10(aas)* OVL.AA$sign[aa,"N1"]
-lg2 <- FALSE
+lg2 <- TRUE
 if ( lg2 ) {
     mis <- log2(mis)
     aas <- log2(aas)
 }
+plotdev(file.path(fig.path,paste0("miscleavage_AA_site1")),
+        type="png", res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(mis, aas, density=FALSE, col=NA,
-        xlab="enrichment at +1 of miscleavage site",
-        ylab="enrichment at +1 of cleavage site")
-text(mis, aas, labels=aa)
-abline(v=ifelse(lg2,0,1))
-abline(h=ifelse(lg2,0,1))
+        xlab="lg2 ratio, miscleavage site +1",
+        ylab="lg2 ratio, AAS at N1 of peptide")
+abline(v=ifelse(lg2,0,1), lwd=.5)
+abline(h=ifelse(lg2,0,1), lwd=.5)
+points(mis, aas, col=aa.cols[aa], pch=aa.pchs[aa], lwd=2)
+dev.off()
+plotdev(file.path(fig.path,paste0("miscleavage_AA_site1_labels")),
+        type="png", res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(mis, aas, density=FALSE, col=NA,
+        xlab="lg2 ratio, miscleavage site +1",
+        ylab="lg2 ratio, AAS at N1 of peptide")
+abline(v=ifelse(lg2,0,1), lwd=.5)
+abline(h=ifelse(lg2,0,1), lwd=.5)
+points(mis, aas, col=aa.cols[aa], pch=aa.pchs[aa], lwd=2)
+shadowtext(mis, aas, labels=aa, pos=4, xpd=TRUE, col="black")
+dev.off()
 
 
 ### KMER ANALYSIS
