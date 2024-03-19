@@ -151,22 +151,40 @@ plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
 mtext("relative position of AAS in peptide", 1, 3.5)
 dev.off()
 
-## TODO: categorize by N+i and C-i
-asite.bins <- as.character(bpd$site)
-asite.bins[bpd$site>10] <- ">10"
-##asite.bins[bpd$site>20] <- ">20"
-asite.srt <- c(1:10,">10") #,">20")
+## Categorize by N+i and C-i
+nt <- bpd$site
+ct <- nchar(bpd$BP)-bpd$site +1
+## fuse central AAS
+nt[nt>5] <- ct[ct>5] <- 6
+## take smaller
+at <- paste0("N",nt)
+at[ct<nt] <- paste0("C",ct[ct<nt])
+## re-name central AAS
+at[at=="N6"] <- ">5"
+at.srt <- c(
+    paste0("N",1:5),
+    ">5",
+    paste0("C",5:1))
+
+asite.bins <- at
+asite.srt <- at.srt
 cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 ##cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=5, res=300)
-par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
              show.total=TRUE, show.sig=FALSE)
-mtext("absolute position of AAS in peptide", 1, 3.5)
+mtext("position of AAS in peptide", 1, 1.3)
+figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
+## STORE to compare with miscleavage pattern below
+OVL.AA <- cls
+
+## TODO: plot frequency ratios at site==1 vs. miscleavage K|R +1
+## negative correlation!
 
 
 ## POSITION OF K/R IN PEPTIDE - MIS-CLEAVAGE
@@ -816,9 +834,30 @@ par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(ovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
              ylab="amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
 mtext("position relative to internal K|R", 1, 1.3)
-figlabel(paste0("Keil rules"), pos="bottomleft", font=2, cex=1.2)
+figlabel(paste0("miscleavage"), pos="bottomleft", font=2, cex=1.2)
 figlabel(bquote(n[seq]==.(nrow(kctx))), pos="bottomright", font=2, cex=1.2)
 dev.off()
+
+OVL.MIS <- ovk
+
+aa <- rownames(OVL.MIS$ratio)
+##aa <- aa[!aa%in%c("K","R")]
+mis <- OVL.MIS$ratio[aa,"1"]
+aas <- OVL.AA$ratio[aa,"N1"]
+##mis <- -log10(mis)* OVL.MIS$sign[aa,"1"]
+##aas <- -log10(aas)* OVL.AA$sign[aa,"N1"]
+lg2 <- FALSE
+if ( lg2 ) {
+    mis <- log2(mis)
+    aas <- log2(aas)
+}
+plotCor(mis, aas, density=FALSE, col=NA,
+        xlab="enrichment at +1 of miscleavage site",
+        ylab="enrichment at +1 of cleavage site")
+text(mis, aas, labels=aa)
+abline(v=ifelse(lg2,0,1))
+abline(h=ifelse(lg2,0,1))
+
 
 ### KMER ANALYSIS
 library(kmer)

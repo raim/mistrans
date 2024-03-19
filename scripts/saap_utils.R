@@ -92,8 +92,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
-        abline(v=.5+col.lines,
-               lwd=1, xpd=FALSE)
+        abline(v=.5+col.lines, lwd=1, xpd=FALSE)
     dev.off()
 
     if ( missing(vbrks) ) {
@@ -139,8 +138,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
-        abline(v=.5+col.lines,
-               lwd=1, xpd=FALSE)
+        abline(v=.5+col.lines, lwd=1, xpd=FALSE, col="white")
     dev.off()
 
     if (verb>0) cat(paste("plotting unique number\n"))
@@ -456,9 +454,9 @@ raasProfile.old <- function(x=cdat, id="SAAP", values=tmt,
 ## but working on lists of unequal lengths instead of a matrix
 raasProfile <- function(x=tmtf, id="SAAP", 
                         value="RAAS", delog=TRUE, replace=TRUE,
-                        bg=FALSE, na.rm=FALSE,
+                        bg=FALSE, bg.dir="col", na.rm=FALSE,
                         rows="to", cols="aacodon",
-                        row.srt, col.srt,
+                        row.srt, col.srt, filter=TRUE,
                         use.test=use.test,
                         do.plots=FALSE,
                         xlab="value", fname="profile_",
@@ -488,9 +486,11 @@ raasProfile <- function(x=tmtf, id="SAAP",
     }
     
     ## filter for available classes
-    aas <- aas[aas%in%x[,rows]]
-    acod <- acod[acod%in%x[,cols]]
-
+    if ( filter ) {
+        aas <- aas[aas%in%x[,rows]]
+        acod <- acod[acod%in%x[,cols]]
+    }
+    
     ## result structures
     tt <- matrix(0, ncol=length(acod), nrow=length(aas))
     colnames(tt) <- acod
@@ -522,9 +522,13 @@ raasProfile <- function(x=tmtf, id="SAAP",
 
             ## local background: column type!
             bgidx <- !idx
-            if ( bg ) 
-                bgidx <- x[,cols]==cod
-            if ( !replace )
+            if ( bg ) {
+                if ( bg.dir=="col" )
+                    bgidx <- x[,cols]==cod
+                else if ( bg.dir=="row" )
+                    bgidx <- x[,rows]==aa
+            }
+            if ( !replace ) ## do not include foreground in background!
                 bgidx <- bgidx & !idx
 
             if ( any(is.na(bgidx)) ) {
@@ -656,7 +660,7 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
     aam <- matrix(1, ncol=ncol(x), nrow=length(abc))
     rownames(aam) <- abc
     colnames(aam) <- colnames(x)
-    aac <- aap <- aam
+    aac <- aap <- aar <- aam
     aac[] <- 0
     
     for ( i in 1:nrow(aam)   ) {
@@ -670,6 +674,7 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
             
             m <- sum(c(x)==aa) # white balls
             n <- sum(x%in%abc)-m # black balls
+            N <- m+n # total number of balls
 
             q <- sum(x[,j]==aa)    # white balls drawn - AT CURRENT POSITION
             k <- sum(x[,j]%in%abc) # number of balls drawn
@@ -679,6 +684,8 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
             aam[i,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
             ## deprived
             aap[i,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
+            ## frequency ratio
+            aar[i,j] <- q/k * N/m
         }
     }
     ## FILTER SIGNIFICANT
@@ -689,11 +696,13 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
         aam <- aam[sig,]
         aap <- aap[sig,]
         aac <- aac[sig,]
+        aar <- aar[sig,]
     }
 
     ## construct overlap class
     ovl <- list()
     ovl$count <- aac
+    ovl$ratio <- aar
     ovl$p.value <- aam
     ovl$p.value[aap<aam] <- aap[aap<aam]
     ovl$sign <- ifelse(aap<aam,-1,1)

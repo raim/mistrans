@@ -751,15 +751,38 @@ cod  <- codons[unique(ctmt$transcript),]
 codt <- apply(cod,2,sum)
 ## transcript codon frequencies per AA
 codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
-codl <- codl
+    codl <- lapply(codl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
+    codl <- codl[names(aaprop)[names(aaprop)%in%names(codl)]] ## SORT BY AA PROP
 codf <- lapply(codl, function(x) x/sum(x)) # codon frequency
+cods <- unlist(codf)
+names(cods) <- sub("\\.","-",names(cods))
+## GLOBAL CODON SORTING by background frequencies
+## (AA property ->codon frequency)
+CODSRT <- sub("\\.","-",names(unlist(codl)))
+if ( !include.kr )
+    CODSRT <-
+        CODSRT[grep("[KR]", CODSRT, invert=TRUE)]
+
+## codon rank - TODO: remove or improve this
 codr <- lapply(codl, function(x) round(6*rank(x)/length(x))) # codon rank
 codr$W[1] <- 0
 codr$M[1] <- 0
-cods <- unlist(codf)
-names(cods) <- sub("\\.","-",names(cods))
+## codon rank
+codr <- unlist(codr)
+names(codr) <- sub("\\.", "-", names(codr))
+ctmt$codon.rank <- as.character(codr[ctmt$aacodon])
+    
+## codon frequency bins
+ctmt$codon.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
+
+## TODO: do by 2|3, 4 or 6 codons
+cod.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
+ncod <- unlist(lapply(CODL, length))
+
 
 if ( interactive() ) {
+    ## TODO: analyze per AA - positive trend
+    ## globally: negative trend
     plotCor(cods, decode[sub(".*-","", names(cods)),1], density=FALSE,
             col=NA, xlab="codon frequency, all AAS transcripts",
             ylab=expression(decoding~rate(codons/s)))
@@ -773,13 +796,6 @@ if ( interactive() ) {
            bty="n")
 }
 
-## codon rank
-codr <- unlist(codr)
-names(codr) <- sub("\\.", "-", names(codr))
-ctmt$codon.rank <- as.character(codr[ctmt$aacodon])
-    
-## codon frequency bins
-ctmt$codon.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
 
 ## remove single codon!
 ltmt <- ctmt#[!ctmt$from%in%c("W","M","H","D","E","N","Q","F","Y"),]
@@ -820,9 +836,6 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("codon_rank_",SETID)),
              rlab=LAB, llab="", vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
-## TODO: do by 2|3, 4 or 6 codons
-cod.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
-ncod <- unlist(lapply(CODL, length))
 
 
 ## per codon profiles
@@ -838,24 +851,34 @@ for ( ds in auds ) {
             dtmt <- ctmt[ctmt$Dataset!="Healthy",]
     }
 
-## NOTE: bg=FALSE, no column-wise background !
-dtmt$all <- "all"
+    ## NOTE: bg=FALSE, no column-wise background !
+    dtmt$all <- "all"
+    source("~/work/mistrans/scripts/saap_utils.R")
     ova <- raasProfile(x=dtmt, id="SAAP", 
                        rows="all", cols="aacodon",
+                       col.srt=CODSRT, filter=FALSE,
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
-## NOTE: bg=FALSE, no column-wise background !
+    ## NOTE: bg=FALSE, no column-wise background !
+    ## TODO: move this outside loop and use rows as bg
     ovd <- raasProfile(x=dtmt, id="SAAP", 
                        rows="Dataset", cols="aacodon",
-                       bg=FALSE, use.test=use.test, do.plots=FALSE, 
+##                       row.srt=uds,
+                       col.srt=CODSRT, filter=FALSE,
+                       bg=TRUE, bg.dir="row",
+                       use.test=use.test, do.plots=FALSE, 
                        verb=0)
+    nr <- uds[uds%in%rownames(ovd$p.value)]
+    if ( length(nr)>1 )
+        ovd <- sortOverlaps(ovd, axis=2, srt=nr)
 
 
 
     ## NOTE: bg=FALSE, no column-wise background !
     ovw <- raasProfile(x=dtmt, id="SAAP", 
                        rows="to", cols="aacodon",
+                       col.srt=CODSRT, filter=FALSE,
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
@@ -896,9 +919,9 @@ dtmt$all <- "all"
     cdsrt <- cdsrt[cdsrt%in%colnames(ovw$p.value)]
 
     ## sort overlaps
-    ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
-    ovd <- sortOverlaps(ovd, axis=1, srt=cdsrt, cut=FALSE)
-    ova <- sortOverlaps(ova, axis=1, srt=cdsrt, cut=FALSE)
+    ##ovw <- sortOverlaps(ovw, axis=1, srt=cdsrt, cut=FALSE)
+    ##ovd <- sortOverlaps(ovd, axis=1, srt=cdsrt, cut=FALSE)
+    ##ova <- sortOverlaps(ova, axis=1, srt=cdsrt, cut=FALSE)
     
     ## codon frequency bins
     codon.bins <- cut(lcods[dtmt$aacodon], seq(0,1,.2))
@@ -931,8 +954,8 @@ dtmt$all <- "all"
                  gcols=gcols, col.lines=cdn.cnt)
 
 
-plotProfiles(ovd, fname=file.path(fig.path,paste0("codon_",
-                                                  SETID,"_",ds,"_Dataset")),
+    plotProfiles(ovd, fname=file.path(fig.path,paste0("codon_",
+                                                      SETID,"_",ds,"_Dataset")),
                  fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
@@ -1036,23 +1059,24 @@ plotProfiles(ovd, fname=file.path(fig.path,paste0("codon_",
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
     for ( ax in 3:4 )  axis(ax, labels=FALSE)
-dev.off()
+    dev.off()
 
-## TODO: mean has no correlation to RAAS, median does!
-plotCor(ova$median[,names(lcods)], lcods, density=FALSE, col=NA)
-    points(ova$median[,names(lcods)], lcods, lwd=1, cex=1,
-           col=aa.cols[sub("-.*","",names(cods))],
-           pch=aa.pchs[sub("-.*","",names(cods))])
-plotCor(ova$mean[,names(lcods)], lcods, density=FALSE, col=NA)
-    points(ova$mean[,names(lcods)], lcods, lwd=1, cex=1,
-           col=aa.cols[sub("-.*","",names(cods))],
-           pch=aa.pchs[sub("-.*","",names(cods))])
-plotCor(ova$mean[,names(lcods)], ova$median[,names(lcods)],
-        density=FALSE, col=NA)
-    points(ova$mean[,names(lcods)], ova$median[,names(lcods)], lwd=1, cex=1,
-           col=aa.cols[sub("-.*","",names(cods))],
-           pch=aa.pchs[sub("-.*","",names(cods))])
-
+    ## TODO: mean has no correlation to RAAS, median does!
+    if ( interactive() ) {
+        plotCor(ova$median[,names(lcods)], lcods, density=FALSE, col=NA)
+        points(ova$median[,names(lcods)], lcods, lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(cods))],
+               pch=aa.pchs[sub("-.*","",names(cods))])
+        plotCor(ova$mean[,names(lcods)], lcods, density=FALSE, col=NA)
+        points(ova$mean[,names(lcods)], lcods, lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(cods))],
+               pch=aa.pchs[sub("-.*","",names(cods))])
+        plotCor(ova$mean[,names(lcods)], ova$median[,names(lcods)],
+                density=FALSE, col=NA)
+        points(ova$mean[,names(lcods)], ova$median[,names(lcods)], lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(cods))],
+               pch=aa.pchs[sub("-.*","",names(cods))])
+    }
 
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequencies_raas_dana14")),
@@ -1189,9 +1213,9 @@ plotCor(ova$mean[,names(lcods)], ova$median[,names(lcods)],
         paste0(GENETIC_CODE[colnames(aam)],"-", colnames(aam))
 
     ## sort
-    aam <- aam[,cdsrt,drop=FALSE]
-    aap <- aap[,cdsrt,drop=FALSE]
-    aac <- aac[,cdsrt,drop=FALSE]
+    aam <- aam[,CODSRT,drop=FALSE]
+    aap <- aap[,CODSRT,drop=FALSE]
+    aac <- aac[,CODSRT,drop=FALSE]
 
     ## construct overlap class
     ovl <- list()
