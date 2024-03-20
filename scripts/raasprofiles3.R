@@ -120,6 +120,11 @@ aa.pchs[c("W")]     <- 4
 aa.pchs[c("H")]     <- 19
 aa.pchs[c("P")]     <- 4
 
+## color by codon frequency
+aa.cols <-
+    unlist(lapply(CODL, length))
+aa.pchs[] <- 1
+
 ## plot colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
 upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
@@ -991,7 +996,7 @@ for ( ds in auds ) {
             ylab=expression(f[AAS]/f[bg]),
             xlab=expression(f[bg]), xlim=c(0,1),
             col=NA,pch=19, lwd=2, cex=.6)
-    points(cods, lratio, lwd=1, cex=1,
+    points(cods, lratio, lwd=2, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
@@ -1009,7 +1014,7 @@ for ( ds in auds ) {
             ylab=expression(codon~frequency~f[AAS]),
             xlab=expression(codon~frequency~f[bg]), xlim=c(0,1), ylim=c(0,1),
             col=NA,pch=19, lwd=2, cex=.6)
-    points(cods, lcods, lwd=1, cex=1,
+    points(cods, lcods, lwd=2, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     ##abline(a=0,b=1, col=2)
@@ -1031,7 +1036,7 @@ for ( ds in auds ) {
          ylab=expression(f[AAS]-f[bg]),
          xlab=expression(f[bg]), xlim=c(0,1),
          col=NA,pch=19, lwd=2, cex=.6)
-    points(cods, lcods-cods, lwd=1, cex=1,
+    points(cods, lcods-cods, lwd=2, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     if ( FALSE )
@@ -1055,7 +1060,7 @@ for ( ds in auds ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(ram, lcods, density=FALSE, xlab=expression(median~log[10]*RAAS),
             ylab=expression(codon~frequency~f[AAS]), col=NA)
-    points(ram, lcods, lwd=1, cex=1,
+    points(ram, lcods, lwd=2, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
@@ -1088,7 +1093,7 @@ for ( ds in auds ) {
         plotCor(ram, decode[sub(".*-","",names(ram)),1],
                 density=FALSE, xlab=expression(median~log[10]*RAAS),
                 ylab=expression(decoding~rate/(codons/s)), col=NA)
-        points(ram, decode[sub(".*-","",names(ram)),1], lwd=1, cex=1,
+        points(ram, decode[sub(".*-","",names(ram)),1], lwd=2, cex=1,
                col=aa.cols[sub("-.*","",names(cods))],
                pch=aa.pchs[sub("-.*","",names(cods))])
         figlabel(ds, pos="bottomleft", font=2, cex=1.2)
@@ -1141,6 +1146,7 @@ for ( ds in auds ) {
     }
     abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
     dev.off()
+    
     mai.bar <- mai
     mai.bar[c(2,4)] <- mai.bar[c(2,4)] +.05
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,"_codons_ratio")),

@@ -24,30 +24,123 @@ w.test <- function(x,y) {
     rt
 }
 
-dotprofile <- function(ovw, value, vbrks, vcols, p.dot, dot.sze, test=FALSE,
-                       ...) {
-    
-    navals <- ovw[[value]]
+dotprofile <- function(x, value, vcols=viridis::viridis(100),
+                       vbrks, p.dot=1e-10, dot.sze=c(.3,2),
+                       lg2=FALSE, mxr,
+                       show.total=FALSE,
+                       test=FALSE, ...) {
+
+    ## values for coloring
+    vals <- x[[value]]
+    if ( lg2 ) {
+        vals <- log2(vals)
+        if ( missing(mxr) ) mxr <- max(abs(vals))
+        vals[vals >  mxr] <-  mxr
+        vals[vals < -mxr] <- -mxr
+    }
+
+    ## breaks
+    if ( missing(vbrks) )
+        vbrks <- seq(min(vals,na.rm=TRUE), max(vals, na.rm=TRUE), length.out=length(vcols)+1)
+
+    navals <- vals
     navals[] <- NA
     image_matrix(navals, breaks=vbrks, col=vcols, ...)
     
-    p <- -log10(ovw$p.value)
+    p <- -log10(x$p.value)
     p[p>-log10(p.dot)] <- -log10(p.dot)
     z <- p/-log10(p.dot)
 
-    if ( test )
-        points(x = rep(1:ncol(z), nrow(z)),
-               y = rep(nrow(z):1, each= ncol(z)))
 
+    
     ## intersect data to colors
-    cols <- vcols[findInterval(t(ovw[[value]]),
+    cols <- vcols[findInterval(t(vals),
                                seq(min(vbrks), max(vbrks),
                                    length.out=length(vbrks)),
                                all.inside = TRUE)]
+    d.sze <- dot.sze[1]+dot.sze[2]*c(t(z))
+    if ( test )
+        points(x = rep(1:ncol(z), nrow(z)),
+               y = rep(nrow(z):1, each= ncol(z)), cex=d.sze)
     points(x = rep(1:ncol(z), nrow(z)),
            y = rep(nrow(z):1, each= ncol(z)),
-           cex=dot.sze[1]+dot.sze[2]*c(t(z)), pch=19,
+           cex=d.sze, pch=19,
            col=cols)
+    
+    toty <- totx <- FALSE
+    if (is.logical(show.total)) {
+        if (show.total) 
+            toty <- totx <- TRUE
+    }
+    else if (is.character(show.total)) {
+        if (show.total == "x") 
+            totx <- TRUE
+        if (show.total == "y") 
+            toty <- TRUE
+        if (show.total %in% c("xy", "yx")) 
+            toty <- totx <- TRUE
+    }
+    if (toty) 
+        if ("num.query" %in% names(x)) 
+            axis(4, at = length(x$num.query):1, labels = x$num.query, 
+                las = 2, lwd = 0, lwd.ticks = 1)
+    if (totx) 
+        if ("num.target" %in% names(x)) 
+            axis(3, at = 1:length(x$num.target), labels = x$num.target, 
+                las = 2, lwd = 0, lwd.ticks = 1)
+    if (toty | totx) 
+        figlabel("total", region = "figure", pos = "topright", 
+            cex = par("cex"))
+}
+
+## testing to use enrichment of overlap tables
+## as dot size -> too big for low numbers
+plotOverlaps2 <- function(ovw,
+                          col,
+                          max.val=3, 
+                          p.min=1e-10, p.txt=1e-5,
+                          dot.sze=c(.2,3), bg=TRUE,
+                          ...) {
+    
+    ## p-value scaling
+    p <- -log10(ovw$p.value)
+    p[p>-log10(p.min)] <- -log10(p.min)
+    p <- p/-log10(p.min)
+
+    p <- p*ovw$sign
+    
+    ## enrichment ratio scaling
+    r <- abs(log2(ovw$ratio))
+    r[r>max.val] <- max.val
+    r <- r/max.val
+    
+
+    ## point size
+    d.cex <- dot.sze[1]+dot.sze[2]*c(t(r))
+
+
+    ## p-value colors
+    if ( missing(col) ) {
+        docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
+        upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
+        col <- unique(c(rev(docols), upcols))
+    }
+    brks <- seq(-1, 1, length.out = length(col)+1)
+    cols <- col[findInterval(t(p), brks, all.inside = TRUE)]
+
+    navals <- ovw[["ratio"]]
+    navals[] <- NA
+    image_matrix(navals,  col=col, breaks=brks, ...)
+
+    if ( bg )
+        points(x = rep(1:ncol(r), nrow(r)),
+               y = rep(nrow(r):1, each= ncol(r)), cex=d.cex+.5, pch=1)
+
+    points(x = rep(1:ncol(r), nrow(r)),
+           y = rep(nrow(r):1, each= ncol(r)),
+           cex=d.cex, pch=19,
+           col=cols)
+    return(cbind(c(p),cols))
 }
 
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
@@ -245,12 +338,27 @@ plotovl <- function(ovl, text="count", cut=TRUE, value="median",
 ## volcano plot function for overlap class
 ## produced by raasProfile
 volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
-                    density=TRUE, ...) {
+                    lg2=FALSE, mxr, density=TRUE, xlab, adjust, ...) {
+
+    ## values for coloring
+    vals <- ovl[[value]]
+    if ( lg2 ) {
+        vals <- log2(vals)
+        if ( missing(mxr) ) mxr <- max(abs(vals))
+        vals[vals >  mxr] <-  mxr
+        vals[vals < -mxr] <- -mxr
+    }
 
     
-    tmv <- gdata::unmatrix(t(ovl[[value]]))
+    tmv <- gdata::unmatrix(t(vals))
     ##tmv <- c(ovl[[value]])
-    tpv <- -log10(gdata::unmatrix(t(ovl$p.value)))
+
+    pvals <- ovl$p.value
+    if ( !missing(adjust) )
+        pvals[] <- p.adjust(c(pvals), method=adjust)
+    
+    
+    tpv <- -log10(gdata::unmatrix(t(pvals)))
     tpv[tpv>cut] <- cut
 
     na <- is.na(tmv) | is.na(tpv)
@@ -259,11 +367,13 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
 
     if ( length(tmv)<2 ) 
         density <- FALSE
+
+    if ( missing(xlab) ) xlab <- value
     
     if ( density ) {
-        dense2d(tmv, tpv, ylab=expression(-log[10](p)), ...)
+        dense2d(tmv, tpv, ylab=expression(-log[10](p)), xlab=xlab, ...)
     } else {
-        plot(tmv, tpv, ylab=expression(-log[10](p)), ...)
+        plot(tmv, tpv, ylab=expression(-log[10](p)), xlab=xlab, ...)
     }
     axis(4)
 
@@ -275,7 +385,7 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
     show <- which(show)
     if ( length(show) ){
         if ( missing(mid) )
-            mid <- mean(ovl[[value]],na.rm=TRUE)
+            mid <- mean(vals,na.rm=TRUE)
         shadowtext(tmv[show], tpv[show], labels=names(tpv)[show],
                    pos=ifelse(tmv[show]<mid, 2,4), col="red",
                    font=2, cex=.8, xpd=TRUE)

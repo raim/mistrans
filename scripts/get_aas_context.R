@@ -147,6 +147,7 @@ plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
 mtext("relative position of AAS in peptide", 1, 3.5)
 dev.off()
 
+
 ## Categorize by N+i and C-i
 mx <- 9
 nt <- bpd$site
@@ -170,14 +171,46 @@ cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
 ##cls <- sortOverlaps(cls, p.min=.1)
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=mx/2+1, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.05,0), tcl=-.05)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
 plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=1, text.cex=.8)
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
 par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
 axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
 mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
+
+
+## TODO: use p.value for color and ratio for size
+plotdev(file.path(fig.path,
+                  paste0("peptide_AA_overlap_absolute_enrichment")),
+        height=5, width=mx/2+1, res=300)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
+plotOverlaps2(cls, max.val=5, xlab=NA, ylab="encoded AA at AAS",
+              p.min=1e-10, dot.sze=c(.2,2), bg=TRUE)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
+axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
+mtext("position of AAS in peptide", 1, 1.5)
+figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
+source("~/work/mistrans/scripts/saap_utils.R")
+plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute_dotplot")),
+        height=5, width=mx/2+1, res=300)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
+dotprofile(cls, value="ratio", vcols=ttcols, xlab=NA,
+           p.dot=1e-10, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2),test=FALSE,
+           ylab="encoded AA at AAS", show.total=TRUE)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
+axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
+mtext("position of AAS in peptide", 1, 1.5)
+figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
 
 ## STORE to compare with miscleavage pattern below
 OVL.AA <- cls
@@ -569,6 +602,19 @@ for ( i in 1:nrow(filters) ) {
     figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
     figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
     dev.off()
+    plotdev(file.path(fig.path,paste0("seqcontext_",
+                                      column,"_",pattern, "_dotplot")),
+            type="png", res=300, width=15,height=5)
+    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    dotprofile(ovl, value="ratio", vcols=ttcols, xlab=NA,
+               p.dot=1e-10, lg2=TRUE, mxr=2,
+               dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
+    mtext("position relative to AAS", 1, 1.3)
+    figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+    figlabel(bquote(n[seq]==.(nrow(ctx))), pos="bottomright", font=2, cex=1.2)
+    dev.off()
+
+    
 
     ## FILTER BY P-VALUE
     
@@ -600,6 +646,20 @@ for ( i in 1:nrow(filters) ) {
         par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
         plotOverlaps(ovc, p.min=1e-10, p.txt=1e-5, xlab=NA,
                      ylab="amino acid", col=ttcols, show.total=TRUE,text.cex=.8)
+        mtext("position relative to AAS", 1, 1.3)
+        figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+        figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
+        dev.off()
+
+        plotdev(file.path(fig.path,paste0("seqcontext_",
+                                          column,"_",pattern,"_dotplot_tight")),
+                type="png", res=300, 
+                width=.3*ncol(ovc$p.value)+1,,height=.25*nrow(ovc$p.value)+1)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        dotprofile(ovc, value="ratio", vcols=ttcols, xlab=NA,
+                   p.dot=1e-10, lg2=TRUE, mxr=2,
+                   dot.sze=c(.3,2),
+                   ylab="amino acid", axis=1:2, show.total=TRUE)
         mtext("position relative to AAS", 1, 1.3)
         figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
         figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
@@ -875,6 +935,26 @@ plotOverlaps(ovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
 mtext("position relative to internal K|R", 1, 1.3)
 figlabel(paste0("miscleavage"), pos="bottomleft", font=2, cex=1.2)
 figlabel(bquote(n[seq]==.(nrow(kctx))), pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+source("~/work/mistrans/scripts/saap_utils.R")
+plotdev(file.path(fig.path,paste0("miscleavage_AA_profile_dotplot")),
+        type="png", res=300, width=5,height=5)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovs, value="ratio", vcols=ttcols, xlab=NA,
+           p.dot=1e-10, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2),test=TRUE,
+           ylab="amino acid", axis=1:2, show.total=TRUE)
+mtext("position relative to internal K|R", 1, 1.3)
+figlabel(paste0("miscleavage"), pos="bottomleft", font=2, cex=1.2)
+figlabel(bquote(n[seq]==.(nrow(kctx))), pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("miscleavage_AA_profile_volcano")),
+        type="png", res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+volcano(ovs, value="ratio", cut=50, lg2=TRUE, mxr=3, xlim=c(-4,4),
+        xlab="log2 frequency ratio")#, adjust="bonferroni")
 dev.off()
 
 OVL.MIS <- ovk

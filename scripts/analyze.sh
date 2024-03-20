@@ -68,7 +68,7 @@ R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
 R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
 
 ## get and analyze sequences surrounding the ASS
-R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt
+R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt 
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
