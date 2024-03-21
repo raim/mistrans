@@ -397,6 +397,15 @@ dev.off()
 ## fasta for sequence analysis.
 pfas <- readFASTA(fasta, grepID=TRUE)
 
+## inspect some known degrons, eg.
+## @Poirson2024: PRR20A, ENSP00000367164, residues 168–221
+pid <- "ENSP00000367164"
+unlist(strsplit(pfas[[pid]]$seq,""))[168:221]
+## @Zhang2015: EID1, ENSP00000431162, residues 160–172
+pid <- "ENSP00000431162"
+unlist(strsplit(pfas[[pid]]$seq,""))[160:172]
+## "A" "F" "I" "E" "E" "L" "F" "S" "L" "M" "V" "V" "N"
+
 ## get only the required
 pfas <- pfas[bpd$protein]
 
@@ -1019,6 +1028,14 @@ plotdev(file.path(fig.path,paste0("miscleavage_diAA_profile")),
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlaps(dovs, p.min=1e-10, p.txt=1e-5, xlab=NA,
              ylab="di-amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+dev.off()
+plotdev(file.path(fig.path,paste0("miscleavage_diAA_dotplot")),
+        type="png", res=300, width=5,height=45)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(dovs, value="ratio", vcols=ttcols, xlab=NA,
+           p.dot=1e-10, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), axis=1:2,
+           ylab="di-amino acid", show.total=TRUE)
 dev.off()
 
 ## CLEAVAGE BIASES?

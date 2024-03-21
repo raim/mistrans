@@ -12,6 +12,9 @@ THIS=${HOME}/work/mistrans
 ## INPUT GENOME DATA IS GENERATED
 ## by from genomeBrowser/mammary/setup.sh
 
+## additional data
+wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
+
 ## analyze data structure, different number of replicates per unique SAAP
 R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt
 
