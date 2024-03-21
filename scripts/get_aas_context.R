@@ -437,6 +437,13 @@ pctx <- do.call(rbind, pctx)
 rownames(pctx) <-
     paste0(bpd$name,"_",bpd$pos-dst,"_",bpd$pos+dst)
 
+## convert AA matrix to diAA matrix
+dctx <- character()
+for ( i in 1:(ncol(pctx)-1) )
+    dctx <- cbind(dctx, apply(pctx[,i:(i+1)],1,paste,collapse=""))
+colnames(dctx) <- head(colnames(pctx), ncol(pctx)-1)
+rownames(dctx) <- rownames(pctx)
+
 if ( interactive() ) {
     x <-c(table(c(pctx[,20:25]))[AAT])
     y <-c(table(c(pctx[,26:31]))[AAT])
@@ -696,10 +703,13 @@ for ( i in fidx ) {
     fname <- file.path(out.path,paste0("seqcontext_",
                                        column,"_",pattern,".fa"))
     out.rng <- as.character(-sdst:sdst)
+
+    
+    sqnms <- tagDuplicates(rownames(ctx))
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) {
         osq <- gsub("-","",paste0(ctx[j,out.rng], collapse=""))
-        cat(paste0(">", rownames(ctx)[j],"\n", osq, "\n"),
+        cat(paste0(">", sqnms[j],"\n", osq, "\n"),
             file=fname, append=TRUE)
     }
 
@@ -711,7 +721,7 @@ for ( i in fidx ) {
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) 
         if ( sum(ctx[j,out.rng]!="-")>7 )
-            cat(paste0(">",rownames(ctx)[j],"\n",
+            cat(paste0(">",sqnms[j],"\n",
                        gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 
@@ -722,7 +732,7 @@ for ( i in fidx ) {
     if ( file.exists(fname) ) unlink(fname)
     for ( j in 1:nrow(ctx) ) 
         if ( sum(ctx[j,out.rng]!="-")==7 )
-            cat(paste0(">",rownames(ctx)[j],"\n",
+            cat(paste0(">",sqnms[j],"\n",
                        gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
                 file=fname, append=TRUE)
 }
