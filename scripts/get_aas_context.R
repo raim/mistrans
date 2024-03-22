@@ -12,12 +12,17 @@
 
 ## TODO:
 ## * still contains some genes that may be filtered, eg. IGLL5,
-## * 
+## *
+
+## TODO:
+
+## * PCA of AA FREQUENCIES in -7:7
 
 source("~/work/mistrans/scripts/saap_utils.R")
 
 library(segmenTools)
 require(ggplot2)
+library(readxl)
 require(ggseqlogo)
 options(stringsAsFactors=FALSE)
 
@@ -86,32 +91,43 @@ fasta <- file.path(dat.path,"all_proteins.fa")
 ## coding region fasta
 ##transcr <- file.path(mam.path,"processedData","coding.fa")
 
+degron.file <- file.path(proj.path,"originalData",
+                         "DEGRONOPEDIA_degron_dataset.xlsx")
+
+## analyze degron patterns
+degrons <- as.data.frame(read_xlsx(degron.file, sheet=2))
+grep("W",degrons$Degron_regex, value=TRUE)
 
 ## GET SAAP/BP DATA
 dat <- read.delim(in.file)
+cat(paste("loaded", nrow(dat), "SAAP/BP\n"))
 
 ## mahlon's degron candidates
 bpids <- c("LLIYTNNQRPSGVPDR", "EIASTLMESEMMEILSVLAK", "MDQPAGLQVDYVFR")
-
 dat[which(dat$BP%in%bpids),"name"]
 
 ## remove by exclude tag - IG/Albumin/globin
+cat(paste("removing", sum(dat$IG,na.rm=TRUE), "immunoglobulins\n"))
 dat <- dat[!dat$IG ,]
+
 ## remove those w/o protein info
+cat(paste("removing", sum(is.na(dat$pos)), "w/o protein info\n"))
 dat <- dat[!is.na(dat$pos), ]
 
 ## remove protein with substitutions at the same site
 ## TODO: more complex handling of this
 dupls <- duplicated(paste(dat$protein, dat$pos))
 cat(paste("removing", sum(dupls),
-          "BP with equal position in proteins\n"))
+          "AAS with equal position in proteins\n"))
 dat <- dat[!dupls,]
 
 ## rm AAS w/o from info
 ## TODO: where do these come from?
+cat(paste("removing", sum(dat$from==""), "w/o from AA info\n"))
 dat <- dat[dat$from!="",]
 
 ## ONLY USE GOOD BLAST MATCHES
+cat(paste("removing", sum(dat$match!="good"), "with bad blast match\n"))
 dat <-dat[dat$match=="good",]
 
 ## add new tags
@@ -438,6 +454,8 @@ rownames(pctx) <-
     paste0(bpd$name,"_",bpd$pos-dst,"_",bpd$pos+dst)
 
 ## convert AA matrix to diAA matrix
+## TODO: grep specifically the found diAA patterns
+## M[S|T], W[ILV], AQ, KA, RA
 dctx <- character()
 for ( i in 1:(ncol(pctx)-1) )
     dctx <- cbind(dctx, apply(pctx[,i:(i+1)],1,paste,collapse=""))
@@ -451,6 +469,200 @@ if ( interactive() ) {
     abline(a=0, b=1)
     text(x, y, names(x),xpd=TRUE)
 }
+
+### PCA OF FREQUENCIES
+## TODO: do by substitution type
+
+pcalab <- expression(AAS%+-%10)
+pcax <- pctx[,as.character(-10:10)]
+pcax <- apply(pcax,1,function(x) table(x)[AAT])
+rownames(pcax) <- AAT
+
+pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
+pcax[is.na(pcax)] <- 0
+
+
+pcax <- t(pcax)
+image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+             axis=1:2)
+
+pcax <- pcax - apply(pcax,1,mean) # center genes
+pca <- prcomp(pcax, scale=TRUE)
+
+values <- pca$sdev^2
+vectors <- pca$rotation
+var <- values/sum(values) # % of variance explained by PCn
+
+## add % variance explained to colnames, for axis labels
+colnames(pca$x) <-
+    paste0(colnames(pca$x), " (",round(100*var), "%)")
+
+dense2d(pca$rotation[,1],pca$rotation[,2],
+             xlab=colnames(pca$x)[1],
+             ylab=colnames(pca$x)[2])
+plotdev(file.path(fig.path,paste0("PCA_AA")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,1],pca$rotation[,2],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[1],
+     ylab=colnames(pca$x)[2])
+shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
+     col=aa.cols[rownames(pca$rotation)])
+figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
+dev.off()
+plotdev(file.path(fig.path,paste0("PCA_AA_13")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,1],pca$rotation[,3],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[1],
+     ylab=colnames(pca$x)[3])
+shadowtext(pca$rotation[,1],pca$rotation[,3],labels=rownames(pca$rotation),
+     col=aa.cols[rownames(pca$rotation)])
+figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
+dev.off()
+plotdev(file.path(fig.path,paste0("PCA_AA_24")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,2],pca$rotation[,4],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[2],
+     ylab=colnames(pca$x)[4])
+shadowtext(pca$rotation[,2],pca$rotation[,4],labels=rownames(pca$rotation),
+     col=aa.cols[rownames(pca$rotation)])
+figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+## PCA of diAA content
+
+pcax <- dctx[,as.character(-7:7)]
+pcax <- apply(pcax,1,function(x) table(x)[diAAT])
+rownames(pcax) <- diAAT
+
+pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
+pcax[is.na(pcax)] <- 0
+
+pcax <- t(pcax)
+
+image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+             axis=1:2)
+
+pcax <- pcax - apply(pcax,1,mean) # center genes
+pca <- prcomp(pcax, scale=TRUE)
+
+values <- pca$sdev^2
+vectors <- pca$rotation
+var <- values/sum(values) # % of variance explained by PCn
+
+## add % variance explained to colnames, for axis labels
+colnames(pca$x) <-
+    paste0(colnames(pca$x), " (",round(100*var), "%)")
+
+dense2d(pca$rotation[,1],pca$rotation[,2],
+             xlab=colnames(pca$x)[1],
+             ylab=colnames(pca$x)[2])
+plotdev(file.path(fig.path,paste0("PCA_diAA")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,1],pca$rotation[,2],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[1],
+     ylab=colnames(pca$x)[2])
+cols <- unlist(lapply(strsplit(rownames(pca$rotation),""),function(x) x[1]))
+shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
+     col=aa.cols[cols],cex=.7)
+figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+## PCA OF DEGRONS
+
+degl <- strsplit(degrons$Degron,"")
+dlen <- unlist(lapply(degl, function(x) sum(x%in%AAT)))
+hist(dlen)
+
+## only longer degrons
+head(degl[dlen>5])
+## only longer degrons that equal their regex, i.e. fixed
+## sequences (?)
+fixed <- degrons$Degron==degrons$Degron_regex
+head(degrons[fixed,])
+
+head(degrons[fixed&dlen>5,])
+
+## filter nonAA chars
+degl <- lapply(degl, function(x) x[x%in%AAT])
+
+## remove short and (partially regex
+degl <- degl[dlen>5]
+
+pcax <- lapply(degl,function(x) table(x)[AAT])
+pcax <- do.call(cbind, pcax)
+rownames(pcax) <- AAT
+
+pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
+pcax[is.na(pcax)] <- 0
+
+
+pcax <- t(pcax)
+image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+             axis=1:2)
+
+pcax <- pcax - apply(pcax,1,mean) # center genes
+pca <- prcomp(pcax, scale=TRUE)
+
+values <- pca$sdev^2
+vectors <- pca$rotation
+var <- values/sum(values) # % of variance explained by PCn
+
+## add % variance explained to colnames, for axis labels
+colnames(pca$x) <-
+    paste0(colnames(pca$x), " (",round(100*var), "%)")
+
+dense2d(pca$rotation[,1],pca$rotation[,2],
+             xlab=colnames(pca$x)[1],
+             ylab=colnames(pca$x)[2])
+
+plotdev(file.path(fig.path,paste0("PCA_AA_degrons")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,1],pca$rotation[,2],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[1],
+     ylab=colnames(pca$x)[2])
+shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
+     col=aa.cols[rownames(pca$rotation)])
+figlabel("degrons", pos="bottomright", font=2, cex=1.2)
+dev.off()
+plotdev(file.path(fig.path,paste0("PCA_AA_degrons_13")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,1],pca$rotation[,3],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[1],
+     ylab=colnames(pca$x)[3])
+shadowtext(pca$rotation[,1],pca$rotation[,3],labels=rownames(pca$rotation),
+     col=aa.cols[rownames(pca$rotation)])
+figlabel("degrons", pos="bottomright", font=2, cex=1.2)
+dev.off()
+plotdev(file.path(fig.path,paste0("PCA_AA_degrons_24")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pca$rotation[,2],pca$rotation[,4],
+     col=NA,#aa.cols[rownames(pca$rotation)],
+     pch=aa.pchs[rownames(pca$rotation)],
+     xlab=colnames(pca$x)[2],
+     ylab=colnames(pca$x)[4])
+shadowtext(pca$rotation[,2],pca$rotation[,4],labels=rownames(pca$rotation),
+           col=aa.cols[rownames(pca$rotation)])
+figlabel("degrons", pos="bottomright", font=2, cex=1.2)
+dev.off()
 
 ## introduce required tags
 
@@ -681,7 +893,48 @@ for ( i in 1:nrow(filters) ) {
         figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
         dev.off()
     }
+
+    ## analyze dimer frequencies
+    ## TODO: select diAA suggested by monoAA analysis?
+    if ( TRUE ) {
+
+        ctx <- dctx[filt,,drop=FALSE]
+        rownames(ctx) <-
+            paste0(bpd$name[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
+
+    
+        dovl <- aaProfile(ctx, verb=0, p.min=.005, abc=diAAT)
+        dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
+        dovs <- sortOverlaps(dovs, axis=2, p.min=1e-10, cut=TRUE)
+
+        plotdev(file.path(fig.path,paste0("seqcontext_",
+                                          column,"_",pattern,
+                                          "_diAA")),
+                type="png", res=300, 
+                width=.3*ncol(dovs$p.value)+1,,height=.25*nrow(dovs$p.value)+1)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        plotOverlaps(dovs, p.min=1e-50, p.txt=1e-25, xlab=NA,
+                     ylab="di-amino acid", col=ttcols, show.total=TRUE,
+                     text.cex=.8)
+        figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+        figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
+        dev.off()
+        plotdev(file.path(fig.path,paste0("seqcontext_",
+                                          column,"_",pattern,
+                                          "_diAA_dotplot")),
+                type="png", res=300, 
+                width=.3*ncol(dovs$p.value)+1,,height=.25*nrow(dovs$p.value)+1)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        dotprofile(dovs, value="ratio", vcols=ttcols, xlab=NA,
+           p.dot=1e-50, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), axis=1:2,
+           ylab="di-amino acid", show.total=TRUE)
+        figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
+        figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
+         dev.off()
+    }
 }
+
 ### WRITE OUT FASTA FILES
 
 fidx <- which(filters[,"column"] %in% c("methionine","tryptophane"))
