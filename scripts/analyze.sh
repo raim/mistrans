@@ -71,7 +71,15 @@ R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
 R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
 
 ## get and analyze sequences surrounding the ASS
-R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt 
+R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt
+
+## kplogo
+~/programs/kpLogo/bin/kpLogo seqcontext_all_.fa  -alphabet protein -o kplogo/all
+~/programs/kpLogo/bin/kpLogo seqcontext_fromto_Q:G.fa -alphabet protein -o kplogo/QG
+~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
+~/programs/kpLogo/bin/kpLogo seqcontext_methionine_TRUE.fa -alphabet protein -o kplogo/M
+~/programs/kpLogo/bin/kpLogo seqcontext_tryptophane_TRUE.fa -alphabet protein -o kplogo/W
+
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES

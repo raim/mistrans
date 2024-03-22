@@ -24,6 +24,7 @@ library(segmenTools)
 require(ggplot2)
 library(readxl)
 require(ggseqlogo)
+library(Peptides)
 options(stringsAsFactors=FALSE)
 
 library(Biostrings)
@@ -474,6 +475,7 @@ if ( interactive() ) {
 ## TODO: do by substitution type
 
 pcalab <- expression(AAS%+-%10)
+
 pcax <- pctx[,as.character(-10:10)]
 pcax <- apply(pcax,1,function(x) table(x)[AAT])
 rownames(pcax) <- AAT
@@ -487,94 +489,94 @@ image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
              axis=1:2)
 
 pcax <- pcax - apply(pcax,1,mean) # center genes
-pca <- prcomp(pcax, scale=TRUE)
+pcx <- prcomp(pcax, scale=TRUE)
 
-values <- pca$sdev^2
-vectors <- pca$rotation
+values <- pcx$sdev^2
+vectors <- pcx$rotation
 var <- values/sum(values) # % of variance explained by PCn
 
 ## add % variance explained to colnames, for axis labels
-colnames(pca$x) <-
-    paste0(colnames(pca$x), " (",round(100*var), "%)")
+colnames(pcx$x) <-
+    paste0(colnames(pcx$x), " (",round(100*var), "%)")
 
-dense2d(pca$rotation[,1],pca$rotation[,2],
-             xlab=colnames(pca$x)[1],
-             ylab=colnames(pca$x)[2])
+dense2d(pcx$rotation[,1],pcx$rotation[,2],
+             xlab=colnames(pcx$x)[1],
+             ylab=colnames(pcx$x)[2])
 plotdev(file.path(fig.path,paste0("PCA_AA")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,1],pca$rotation[,2],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[1],
-     ylab=colnames(pca$x)[2])
-shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
-     col=aa.cols[rownames(pca$rotation)])
+plot(pcx$rotation[,1],pcx$rotation[,2],
+     col=NA,#aa.cols[rownames(pcx$rotation)],
+     pch=aa.pchs[rownames(pcx$rotation)],
+     xlab=colnames(pcx$x)[1],
+     ylab=colnames(pcx$x)[2])
+shadowtext(pcx$rotation[,1],pcx$rotation[,2],labels=rownames(pcx$rotation),
+     col=aa.cols[rownames(pcx$rotation)])
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_13")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,1],pca$rotation[,3],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[1],
-     ylab=colnames(pca$x)[3])
-shadowtext(pca$rotation[,1],pca$rotation[,3],labels=rownames(pca$rotation),
-     col=aa.cols[rownames(pca$rotation)])
+plot(pcx$rotation[,1],pcx$rotation[,3],
+     col=NA,#aa.cols[rownames(pcx$rotation)],
+     pch=aa.pchs[rownames(pcx$rotation)],
+     xlab=colnames(pcx$x)[1],
+     ylab=colnames(pcx$x)[3])
+shadowtext(pcx$rotation[,1],pcx$rotation[,3],labels=rownames(pcx$rotation),
+     col=aa.cols[rownames(pcx$rotation)])
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_24")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,2],pca$rotation[,4],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[2],
-     ylab=colnames(pca$x)[4])
-shadowtext(pca$rotation[,2],pca$rotation[,4],labels=rownames(pca$rotation),
-     col=aa.cols[rownames(pca$rotation)])
+plot(pcx$rotation[,2],pcx$rotation[,4],
+     col=NA,#aa.cols[rownames(pcx$rotation)],
+     pch=aa.pchs[rownames(pcx$rotation)],
+     xlab=colnames(pcx$x)[2],
+     ylab=colnames(pcx$x)[4])
+shadowtext(pcx$rotation[,2],pcx$rotation[,4],labels=rownames(pcx$rotation),
+     col=aa.cols[rownames(pcx$rotation)])
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 
 ## PCA of diAA content
 
-pcax <- dctx[,as.character(-7:7)]
-pcax <- apply(pcax,1,function(x) table(x)[diAAT])
-rownames(pcax) <- diAAT
+pcdx <- dctx[,as.character(-7:7)]
+pcdx <- apply(pcdx,1,function(x) table(x)[diAAT])
+rownames(pcdx) <- diAAT
 
-pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
-pcax[is.na(pcax)] <- 0
+pcdx <- apply(pcdx,2, function(x) x/sum(x,na.rm=TRUE))
+pcdx[is.na(pcdx)] <- 0
 
-pcax <- t(pcax)
+pcdx <- t(pcdx)
 
-image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+image_matrix(cor(pcdx), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
              axis=1:2)
 
-pcax <- pcax - apply(pcax,1,mean) # center genes
-pca <- prcomp(pcax, scale=TRUE)
+pcdx <- pcdx - apply(pcdx,1,mean) # center genes
+pcdx <- prcomp(pcdx, scale=TRUE)
 
-values <- pca$sdev^2
-vectors <- pca$rotation
+values <- pcdx$sdev^2
+vectors <- pcdx$rotation
 var <- values/sum(values) # % of variance explained by PCn
 
 ## add % variance explained to colnames, for axis labels
-colnames(pca$x) <-
-    paste0(colnames(pca$x), " (",round(100*var), "%)")
+colnames(pcdx$x) <-
+    paste0(colnames(pcdx$x), " (",round(100*var), "%)")
 
-dense2d(pca$rotation[,1],pca$rotation[,2],
-             xlab=colnames(pca$x)[1],
-             ylab=colnames(pca$x)[2])
+dense2d(pcdx$rotation[,1],pcdx$rotation[,2],
+             xlab=colnames(pcdx$x)[1],
+             ylab=colnames(pcdx$x)[2])
 plotdev(file.path(fig.path,paste0("PCA_diAA")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,1],pca$rotation[,2],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[1],
-     ylab=colnames(pca$x)[2])
-cols <- unlist(lapply(strsplit(rownames(pca$rotation),""),function(x) x[1]))
-shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
+plot(pcdx$rotation[,1],pcdx$rotation[,2],
+     col=NA,#aa.cols[rownames(pcdx$rotation)],
+     pch=aa.pchs[rownames(pcdx$rotation)],
+     xlab=colnames(pcdx$x)[1],
+     ylab=colnames(pcdx$x)[2])
+cols <- unlist(lapply(strsplit(rownames(pcdx$rotation),""),function(x) x[1]))
+shadowtext(pcdx$rotation[,1],pcdx$rotation[,2],labels=rownames(pcdx$rotation),
      col=aa.cols[cols],cex=.7)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
@@ -590,9 +592,10 @@ head(degl[dlen>5])
 ## only longer degrons that equal their regex, i.e. fixed
 ## sequences (?)
 fixed <- degrons$Degron==degrons$Degron_regex
-head(degrons[fixed,])
 
-head(degrons[fixed&dlen>5,])
+##head(degrons[fixed,])
+
+##head(degrons[fixed&dlen>5,])
 
 ## filter nonAA chars
 degl <- lapply(degl, function(x) x[x%in%AAT])
@@ -600,71 +603,115 @@ degl <- lapply(degl, function(x) x[x%in%AAT])
 ## remove short and (partially regex
 degl <- degl[dlen>5]
 
-pcax <- lapply(degl,function(x) table(x)[AAT])
-pcax <- do.call(cbind, pcax)
-rownames(pcax) <- AAT
+pcad <- lapply(degl,function(x) table(x)[AAT])
+pcad <- do.call(cbind, pcad)
+rownames(pcad) <- AAT
 
-pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
-pcax[is.na(pcax)] <- 0
+pcad <- apply(pcad,2, function(x) x/sum(x,na.rm=TRUE))
+pcad[is.na(pcad)] <- 0
 
 
-pcax <- t(pcax)
-image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+pcad <- t(pcad)
+image_matrix(cor(pcad), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
              axis=1:2)
 
-pcax <- pcax - apply(pcax,1,mean) # center genes
-pca <- prcomp(pcax, scale=TRUE)
+pcad <- pcad - apply(pcad,1,mean) # center genes
+pcd <- prcomp(pcad, scale=TRUE)
 
-values <- pca$sdev^2
-vectors <- pca$rotation
+values <- pcd$sdev^2
+vectors <- pcd$rotation
 var <- values/sum(values) # % of variance explained by PCn
 
 ## add % variance explained to colnames, for axis labels
-colnames(pca$x) <-
-    paste0(colnames(pca$x), " (",round(100*var), "%)")
+colnames(pcd$x) <-
+    paste0(colnames(pcd$x), " (",round(100*var), "%)")
 
-dense2d(pca$rotation[,1],pca$rotation[,2],
-             xlab=colnames(pca$x)[1],
-             ylab=colnames(pca$x)[2])
+dense2d(pcd$rotation[,1],pcd$rotation[,2],
+             xlab=colnames(pcd$x)[1],
+             ylab=colnames(pcd$x)[2])
 
 plotdev(file.path(fig.path,paste0("PCA_AA_degrons")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,1],pca$rotation[,2],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[1],
-     ylab=colnames(pca$x)[2])
-shadowtext(pca$rotation[,1],pca$rotation[,2],labels=rownames(pca$rotation),
-     col=aa.cols[rownames(pca$rotation)])
+plot(pcd$rotation[,1],pcd$rotation[,2],
+     col=NA,#aa.cols[rownames(pcd$rotation)],
+     pch=aa.pchs[rownames(pcd$rotation)],
+     xlab=colnames(pcd$x)[1],
+     ylab=colnames(pcd$x)[2])
+shadowtext(pcd$rotation[,1],pcd$rotation[,2],labels=rownames(pcd$rotation),
+     col=aa.cols[rownames(pcd$rotation)])
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_degrons_13")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,1],pca$rotation[,3],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[1],
-     ylab=colnames(pca$x)[3])
-shadowtext(pca$rotation[,1],pca$rotation[,3],labels=rownames(pca$rotation),
-     col=aa.cols[rownames(pca$rotation)])
+plot(pcd$rotation[,1],pcd$rotation[,3],
+     col=NA,#aa.cols[rownames(pcd$rotation)],
+     pch=aa.pchs[rownames(pcd$rotation)],
+     xlab=colnames(pcd$x)[1],
+     ylab=colnames(pcd$x)[3])
+shadowtext(pcd$rotation[,1],pcd$rotation[,3],labels=rownames(pcd$rotation),
+     col=aa.cols[rownames(pcd$rotation)])
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_degrons_24")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pca$rotation[,2],pca$rotation[,4],
-     col=NA,#aa.cols[rownames(pca$rotation)],
-     pch=aa.pchs[rownames(pca$rotation)],
-     xlab=colnames(pca$x)[2],
-     ylab=colnames(pca$x)[4])
-shadowtext(pca$rotation[,2],pca$rotation[,4],labels=rownames(pca$rotation),
-           col=aa.cols[rownames(pca$rotation)])
+plot(pcd$rotation[,2],pcd$rotation[,4],
+     col=NA,#aa.cols[rownames(pcd$rotation)],
+     pch=aa.pchs[rownames(pcd$rotation)],
+     xlab=colnames(pcd$x)[2],
+     ylab=colnames(pcd$x)[4])
+shadowtext(pcd$rotation[,2],pcd$rotation[,4],labels=rownames(pcd$rotation),
+           col=aa.cols[rownames(pcd$rotation)])
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 
-## introduce required tags
+
+plotdev(file.path(fig.path,paste0("PCA_AA_correlation")),
+        type="png", res=300, width=4,height=4)
+par(mai=c(.75,.75,.1,.1), mgp=c(2.5,.3,0), tcl=-.25)
+image_matrix(cor(pcd$rotation, pcx$rotation),
+             col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+             axis=1:2, xlab="degron PCA", ylab="AAS PCA")
+dev.off()
+
+## coPCA of degrons and AAS
+
+pcaa <- rbind(pcax,pcad)
+pcd <- prcomp(pcaa, scale=TRUE)
+
+values <- pcd$sdev^2
+vectors <- pcd$rotation
+var <- values/sum(values) # % of variance explained by PCn
+
+## add % variance explained to colnames, for axis labels
+colnames(pcd$x) <-
+    paste0(colnames(pcd$x), " (",round(100*var), "%)")
+
+dense2d(pcd$rotation[,1],pcd$rotation[,2],
+             xlab=colnames(pcd$x)[1],
+             ylab=colnames(pcd$x)[2])
+
+plotdev(file.path(fig.path,paste0("PCA_AA_both")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pcd$rotation[,1],pcd$rotation[,2],
+     col=NA,#aa.cols[rownames(pcd$rotation)],
+     pch=aa.pchs[rownames(pcd$rotation)],
+     xlab=colnames(pcd$x)[1],
+     ylab=colnames(pcd$x)[2])
+shadowtext(pcd$rotation[,1],pcd$rotation[,2],labels=rownames(pcd$rotation),
+     col=aa.cols[rownames(pcd$rotation)])
+figlabel("degrons+AAS", pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+## peptide charge
+
+hist(charge(apply(pctx[,as.character(-10:10)],1,paste, collapse="")))
+hist(charge(unlist(lapply(degl, paste, collapse=""))), col=2, add=TRUE)
+
+### INTRODUCE REQUIRED TAGS
 
 ## after some WQRK we found a KRAQ in our data, and
 ## many other patterns, WIVL that soMe of those are
@@ -938,7 +985,7 @@ for ( i in 1:nrow(filters) ) {
 ### WRITE OUT FASTA FILES
 
 fidx <- which(filters[,"column"] %in% c("methionine","tryptophane"))
-for ( i in fidx ) {
+for ( i in 1:which(filters[,"column"]=="all") ) {
      
     column <- filters[i,"column"]
     pattern <- filters[i,"pattern"]
