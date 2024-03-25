@@ -200,7 +200,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     segmenTools::plotdev(paste0(fname,"_dotplot"),
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-    dotprofile(ovw=ovw, value=value, vbrks=vbrks,
+    dotprofile(x=ovw, value=value, vbrks=vbrks,
                vcols=vcols, p.dot=p.dot, dot.sze=dot.sze,
                axis=1, xlab=NA, ylab=NA)
     box()

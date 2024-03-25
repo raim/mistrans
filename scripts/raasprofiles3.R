@@ -93,19 +93,20 @@ aa.pchs[c("H","K","R")] <- 1:3
 aa.pchs[c("F","W","Y")] <- 1:3
 aa.pchs[c("I","L","M","V")] <- 1:4
 
-## shapely
-aa.cols[c("D","E")]   <- "#E60A0A"
-aa.cols[c("C","M")]   <- "#E6E600"
-aa.cols[c("K","R")]   <- "#145AFF"
-aa.cols[c("S","T")]   <- "#FA9600"
-aa.cols[c("F","Y")]   <- "#3232AA"
-aa.cols[c("N","Q")]   <- "#00DCDC"
-aa.cols[c("G")]     <- "#EBEBEB" #light grey
-aa.cols[c("L","V","I")] <- "#0F820F"
-aa.cols[c("A")]     <- "#C8C8C8"
-aa.cols[c("W")]     <- "#B45AB4"
-aa.cols[c("H")]     <- "#8282D2"
-aa.cols[c("P")]     <- "#DC9682"
+## shapely/rasmol
+## via 
+aa.cols[c("D","E")]   <- "#E60A0A"  # acidid
+aa.cols[c("K","R")]   <- "#145AFF"  # basic
+aa.cols[c("S","T")]   <- "#FA9600"  # S/T - P-targets
+aa.cols[c("C","M")]   <- "#E6E600"  # sulfur-containing
+aa.cols[c("P")]     <- "#DC9682"    # stiff backbone 
+aa.cols[c("F","Y")]   <- "#3232AA"  # aromatic
+aa.cols[c("W")]     <- "#B45AB4"    # large aromatic
+aa.cols[c("H")]     <- "#8282D2"    # aromatic, nitrogen
+aa.cols[c("N","Q")]   <- "#00DCDC"  # nitrogen-containing
+aa.cols[c("G")]     <- "#EBEBEB"    # just backbone
+aa.cols[c("L","V","I")] <- "#0F820F"# branched chaine
+aa.cols[c("A")]     <- "#C8C8C8"    # minimal residue
 
 aa.pchs[c("D","E")]   <- c(19,4)
 aa.pchs[c("C","M")]   <- c(4,19)
@@ -120,10 +121,15 @@ aa.pchs[c("W")]     <- 4
 aa.pchs[c("H")]     <- 19
 aa.pchs[c("P")]     <- 4
 
+aa.srt <- rev(names(sort(aa.cols)))
+
 ## color by codon frequency
-aa.cols <-
-    unlist(lapply(CODL, length))
-aa.pchs[] <- 1
+if ( FALSE ) {
+    aa.cols <-
+        unlist(lapply(CODL, length))
+    aa.pchs[] <- 1
+}
+
 
 ## plot colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
@@ -612,7 +618,7 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("AASsite_",SETID)),
              rlab=LAB, llab="",
              vcols=vcols, vbrks=vbrks,
              gcols=gcols, verb=1)
-
+  
 ## RAAS profiles by AA properties
 fname <- file.path(dpath,paste0("AAprop_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
@@ -891,8 +897,9 @@ for ( ds in auds ) {
 
 
     
-    ## sort by amino acid property!
-    aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
+    ## sort by amino acid property via shapely colors!
+    ##aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
+    aasrt <- aa.srt[aa.srt%in%rownames(ovw$p.value)]
     ovw <- sortOverlaps(ovw, axis=2, srt=aasrt, cut=TRUE)
 
 
@@ -980,14 +987,19 @@ for ( ds in auds ) {
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols, col.lines=cdn.cnt)
 
-
+### CODON FREQUENCY ANALYSIS
 
     mai <- c(.05,.5,.1,.5)
     fw <- .2
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
+    ## sort by amino acid property via shapely colors!
+    ##aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
+    aasrt <-
+        aa.srt[aa.srt%in%sub("-.*","",names(cods))]
  
-     ## relation codon base frequency and ratio AAS
+ 
+    ## relation codon base frequency and ratio AAS
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequencies_ratio")),
            type="png", res=300, width=3,height=3)
@@ -1018,10 +1030,10 @@ for ( ds in auds ) {
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     ##abline(a=0,b=1, col=2)
-    legend("bottomright",unique(sub("-.*","",names(cods))),
-           col=aa.cols[unique(sub("-.*","",names(cods)))],
-           pch=aa.pchs[unique(sub("-.*","",names(cods)))],
-           pt.cex=1, ncol=2, cex=.8, y.intersp=.75,
+    legend("bottomright",aasrt,
+           col=aa.cols[aasrt],
+           pch=aa.pchs[aasrt],
+           pt.cex=1, lwd=2, lty=NA, seg.len=0, ncol=2, cex=.8, y.intersp=.75,
            bty="n")
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -1040,10 +1052,10 @@ for ( ds in auds ) {
            col=aa.cols[sub("-.*","",names(cods))],
            pch=aa.pchs[sub("-.*","",names(cods))])
     if ( FALSE )
-        legend("bottomright",unique(sub("-.*","",names(cods))),
-               col=aa.cols[unique(sub("-.*","",names(cods)))],
-               pch=aa.pchs[unique(sub("-.*","",names(cods)))],
-               pt.cex=1, ncol=2, cex=.6, y.intersp=.75,
+        legend("bottomright",aasrt,
+               col=aa.cols[aasrt],
+               pch=aa.pchs[aasrt],
+               pt.cex=1, lwd=2, lty=NA, ncol=2, cex=.6, y.intersp=.75,
                bty="n")
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
