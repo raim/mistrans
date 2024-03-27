@@ -34,6 +34,7 @@ AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
 diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
+##AAT <- c(AAT,"-")
 
 ## shapely
 aa.cols <- character()
@@ -63,6 +64,18 @@ aa.pchs[c("W")]     <- 4
 aa.pchs[c("H")]     <- 19
 aa.pchs[c("P")]     <- 4
 
+## randomize protein names in FASTA to
+## test randomly picked sequences
+RANDOMIZE <- TRUE #  FALSE # 
+
+## DISTANCE AROUND AAS TO ANALYZE
+dst <- 25  # left/right distance for frequency plots
+sdst <- 5 # left/right distance for fasta file
+mdst <- 3# left/right distance for PTM search with momo
+
+## do diAA enrichment for all filters
+do.dimer <- FALSE
+
 ## threshold p-values
 p.min <- 1e-10
 p.txt <- 1e-5
@@ -83,6 +96,12 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"processedData")
 out.path <- file.path(proj.path,"processedData","motifs")
 fig.path <- file.path(proj.path,"figures", "saap_context")
+
+if ( RANDOMIZE ) {
+    fig.path <- file.path(fig.path, "random")
+    out.path <- file.path(out.path, "random")
+}
+    
 dir.create(out.path, showWarnings=FALSE)
 dir.create(fig.path, showWarnings=FALSE)
 
@@ -424,12 +443,22 @@ pid <- "ENSP00000431162"
 unlist(strsplit(pfas[[pid]]$seq,""))[160:172]
 ## "A" "F" "I" "E" "E" "L" "F" "S" "L" "M" "V" "V" "N"
 
-## get only the required
-pfas <- pfas[bpd$protein]
 
-dst <- 25  # left/right distance for frequency plots
-sdst <- 5 # left/right distance for fasta file
-mdst <- 3# left/right distance for PTM search with momo
+## get only the required protein sequences
+## in the correct order!
+
+pidx <- match(bpd$protein, names(pfas))
+### RANDOMIZE PROTEIN NAMES as control
+if ( RANDOMIZE ) {
+    pidx <- sample(1:length(pfas))[1:nrow(bpd)]
+    ## random positions WITHIN the randomly selected protein
+    bpd$pos <- unlist(lapply(pfas[pidx], function(x)
+        sample(1:nchar(x$seq))[1]))
+    
+}
+
+pfas <- pfas[pidx]
+
 
 pctx <- sapply(1:nrow(bpd), function(i) {
     ##for ( i in 1:nrow(dat) ){
@@ -440,8 +469,9 @@ pctx <- sapply(1:nrow(bpd), function(i) {
     sq <- rep("-",length(rrng)) ## GAP
     names(sq) <- rrng
 
-    ## cut range to available
+    ## GET RANGE AROUND AAS
     rng <- (bpd$pos[i]-dst):(bpd$pos[i]+dst)
+    ## cut range to available
     rrng <- rrng[rng>0 & rng<=nsq]
     rng <- rng[rng>0 & rng<=nsq]
     sq[as.character(rrng)] <- unlist(strsplit(fsq,""))[rng]
@@ -454,6 +484,8 @@ pctx <- do.call(rbind, pctx)
 ## gene names
 rownames(pctx) <-
     paste0(bpd$name,"_",bpd$pos-dst,"_",bpd$pos+dst)
+
+sum(pctx=="-")
 
 ## convert AA matrix to diAA matrix
 ## TODO: grep specifically the found diAA patterns
@@ -486,6 +518,15 @@ rownames(pcax) <- AAT
 pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
 pcax[is.na(pcax)] <- 0
 
+## cluster?
+if ( FALSE ) {
+    kcl <- kmeans(t(pcax), 5)
+    boxplot(pcax["A",] ~ kcl$cluster)
+    boxplot(pcax["G",] ~ kcl$cluster)
+    boxplot(pcax["P",] ~ kcl$cluster)
+    plot(pcax["G",], pcax["S",])
+}
+
 ## enrichments instead of frequencies?
 if ( FALSE ) {
     
@@ -511,6 +552,8 @@ if ( FALSE ) {
 
 pcax <- t(pcax)
 
+## TODO: why positive correlations for randomized and
+## negative for AAS and degrons??
 tmp <- cor(pcax, use="pairwise.complete")
 tmp[upper.tri(tmp)] <- NA
 plotdev(file.path(fig.path,paste0("PCA_AA_correlation")),
@@ -545,6 +588,7 @@ shadowtext(pcx$rotation[,1],pcx$rotation[,2],labels=rownames(pcx$rotation),
      col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
+
 plotdev(file.path(fig.path,paste0("PCA_AA_13")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
@@ -583,6 +627,56 @@ abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,2],pcx$rotation[,3],labels=rownames(pcx$rotation),
      col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+## CONTROL
+
+pcclab <- expression(bold(AAS+15))
+
+pcac <- pctx[,as.character(15:25)]
+pcac <- apply(pcac,1,function(x) table(x)[AAT])
+rownames(pcac) <- AAT
+
+## frequencies
+pcac <- apply(pcac,2, function(x) x/sum(x,na.rm=TRUE))
+pcac[is.na(pcac)] <- 0
+
+
+pcac <- t(pcac)
+
+tmp <- cor(pcac, use="pairwise.complete")
+tmp[upper.tri(tmp)] <- NA
+plotdev(file.path(fig.path,paste0("PCA_AA_correlation_control")),
+        type="png", res=300, width=4,height=4)
+par(mai=c(.25,.25,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(tmp, col=ttcols, breaks=seq(-.5,.5,length=length(ttcols)+1),
+             axis=1:2, xlab=NA, ylab=NA)
+dev.off()
+
+pcac <- pcac - apply(pcac,1,mean) # center rows (peptides)
+pcc <- prcomp(pcac, scale=TRUE)
+
+values <- pcc$sdev^2
+vectors <- pcc$rotation
+var <- values/sum(values) # % of variance explained by PCn
+
+## add % variance explained to colnames, for axis labels
+colnames(pcc$x) <-
+    paste0(colnames(pcc$x), " (",round(100*var), "%)")
+
+
+plotdev(file.path(fig.path,paste0("PCA_AA_control")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pcc$rotation[,1],pcc$rotation[,2],
+     col=NA,#aa.cols[rownames(pcc$rotation)],
+     pch=aa.pchs[rownames(pcc$rotation)],
+     xlab=colnames(pcc$x)[1],
+     ylab=colnames(pcc$x)[2])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+shadowtext(pcc$rotation[,1],pcc$rotation[,2],labels=rownames(pcc$rotation),
+     col=aa.cols[rownames(pcc$rotation)], font=2, cex=1.2)
+figlabel(pcclab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 
 
@@ -797,19 +891,21 @@ table(dcl$cluster, xcl$cluster)
 
 pcaa <- rbind(pcax,pcad)
 
-types <- c(rep(1,nrow(pcax)),
-           rep(2, nrow(pcad)))
-cpca <- multigroup::FCPCA(pcaa, types, Scale = TRUE, graph = TRUE)
-
-plotdev(file.path(fig.path,paste0("PCA_AA_both_FCPCA")),
-        type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(cpca$loadings.common[,1:2], col=NA)
-shadowtext(cpca$loadings.common[,1], cpca$loadings.common[,2],
-           labels=rownames(cpca$loadings.common),
-           col=aa.cols[rownames(cpca$loadings.common)], font=2, cex=1.2)
-dev.off()
-
+if ( FALSE ) {
+    
+    types <- c(rep(1,nrow(pcax)),
+               rep(2, nrow(pcad)))
+    cpca <- multigroup::FCPCA(pcaa, types, Scale = TRUE, graph = TRUE)
+    
+    plotdev(file.path(fig.path,paste0("PCA_AA_both_FCPCA")),
+            type="png", res=300, width=3.5,height=3.5)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plot(cpca$loadings.common[,1:2], col=NA)
+    shadowtext(cpca$loadings.common[,1], cpca$loadings.common[,2],
+               labels=rownames(cpca$loadings.common),
+               col=aa.cols[rownames(cpca$loadings.common)], font=2, cex=1.2)
+    dev.off()
+}
 pcb <- prcomp(pcaa, scale=TRUE)
 
 values <- pcb$sdev^2
@@ -877,16 +973,18 @@ plotdev(file.path(fig.path,paste0("peptide_boman")),
         type="png", res=300, width=3.5,height=3.5)
 par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 histn(boman(seqs), col=paste0(scols[1],77),
-     freq=FALSE, breaks=-6:12, xlab="Boman index (protein interaction)")
+      freq=FALSE, breaks=-100:100, xlab="Boman index (protein interaction)",
+      xlim=c(-6,12))
 hist(boman(deqs), col=paste0(scols[2],77),
-     freq=FALSE, breaks=-6:12, add=TRUE)
+     freq=FALSE, breaks=-100:100, add=TRUE)
 legend("right", names(scols[1:2]), col=scols, pch=19)
 par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 yrev <- par("usr")[4:3]
 histn(boman(aeqs), col=paste0(scols[3],77),
-      freq=FALSE, breaks=-6:12, add=FALSE, ylim=yrev, axes=FALSE)
+      freq=FALSE, breaks=-100:100, add=FALSE, ylim=yrev, axes=FALSE,
+      xlim=c(-6,12))
 hist(boman(beqs), col=paste0(scols[4],77),
-     freq=FALSE, breaks=-6:12, add=TRUE)
+     freq=FALSE, breaks=-100:100, add=TRUE)
 legend("right", names(scols[3:4]), col=scols[3:4], pch=19)
 axis(3, labels=FALSE)
 axis(2)
@@ -945,18 +1043,18 @@ plotdev(file.path(fig.path,paste0("peptide_charge")),
         type="png", res=300, width=3.5,height=3.5)
 par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(charge(seqs), col=paste0(scols[1],77),
-              breaks=seq(-16,12,1), freq=FALSE, xlab="peptide net charge",
-              ylim=c(0,.35))
+              breaks=-100:100, freq=FALSE, xlab="peptide net charge",
+              ylim=c(0,.35), xlim=c(-16,12))
 dhst <- hist(charge(deqs), col=paste0(scols[2],77),
-             add=TRUE, breaks=seq(-16,12,1), freq=FALSE)
+             add=TRUE, breaks=-100:100, freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
 par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
 yrev <- par("usr")[4:3]
 shst <- histn(charge(aeqs), col=paste0(scols[3],77),
-             breaks=seq(-16,12,1),axes=FALSE,
-             freq=FALSE, ylim=yrev)
+             breaks=-100:100,axes=FALSE,
+             freq=FALSE, ylim=yrev, xlim=c(-16,12))
 dhst <- hist(charge(beqs), col=paste0(scols[4],77),
-             add=TRUE, breaks=seq(-16,12,1), freq=FALSE)
+             add=TRUE, breaks=-100:100, freq=FALSE)
 ##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
 axis(3, labels=FALSE)
 axis(2)
@@ -1283,19 +1381,21 @@ for ( i in 1:nrow(filters) ) {
         dev.off()
     }
 
-    ## analyze dimer frequencies
+    ## analyze dimer frequencies - TAKES LONG
     ## TODO: select diAA suggested by monoAA analysis?
-    if ( TRUE ) {
 
-        ctx <- dctx[filt,,drop=FALSE]
-        rownames(ctx) <-
-            paste0(bpd$name[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
-
+    if ( !do.dimer ) next
     
-        dovl <- aaProfile(ctx, verb=0, p.min=.005, abc=diAAT)
-        dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
-        dovs <- sortOverlaps(dovs, axis=2, p.min=1e-10, cut=TRUE)
-
+    ctx <- dctx[filt,,drop=FALSE]
+    rownames(ctx) <-
+        paste0(bpd$name[filt],"_",bpd$pos[filt]-dst,"_",bpd$pos[filt]+dst)
+    
+    
+    dovl <- aaProfile(ctx, verb=0, p.min=.005, abc=diAAT)
+    dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
+    dovs <- sortOverlaps(dovs, axis=2, p.min=1e-10, cut=TRUE)
+    
+    if ( nrow(dosv$p.value)>0 ) {
         plotdev(file.path(fig.path,paste0("seqcontext_",
                                           column,"_",pattern,
                                           "_diAA")),
@@ -1320,7 +1420,7 @@ for ( i in 1:nrow(filters) ) {
            ylab="di-amino acid", show.total=TRUE)
         figlabel(paste0(column,"==",pattern), pos="bottomleft", font=2, cex=1.2)
         figlabel(bquote(n[seq]==.(nrow(ctx))),pos="bottomright",font=2, cex=1.2)
-         dev.off()
+        dev.off()
     }
 }
 

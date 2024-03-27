@@ -1,5 +1,6 @@
 
 require(segmenTools)
+require(qvalue)
 
 # from->to as expression, e.g. for axis labels
 ftlabels <- function(srt) {
@@ -47,8 +48,9 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
     navals <- vals
     navals[] <- NA
     image_matrix(navals, breaks=vbrks, col=vcols, ...)
-    
-    p <- -log10(x$p.value)
+
+    p <- x$p.value
+    p <- -log10(p)
     p[p>-log10(p.dot)] <- -log10(p.dot)
     z <- p/-log10(p.dot)
 
@@ -83,12 +85,14 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
     }
     if (toty) 
         if ("num.query" %in% names(x)) 
-            axis(4, at = length(x$num.query):1, labels = x$num.query, 
+            axis(4, at = length(x$num.query):1,
+                 labels = format(x$num.query, big.mark=",", trim=TRUE), 
                 las = 2, lwd = 0, lwd.ticks = 1)
     if (totx) 
         if ("num.target" %in% names(x)) 
-            axis(3, at = 1:length(x$num.target), labels = x$num.target, 
-                las = 2, lwd = 0, lwd.ticks = 1)
+            axis(3, at = 1:length(x$num.target),
+                 labels = format(x$num.target, big.mark=",", trim=TRUE), 
+                 las = 2, lwd = 0, lwd.ticks = 1)
     if (toty | totx) 
         figlabel("total", region = "figure", pos = "topright", 
             cex = par("cex"))
@@ -145,12 +149,13 @@ plotOverlaps2 <- function(ovw,
 }
 
 plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
-                         fw=.25, fh=.2,
+                         fw=.2, fh=.2,
                          ttcols=ttcols, p.min=p.min, p.txt=p.txt,
                          dot.sze=dot.sze, p.dot=p.dot, ## TODO: legend
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
                          fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
+                         ffam="sans",
                          col.lines, # column classes - vertical lines
                          verb=0) {
 
@@ -172,6 +177,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
 
+
     ## p-value profiles
     outf <- paste0(fname,"_wtests")
     if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
@@ -181,7 +187,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
                  text.cex=.8, axis=1, ylab=NA, xlab=NA,
                  col=ttcols, show.total=TRUE)
-    axis(2, length(axex):1, labels=axex, las=2)
+    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -202,12 +208,15 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          height=nh, width=nw, res=300)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     dotprofile(x=ovw, value=value, vbrks=vbrks,
-               vcols=vcols, p.dot=p.dot, dot.sze=dot.sze,
+               vcols=vcols, p.dot=p.dot,
+               dot.sze=dot.sze,
                axis=1, xlab=NA, ylab=NA)
     box()
-    axis(2, length(axex):1, labels=axex, las=2)
-    axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
-    axis(4, at=nrow(ovw$num.query):1, labels=ovw$num.query[,1],las=2)
+    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    axis(3, at=1:ncol(ovw$num.target),
+         labels=format(ovw$num.target[1,], big.mark=",", trim=TRUE),las=2)
+    axis(4, at=nrow(ovw$num.query):1,
+         labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -227,7 +236,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     txt.col <- ifelse(ovw[[value]]<q1, "white","black")
     image_matrix(ovw[[value]], col=vcols, breaks=vbrks, axis=1,
                  text=txt, text.col=txt.col, xlab=NA, ylab=NA, text.cex=.8)
-    axis(2, length(axex):1, labels=axex, las=2)
+    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -339,7 +348,7 @@ plotovl <- function(ovl, text="count", cut=TRUE, value="median",
 ## volcano plot function for overlap class
 ## produced by raasProfile
 volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
-                    lg2=FALSE, mxr, density=TRUE, xlab, adjust, ...) {
+                    lg2=FALSE, mxr, density=TRUE, xlab, ...) {
 
     ## values for coloring
     vals <- ovl[[value]]
@@ -355,9 +364,6 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
     ##tmv <- c(ovl[[value]])
 
     pvals <- ovl$p.value
-    if ( !missing(adjust) )
-        pvals[] <- p.adjust(c(pvals), method=adjust)
-    
     
     tpv <- -log10(gdata::unmatrix(t(pvals)))
     tpv[tpv>cut] <- cut
@@ -568,7 +574,7 @@ raasProfile <- function(x=tmtf, id="SAAP",
                         bg=FALSE, bg.dir="col", na.rm=FALSE,
                         rows="to", cols="aacodon",
                         row.srt, col.srt, filter=TRUE,
-                        use.test=use.test,
+                        use.test=use.test, p.adjust="none",
                         do.plots=FALSE,
                         xlab="value", fname="profile_",
                         verb=FALSE) {
@@ -753,6 +759,13 @@ raasProfile <- function(x=tmtf, id="SAAP",
 
     ## attach all raw values
     ova$ALL <- allvals
+
+    ## multiple testing
+    if ( p.adjust=="q" )
+        ova$p.value[] <- qvalue::qvalue(c(ova$p.value))$qvalues
+    else
+        ova$p.value[] <- p.adjust(c(ova$p.value), method=p.adjust)
+    ova$p.adjust <- p.adjust
     
     class(ova) <- "clusterOverlaps"
     ova
@@ -763,7 +776,7 @@ raasProfile <- function(x=tmtf, id="SAAP",
 #' @param x a matrix of character values, e.g. amino acids, where
 #' rows are protein sequences and columns relative positions
 #' @param abc list of characters to consider, e.g. all amino acids
-aaProfile <- function(x, abc, k=1, p.min, verb=0) {
+aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
 
     if ( missing(abc) )
         abc <- sort(unique(c(x)))
@@ -821,6 +834,13 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
         t(t(table(c(x))[rownames(aam)]))
     ovl$num.target <-
         t(apply(x, 2, function(x) sum(x%in%rownames(aam))))
+
+    ## multiple testing correction
+    if ( p.adjust=="q" )
+        ovl$p.value[] <- qvalue::qvalue(c(ovl$p.value))$qvalues
+    else
+        ovl$p.value[] <- p.adjust(c(ovl$p.value), method=p.adjust)
+    ovl$p.adjust <- p.adjust
 
     class(ovl) <- "clusterOverlaps"
     

@@ -151,7 +151,10 @@ in.file <- file.path(out.path,"saap_mapped3.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
 
-### PARAMETERES
+### PARAMETERS
+
+## TODO: use for raasProfile and aaProfile calls
+p.adjust <- "none" ## multiple hypothesis testing
 
 RAAS.MIN <- -4
 RAAS.MAX <-  1
@@ -487,12 +490,16 @@ rownames(pm) <- rownames(rm) <- round(rs,1)
 ovw <- list()
 ovw$p.value <- t(10^-pm)
 ovw$median <- t(rm)
-source("~/work/mistrans/scripts/saap_utils.R")
+
+plab <- expression(log[10]~p)
+if ( p.adjust=="q" )
+    plab <- expression(log[10]~q)
 
 mai <- c(.5,.5,.1,.1)
 fh <- fw <- .2
 nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+
 for ( colstyle in c("viridis","rocket","inferno","arno") ) {
 
     scols <- get(colstyle, mode="function")(length(vcols))
@@ -504,7 +511,7 @@ for ( colstyle in c("viridis","rocket","inferno","arno") ) {
                vbrks=vbrks,
                vcols=scols, 
                dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
-               ylab=expression(log[10]~p),
+               ylab=plab,
                xlab=expression(log[10]~RAAS))
     figlabel(colstyle, pos="bottomleft", cex=1)
     dev.off()
@@ -516,11 +523,36 @@ dotprofile(ovw, value="median",
            vbrks=vbrks,
            vcols=vcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
-           ylab=expression(log[10]~p),
+           ylab=plab,
            xlab=expression(log[10]~RAAS))
 figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
 
+## legend for dot plot
+pp <- seq(0, -log10(p.dot), length.out=3)
+rs <- c(-4,-2,0,1) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+ovw <- list(p.value=t(10^-pm),
+            median=t(rm))
+mai <- c(.4,.5,.05,.06)
+fh <- fw <- .2
+nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+
+segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
+                     height=nh, width=nw, res=300)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=plab,
+           xlab=NA)
+mtext(expression(log[10]~RAAS), 1, 1.1, adj=-.1)
+dev.off()
 
 ### START ANALYSIS
            
@@ -627,13 +659,14 @@ ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     use.test=use.test, do.plots=TRUE,
                     xlab=expression(TMT~level~log[10]*RAAS),
                     fname=fname, verb=0)
-ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
+ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+ovwp <- sortOverlaps(ovwp, axis=2, srt=sort(rownames(ovwp$p.value)))
 
 
 
 ## plot all
 plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
-             mai=c(.8,1.5,.5,.5),
+             mai=c(.7,1.5,.5,.5),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
@@ -643,7 +676,7 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AAprop_",SETID,"_cut")),
-                 mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
+                 mai=c(.7,1.5,.5,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="",
@@ -708,15 +741,21 @@ ovwp <- sortOverlaps2(ovwp, axis=2, p.min=p.min, cut=TRUE)
 ## re-sort by AA properties
 newsrt <- sort(rownames(ovwp$p.value))
 ovwp <- sortOverlaps2(ovwp, axis=2, srt=newsrt)
+par(family="sans") 
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
-                 mai=c(.8,.6,.5,.5), ttcols=ttcols, value="median",
+                 mai=c(.7,.5,.5,.5), fw=.2, fh=.2,
+                 ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab="",
+                 rlab=LAB, llab="", ffam="monospace",
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
+
+## TODO: plot on p-value correction
+plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
+
 for ( ptype in unique(tmtf$pfromto) ) {
 
     ## sort by to
@@ -797,7 +836,7 @@ cod.bins <- cut(cods[ctmt$aacodon], seq(0,1,.1))
 ncod <- unlist(lapply(CODL, length))
 
 
-if ( interactive() ) {
+if ( interactive() & exists("decode", mode="numeric") ) {
     ## TODO: analyze per AA - positive trend
     ## globally: negative trend
     plotCor(cods, decode[sub(".*-","", names(cods)),1], density=FALSE,
@@ -1073,7 +1112,7 @@ for ( ds in auds ) {
                                       "_codons_frequencies_raas")),
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(ram, lcods, density=FALSE, xlab=expression(median~log[10]*RAAS),
+    plotCor(ram, lcods, density=FALSE, xlab=expression(log[10]*bar(RAAS)),
             ylab=expression(codon~frequency~f[AAS]), col=NA)
     points(ram, lcods, lwd=2, cex=1,
            col=aa.cols[sub("-.*","",names(cods))],
@@ -1082,7 +1121,59 @@ for ( ds in auds ) {
     figlabel(LAB, pos="bottomright", cex=.7)
     for ( ax in 3:4 )  axis(ax, labels=FALSE)
     dev.off()
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas_nocol")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(ram, lcods, density=FALSE, xlab=expression(log[10]*bar(RAAS)),
+            ylab=expression(codon~frequency~f[AAS]), col="#00000099", pch=19,
+            lwd=0,cex=1)
+    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
+    dev.off()
 
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas_slopes")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plot(ram, lcods, density=FALSE, xlab=expression(log[10]*bar(RAAS)),
+         ylab=expression(codon~frequency~f[AAS]), col=NA)
+    slps <- rep(NA, length(CODL))
+    for ( k in 1:length(CODL) ) {
+        aa <- names(CODL)[k]
+        cds <- paste0(aa,"-",CODL[[k]])
+        if ( sum(cds%in%names(lcods))<2 ) next
+        rm <- ram[cds]
+        cd <- lcods[cds]
+        cdf <- lm(cd ~rm)
+        slps[k] <- coef(cdf)[2]
+        points(rm, cd, lwd=2, cex=1,
+               col=aa.cols[aa], pch=aa.pchs[aa])
+        lines(rm, predict(cdf), col=aa.cols[aa])
+    }
+    dev.off()
+    
+    ## TODO: plot to file analyze slopes
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas_slopes_bynum")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plot(unlist(lapply(CODL,length)), slps, col=aa.cols[names(CODL)],
+         pch=aa.pchs[names(CODL)], lwd=2,
+         xlab="number of codons per/AA")
+    abline(h=0)
+    dev.off()
+    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_frequencies_raas_slopes_bynum_zoom")),
+            type="png", res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plot(unlist(lapply(CODL,length)), slps, col=aa.cols[names(CODL)],
+         pch=aa.pchs[names(CODL)], lwd=2, ylim=c(-1.5,0),
+         xlab="number of codons per/AA")
+    abline(h=0)
+    dev.off()
+    
     ## TODO: mean has no correlation to RAAS, median does!
     if ( interactive() ) {
         plotCor(ova$median[,names(lcods)], lcods, density=FALSE, col=NA)
@@ -1106,7 +1197,7 @@ for ( ds in auds ) {
                 type="png", res=300, width=3,height=3)
         par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
         plotCor(ram, decode[sub(".*-","",names(ram)),1],
-                density=FALSE, xlab=expression(median~log[10]*RAAS),
+                density=FALSE, xlab=expression(log[10]*bar(RAAS)),
                 ylab=expression(decoding~rate/(codons/s)), col=NA)
         points(ram, decode[sub(".*-","",names(ram)),1], lwd=2, cex=1,
                col=aa.cols[sub("-.*","",names(cods))],
@@ -1332,7 +1423,7 @@ for ( ds in auds ) {
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
                  xlab=NA, ylab=NA,
                  show.total=TRUE)
-    mtext("IUPRED3", 2, 3.5)
+    mtext("disordered score", 2, 3.5)
     mtext(expression(log[10]*bar(RAAS[unique])), 1, 2.7)
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -1342,7 +1433,7 @@ for ( ds in auds ) {
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tmtd$RAAS.median, tmtd$iupred3,
-            xlab=NA, ylab="IUPRED3")
+            xlab=NA, ylab="disordered score")
     mtext(expression(log[10]*bar(RAAS[unique])), 1, 1.6)
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -1372,7 +1463,7 @@ plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_iupred3_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
-             rlab=LAB, mtxt="IUPRED3", mtxt.line=3.3,
+             rlab=LAB, mtxt="disordered score", mtxt.line=3.3,
              vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
@@ -1382,7 +1473,7 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    bg=TRUE, value="RAAS", row.srt=rev(rsrt),
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
-                   xlab=expression(median~log[10]*RAAS),
+                   xlab=expression(log[10]*bar(RAAS)),
                    verb=0, fname=file.path(fig.path,"anchor2_"))
 
 plotProfiles(ovw, fname=file.path(fig.path,paste0("structure_anchor2_",SETID)),
