@@ -155,7 +155,7 @@ tmt.file <- file.path(proj.path,"originalData",
 
 RAAS.MIN <- -4
 RAAS.MAX <-  1
-colors <- "arno" # "inferno" #"rocket"
+colors <- "arno" # "inferno" #"rocket" # "viridis" # 
 
 ## generate colors similar to inferno but with
 ## a better yellow (viridis)
@@ -632,7 +632,6 @@ ovwp <- sortOverlaps(ovw, axis=2, p.min=p.txt, cut=TRUE)
 
 
 ## plot all
-source("~/work/mistrans/scripts/saap_utils.R")
 plotProfiles(ovw, fname=file.path(fig.path,paste0("AAprop_",SETID)),
              mai=c(.8,1.5,.5,.5),
              p.min=p.min, p.txt=p.txt,
@@ -702,8 +701,13 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 
 ## plot only significantly high RAAS
 ovwp <-ovw
-ovwp$p.value[ovw$sign<0] <- 1
-ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
+##ovwp$p.value[ovw$sign<0] <- 1
+source("~/work/mistrans/scripts/saap_utils.R")
+## only significant
+ovwp <- sortOverlaps2(ovwp, axis=2, p.min=p.min, cut=TRUE)
+## re-sort by AA properties
+newsrt <- sort(rownames(ovwp$p.value))
+ovwp <- sortOverlaps2(ovwp, axis=2, srt=newsrt)
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(fig.path,paste0("AA_",SETID,"_cut")),
@@ -866,7 +870,6 @@ for ( ds in auds ) {
 
     ## NOTE: bg=FALSE, no column-wise background !
     dtmt$all <- "all"
-    source("~/work/mistrans/scripts/saap_utils.R")
     ova <- raasProfile(x=dtmt, id="SAAP", 
                        rows="all", cols="aacodon",
                        col.srt=CODSRT, filter=FALSE,

@@ -475,7 +475,8 @@ if ( interactive() ) {
 ### PCA OF FREQUENCIES
 ## TODO: do by substitution type
 
-pcalab <- expression(AAS%+-%10)
+
+pcalab <- expression(bold(AAS%+-%10))
 
 pcax <- pctx[,as.character(-10:10)]
 pcax <- apply(pcax,1,function(x) table(x)[AAT])
@@ -485,17 +486,41 @@ rownames(pcax) <- AAT
 pcax <- apply(pcax,2, function(x) x/sum(x,na.rm=TRUE))
 pcax[is.na(pcax)] <- 0
 
+## enrichments instead of frequencies?
+if ( FALSE ) {
+    
+    ## get frequencies in background
+    pcab <- pctx[,as.character(c(-25:-11),c(11:25))]
+    pcab <- apply(pcab,1,function(x) table(x)[AAT])
+    rownames(pcab) <- AAT
+    
+    ##pcab <- apply(pcab,2, function(x) x/sum(x,na.rm=TRUE))
+    ##pcab[is.na(pcab)] <- 0
+    
+    
+    ## make sure columns and rows are the same
+    ##pcab <- pcab[rownames(pcax),]
+    ##pcab <- pcab[,colnames(pcax)]
+    
+    ## background over all
+    bg <- apply(pcab,1, sum, na.rm=TRUE)/sum(pcab, na.rm=TRUE)
+
+    ## ENRICHMENT OVER LOCAL BACKGROUND
+    pcax <- pcax/bg
+}
 
 pcax <- t(pcax)
 
+tmp <- cor(pcax, use="pairwise.complete")
+tmp[upper.tri(tmp)] <- NA
 plotdev(file.path(fig.path,paste0("PCA_AA_correlation")),
         type="png", res=300, width=4,height=4)
 par(mai=c(.25,.25,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-image_matrix(cor(pcax), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+image_matrix(tmp, col=ttcols, breaks=seq(-.5,.5,length=length(ttcols)+1),
              axis=1:2, xlab=NA, ylab=NA)
 dev.off()
 
-pcax <- pcax - apply(pcax,1,mean) # center genes
+pcax <- pcax - apply(pcax,1,mean) # center rows (peptides)
 pcx <- prcomp(pcax, scale=TRUE)
 
 values <- pcx$sdev^2
@@ -506,9 +531,7 @@ var <- values/sum(values) # % of variance explained by PCn
 colnames(pcx$x) <-
     paste0(colnames(pcx$x), " (",round(100*var), "%)")
 
-dense2d(pcx$rotation[,1],pcx$rotation[,2],
-             xlab=colnames(pcx$x)[1],
-             ylab=colnames(pcx$x)[2])
+
 plotdev(file.path(fig.path,paste0("PCA_AA")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
@@ -517,8 +540,9 @@ plot(pcx$rotation[,1],pcx$rotation[,2],
      pch=aa.pchs[rownames(pcx$rotation)],
      xlab=colnames(pcx$x)[1],
      ylab=colnames(pcx$x)[2])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,1],pcx$rotation[,2],labels=rownames(pcx$rotation),
-     col=aa.cols[rownames(pcx$rotation)])
+     col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_13")),
@@ -529,8 +553,9 @@ plot(pcx$rotation[,1],pcx$rotation[,3],
      pch=aa.pchs[rownames(pcx$rotation)],
      xlab=colnames(pcx$x)[1],
      ylab=colnames(pcx$x)[3])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,1],pcx$rotation[,3],labels=rownames(pcx$rotation),
-     col=aa.cols[rownames(pcx$rotation)])
+     col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_24")),
@@ -541,8 +566,9 @@ plot(pcx$rotation[,2],pcx$rotation[,4],
      pch=aa.pchs[rownames(pcx$rotation)],
      xlab=colnames(pcx$x)[2],
      ylab=colnames(pcx$x)[4])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,2],pcx$rotation[,4],labels=rownames(pcx$rotation),
-     col=aa.cols[rownames(pcx$rotation)])
+     col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_23")),
@@ -553,8 +579,9 @@ plot(pcx$rotation[,2],pcx$rotation[,3],
      pch=aa.pchs[rownames(pcx$rotation)],
      xlab=colnames(pcx$x)[2],
      ylab=colnames(pcx$x)[3])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,2],pcx$rotation[,3],labels=rownames(pcx$rotation),
-     col=aa.cols[rownames(pcx$rotation)])
+     col=aa.cols[rownames(pcx$rotation)], font=2, cex=1.2)
 figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 
@@ -595,6 +622,7 @@ plot(pcdx$rotation[,1],pcdx$rotation[,2],
      pch=aa.pchs[rownames(pcdx$rotation)],
      xlab=colnames(pcdx$x)[1],
      ylab=colnames(pcdx$x)[2])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 cols <- unlist(lapply(strsplit(rownames(pcdx$rotation),""),function(x) x[1]))
 shadowtext(pcdx$rotation[,1],pcdx$rotation[,2],labels=rownames(pcdx$rotation),
      col=aa.cols[cols],cex=.7)
@@ -607,15 +635,10 @@ degl <- strsplit(degrons$Degron,"")
 dlen <- unlist(lapply(degl, function(x) sum(x%in%AAT)))
 hist(dlen)
 
-## only longer degrons
-head(degl[dlen>5])
 ## only longer degrons that equal their regex, i.e. fixed
 ## sequences (?)
-fixed <- degrons$Degron==degrons$Degron_regex
+##fixed <- degrons$Degron==degrons$Degron_regex
 
-##head(degrons[fixed,])
-
-##head(degrons[fixed&dlen>5,])
 
 ## filter nonAA chars
 degl <- lapply(degl, function(x) x[x%in%AAT])
@@ -632,6 +655,17 @@ pcad[is.na(pcad)] <- 0
 
 
 pcad <- t(pcad)
+
+tmp <- cor(pcad, use="pairwise.complete")
+tmp[upper.tri(tmp)] <- NA
+plotdev(file.path(fig.path,paste0("PCA_AA_correlation_degrons")),
+        type="png", res=300, width=4,height=4)
+par(mai=c(.25,.25,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(tmp, col=ttcols, breaks=seq(-.5,.5,length=length(ttcols)+1),
+             axis=1:2, xlab=NA, ylab=NA)
+dev.off()
+
+
 ## TODO: mostly negative correlation of raw frequencies
 ## -> instead correlate enrichments?
 image_matrix(cor(pcad), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
@@ -660,8 +694,9 @@ plot(pcd$rotation[,1],pcd$rotation[,2],
      pch=aa.pchs[rownames(pcd$rotation)],
      xlab=colnames(pcd$x)[1],
      ylab=colnames(pcd$x)[2])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcd$rotation[,1],pcd$rotation[,2],labels=rownames(pcd$rotation),
-     col=aa.cols[rownames(pcd$rotation)])
+     col=aa.cols[rownames(pcd$rotation)], font=2, cex=1.2)
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_degrons_13")),
@@ -672,8 +707,9 @@ plot(pcd$rotation[,1],pcd$rotation[,3],
      pch=aa.pchs[rownames(pcd$rotation)],
      xlab=colnames(pcd$x)[1],
      ylab=colnames(pcd$x)[3])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcd$rotation[,1],pcd$rotation[,3],labels=rownames(pcd$rotation),
-     col=aa.cols[rownames(pcd$rotation)])
+     col=aa.cols[rownames(pcd$rotation)], font=2, cex=1.2)
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 plotdev(file.path(fig.path,paste0("PCA_AA_degrons_24")),
@@ -684,20 +720,78 @@ plot(pcd$rotation[,2],pcd$rotation[,4],
      pch=aa.pchs[rownames(pcd$rotation)],
      xlab=colnames(pcd$x)[2],
      ylab=colnames(pcd$x)[4])
+abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcd$rotation[,2],pcd$rotation[,4],labels=rownames(pcd$rotation),
-           col=aa.cols[rownames(pcd$rotation)])
+           col=aa.cols[rownames(pcd$rotation)], font=2, cex=1.2)
 figlabel("degrons", pos="bottomright", font=2, cex=1.2)
 dev.off()
 
-
+## correlation of pc components
+mpx <- pcx$rotation
+colnames(mpx)<- sub("PC","", colnames(mpx))
+mpd <- pcd$rotation
+colnames(mpd)<- sub("PC","", colnames(mpd))
+mpc <- cor(mpd, mpx)
+mpt <- mpc
+mpt[] <- sub("0\\.",".",round(c(mpc),1))
+mpt[mpt=="0"] <- ""
 plotdev(file.path(fig.path,paste0("PCA_AA_crosscorrelation")),
         type="png", res=300, width=4,height=4)
-par(mai=c(.75,.75,.1,.1), mgp=c(2.5,.3,0), tcl=-.25)
-image_matrix(cor(pcd$rotation, pcx$rotation),
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(mpc,
              col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
-             axis=1:2, xlab="degron PCA", ylab="AAS PCA")
+             axis=1:2, ylab="degron PC", xlab="AAS PC",
+             text=mpt, text.cex=.7)
 dev.off()
 
+## shouldn't happen
+if ( any(rownames(pcx$rotation)!=rownames(pcd$rotation)) )
+    pcd$rotation <- pcd$rotation[rownames(pcx$rotation),]
+
+for ( i in 1:3 ) {
+    for ( j in 1:3 ) {
+        plotdev(file.path(fig.path,paste0("PCA_AA_crosscorrelation_",i,"_",j)),
+                type="png", res=300, width=3.5, height=3.5)
+        par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        plotCor(pcx$rotation[,i], pcd$rotation[,j], density=FALSE, col=NA,
+                xlab=paste("AAS -",colnames(pcx$x)[i]),
+                ylab=paste("degrons -",colnames(pcd$x)[j]))
+        abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+        shadowtext(pcx$rotation[,i],pcd$rotation[,j],
+                   labels=rownames(pcd$rotation),
+                   col=aa.cols[rownames(pcd$rotation)], xpd=TRUE,
+                   font=2, cex=1.2)
+        dev.off()
+    }
+}
+
+plotdev(file.path(fig.path,paste0("PCA_AA_crosscorrelation_4_7")),
+        type="png", res=300, width=3.5, height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(pcx$rotation[,4], pcd$rotation[,7], density=FALSE, col=NA,
+     xlab=paste("AAS -",colnames(pcx$x)[4]),
+     ylab=paste("degrons -",colnames(pcd$x)[7]))
+        abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+shadowtext(pcx$rotation[,4],pcd$rotation[,7],labels=rownames(pcd$rotation),
+           col=aa.cols[rownames(pcd$rotation)], xpd=TRUE, font=2, cex=1.2)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("PCA_AA_crosscorrelation_17_17")),
+        type="png", res=300, width=3.5, height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(pcx$rotation[,17], pcd$rotation[,17], density=FALSE, col=NA,
+     xlab=paste("AAS -",colnames(pcx$x)[17]),
+     ylab=paste("degrons -",colnames(pcd$x)[17]))
+        abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+shadowtext(pcx$rotation[,17],pcd$rotation[,17],labels=rownames(pcd$rotation),
+           col=aa.cols[rownames(pcd$rotation)], xpd=TRUE, font=2, cex=1.2)
+dev.off()
+
+## cluster PCs ?
+
+xcl <- kmeans(pcx$rotation, 4)
+dcl <- kmeans(pcd$rotation, 4)
+table(dcl$cluster, xcl$cluster)
 
 ## coPCA of degrons and AAS
 
@@ -707,37 +801,56 @@ types <- c(rep(1,nrow(pcax)),
            rep(2, nrow(pcad)))
 cpca <- multigroup::FCPCA(pcaa, types, Scale = TRUE, graph = TRUE)
 
+plotdev(file.path(fig.path,paste0("PCA_AA_both_FCPCA")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plot(cpca$loadings.common[,1:2], col=NA)
 shadowtext(cpca$loadings.common[,1], cpca$loadings.common[,2],
            labels=rownames(cpca$loadings.common),
-           col=aa.cols[rownames(cpca$loadings.common)])
+           col=aa.cols[rownames(cpca$loadings.common)], font=2, cex=1.2)
+dev.off()
 
-pcd <- prcomp(pcaa, scale=TRUE)
+pcb <- prcomp(pcaa, scale=TRUE)
 
-values <- pcd$sdev^2
-vectors <- pcd$rotation
+values <- pcb$sdev^2
+vectors <- pcb$rotation
 var <- values/sum(values) # % of variance explained by PCn
 
 ## add % variance explained to colnames, for axis labels
-colnames(pcd$x) <-
-    paste0(colnames(pcd$x), " (",round(100*var), "%)")
+colnames(pcb$x) <-
+    paste0(colnames(pcb$x), " (",round(100*var), "%)")
 
-dense2d(pcd$rotation[,1],pcd$rotation[,2],
-             xlab=colnames(pcd$x)[1],
-             ylab=colnames(pcd$x)[2])
+dense2d(pcb$rotation[,1],pcb$rotation[,2],
+             xlab=colnames(pcb$x)[1],
+             ylab=colnames(pcb$x)[2])
 
 plotdev(file.path(fig.path,paste0("PCA_AA_both")),
         type="png", res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(pcd$rotation[,1],pcd$rotation[,2],
-     col=NA,#aa.cols[rownames(pcd$rotation)],
-     pch=aa.pchs[rownames(pcd$rotation)],
-     xlab=colnames(pcd$x)[1],
-     ylab=colnames(pcd$x)[2])
-shadowtext(pcd$rotation[,1],pcd$rotation[,2],labels=rownames(pcd$rotation),
-     col=aa.cols[rownames(pcd$rotation)])
+plot(pcb$rotation[,1],pcb$rotation[,2],
+     col=NA,#aa.cols[rownames(pcb$rotation)],
+     pch=aa.pchs[rownames(pcb$rotation)],
+     xlab=colnames(pcb$x)[1],
+     ylab=colnames(pcb$x)[2])
+shadowtext(pcb$rotation[,1],pcb$rotation[,2],labels=rownames(pcb$rotation),
+     col=aa.cols[rownames(pcb$rotation)])
 figlabel("degrons+AAS", pos="bottomright", font=2, cex=1.2)
 dev.off()
+plotdev(file.path(fig.path,paste0("PCA_AA_both_13")),
+        type="png", res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pcb$rotation[,1],pcb$rotation[,3],
+     col=NA,#aa.cols[rownames(pcb$rotation)],
+     pch=aa.pchs[rownames(pcb$rotation)],
+     xlab=colnames(pcb$x)[1],
+     ylab=colnames(pcb$x)[3])
+shadowtext(pcb$rotation[,1],pcb$rotation[,3],labels=rownames(pcb$rotation),
+     col=aa.cols[rownames(pcb$rotation)], font=2, cex=1.2)
+figlabel("degrons+AAS", pos="bottomright", font=2, cex=1.2)
+dev.off()
+
+barplot(var*100)
+
 
 ## TODO: how to use coPCA?
 if ( FALSE ) {
@@ -752,19 +865,32 @@ if ( FALSE ) {
 ### PEPTIDE PROPERTIES
 ## also do for Main peptides
 
-seqs <- apply(pctx[,as.character(-10:10)],1,paste, collapse="")
-deqs <- unlist(lapply(degl, paste, collapse=""))
-scols <- c("#0000ff","#ff0000") # gray.colors(2)
-names(scols) <- c("AAS","degrons")
+seqs <- apply(pctx[,as.character(-10:10)],1,paste, collapse="") # AAS
+deqs <- unlist(lapply(degl, paste, collapse="")) # DEGRONS
+aeqs <- apply(pctx[,as.character(-25:-15)],1,paste, collapse="") # AAS left
+beqs <- apply(pctx[,as.character(15:25)],1,paste, collapse="") # AAS right
+
+scols <- c("#0000ff","#ff0000", gray.colors(2))
+names(scols) <- c("AAS","degrons", "AAS-15", "AAS+15")
 
 plotdev(file.path(fig.path,paste0("peptide_boman")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 histn(boman(seqs), col=paste0(scols[1],77),
      freq=FALSE, breaks=-6:12, xlab="Boman index (protein interaction)")
 hist(boman(deqs), col=paste0(scols[2],77),
      freq=FALSE, breaks=-6:12, add=TRUE)
-legend("topright", names(scols), col=scols, pch=19)
+legend("right", names(scols[1:2]), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+histn(boman(aeqs), col=paste0(scols[3],77),
+      freq=FALSE, breaks=-6:12, add=FALSE, ylim=yrev, axes=FALSE)
+hist(boman(beqs), col=paste0(scols[4],77),
+     freq=FALSE, breaks=-6:12, add=TRUE)
+legend("right", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("Boman index (protein interaction)", pos="bottomleft")
 dev.off()
 
 msh <- do.call(rbind, mswhimScores(seqs))
@@ -772,82 +898,158 @@ msh <- do.call(rbind, mswhimScores(seqs))
 ## NOTE: protein structure class, simply taking the most frequent per peptide
 memp <- membpos(seqs)
 memd <- membpos(deqs)
+mema <- membpos(aeqs)
+memb <- membpos(beqs)
+cols <- c("Globular","Surface","Transmembrane")
 memt <- 
     rbind(AAS=table(unlist(lapply(memp, function(x)
-        tail(names(sort(table(x[,"MembPos"]))),1))))[c("Globular","Surface","Transmembrane")],
+        tail(names(sort(table(x[,"MembPos"]))),1))))[cols],
         degrons=table(unlist(lapply(memd, function(x)
-        tail(names(sort(table(x[,"MembPos"]))),1))))[c("Globular","Surface","Transmembrane")])
+            tail(names(sort(table(x[,"MembPos"]))),1))))[cols],
+        "AAS-15"=table(unlist(lapply(mema, function(x)
+            tail(names(sort(table(x[,"MembPos"]))),1))))[cols],
+        "AAS+15"=table(unlist(lapply(memb, function(x)
+            tail(names(sort(table(x[,"MembPos"]))),1))))[cols])
 memt <- t(apply(memt,1,function(x) x/sum(x)))
 
 plotdev(file.path(fig.path,paste0("peptide_membpos")),
-        type="png", res=300, width=3.5,height=3.5)
+        type="png", res=300, width=4,height=4)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 barplot(memt, beside=TRUE, legend=TRUE, col=scols)
 mtext("mempbos, Eisenberg (1984)",1,1.5)
 dev.off()
 
-plotdev(file.path(fig.path,paste0("peptide_charge")),
+plotdev(file.path(fig.path,paste0("peptide_pI")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(pI(seqs), col=paste0(scols[1],77),
              breaks=seq(0,14,1),
              freq=FALSE, xlab="peptide isoelectric point")
 dhst <- hist(pI(deqs), col=paste0(scols[2],77),
              add=TRUE, breaks=seq(0,14,1), freq=FALSE)
-legend("topright", names(scols), col=scols, pch=19)
+legend("topright", names(scols[1:2]), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(pI(aeqs), col=paste0(scols[3],77),
+             breaks=seq(0,14,1),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(pI(beqs), col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(0,14,1), freq=FALSE)
+legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("peptide isoelectric point", pos="bottom")
 dev.off()
 
 plotdev(file.path(fig.path,paste0("peptide_charge")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(charge(seqs), col=paste0(scols[1],77),
-             breaks=seq(-16,12,1), freq=FALSE, xlab="peptide net charge")
+              breaks=seq(-16,12,1), freq=FALSE, xlab="peptide net charge",
+              ylim=c(0,.35))
 dhst <- hist(charge(deqs), col=paste0(scols[2],77),
              add=TRUE, breaks=seq(-16,12,1), freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(charge(aeqs), col=paste0(scols[3],77),
+             breaks=seq(-16,12,1),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(charge(beqs), col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(-16,12,1), freq=FALSE)
+##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("peptide net charge", pos="bottom")
 dev.off()
 
 plotdev(file.path(fig.path,paste0("peptide_hydrophobicity")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(hydrophobicity(seqs), col=paste0(scols[1],77),
-             breaks=seq(-6,6,1), freq=FALSE, xlab="peptide hydrophobicity")
+             breaks=seq(-6,6,.5), freq=FALSE, xlab="peptide hydrophobicity")
 dhst <- hist(hydrophobicity(deqs), col=paste0(scols[2],77),
-             add=TRUE, breaks=seq(-6,6,1), freq=FALSE)
+             add=TRUE, breaks=seq(-6,6,.5), freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(hydrophobicity(aeqs), col=paste0(scols[3],77),
+             breaks=seq(-6,6,.5),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(hydrophobicity(beqs), col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(-6,6,.5), freq=FALSE)
+##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("peptide hydrophobicity", pos="bottom")
 dev.off()
 
 scrp <- do.call(rbind, crucianiProperties(seqs))
 dcrp <- do.call(rbind, crucianiProperties(deqs))
+acrp <- do.call(rbind, crucianiProperties(aeqs))
+bcrp <- do.call(rbind, crucianiProperties(beqs))
 
 plotdev(file.path(fig.path,paste0("peptide_cruciani_pp1")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(scrp[,1], col=paste0(scols[1],77),
               breaks=seq(-1,1,.1), freq=FALSE, xlab="Cruciano, polarity")
 dhst <- hist(dcrp[,1], col=paste0(scols[2],77),
              add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(acrp[,1], col=paste0(scols[3],77),
+             breaks=seq(-1,1,.1),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(bcrp[,1], col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
+##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("Cruciano, polarity", pos="bottom")
 dev.off()
 
 plotdev(file.path(fig.path,paste0("peptide_cruciani_pp2")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(scrp[,2], col=paste0(scols[1],77),
               breaks=seq(-1,1,.1), freq=FALSE, xlab="Cruciano, hydrophobicity")
 dhst <- hist(dcrp[,2], col=paste0(scols[2],77),
              add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(acrp[,2], col=paste0(scols[3],77),
+             breaks=seq(-1,1,.1),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(bcrp[,2], col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
+##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("Cruciano, hydrophobicity", pos="bottom")
 dev.off()
 
 plotdev(file.path(fig.path,paste0("peptide_cruciani_pp3")),
         type="png", res=300, width=3.5,height=3.5)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mfrow=c(2,1), mai=c(.15,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 shst <- histn(scrp[,3], col=paste0(scols[1],77),
               breaks=seq(-1,1,.1), freq=FALSE, xlab="Cruciano, H-bonding")
 dhst <- hist(dcrp[,3], col=paste0(scols[2],77),
              add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
 legend("topright", names(scols), col=scols, pch=19)
+par(mai=c(.1,.5,.15,.1), mgp=c(1.3,.3,0), tcl=-.25)
+yrev <- par("usr")[4:3]
+shst <- histn(acrp[,3], col=paste0(scols[3],77),
+             breaks=seq(-1,1,.1),axes=FALSE,
+             freq=FALSE, ylim=yrev)
+dhst <- hist(bcrp[,3], col=paste0(scols[4],77),
+             add=TRUE, breaks=seq(-1,1,.1), freq=FALSE)
+##legend("bottomright", names(scols[3:4]), col=scols[3:4], pch=19)
+axis(3, labels=FALSE)
+axis(2)
+figlabel("Cruciano, H-bonding", pos="bottom")
 dev.off()
 
 

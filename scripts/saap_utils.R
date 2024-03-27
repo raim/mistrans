@@ -41,7 +41,8 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
 
     ## breaks
     if ( missing(vbrks) )
-        vbrks <- seq(min(vals,na.rm=TRUE), max(vals, na.rm=TRUE), length.out=length(vcols)+1)
+        vbrks <- seq(min(vals,na.rm=TRUE), max(vals, na.rm=TRUE),
+                     length.out=length(vcols)+1)
 
     navals <- vals
     navals[] <- NA
@@ -823,5 +824,82 @@ aaProfile <- function(x, abc, k=1, p.min, verb=0) {
 
     class(ovl) <- "clusterOverlaps"
     
+    ovl
+}
+
+sortOverlaps2 <-
+function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmetric = "no") 
+{
+    if (symmetric != "no") {
+        if (symmetric == "upper") 
+            symm.tri <- lower.tri
+        else if (symmetric == "lower") 
+            symm.tri <- upper.tri
+        pvl <- abs(ovl$p.value)
+        n <- nrow(pvl)
+        m <- ncol(pvl)
+        if (n != m) 
+            stop("symmetric handling requested for non-symmetric matrix")
+        for (i in 1:length(ovl)) {
+            x <- ovl[[i]]
+            if (inherits(x, "matrix")) 
+                if (nrow(x) == n & ncol(x) == m) 
+                  x[symm.tri(x)] <- t(x)[symm.tri(x)]
+            ovl[[i]] <- x
+        }
+    }
+    if (axis == 1) 
+        ovl <- t.clusterOverlaps(ovl)
+    
+    pvl <- ovl$p.value * -ovl$sign
+    if (missing(srt)) {
+        cls.srt <- colnames(pvl)
+        sig.srt <- NULL
+        for (cl in cls.srt) {
+            tmp.srt <- order(pvl[, cl], decreasing = FALSE)
+            ## cut by p value
+            sig.srt <- c(sig.srt, tmp.srt[tmp.srt %in% which(abs(pvl[, 
+                cl]) < p.min)])
+        }
+        rest.srt <- which(!(1:nrow(pvl)) %in% sig.srt)
+        rest.srt <- rest.srt[order(apply(pvl[rest.srt, , drop = FALSE], 
+            1, max), decreasing = FALSE)]
+        new.srt <- sig.srt[!duplicated(sig.srt)]
+        if (!cut) 
+            new.srt <- c(new.srt, rest.srt)
+        nsig <- sum(!duplicated(sig.srt))
+    }
+    else {
+        new.srt <- srt
+        nsig <- NULL
+    }
+    n <- nrow(pvl)
+    m <- ncol(pvl)
+    for (i in 1:length(ovl)) if (inherits(ovl[[i]], "matrix")) {
+        if (nrow(ovl[[i]]) == n) 
+            ovl[[i]] <- ovl[[i]][new.srt, , drop = FALSE]
+        if (symmetric != "no" & ncol(ovl[[i]]) == m) 
+            ovl[[i]] <- ovl[[i]][, new.srt, drop = FALSE]
+    }
+    if (axis == 1) 
+        ovl <- t.clusterOverlaps(ovl)
+    if (symmetric != "no") {
+        pvl <- abs(ovl$p.value)
+        n <- nrow(pvl)
+        m <- ncol(pvl)
+        if (n != m) 
+            stop("symmetric handling requested for non-symmetric matrix")
+        for (i in 1:length(ovl)) {
+            x <- ovl[[i]]
+            replace <- ifelse(names(ovl)[i] == "p.value", 1, 
+                0)
+            if (inherits(x, "matrix")) 
+                if (nrow(x) == n & ncol(x) == m) 
+                  x[symm.tri(x)] <- replace
+            ovl[[i]] <- x
+        }
+    }
+    ovl$nsig <- nsig
+    ovl$nsigdir <- axis
     ovl
 }
