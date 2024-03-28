@@ -866,7 +866,7 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(pcx$rotation[,4], pcd$rotation[,7], density=FALSE, col=NA,
      xlab=paste("AAS -",colnames(pcx$x)[4]),
      ylab=paste("degrons -",colnames(pcd$x)[7]))
-        abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+    abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,4],pcd$rotation[,7],labels=rownames(pcd$rotation),
            col=aa.cols[rownames(pcd$rotation)], xpd=TRUE, font=2, cex=1.2)
 dev.off()
@@ -877,7 +877,7 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(pcx$rotation[,17], pcd$rotation[,17], density=FALSE, col=NA,
      xlab=paste("AAS -",colnames(pcx$x)[17]),
      ylab=paste("degrons -",colnames(pcd$x)[17]))
-        abline(v=0,lwd=.5);abline(h=0,lwd=.5)
+    abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcx$rotation[,17],pcd$rotation[,17],labels=rownames(pcd$rotation),
            col=aa.cols[rownames(pcd$rotation)], xpd=TRUE, font=2, cex=1.2)
 dev.off()
@@ -902,6 +902,7 @@ if ( FALSE ) {
             type="png", res=300, width=3.5,height=3.5)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plot(cpca$loadings.common[,1:2], col=NA)
+    abline(v=0,lwd=.5);abline(h=0,lwd=.5)
     shadowtext(cpca$loadings.common[,1], cpca$loadings.common[,2],
                labels=rownames(cpca$loadings.common),
                col=aa.cols[rownames(cpca$loadings.common)], font=2, cex=1.2)
@@ -929,6 +930,7 @@ plot(pcb$rotation[,1],pcb$rotation[,2],
      pch=aa.pchs[rownames(pcb$rotation)],
      xlab=colnames(pcb$x)[1],
      ylab=colnames(pcb$x)[2])
+    abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcb$rotation[,1],pcb$rotation[,2],labels=rownames(pcb$rotation),
      col=aa.cols[rownames(pcb$rotation)])
 figlabel("degrons+AAS", pos="bottomright", font=2, cex=1.2)
@@ -941,6 +943,7 @@ plot(pcb$rotation[,1],pcb$rotation[,3],
      pch=aa.pchs[rownames(pcb$rotation)],
      xlab=colnames(pcb$x)[1],
      ylab=colnames(pcb$x)[3])
+    abline(v=0,lwd=.5);abline(h=0,lwd=.5)
 shadowtext(pcb$rotation[,1],pcb$rotation[,3],labels=rownames(pcb$rotation),
      col=aa.cols[rownames(pcb$rotation)], font=2, cex=1.2)
 figlabel("degrons+AAS", pos="bottomright", font=2, cex=1.2)
