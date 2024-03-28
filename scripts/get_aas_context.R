@@ -66,7 +66,7 @@ aa.pchs[c("P")]     <- 4
 
 ## randomize protein names in FASTA to
 ## test randomly picked sequences
-RANDOMIZE <- TRUE #  FALSE # 
+RANDOMIZE <- FALSE # TRUE #  
 
 ## DISTANCE AROUND AAS TO ANALYZE
 dst <- 25  # left/right distance for frequency plots
@@ -74,7 +74,7 @@ sdst <- 5 # left/right distance for fasta file
 mdst <- 3# left/right distance for PTM search with momo
 
 ## do diAA enrichment for all filters
-do.dimer <- FALSE
+do.dimer <- TRUE #FALSE
 
 ## threshold p-values
 p.min <- 1e-10
@@ -506,7 +506,8 @@ if ( interactive() ) {
 
 ### PCA OF FREQUENCIES
 ## TODO: do by substitution type
-
+do.PCA <- FALSE
+if ( do.PCA ) {
 
 pcalab <- expression(bold(AAS%+-%10))
 
@@ -957,10 +958,11 @@ if ( FALSE ) {
     ##pcl <- cluster::pam(ump$layout, 5)
     ##plot(ump$layout[,1], ump$layout[,2], col=pcl$clustering)
 }
-
+}
 ### PEPTIDE PROPERTIES
 ## also do for Main peptides
-
+do.props <- FALSE
+if ( do.props ) {    
 seqs <- apply(pctx[,as.character(-10:10)],1,paste, collapse="") # AAS
 deqs <- unlist(lapply(degl, paste, collapse="")) # DEGRONS
 aeqs <- apply(pctx[,as.character(-25:-15)],1,paste, collapse="") # AAS left
@@ -1150,6 +1152,7 @@ axis(2)
 figlabel("Cruciano, H-bonding", pos="bottom")
 dev.off()
 
+}
 
 ### INTRODUCE REQUIRED TAGS
 
@@ -1393,9 +1396,11 @@ for ( i in 1:nrow(filters) ) {
     
     dovl <- aaProfile(ctx, verb=0, p.min=.005, abc=diAAT)
     dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
-    dovs <- sortOverlaps(dovs, axis=2, p.min=1e-10, cut=TRUE)
+    ## TODO: fix sortOverlap2 such that pos and neg are sorted
+    ## separately
+    dovs <- sortOverlaps2(dovs, axis=2, p.min=1e-10, cut=TRUE)
     
-    if ( nrow(dosv$p.value)>0 ) {
+    if ( nrow(dovs$p.value)>0 ) {
         plotdev(file.path(fig.path,paste0("seqcontext_",
                                           column,"_",pattern,
                                           "_diAA")),
@@ -1754,15 +1759,8 @@ shadowtext(mis, aas, labels=aa, pos=4, xpd=TRUE, col="black")
 dev.off()
 
 
-### KMER ANALYSIS
-library(kmer)
 
-kbins <- as.AAbin(kctx)
-kmr.bg <- kcount(kbins, k=2)
-kmr <- table(apply(kctx[,as.character(0:1)],1,paste,collapse=""))
-sum(kmr.bg[,"KR"])
-
-## dimer ANALYSIS
+### dimer ANALYSIS
 
 ## convert AA matrix to diAA matrix
 dctx <- character()
@@ -1790,6 +1788,27 @@ dotprofile(dovs, value="ratio", vcols=ttcols, xlab=NA,
            ylab="di-amino acid", show.total=TRUE)
 dev.off()
 
+dovc <- sortOverlaps2(dovs, axis=2, p.min=p.min, cut=TRUE)
+mai <- c(.5,.5,.5,.5)
+fh <- fw <- .2
+nh <- nrow(dovc$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(dovc$p.value) *fw + mai[2] + mai[4]
+
+plotdev(file.path(fig.path,paste0("miscleavage_diAA_profile_cut")),
+        type="png", res=300, width=nw,height=nh)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(dovc, p.min=1e-10, p.txt=1e-5, xlab=NA,
+             ylab="di-amino acid", col=ttcols, show.total=TRUE, text.cex=.8)
+dev.off()
+plotdev(file.path(fig.path,paste0("miscleavage_diAA_dotplot_cut")),
+        type="png", res=300, width=nw,height=nh)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(dovc, value="ratio", vcols=ttcols, xlab=NA,
+           p.dot=1e-10, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), axis=1:2,
+           ylab="di-amino acid", show.total=TRUE)
+dev.off()
+
 ## CLEAVAGE BIASES?
 aaf <- matrix(0, nrow=length(AAS), ncol=30)
 rownames(aaf) <- AAS
@@ -1803,6 +1822,14 @@ matplot(t(aaf), type="l")
 points(aaf["Q",])
 points(aaf["A",],pch=4)
 points(aaf["K",],pch=3, col=2)
+
+### KMER ANALYSIS
+library(kmer)
+
+kbins <- as.AAbin(kctx)
+kmr.bg <- kcount(kbins, k=2)
+kmr <- table(apply(kctx[,as.character(0:1)],1,paste,collapse=""))
+sum(kmr.bg[,"KR"])
 
 ## MANUAL: clustalx and phylo tree
 
