@@ -75,6 +75,10 @@ mdst <- 3# left/right distance for PTM search with momo
 
 ## do diAA enrichment for all filters
 do.dimer <- TRUE #FALSE
+## PCA analysis of AA frequencies
+do.PCA <- FALSE
+## peptide property analysis
+do.props <- FALSE
 
 ## threshold p-values
 p.min <- 1e-10
@@ -119,6 +123,15 @@ degron.file <- file.path(proj.path,"originalData",
 ## analyze degron patterns
 degrons <- as.data.frame(read_xlsx(degron.file, sheet=2))
 grep("W",degrons$Degron_regex, value=TRUE)
+degl <- strsplit(degrons$Degron,"")
+dlen <- unlist(lapply(degl, function(x) sum(x%in%AAT)))
+hist(dlen)
+
+## filter nonAA chars
+degl <- lapply(degl, function(x) x[x%in%AAT])
+
+## remove short and (partially regex
+degl <- degl[dlen>5]
 
 ## GET SAAP/BP DATA
 dat <- read.delim(in.file)
@@ -506,7 +519,6 @@ if ( interactive() ) {
 
 ### PCA OF FREQUENCIES
 ## TODO: do by substitution type
-do.PCA <- FALSE
 if ( do.PCA ) {
 
 pcalab <- expression(bold(AAS%+-%10))
@@ -725,22 +737,6 @@ figlabel(pcalab, pos="bottomright", font=2, cex=1.2)
 dev.off()
 
 ## PCA OF DEGRONS
-
-degl <- strsplit(degrons$Degron,"")
-dlen <- unlist(lapply(degl, function(x) sum(x%in%AAT)))
-hist(dlen)
-
-## only longer degrons that equal their regex, i.e. fixed
-## sequences (?)
-##fixed <- degrons$Degron==degrons$Degron_regex
-
-
-## filter nonAA chars
-degl <- lapply(degl, function(x) x[x%in%AAT])
-
-## remove short and (partially regex
-degl <- degl[dlen>5]
-
 pcad <- lapply(degl,function(x) table(x)[AAT])
 pcad <- do.call(cbind, pcad)
 rownames(pcad) <- AAT
@@ -892,7 +888,6 @@ table(dcl$cluster, xcl$cluster)
 
 pcaa <- rbind(pcax,pcad)
 
-if ( FALSE ) {
     
     types <- c(rep(1,nrow(pcax)),
                rep(2, nrow(pcad)))
@@ -907,7 +902,7 @@ if ( FALSE ) {
                labels=rownames(cpca$loadings.common),
                col=aa.cols[rownames(cpca$loadings.common)], font=2, cex=1.2)
     dev.off()
-}
+
 pcb <- prcomp(pcaa, scale=TRUE)
 
 values <- pcb$sdev^2
@@ -964,7 +959,6 @@ if ( FALSE ) {
 }
 ### PEPTIDE PROPERTIES
 ## also do for Main peptides
-do.props <- FALSE
 if ( do.props ) {    
 seqs <- apply(pctx[,as.character(-10:10)],1,paste, collapse="") # AAS
 deqs <- unlist(lapply(degl, paste, collapse="")) # DEGRONS
@@ -1218,11 +1212,6 @@ filters <- rbind(
     c(column="methionine", pattern="TRUE"),
     c(column="tryptophane", pattern="TRUE"),
     c(column="ftype", pattern="branched"),
-    c(column="TM",pattern="TRUE"),
-    c(column="nxt", pattern="M"),  
-    c(column="nxt", pattern="W"),
-    c(column="prev", pattern="M"),
-    c(column="prev", pattern="W"),
     c(column="KRAQ",pattern="TRUE"),
     c(column="miscleavage",pattern="TRUE"),
     c(column="all",pattern="")

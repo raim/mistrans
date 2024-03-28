@@ -178,7 +178,7 @@ dot.sze <- c(.3,2)
 
 use.test <- t.test # w.test # 
 
-healthy <- FALSE # TRUE # 
+healthy <- TRUE #  FALSE # 
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.nterm <- FALSE # TRUE # 
@@ -537,11 +537,11 @@ colnames(pm) <- colnames(rm) <- -pp
 rownames(pm) <- rownames(rm) <- round(rs,1)
 ovw <- list(p.value=t(10^-pm),
             median=t(rm))
+
 mai <- c(.4,.5,.05,.06)
 fh <- fw <- .2
 nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-
 segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
                      height=nh, width=nw, res=300)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
@@ -1146,15 +1146,21 @@ for ( ds in auds ) {
         if ( sum(cds%in%names(lcods))<2 ) next
         rm <- ram[cds]
         cd <- lcods[cds]
-        cdf <- lm(cd ~rm)
-        slps[k] <- coef(cdf)[2]
+
+        cd <- cd[!is.na(rm)]
+        rm <- rm[!is.na(rm)]
+        if ( length(rm)<1 ) next
+  
         points(rm, cd, lwd=2, cex=1,
                col=aa.cols[aa], pch=aa.pchs[aa])
+        if ( length(rm)<2 ) next
+        cdf <- lm(cd ~rm)
+        slps[k] <- coef(cdf)[2]
         lines(rm, predict(cdf), col=aa.cols[aa])
     }
     dev.off()
     
-    ## TODO: plot to file analyze slopes
+    ## plot slopes
     plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequencies_raas_slopes_bynum")),
             type="png", res=300, width=3,height=3)
@@ -1164,8 +1170,9 @@ for ( ds in auds ) {
          xlab="number of codons per/AA")
     abline(h=0)
     dev.off()
-    plotdev(file.path(fig.path,paste0("codon_",SETID,"_",ds,
-                                      "_codons_frequencies_raas_slopes_bynum_zoom")),
+    plotdev(file.path(fig.path,
+                      paste0("codon_",SETID,"_",ds,
+                             "_codons_frequencies_raas_slopes_bynum_zoom")),
             type="png", res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plot(unlist(lapply(CODL,length)), slps, col=aa.cols[names(CODL)],
