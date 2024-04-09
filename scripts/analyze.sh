@@ -70,6 +70,8 @@ R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
 ## map each peptide to position in protein and transcript
 R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
 
+## export sequence context of AAS
+
 ## get and analyze sequences surrounding the ASS
 R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt
 

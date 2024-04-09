@@ -18,7 +18,7 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"processedData")
 
 ## DISTANCE AROUND AAS TO ANALYZE
-dst <- 25  # left/right distance for frequency plots
+dst <- 10  # left/right distance for frequency plots
 
 ## INPUT FILES
 ## list of SAAPs with coordinates
@@ -75,6 +75,8 @@ p2p <- unlist(lapply(pfas, function(x) x$seq))
 wrongp <- which(p2p!=t2p)
 cat(paste(length(wrongp),
           "translated sequences do not match protein sequence\n"))
+
+## mutation tag?
 mutp <- grep("_", names(wrongp), invert=TRUE)
 
 cat(paste(length(mutp),
@@ -119,6 +121,7 @@ if ( length(unex)!=3 )
          "is not valid anymore - RECHECK")
 
 ### GET SEQUENCE CONTEXT
+## proteins
 pctx <- sapply(1:nrow(dat), function(i) {
     ##for ( i in 1:nrow(dat) ){
     fsq <- pfas[[i]]$seq # protein sequence
@@ -143,62 +146,131 @@ pctx <- do.call(rbind, pctx)
 ## gene names
 rownames(pctx) <-
     paste0(dat$name,"_",dat$pos-dst,"_",dat$pos+dst)
-
 sum(pctx=="-")
 
-
-### WRITE OUT FASTA FILES
-
-for ( i in 1:which(filters[,"column"]=="all") ) {
-     
-    column <- filters[i,"column"]
-    pattern <- filters[i,"pattern"]
-
-    if ( column=="all" ) {
-        filt <- rep(TRUE, nrow(bpd))
-    } else {
-        filt <- as.character(bpd[,column])==pattern
-    }
+## transcripts
+tctx <- sapply(1:nrow(dat), function(i) {
+    ##for ( i in 1:nrow(dat) ){
+    fsq <- tfas[[i]]$seq # protein sequence
+    nsq <- nchar(fsq)
     
-    ctx <- pctx[filt,]
+    rrng <- seq(-dst*3,dst*3 +2,1)
+    sq <- rep("-",length(rrng)) ## GAP
+    names(sq) <- rrng
 
+    ## GET RANGE AROUND AAS
+    tpos <- dat$pos[i]*3 -2
+    rng <- (tpos-dst*3):(tpos+dst*3 +2)
+    ## cut range to available
+    rrng <- rrng[rng>0 & rng<=nsq]
+    rng <- rng[rng>0 & rng<=nsq]
+    sq[as.character(rrng)] <- unlist(strsplit(fsq,""))[rng]
+    list(sq)
+    ##}
+})
+## as matrix
+tctx <- do.call(rbind, tctx)
 
-    sqs <- apply(ctx,1, paste, collapse="")
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,".fa"))
-    out.rng <- as.character(-sdst:sdst)
+## gene names
+rownames(tctx) <-
+    paste0(dat$name,"_",dat$pos-dst,"_",dat$pos+dst)
+sum(tctx=="-")
 
-    
-    sqnms <- tagDuplicates(rownames(ctx))
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) {
-        osq <- gsub("-","",paste0(ctx[j,out.rng], collapse=""))
-        cat(paste0(">", sqnms[j],"\n", osq, "\n"),
-            file=fname, append=TRUE)
-    }
+## QC: seqinr::translate transcripts and compare to proteins
 
+## translate to proteins
+t2p <- apply(tctx, 1, function(x) {
+    gsub("\\*","-",gsub("X","-",paste0(translate(x),collapse="")))
+})
+## proteins as vectors
+p2p <- apply(pctx, 1, paste, collapse="")
 
-    ## required for meme
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,"_long.fa"))
-    out.rng <- as.character(-sdst:sdst)
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="-")>7 )
-            cat(paste0(">",sqnms[j],"\n",
-                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
-                file=fname, append=TRUE)
+wrongp <- which(p2p!=t2p)
+cat(paste(length(wrongp),
+          "translated sequences do not match protein sequence\n"))
 
-    ## required for MoMo
-    fname <- file.path(out.path,paste0("seqcontext_",
-                                       column,"_",pattern,"_motif.fa"))
-    out.rng <- as.character(-mdst:mdst)
-    if ( file.exists(fname) ) unlink(fname)
-    for ( j in 1:nrow(ctx) ) 
-        if ( sum(ctx[j,out.rng]!="-")==7 )
-            cat(paste0(">",sqnms[j],"\n",
-                       gsub("-","",paste0(ctx[j,out.rng],collapse="")),"\n"),
-                file=fname, append=TRUE)
+## mutation tag?
+mutp <- grep("_", dat$protein[wrongp], invert=TRUE)
+
+cat(paste(length(mutp),
+          "non-matching sequences DO NOT contain a _ mutation tag!\n"))
+
+## inspect some
+if ( interactive() ) {
+    head(wrongp[mutp])
+    p2p[wrongp[mutp][1]]
+    t2p[wrongp[mutp][1]]
 }
-sum(duplicated(apply(ctx,1, paste, collapse="")))
 
+## non IG genes
+isig <- dat$IG[wrongp[mutp]]
+
+cat(paste(sum(!isig),
+          "non-matching sequences ARE NOT immunoglobulins!\n"))
+isu <- grep("U",p2p[wrongp[mutp[!isig]]]) 
+isu <- wrongp[mutp[!isig]][isu]
+cat(paste(length(isu),
+          "non-matching sequences contain a selenocysteine\n"))
+isx <- grep("X",p2p[wrongp[mutp[!isig]]])
+isx <- wrongp[mutp[!isig]][isx]
+cat(paste(length(isx),
+          "non-matching sequences contain an X\n"))
+
+## unexplained differences 
+unex <- wrongp[mutp[!isig]]
+unex <- unex[!unex%in% c(isu,isx)]
+
+cat(paste(length(unex),
+          "non-matching sequences remaining\n"))
+if ( length(unex)!=0 )
+    stop("manual inspection of non-matching transcript and protein sequences",
+         "is not valid anymore - RECHECK")
+
+## ADD RAAS STATS
+
+## split RAAS by BP/SAAP
+tmtl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP))
+
+## match to main data
+tmt2dat <- match(paste(dat$BP, dat$SAAP), names(tmtl))
+tmtl <- tmtl[tmt2dat]
+
+## RAAS statistics
+tmts <- lapply(tmtl, function(x) {
+    x <- 10^x
+    mn <- mean(x)
+    md <- median(x)
+    sd <- sd(x)
+    cv <- sd/mn
+    c(n=length(x),
+      mean=log10(mn),
+      median=log10(md),
+      sd=log10(sd),
+      cv=cv)
+})
+tmts <- as.data.frame(do.call(rbind, tmts))
+
+## RESULTS
+plim <- as.character(-dst:dst)
+plim <- plim[plim!="0"]
+res <- cbind(BP=dat$BP,
+             SAAP=dat$SAAP,
+             peptide=gsub("-","Z",apply(pctx[,plim], 1, paste, collapse="")),
+             codons=apply(tctx, 1, paste, collapse=""),
+             tmts)
+rownames(res) <- NULL
+
+## remove all with NAN/Inf median
+rmv <- is.infinite(res$median) | is.na(res$median)
+## remove all immunoglobulins
+isig <- dat$IG
+
+res <- res[!(isig|rmv),]
+
+out.file <- file.path(dat.path, "saap_context.tsv")
+write.table(res, file=out.file, sep="\t", quote=FALSE, na="", row.names=FALSE)
+
+
+## TODO:
+## filter input: rm U and X containing sequences.
+## 

@@ -24,10 +24,10 @@ bpmap <- file.path(out.path,"bp_mapped.tsv")
 
 
 ## protein fasta
-fasta <- file.path(out.path,"all_proteins.fa")
+pfasta <- file.path(out.path,"all_proteins.fa")
 
 ## coding region fasta
-transcr <- file.path(mam.path,"processedData","coding.fa")
+tfasta <- file.path(mam.path,"processedData","coding.fa")
 
 ## protein-transcript map
 tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
@@ -51,10 +51,10 @@ dir.create(fig.path, showWarnings=FALSE)
 #### FIND POSITIONS of SAAP in protein and transcript
 
 ## GET ENSEMBL PROTEINS - from project mammary
-fas <- readFASTA(fasta, grepID=TRUE)
+fas <- readFASTA(pfasta, grepID=TRUE)
 
 ## get matching transcripts
-trfas <- readFASTA(transcr, grepID=TRUE)
+trfas <- readFASTA(tfasta, grepID=TRUE)
 
 ## protein-transcript map
 trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
