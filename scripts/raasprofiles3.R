@@ -178,7 +178,7 @@ dot.sze <- c(.3,2)
 
 use.test <- t.test # w.test # 
 
-healthy <- TRUE #  FALSE # 
+healthy <- FALSE # TRUE #  
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.nterm <- FALSE # TRUE # 
@@ -756,6 +756,36 @@ if ( nrow(ovwp$p.value)>0 )
 ## TODO: plot on p-value correction
 plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
 
+
+## by AA->AA
+for ( ds in auds ) {
+
+    tmtd <- tmtf
+    if ( ds!="all" ) {
+        if ( ds!="cancer" )
+            tmtd <- tmtf[tmtf$Dataset==ds,]
+        else
+            tmtd <- tmtf[tmtf$Dataset!="Healthy",]
+    }
+
+    ## NOTE: bg=FALSE, no column-wise background!
+    ovw <- raasProfile(x=tmtd, id="SAAP", 
+                       rows="to", cols="from",
+                       bg=FALSE, value="RAAS", 
+                       use.test=use.test, do.plots=FALSE, 
+                       verb=0)
+
+    plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",SETID,"_",ds)),
+                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 rlab=LAB, llab=ds,
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols)
+}
+
+
+## by AA property transition
 for ( ptype in unique(tmtf$pfromto) ) {
 
     ## sort by to
@@ -1383,31 +1413,6 @@ for ( ds in auds ) {
     
 }
 
-
-
-## by AA->AA
-for ( ds in uds ) {
-
-    dtmt <- tmtf[tmtf$Dataset==ds,]
-
-    ## NOTE: bg=FALSE, no column-wise background!
-    ovw <- raasProfile(x=dtmt, id="SAAP", 
-                       rows="to", cols="from",
-                       bg=FALSE, value="RAAS", 
-                       use.test=use.test, do.plots=FALSE, 
-                       verb=0)
-
-    plotProfiles(ovw, fname=file.path(fig.path,paste0("AA_",SETID,"_",ds)),
-                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-                 p.min=p.min, p.txt=p.txt,
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab=ds,
-                 vcols=vcols, vbrks=vbrks,
-                 gcols=gcols)
-
-
- 
-}
 
 
 
