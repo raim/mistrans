@@ -16,7 +16,8 @@
 
 ## TODO:
 
-## * PCA of AA FREQUENCIES in -7:7
+## * PCA of AA FREQUENCIES in -7:7,
+## * export sequences for DL.
 
 source("~/work/mistrans/scripts/saap_utils.R")
 
@@ -1388,17 +1389,18 @@ for ( i in 1:nrow(filters) ) {
     
     dovl <- aaProfile(ctx, verb=0, p.min=.005, abc=diAAT)
     dovs <- sortOverlaps(dovl, axis=1, srt=as.character(-7:7))
-    ## TODO: fix sortOverlap2 such that pos and neg are sorted
-    ## separately
-    dovs <- sortOverlaps2(dovs, axis=2, p.min=1e-10, cut=TRUE)
-    
+    if ( nrow(dovs$p.value)>0 ) 
+        dovs <- sortOverlaps2(dovs, axis=2, p.min=1e-10, cut=TRUE)
     if ( nrow(dovs$p.value)>0 ) {
+        ## TODO: fix sortOverlap2 such that pos and neg are sorted
+        ## separately
+        
         plotdev(file.path(fig.path,paste0("seqcontext_",
                                           column,"_",pattern,
                                           "_diAA")),
                 type="png", res=300, 
                 width=.3*ncol(dovs$p.value)+1,,height=.25*nrow(dovs$p.value)+1)
-        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.5,.3,0), tcl=-.25)
         plotOverlaps(dovs, p.min=1e-50, p.txt=1e-25, xlab=NA,
                      ylab="di-amino acid", col=ttcols, show.total=TRUE,
                      text.cex=.8)
@@ -1410,7 +1412,7 @@ for ( i in 1:nrow(filters) ) {
                                           "_diAA_dotplot")),
                 type="png", res=300, 
                 width=.3*ncol(dovs$p.value)+1,,height=.25*nrow(dovs$p.value)+1)
-        par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+        par(mai=c(.5,.5,.5,.5), mgp=c(1.5,.3,0), tcl=-.25)
         dotprofile(dovs, value="ratio", vcols=ttcols, xlab=NA,
            p.dot=1e-50, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), axis=1:2,
