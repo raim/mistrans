@@ -817,10 +817,10 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
         pval <- aam
         pval[aap<aam] <- aap[aap<aam]
         sig <- apply(pval, 1, function(x) any(x<p.min))
-        aam <- aam[sig,]
-        aap <- aap[sig,]
-        aac <- aac[sig,]
-        aar <- aar[sig,]
+        aam <- aam[sig,,drop=FALSE]
+        aap <- aap[sig,,drop=FALSE]
+        aac <- aac[sig,,drop=FALSE]
+        aar <- aar[sig,,drop=FALSE]
     }
 
     ## construct overlap class
@@ -834,6 +834,10 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
         t(t(table(c(x))[rownames(aam)]))
     ovl$num.target <-
         t(apply(x, 2, function(x) sum(x%in%rownames(aam))))
+    ## convert table to matrix
+    ovl$num.query <- unclass(ovl$num.query)
+    ovl$num.target <- unclass(ovl$num.target)
+
 
     ## multiple testing correction
     if ( p.adjust=="q" )
