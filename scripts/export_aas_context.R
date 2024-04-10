@@ -256,7 +256,7 @@ tmts <- as.data.frame(do.call(rbind, tmts))
 ## w and w/o AAS, and for peptides and codons.
 
 ## RESULTS
-dst <- 25
+dst <- 0
 omit.aas <- c() #-20:20
 plim <- as.character(-dst:dst)
 tlim <- as.character(-(3*dst):(3*dst+2))
