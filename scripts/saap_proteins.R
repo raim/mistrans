@@ -2,6 +2,7 @@
 ## read protein fasta, iupred3, s4pred, and AAS,
 ## and generate per protein plots
 
+## TODO: GET AND LOAD PFAM ANNOTATION: descriptions, clans!
 
 source("~/work/mistrans/scripts/saap_utils.R")
 
@@ -92,7 +93,6 @@ names(tfas) <- pamrt[names(tfas),1]
 
 ## pfam
 ## fixed width format, where \s was replaced with ; by sed
-## TODO: load pfam description
 ## NOTE: three sets of from/to: hmm, ali, env;
 ## env may overlap between multiple - could be fused!
 pfm <- read.csv(file=pfam, sep=";", fill=FALSE, header=FALSE,comment.char="#")
@@ -117,11 +117,12 @@ appc   [app>30 ] <- 30
 
 hist(appc, breaks=1:30, xlab"AAS per protein")
 
-## select a nice protein
-pid <- names(aasl)[which(app >= 10)[1]]
-
 ## look at TDP-43
 pid <- pamrt[genes[genes$name=="TARDBP","canonical"],]
+
+## select a nice protein
+pid <- names(aasl)[which(app >= 5)[2]]
+
 
 ## plot all proteins INCL. QC
 ##for ( pid in names(aasl) ) {
@@ -161,9 +162,9 @@ pf <- pfl[[pid]]
 pf <- pf[,c("target","FROM","TO","E-value")]
 colnames(pf) <- c("type","start","end","score")
 pf <- pf[order(pf$start),]
-pf <- cbind(pf,chr=1,strand="+")
+pf <- cbind(pf,chr=1,strand=".")
 pf <- segmentMerge(pf, type="type")
-
+pf$strand <- "."
 pf$name <- pf$type
 
 source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
@@ -182,7 +183,7 @@ axis(2)
 
 ## data as heatmap
 iud <- cbind(chr=1,coor=iu[,"V1"],vals=iu[,c("V3","V4")])
-plotHeat(iud, coors=coors, colors=viridis(100), breaks=0:100/100)
+plotHeat(iud, coors=coors, breaks=30:100/100)
 
 plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
 abline(v=aas$pos) ## TODO: arrows, color by RAAS etc.
