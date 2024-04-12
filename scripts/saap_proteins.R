@@ -7,6 +7,7 @@ source("~/work/mistrans/scripts/saap_utils.R")
 
 library(viridis)
 library(segmenTools)
+library(seqinr)
 options(stringsAsFactors=FALSE)
 
 
@@ -64,10 +65,31 @@ names(s4p) <- sub("\\.[0-9]+", "", names(s4p))
 iufiles <- list.files(pattern=paste0(".*iupred3.tsv.gz"), path=iupred)
 names(iufiles) <- sub("\\..*","", iufiles)
 
+## load transcript and protein fasta
+## GET ENSEMBL PROTEINS - from project mammary
+pfas <- readFASTA(pfasta, grepID=TRUE)
+
+## get matching transcripts
+tfas <- readFASTA(tfasta, grepID=TRUE)
+
+## protein-transcript map
+trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+## reverse map transcript-protein
+pamrt <- matrix(rownames(trmap), ncol=1)
+rownames(pamrt) <- trmap[,1]
+
+## rename by protein names via trmap, for quick access
+## of protein-specific transcript
+names(tfas) <- pamrt[names(tfas),1]
+
+
+
 
 ## pfam
 ## fixed width format, where \s was replaced with ; by sed
 ## TODO: load pfam description
+## NOTE: three sets of from/to: hmm, ali, env;
+## env may overlap between multiple - could be fused!
 pfm <- read.csv(file=pfam, sep=";", fill=FALSE, header=FALSE,comment.char="#")
 pfmh <- c(
     "target", "accession" , "tlen",            
@@ -83,5 +105,40 @@ colnames(pfm) <- pfmh
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
-## NOTE: three sets of from/to: hmm, ali, env;
-## env may overlap between multiple - could be fused!
+for ( pid in names(aasl) ) {
+
+    ## collect all data for protein
+    aas <- aasl[[pid]]
+    pf <- pfl[[pid]]
+    s4 <- s4p[[pid]]$seq
+    iu <- read.delim(file.path(iupred,iufiles[pid]), header=FALSE)
+    psq <- pfas[[pid]]$seq
+    tsq <- tfas[[pid]]$seq
+    ## check lengths
+    tlen <- nchar(tsq)/3 -1
+    plen <- nchar(psq)
+    slen <- nchar(s4)
+    ilen <- nrow(iu)
+    if ( length(unique(c(tlen,plen,slen,ilen)))>1 )
+        cat(paste("WARNING:", pid, "lengths differ",
+                  paste(unique(round(c(tlen,plen,slen,ilen),1)),
+                        collapse=";"), "\n"))
+    ## check sequence via translate
+    if ( paste0(iu[,2],collapse="")!=psq)
+        cat(paste("WARNING:", pid, "wrong iupred3 seq\n"))
+    if ( is.null(tsq) ) {
+        cat(paste("WARNING:", pid, "no transcript\n"))
+    } else {
+        tpsq <- sub("\\*$","",
+                    paste0(translate(strsplit(tsq,"")[[1]]),collapse=""))
+        if ( tpsq!=psq )
+            cat(paste("WARNING:", pid, "wrong translation\n"))
+    }
+}
+
+## TODO: why is iupred3 for ENSP00000352639 wrong?
+## sequence seems to stem from a differen short protein,
+## multiple annotated proteins, e.g. ENSP00000464724.1
+## TODO: why is iupred3 for ENSP00000364986 wrong?
+## sequence seems to stem from ENSP00000460206.1
+## TODO: ENSP00000374778 stop codon missing?
