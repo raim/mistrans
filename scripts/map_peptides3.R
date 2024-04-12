@@ -224,8 +224,8 @@ for ( i in 1:nrow(dat) ) {
                       oid, "iupred:",nrow(iud), "vs. protein:", len[i],"\n"))
             errors[i,"wrong iupred3 len"] <- 1
         } else {
-            anc[i] <- iud[pos[i], 4]
-            iup[i] <- iud[pos[i], 3]
+            anc[i] <- iud[pos[i], 4] #anchor2
+            iup[i] <- iud[pos[i], 3] #iupred3
             ## whole protein mean
             anbg[i] <- mean(iud[, 4])
             iubg[i] <- mean(iud[, 3])

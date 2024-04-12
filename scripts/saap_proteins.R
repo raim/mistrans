@@ -21,7 +21,7 @@ mam.path <- "~/data/mammary/"
 
 in.file <- file.path(out.path,"saap_mapped3.tsv")
 ## protein fasta
-pfasta <- file.path(dat.path,"all_proteins.fa")
+pfasta <- file.path(out.path,"all_proteins.fa")
 ## coding region fasta
 tfasta <- file.path(mam.path,"processedData","coding.fa")
 
@@ -47,6 +47,11 @@ pfam <- file.path(mam.path,"processedData",
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
 ## PARSE & FILTER DATA
+
+## proteins
+genes <- read.delim(feature.file)
+
+## AAS
 dat <- read.delim(in.file)
 ## remove SAAP/BP w/o protein
 rm <- dat$ensembl==""
@@ -105,7 +110,21 @@ colnames(pfm) <- pfmh
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
-for ( pid in names(aasl) ) {
+## AAS per protein
+app <- unlist(lapply(aasl, nrow))
+appc <- app
+appc   [app>30 ] <- 30
+
+hist(appc, breaks=1:30, xlab"AAS per protein")
+
+## select a nice protein
+pid <- names(aasl)[which(app >= 10)[1]]
+
+## look at TDP-43
+pid <- pamrt[genes[genes$name=="TARDBP","canonical"],]
+
+## plot all proteins INCL. QC
+##for ( pid in names(aasl) ) {
 
     ## collect all data for protein
     aas <- aasl[[pid]]
@@ -134,6 +153,47 @@ for ( pid in names(aasl) ) {
         if ( tpsq!=psq )
             cat(paste("WARNING:", pid, "wrong translation\n"))
     }
+
+    ## get domains
+pf <- pfl[[pid]]
+## fuse domains of same type
+## using segmenTools segmentMerge via bedtools
+pf <- pf[,c("target","FROM","TO","E-value")]
+colnames(pf) <- c("type","start","end","score")
+pf <- pf[order(pf$start),]
+pf <- cbind(pf,chr=1,strand="+")
+pf <- segmentMerge(pf, type="type")
+
+pf$name <- pf$type
+
+source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
+
+coors <- c(chr=1,start=0, end=plen+1)
+
+layout(mat=rbind(1,2,3,4,5), heights=c(.2,.1,.1,.1,.1))
+par(mai=c(.05,.5,.05,.5), xaxs="i")
+
+## domains as arrows
+plotFeatures(pf, coors=coors, names=TRUE)
+axis(1)
+axis(2)
+## domains as blocks
+##plotFeatureBlocks(pf, coors=coors)
+
+## data as heatmap
+iud <- cbind(chr=1,coor=iu[,"V1"],vals=iu[,c("V3","V4")])
+plotHeat(iud, coors=coors, colors=viridis(100), breaks=0:100/100)
+
+plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
+abline(v=aas$pos) ## TODO: arrows, color by RAAS etc.
+plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
+text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=.5)
+plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
+text(1:plen, y=1, labels=strsplit(psq,"")[[1]], cex=.5)
+
+##plot(1:plen, xlim=c(0,plen+1), col=NA, ylim=c(-2,2))
+##rect(xleft = pf$start, xright = pf$to, ybottom = -1, ytop = 1)
+##text(x=apply(cbind(pf$start,pf$to),1,mean), y=0, labels=pf$target)
 }
 
 ## TODO: why is iupred3 for ENSP00000352639 wrong?
@@ -141,4 +201,5 @@ for ( pid in names(aasl) ) {
 ## multiple annotated proteins, e.g. ENSP00000464724.1
 ## TODO: why is iupred3 for ENSP00000364986 wrong?
 ## sequence seems to stem from ENSP00000460206.1
-## TODO: ENSP00000374778 stop codon missing?
+## TODO: ENSP00000374778 et al. stop codon missing?
+
