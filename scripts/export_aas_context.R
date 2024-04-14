@@ -22,6 +22,10 @@ dir.create(fig.path)
 ## DISTANCE AROUND AAS TO ANALYZE
 DST <- 25  # left/right distance for frequency plots
 
+## randomized controls?
+randomize <- FALSE # TRUE #
+randomize.peptides <- FALSE # TRUE #
+
 ## INPUT FILES
 ## list of SAAPs with coordinates
 in.file <- file.path(dat.path,"saap_mapped3.tsv")
@@ -55,17 +59,17 @@ if ( interactive() )
     table(is.na(tidx), is.na(pidx))
 
 seqna <- is.na(tidx) | is.na(pidx)
-
 cat(paste("removing", sum(seqna),
           "sequences w/o protein or transcript match\n"))
 pidx <- pidx[!seqna]
 tidx <- tidx[!seqna]
 dat <- dat[!seqna,]
 
+## re-order sequences
 pfas <- pfas[pidx]
 tfas <- tfas[tidx]
 
-## QC: seqinr::translate transcripts and compare to proteins
+### QC: seqinr::translate transcripts and compare to proteins
 
 ## translate to proteins
 t2p <- unlist(lapply(tfas, function(x) {
@@ -284,14 +288,13 @@ dups <- duplicated(paste(dat$BP))#, dat$SAAP))
 ## REMOVE IG, inf/na RAAS and duplicate BP
 res <- res[!(isig|rmv|dups),]
 
-## TODO: randomize RAAS associations
-randomize <- FALSE #TRUE#
+## randomize RAAS associations
 if ( randomize ) {
     res$median <-
         sample(res$median)
 }
 
-randomize.peptides <- FALSE #TRUE
+## randomize AA sequence per peptide
 if ( randomize.peptides ) {
     peps <- strsplit(res$peptide,"")
     pepr <- unlist(lapply(peps, function(x) paste(sample(x),collapse="")))

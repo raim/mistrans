@@ -30,6 +30,7 @@ dat.path <- file.path(proj.path,"originalData")
 out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures","proteins")
 dir.create(fig.path)
+dir.create(file.path(fig.path, "selected"))
 
 mam.path <- "~/data/mammary/"
 
@@ -60,11 +61,21 @@ iupred <- file.path(mam.path,"processedData","iupred3")
 ## pfam hits
 pfam <- file.path(mam.path,"processedData",
                   "Homo_sapiens.GRCh38.pep.large_annotations.csv")
+## pfam clans
+clans <- file.path(mam.path,"originalData", "pfam", "Pfam-A.clans.tsv.gz")
 
 ## genome feature file
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
 ## PARAMETERS
+
+## plot
+ftyp <- "png"
+
+## only plot subset of substitutions with high RAAS
+min.raas <- -1
+
+## raas color scheme
 RAAS.MIN <- -4
 RAAS.MAX <-  1
 colors <- "arno" # "inferno" #"rocket" # "viridis" # 
@@ -78,6 +89,7 @@ genes <- read.delim(feature.file)
 
 ## AAS
 dat <- read.delim(in.file)
+
 ## remove SAAP/BP w/o protein
 rm <- dat$ensembl==""
 dat <- dat[!rm,]
@@ -134,8 +146,18 @@ dev.off()
 ## add to main data
 dat <- cbind(dat, tmts)
 
-## remove proteins without RAAS
+## remove SAAP without RAAS
 dat <- dat[dat$n>0,]
+
+## add RAAS coloring
+intv <- findInterval(dat$median, lraas.col$breaks)
+## raise to min/max
+intv[intv==0] <- 1
+intv[intv>length(lraas.col$col)] <- length(lraas.col$col)
+dat$color <- lraas.col$col[intv]
+
+## remove SAAP with low RAAS
+##dat <- dat[dat$median >= min.raas,]
 
 ## LIST OF AAS BY PROTEIN
 aasl <- split(dat, dat$ensembl) 
@@ -170,7 +192,6 @@ names(tfas) <- pamrt[names(tfas),1]
 
 
 
-
 ## pfam
 ## fixed width format, where \s was replaced with ; by sed
 ## NOTE: three sets of from/to: hmm, ali, env;
@@ -187,6 +208,11 @@ pfmh <- c(
     "acc")#          , "description")
 colnames(pfm) <- pfmh
 
+## pfam clans: used to collapse domains below!
+pclan <- read.delim(clans, row.names=1 , header=FALSE)
+pfm$clan <- pclan[sub("\\..*","", pfm$accession),"V3"]
+pfm$clan[pfm$clan==""] <- pfm$target[pfm$clan==""]
+    
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
@@ -197,12 +223,28 @@ appc   [app>30 ] <- 30
 
 hist(appc, breaks=1:30, xlab="AAS per protein")
 
-## look at TDP-43
-pids <- c(pamrt[genes[genes$name=="TARDBP","canonical"],],
-          ## proteasome 20S subunit alpha 1 
-          pamrt[genes[genes$name=="PSMA1","canonical"],],
-          ## high AAS
-          pid <- names(aasl)[which(app >= 5)[2]])
+
+
+## proteins of interest:
+## TDP-43,
+## proteasome: PSM*,
+## TODO: glycolysis, AA metabolism,
+## glycolysis: ENO1/2/3, GAPDH,
+## histones:
+## globin: HBA1/2, HBB,
+## Ras/Rap: RAB*, RAP1A, RAP2A,
+## collagen,
+## CCR4-NOT: CNOT10,
+## calmodulin: CALM1, CALML3
+## TODO: RAAS profiles for protein complexes, 
+
+POI <- c(pamrt[genes[genes$name=="TARDBP","canonical"],],
+         ## proteasome 20S subunit alpha 1 
+         pamrt[genes[genes$name=="PSMA1","canonical"],],
+         ## actins
+         pamrt[genes[genes$name=="ACTA1","canonical"],],
+         pamrt[genes[genes$name=="ACTB","canonical"],],
+         pamrt[genes[genes$name=="ACTC1","canonical"],])
 
 ## map gene names and uniprot
 gidx <-  match(trmap[names(aasl),1], genes$canonical)
@@ -215,12 +257,14 @@ puni[is.na(puni)] <- names(aasl)[is.na(puni)]
 names(puni)  <- names(aasl)
 
 ## plot all proteins INCL. QC
-pids <- names(aasl)
+pids <- names(aasl)#POI #
 for ( pid in pids ) {
 
-    cat(paste("plotting", pnms[pid], pid, "\n"))
     
     ffile <- file.path(fig.path, pnms[pid])
+    if ( pid%in%POI )
+        sfile <- file.path(fig.path, "selected", pnms[pid])
+
     ##if ( file.exists(ffile) ) next
 
     ## collect all data for protein
@@ -263,7 +307,7 @@ for ( pid in pids ) {
     ## fuse domains of same type
     ## using segmenTools segmentMerge via bedtools
     if ( !is.null(pf) ) {
-        pf <- pf[,c("target","FROM","TO","E-value")]
+        pf <- pf[,c("clan","FROM","TO","E-value")]
         colnames(pf) <- c("type","start","end","score")
         pf <- pf[order(pf$start),]
         pf <- cbind(pf,chr=1,strand=".")
@@ -272,7 +316,30 @@ for ( pid in pids ) {
         pf$name <- pf$type
     }
 
-    plotdev(ffile, width=min(c(100,plen/30)), height=3,
+    ## PREPARE AAS PLOT
+    ## order by RAAS such that higher RAAS will be on top of overlapping
+    aas <-
+        aas[order(aas$median),]
+    aaco <- paste0(aas$from,":",aas$to)
+    ## TODO: type 0,1,2,3 for closeby, not just identical
+    aatp <- as.numeric(duplicated(aas$pos))
+    raas <- aas$median
+    aad <- data.frame(type=aaco,#aatp,
+                      name=aaco,
+                      start=aas$pos,
+                      end=aas$pos,
+                      chr=1, strand=".",
+                      size=log(aas$n)+.5,
+                      color=aas$color,
+                      codon=aas$codon)
+    aad <- aad[aas$median >= min.raas, ]
+
+    ## skip plot if no RAAS is higher than minimum
+    if ( nrow(aad)==0 & !pid%in%POI ) next
+
+    cat(paste("PLOTTING", pnms[pid], pid, "\n"))
+
+    plotdev(ffile, width=min(c(100,plen/30)), height=3, type=ftyp,
             res=200)
     layout(mat=rbind(1,2,3,4,5), heights=c(.5,.1,.1,.25,.1))
     par(mai=c(.05,.5,.05,.5), xaxs="i", xpd=TRUE)
@@ -293,37 +360,43 @@ for ( pid in pids ) {
     
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
-    abline(v=aas$pos) ## TODO: arrows, color by RAAS etc.
+    ## indicate K|R cleavage sites - TODO: omit Keil rules
+    arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
+    if ( length(arg) )
+        arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
+    lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
+    if ( length(lys) )
+        arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
 
-    aaco <- paste0(aas$from,":",aas$to)
-    aatp <- as.numeric(duplicated(aas$pos))
-    raas <- aas$median
-    raas[raas<RAAS.MIN] <- RAAS.MIN
-    raas[raas>RAAS.MAX] <- RAAS.MAX
-    intv <- findInterval(raas, lraas.col$breaks)
-    rcol <- lraas.col$col[intv]
-    aad <- data.frame(type=aaco,#aatp,
-                      name=aaco,
-                      start=aas$pos,
-                      end=aas$pos,
-                      chr=1, strand=".",
-                      size=log(aas$n)+.5,
-                      color=rcol)
+    ## indicate ALL AAS
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
+    ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
+    ## DETAILS for high RAAS AAS
     if (FALSE) { # custom with n~size
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
         for ( tp in unique(aad$type) )
             shadowtext(x=aad$start[aad$type==tp],
                        y=1,#-rep(tp,sum(aad$type==tp))*.25,
-                       labels=aaco[aad$type==tp], cex=aad$size[aad$type==tp],
+                       labels=aaco[aad$type==tp],
+                           cex=aad$size[aad$type==tp],
                        col=aad$color[aad$type==tp])
     }
-    plotFeatures(aad, coors=coors, names=TRUE, tcx=2, typord=TRUE, axis2=FALSE)
+    plotFeatures(aad, coors=coors, names=TRUE, tcx=2,
+                 typord=TRUE, axis2=FALSE)
     axis(1, at=aad$start, labels=FALSE, col=NA)
     axis(1, tcl=-.1, mgp=c(1,.2,0))
+    ## AA context
+    
     ## codons
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(x=aas$pos, y=1, labels=aas$codon, cex=2)
+    if ( nrow(aad)>0 )
+        shadowtext(x=aad$start, y=rep(1, nrow(aad)),
+                   labels=aad$codon, cex=2, col=aad$color)
     dev.off()
+    if ( pid%in%POI )
+        file.copy(paste0(ffile,".",ftyp),
+                  paste0(sfile,".",ftyp))
 }
  
 
