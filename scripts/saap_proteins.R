@@ -2,13 +2,24 @@
 ## read protein fasta, iupred3, s4pred, and AAS,
 ## and generate per protein plots
 
-## TODO: GET AND LOAD PFAM ANNOTATION: descriptions, clans!
+## TODO:
+## * GET AND LOAD PFAM ANNOTATION: descriptions, clans!
+## * use gene names
+
+## TODO: why is iupred3 for ENSP00000352639 wrong?
+## sequence seems to stem from a differen short protein,
+## multiple annotated proteins, e.g. ENSP00000464724.1
+## TODO: why is iupred3 for ENSP00000364986 wrong?
+## sequence seems to stem from ENSP00000460206.1
+## TODO: ENSP00000374778 et al. stop codon missing?
 
 source("~/work/mistrans/scripts/saap_utils.R")
+source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
 
 library(viridis)
 library(segmenTools)
 library(seqinr)
+library(Rpdb)
 options(stringsAsFactors=FALSE)
 
 
@@ -17,10 +28,16 @@ options(stringsAsFactors=FALSE)
 proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 out.path <- file.path(proj.path,"processedData")
+fig.path <- file.path(proj.path,"figures","proteins")
+dir.create(fig.path)
 
 mam.path <- "~/data/mammary/"
 
+## AAS 
 in.file <- file.path(out.path,"saap_mapped3.tsv")
+## RAAS values
+tmt.file <- file.path(proj.path,"originalData",
+                      "All_SAAP_TMTlevel_quant_df.txt")
 ## protein fasta
 pfasta <- file.path(out.path,"all_proteins.fa")
 ## coding region fasta
@@ -47,6 +64,13 @@ pfam <- file.path(mam.path,"processedData",
 ## genome feature file
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
+## PARAMETERS
+RAAS.MIN <- -4
+RAAS.MAX <-  1
+colors <- "arno" # "inferno" #"rocket" # "viridis" # 
+
+COLF <- get(colors)
+
 ## PARSE & FILTER DATA
 
 ## proteins
@@ -57,13 +81,69 @@ dat <- read.delim(in.file)
 ## remove SAAP/BP w/o protein
 rm <- dat$ensembl==""
 dat <- dat[!rm,]
-aasl <- split(dat, dat$ensembl) 
 
 ## TMT Level RAAS Values
 tmtf <- read.delim(tmt.file)
 
+## exclude NA or Inf
+## NOTE: since we don't to tests against the global
+## distribution and only calculate protein-specific
+## RAAS means, we don't need to filter RAAS data here.
+rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
+cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
+tmtf <- tmtf[!rm,]
+
+## ADD RAAS STATS
+
+## split RAAS by BP/SAAP
+tmtl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP))
+
+## match to main data
+tmt2dat <- match(paste(dat$BP, dat$SAAP), names(tmtl))
+tmtl <- tmtl[tmt2dat]
+
+## RAAS statistics
+tmts <- lapply(tmtl, function(x) {
+    x <- 10^x
+    mn <- mean(x)
+    md <- median(x)
+    sd <- sd(x)
+    cv <- sd/mn
+    c(n=length(x),
+      mean=log10(mn),
+      median=log10(md),
+      sd=log10(sd),
+      cv=cv)
+})
+tmts <- as.data.frame(do.call(rbind, tmts))
+
+## RAAS COLORS
+png(file.path(fig.path,paste0("legend_raas_proteins.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+lraas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MIN, mx=RAAS.MAX,colf=COLF,
+                          n=50, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(colors, pos="bottomleft", cex=1)
+##figlabel(LAB, pos="bottomright", cex=1)
+dev.off()
+
+## add to main data
+dat <- cbind(dat, tmts)
+
+## remove proteins without RAAS
+dat <- dat[dat$n>0,]
+
+## LIST OF AAS BY PROTEIN
+aasl <- split(dat, dat$ensembl) 
+
+## TODO: count and raas-profiles per AAS
+
 ## s4pred
-s4p <- readFASTA(s4pred, grepID=TRUE)
+s4p <- segmenTools::readFASTA(s4pred, grepID=TRUE)
 ## skip version number - TODO: use version numbers!
 names(s4p) <- sub("\\.[0-9]+", "", names(s4p))
 
@@ -73,10 +153,10 @@ names(iufiles) <- sub("\\..*","", iufiles)
 
 ## load transcript and protein fasta
 ## GET ENSEMBL PROTEINS - from project mammary
-pfas <- readFASTA(pfasta, grepID=TRUE)
+pfas <- segmenTools::readFASTA(pfasta, grepID=TRUE)
 
 ## get matching transcripts
-tfas <- readFASTA(tfasta, grepID=TRUE)
+tfas <- segmenTools::readFASTA(tfasta, grepID=TRUE)
 
 ## protein-transcript map
 trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
@@ -115,22 +195,38 @@ app <- unlist(lapply(aasl, nrow))
 appc <- app
 appc   [app>30 ] <- 30
 
-hist(appc, breaks=1:30, xlab"AAS per protein")
+hist(appc, breaks=1:30, xlab="AAS per protein")
 
 ## look at TDP-43
-pid <- pamrt[genes[genes$name=="TARDBP","canonical"],]
+pids <- c(pamrt[genes[genes$name=="TARDBP","canonical"],],
+          ## proteasome 20S subunit alpha 1 
+          pamrt[genes[genes$name=="PSMA1","canonical"],],
+          ## high AAS
+          pid <- names(aasl)[which(app >= 5)[2]])
 
-## select a nice protein
-pid <- names(aasl)[which(app >= 5)[2]]
+## map gene names and uniprot
+gidx <-  match(trmap[names(aasl),1], genes$canonical)
+pnms <- genes$name[gidx]
+pnms[is.na(pnms)] <- names(aasl)[is.na(pnms)]
+names(pnms)  <- names(aasl)
 
+puni <- genes$swissprot[gidx]
+puni[is.na(puni)] <- names(aasl)[is.na(puni)]
+names(puni)  <- names(aasl)
 
 ## plot all proteins INCL. QC
-##for ( pid in names(aasl) ) {
+pids <- names(aasl)
+for ( pid in pids ) {
+
+    cat(paste("plotting", pnms[pid], pid, "\n"))
+    
+    ffile <- file.path(fig.path, pnms[pid])
+    ##if ( file.exists(ffile) ) next
 
     ## collect all data for protein
     aas <- aasl[[pid]]
     pf <- pfl[[pid]]
-    s4 <- s4p[[pid]]$seq
+    s4 <- gsub("H","0",gsub("E","/",gsub("C","-",s4p[[pid]]$seq)))
     iu <- read.delim(file.path(iupred,iufiles[pid]), header=FALSE)
     psq <- pfas[[pid]]$seq
     tsq <- tfas[[pid]]$seq
@@ -156,51 +252,78 @@ pid <- names(aasl)[which(app >= 5)[2]]
     }
 
     ## get domains
-pf <- pfl[[pid]]
-## fuse domains of same type
-## using segmenTools segmentMerge via bedtools
-pf <- pf[,c("target","FROM","TO","E-value")]
-colnames(pf) <- c("type","start","end","score")
-pf <- pf[order(pf$start),]
-pf <- cbind(pf,chr=1,strand=".")
-pf <- segmentMerge(pf, type="type")
-pf$strand <- "."
-pf$name <- pf$type
+    pf <- pfl[[pid]]
 
-source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
+    ## convert all to genomeBrowser style tables
+    ## and use genomeBrowser plot functions.
 
-coors <- c(chr=1,start=0, end=plen+1)
+    ## dummy plot coordinates for protein length
+    coors <- c(chr=1,start=0, end=plen+1)
+   
+    ## fuse domains of same type
+    ## using segmenTools segmentMerge via bedtools
+    if ( !is.null(pf) ) {
+        pf <- pf[,c("target","FROM","TO","E-value")]
+        colnames(pf) <- c("type","start","end","score")
+        pf <- pf[order(pf$start),]
+        pf <- cbind(pf,chr=1,strand=".")
+        pf <- segmentMerge(pf, type="type", verb=0)
+        pf$strand <- "."
+        pf$name <- pf$type
+    }
 
-layout(mat=rbind(1,2,3,4,5), heights=c(.2,.1,.1,.1,.1))
-par(mai=c(.05,.5,.05,.5), xaxs="i")
+    plotdev(ffile, width=min(c(100,plen/30)), height=3,
+            res=200)
+    layout(mat=rbind(1,2,3,4,5), heights=c(.5,.1,.1,.25,.1))
+    par(mai=c(.05,.5,.05,.5), xaxs="i", xpd=TRUE)
+    
+    ## domains as arrows
+    if ( !is.null(pf) ) {
+        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE)
+    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(x=plen/2, y=1, labels=paste(pnms[pid],"/",puni[pid]), cex=2)
+    
+    ## domains as blocks
+    ##plotFeatureBlocks(pf, coors=coors)
+    
+    ## data as heatmap
+    iud <- cbind(chr=1,coor=iu[,"V1"],vals=iu[,c("V3","V4")])
+    brks <- 50:100/100
+    plotHeat(iud, coors=coors, breaks=brks, colors=c(viridis(length(brks)-1)))
+    
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
+    abline(v=aas$pos) ## TODO: arrows, color by RAAS etc.
 
-## domains as arrows
-plotFeatures(pf, coors=coors, names=TRUE)
-axis(1)
-axis(2)
-## domains as blocks
-##plotFeatureBlocks(pf, coors=coors)
-
-## data as heatmap
-iud <- cbind(chr=1,coor=iu[,"V1"],vals=iu[,c("V3","V4")])
-plotHeat(iud, coors=coors, breaks=30:100/100)
-
-plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
-abline(v=aas$pos) ## TODO: arrows, color by RAAS etc.
-plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
-text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=.5)
-plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE)
-text(1:plen, y=1, labels=strsplit(psq,"")[[1]], cex=.5)
-
-##plot(1:plen, xlim=c(0,plen+1), col=NA, ylim=c(-2,2))
-##rect(xleft = pf$start, xright = pf$to, ybottom = -1, ytop = 1)
-##text(x=apply(cbind(pf$start,pf$to),1,mean), y=0, labels=pf$target)
+    aaco <- paste0(aas$from,":",aas$to)
+    aatp <- as.numeric(duplicated(aas$pos))
+    raas <- aas$median
+    raas[raas<RAAS.MIN] <- RAAS.MIN
+    raas[raas>RAAS.MAX] <- RAAS.MAX
+    intv <- findInterval(raas, lraas.col$breaks)
+    rcol <- lraas.col$col[intv]
+    aad <- data.frame(type=aaco,#aatp,
+                      name=aaco,
+                      start=aas$pos,
+                      end=aas$pos,
+                      chr=1, strand=".",
+                      size=log(aas$n)+.5,
+                      color=rcol)
+    if (FALSE) { # custom with n~size
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        for ( tp in unique(aad$type) )
+            shadowtext(x=aad$start[aad$type==tp],
+                       y=1,#-rep(tp,sum(aad$type==tp))*.25,
+                       labels=aaco[aad$type==tp], cex=aad$size[aad$type==tp],
+                       col=aad$color[aad$type==tp])
+    }
+    plotFeatures(aad, coors=coors, names=TRUE, tcx=2, typord=TRUE, axis2=FALSE)
+    axis(1, at=aad$start, labels=FALSE, col=NA)
+    axis(1, tcl=-.1, mgp=c(1,.2,0))
+    ## codons
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(x=aas$pos, y=1, labels=aas$codon, cex=2)
+    dev.off()
 }
-
-## TODO: why is iupred3 for ENSP00000352639 wrong?
-## sequence seems to stem from a differen short protein,
-## multiple annotated proteins, e.g. ENSP00000464724.1
-## TODO: why is iupred3 for ENSP00000364986 wrong?
-## sequence seems to stem from ENSP00000460206.1
-## TODO: ENSP00000374778 et al. stop codon missing?
+ 
 

@@ -1,6 +1,15 @@
 
 require(segmenTools)
 require(qvalue)
+library(viridis)
+
+## COLOR FUNCTION ARNO
+## generate colors similar to inferno but with
+## a better yellow (viridis)
+mcol <- viridis::inferno(5)
+vcol <- viridis::viridis(5)
+mcol[5] <- vcol[5]
+arno <- colorRampPalette(mcol)
 
 # from->to as expression, e.g. for axis labels
 ftlabels <- function(srt) {

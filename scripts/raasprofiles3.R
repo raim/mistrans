@@ -160,14 +160,6 @@ RAAS.MIN <- -4
 RAAS.MAX <-  1
 colors <- "arno" # "inferno" #"rocket" # "viridis" # 
 
-## generate colors similar to inferno but with
-## a better yellow (viridis)
-if ( colors=="arno" ) {
-    mcol <- inferno(5)
-    vcol <- viridis(5)
-    mcol[5] <- vcol[5]
-    arno <- colorRampPalette(mcol)
-}
 COLF <- get(colors)
 
 p.min <- 1e-10
