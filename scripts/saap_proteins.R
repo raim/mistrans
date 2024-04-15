@@ -212,7 +212,11 @@ colnames(pfm) <- pfmh
 pclan <- read.delim(clans, row.names=1 , header=FALSE)
 pfm$clan <- pclan[sub("\\..*","", pfm$accession),"V3"]
 pfm$clan[pfm$clan==""] <- pfm$target[pfm$clan==""]
-    
+
+use.pclan <- TRUE# FALSE
+if ( !use.pclan )
+    pfm$clan <- pfm$target
+
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
