@@ -815,6 +815,8 @@ for ( ptype in unique(tmtf$pfromto) ) {
 ## * expand ovw to ALL codons and AA to align plots,
 ## * plot log2 odds ratio vs. 
 ctmt <- tmtf[tmtf$codon!="",]
+
+## load global gene-wise codon counts
 codons <- read.delim(codon.file, row.names=1)
 
 ## Dana and Tuller 2014/2015

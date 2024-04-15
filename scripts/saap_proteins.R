@@ -3,8 +3,6 @@
 ## and generate per protein plots
 
 ## TODO:
-## * GET AND LOAD PFAM ANNOTATION: descriptions, clans!
-## * use gene names
 
 ## TODO: why is iupred3 for ENSP00000352639 wrong?
 ## sequence seems to stem from a differen short protein,
@@ -19,7 +17,8 @@ source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
 library(viridis)
 library(segmenTools)
 library(seqinr)
-library(Rpdb)
+library(Biostrings) # genetic code
+##library(Rpdb)
 options(stringsAsFactors=FALSE)
 
 
@@ -43,6 +42,8 @@ tmt.file <- file.path(proj.path,"originalData",
 pfasta <- file.path(out.path,"all_proteins.fa")
 ## coding region fasta
 tfasta <- file.path(mam.path,"processedData","coding.fa")
+## codon counts
+codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
 
 ## protein-transcript map
 tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
@@ -52,6 +53,7 @@ cdspos <- file.path(mam.path,"processedData","protein_cds_coordinates.tsv")
 
 
 ## structure predictions
+
 ## s4pred
 s4pred <- file.path(mam.path,"processedData",
                     "Homo_sapiens.GRCh38.pep.large_s4pred.fas.gz")
@@ -156,13 +158,8 @@ intv[intv==0] <- 1
 intv[intv>length(lraas.col$col)] <- length(lraas.col$col)
 dat$color <- lraas.col$col[intv]
 
-## remove SAAP with low RAAS
-##dat <- dat[dat$median >= min.raas,]
-
 ## LIST OF AAS BY PROTEIN
 aasl <- split(dat, dat$ensembl) 
-
-## TODO: count and raas-profiles per AAS
 
 ## s4pred
 s4p <- segmenTools::readFASTA(s4pred, grepID=TRUE)
@@ -191,6 +188,29 @@ rownames(pamrt) <- trmap[,1]
 names(tfas) <- pamrt[names(tfas),1]
 
 
+## load global gene-wise codon counts
+codons <- read.delim(codon.file, row.names=1)
+rownames(codons) <- pamrt[rownames(codons),1]
+
+## codon counts in our AAS protein set
+cod  <- codons[names(aasl),]
+
+## rm NA proteins: encoded on scaffold or mtDNA
+ina <- is.na(cod[,1]) 
+cat(paste(sum(ina), "proteins not present in codons\n"))
+cod <- cod[!ina,]
+
+## calculate codon frequencies
+codt <- apply(cod, 2, sum)
+## transcript codon frequencies per AA
+codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
+codl <- lapply(codl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
+##codl <- codl[names(aaprop)[names(aaprop)%in%names(codl)]] ## SORT BY AA PROP
+codf <- lapply(codl, function(x) x/sum(x)) # codon frequency
+cods <- unlist(codf)
+names(cods) <- sub("\\.","-",names(cods))
+## ommit AA- prefix to use this directly with codons 
+names(cods) <- sub(".*-","",names(cods))
 
 ## pfam
 ## fixed width format, where \s was replaced with ; by sed
@@ -260,6 +280,7 @@ puni <- genes$swissprot[gidx]
 puni[is.na(puni)] <- names(aasl)[is.na(puni)]
 names(puni)  <- names(aasl)
 
+
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
 for ( pid in pids ) {
@@ -294,11 +315,19 @@ for ( pid in pids ) {
         cat(paste("WARNING:", pid, "no transcript\n"))
     } else {
         tpsq <- sub("\\*$","",
-                    paste0(translate(strsplit(tsq,"")[[1]]),collapse=""))
+                    paste0(seqinr::translate(strsplit(tsq,"")[[1]]),
+                           collapse=""))
         if ( tpsq!=psq )
             cat(paste("WARNING:", pid, "wrong translation\n"))
     }
 
+    ## calculate vector of codon frequencies
+    cmt <- tsq
+    if ( !is.null(tsq) ) {
+        cmt <- matrix(strsplit(tsq, "")[[1]],ncol=3, byrow=TRUE)
+        cmt <- cods[apply(cmt,1,paste, collapse="")]
+    }
+    
     ## get domains
     pf <- pfl[[pid]]
 
@@ -322,8 +351,7 @@ for ( pid in pids ) {
 
     ## PREPARE AAS PLOT
     ## order by RAAS such that higher RAAS will be on top of overlapping
-    aas <-
-        aas[order(aas$median),]
+    aas <- aas[order(aas$median),]
     aaco <- paste0(aas$from,":",aas$to)
     ## TODO: type 0,1,2,3 for closeby, not just identical
     aatp <- as.numeric(duplicated(aas$pos))
@@ -345,7 +373,7 @@ for ( pid in pids ) {
 
     plotdev(ffile, width=min(c(100,plen/30)), height=3, type=ftyp,
             res=200)
-    layout(mat=rbind(1,2,3,4,5), heights=c(.5,.1,.1,.25,.1))
+    layout(mat=rbind(1,2,3,4,5), heights=c(.5,.1,.1,.25,.05))
     par(mai=c(.05,.5,.05,.5), xaxs="i", xpd=TRUE)
     
     ## domains as arrows
@@ -386,21 +414,39 @@ for ( pid in pids ) {
                            cex=aad$size[aad$type==tp],
                        col=aad$color[aad$type==tp])
     }
-    plotFeatures(aad, coors=coors, names=TRUE, tcx=2,
+    plotFeatures(aad, coors=coors, names=TRUE, tcx=1.5,
                  typord=TRUE, axis2=FALSE)
-    axis(1, at=aad$start, labels=FALSE, col=NA)
-    axis(1, tcl=-.1, mgp=c(1,.2,0))
+#    axis(1, at=aad$start, labels=FALSE, col=NA)
+#    axis(1, tcl=-.1, mgp=c(1,.2,0))
     ## AA context
     
     ## codons
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    if ( nrow(aad)>0 )
-        shadowtext(x=aad$start, y=rep(1, nrow(aad)),
-                   labels=aad$codon, cex=2, col=aad$color)
+    if ( FALSE ) {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        if ( nrow(aad)>0 )
+            shadowtext(x=aad$start, y=rep(1, nrow(aad)),
+                       labels=aad$codon, cex=2, col=aad$color)
+    }
+    ## codons as heatmap
+    if ( !is.null(cmt) ) {
+        cmt <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
+        brks <- 0:100/100
+        plotHeat(cmt, coors=coors, breaks=brks,
+                 colors=c(viridis(length(brks)-1)))
+        axis(3, at=aad$start, labels=FALSE)
+    }
     dev.off()
     if ( pid%in%POI )
         file.copy(paste0(ffile,".",ftyp),
-                  paste0(sfile,".",ftyp))
+                  paste0(sfile,".",ftyp), overwrite = TRUE)
 }
  
+
+##library(rtracklayer)
+##bw = import.bw('~/data/mammary/originalData/hg38.phastCons7way.bw')
+library(Rpdb)
+pdbf <- file.path(mam.path, "originalData", "afold",
+                  "AF-P25786-F1-model_v4.pdb")
+x = read.pdb(pdbf)
+visualize(x, type="p")
 
