@@ -143,13 +143,16 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 out.path <- file.path(proj.path,"processedData")
 
-gen.path <- "~/data/mammary/"
-codon.file <- file.path(gen.path,"processedData","coding_codons.tsv")
-dana14.file <- file.path(gen.path,"originalData","dana14_codons.csv")
+mam.path <- "~/data/mammary/"
+codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
+dana14.file <- file.path(mam.path,"originalData","dana14_codons.csv")
 
 in.file <- file.path(out.path,"saap_mapped3.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
+
+## protein complexes
+humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 
 ### PARAMETERS
 

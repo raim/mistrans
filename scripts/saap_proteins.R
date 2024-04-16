@@ -3,6 +3,8 @@
 ## and generate per protein plots
 
 ## TODO:
+## * indicate splice sites via CDS structure,
+## * 
 
 ## TODO: why is iupred3 for ENSP00000352639 wrong?
 ## sequence seems to stem from a differen short protein,
@@ -51,8 +53,10 @@ tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
 cdspos <- file.path(mam.path,"processedData","protein_cds_coordinates.tsv")
 
+## protein complexes
+humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 
-## structure predictions
+## STRUCTURE PREDICTIONS
 
 ## s4pred
 s4pred <- file.path(mam.path,"processedData",
@@ -211,6 +215,11 @@ cods <- unlist(codf)
 names(cods) <- sub("\\.","-",names(cods))
 ## ommit AA- prefix to use this directly with codons 
 names(cods) <- sub(".*-","",names(cods))
+
+## exons/CDS
+cds <- read.delim(cdsmap, header=FALSE, row.names=1)
+cdl <- lapply(strsplit(cds[,1],";"), as.numeric)
+names(cdl) <- rownames(cds)
 
 ## pfam
 ## fixed width format, where \s was replaced with ; by sed
@@ -371,31 +380,42 @@ for ( pid in pids ) {
 
     cat(paste("PLOTTING", pnms[pid], pid, "\n"))
 
-    plotdev(ffile, width=min(c(100,plen/30)), height=3, type=ftyp,
+    wscale <- 1/30
+    if ( plen<100 ) wscale <- 1/10
+    if ( plen>2000 ) wscale <- 1/100
+    plotdev(ffile, width=min(c(100,plen*wscale)), height=3, type=ftyp,
             res=200)
-    layout(mat=rbind(1,2,3,4,5), heights=c(.5,.1,.1,.25,.05))
-    par(mai=c(.05,.5,.05,.5), xaxs="i", xpd=TRUE)
+    layout(mat=rbind(1,2,3,4,5,6), heights=c(.5,.15,.15,.25,.1,.075))
+    par(mai=c(.05,1,.05,.1), xaxs="i", xpd=TRUE)
     
     ## domains as arrows
     if ( !is.null(pf) ) {
         plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE)
     } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    mtext("Pfam\nclan", 2, 2)
     text(x=plen/2, y=1, labels=paste(pnms[pid],"/",puni[pid]), cex=2)
     
     ## domains as blocks
     ##plotFeatureBlocks(pf, coors=coors)
-    
+
+
     ## data as heatmap
-    iud <- cbind(chr=1,coor=iu[,"V1"],vals=iu[,c("V3","V4")])
+    iud <- cbind(chr=1,coor=iu[,"V1"],
+                 iupred3=iu[,c("V3")],
+                 anchor2=iu[,c("V4")])
     brks <- 50:100/100
+    ## TODO: saver y-axis labelling in plotHeat!
     plotHeat(iud, coors=coors, breaks=brks, colors=c(viridis(length(brks)-1)))
+    axis(2, at=c(1,2), labels=c("iupred3","anchor2"), las=2, cex.axis=1.2)
     
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
+    axis(2, at=1, labels="PSSP", las=2)
     ## indicate K|R cleavage sites - TODO: omit Keil rules
     arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
     if ( length(arg) )
         arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
+axis(2, at=1.4, labels="K|R", las=2)
     lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
     if ( length(lys) )
         arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
@@ -403,6 +423,7 @@ for ( pid in pids ) {
     ## indicate ALL AAS
     arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
     arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
+axis(2, at=.6, labels="AAS", las=2)
     ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
     ## DETAILS for high RAAS AAS
     if (FALSE) { # custom with n~size
@@ -416,6 +437,10 @@ for ( pid in pids ) {
     }
     plotFeatures(aad, coors=coors, names=TRUE, tcx=1.5,
                  typord=TRUE, axis2=FALSE)
+    mtext("AAS\ntype", 2, 2)
+    ## indicate ALL AAS
+    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
+    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color, xpd=TRUE)
 #    axis(1, at=aad$start, labels=FALSE, col=NA)
 #    axis(1, tcl=-.1, mgp=c(1,.2,0))
     ## AA context
@@ -429,12 +454,21 @@ for ( pid in pids ) {
     }
     ## codons as heatmap
     if ( !is.null(cmt) ) {
-        cmt <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
+        cmm <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
         brks <- 0:100/100
-        plotHeat(cmt, coors=coors, breaks=brks,
+        plotHeat(cmm, coors=coors, breaks=brks,
                  colors=c(viridis(length(brks)-1)))
-        axis(3, at=aad$start, labels=FALSE)
+        axis(3, at=aas$pos, labels=FALSE)
+    } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     }
+    mtext("codon frq.", 2, las=2)
+    ## EXONS
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    axis(3, at=c(1,cdl[[pid]]/3), tcl=1, label=FALSE)
+    axis(1, at=c(1,cdl[[pid]]/3), tcl=1, label=FALSE)
+    mtext("CDS", 2, las=2)
+
     dev.off()
     if ( pid%in%POI )
         file.copy(paste0(ffile,".",ftyp),
