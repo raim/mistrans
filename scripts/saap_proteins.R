@@ -56,6 +56,9 @@ cdspos <- file.path(mam.path,"processedData","protein_cds_coordinates.tsv")
 ## protein complexes
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 
+## uniprot/ensembl mapping
+uni.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+
 ## STRUCTURE PREDICTIONS
 
 ## s4pred
@@ -67,6 +70,8 @@ iupred <- file.path(mam.path,"processedData","iupred3")
 ## pfam hits
 pfam <- file.path(mam.path,"processedData",
                   "Homo_sapiens.GRCh38.pep.large_annotations.csv")
+## pfam download
+pfdlf <- file.path(mam.path,"originalData", "9606.tsv.gz")
 ## pfam clans
 clans <- file.path(mam.path,"originalData", "pfam", "Pfam-A.clans.tsv.gz")
 
@@ -249,6 +254,36 @@ if ( !use.pclan )
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
+
+## UNIPROT <-> ENSEMBL MAPPING
+## NOTE: ~90 duplicated ensembl IDs
+uni2ens <- read.delim(uni.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+## remove duplicate ensembl IDs
+## TODO: is the list sorted? best uniprot hit?
+uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
+
+
+## PFAM 37.0 ANNOTATION from EBI
+pfd <- read.delim(pfdlf, skip=3, header=FALSE)
+colnames(pfd) <- c("seq id", "alignment start",
+                   "alignment end",
+                   "FROM",#"envelope start",
+                   "TO",#"envelope end",
+                   "hmm acc", "hmm name", "type",
+                   "hmm start", "hmm end", "hmm length",
+                   "bit score", "E-value", "clan")
+## add ensembl ID
+pfd$ensembl <- uni2ens[match(pfd[,1], uni2ens[,1]),2]
+## remove missing ensembl IDs
+pfd <- pfd[!is.na(pfd$ensembl),]
+## split to list per ensembl ID
+pfdl <- split(pfd, pfd$ensembl)
+
+
+## TODO: global analyses as previously
+
 ## AAS per protein
 app <- unlist(lapply(aasl, nrow))
 appc <- app
@@ -356,6 +391,20 @@ for ( pid in pids ) {
         pf <- segmentMerge(pf, type="type", verb=0)
         pf$strand <- "."
         pf$name <- pf$type
+        pf$color <- "#000000"
+    }
+    
+    ## ADD DOWNLOADED
+    if ( pid%in%names(pfdl) ) {
+        npf <- cbind(chr=1,
+                     start=pfdl[[pid]]$FROM,
+                     end=pfdl[[pid]]$TO,
+                     strand=".",
+                     type="official",
+                     name=pfdl[[pid]]$"hmm name",
+                     color="#ff0000")
+        pf <- rbind(pf, npf)
+                    
     }
 
     ## PREPARE AAS PLOT
@@ -363,14 +412,15 @@ for ( pid in pids ) {
     aas <- aas[order(aas$median),]
     aaco <- paste0(aas$from,":",aas$to)
     ## TODO: type 0,1,2,3 for closeby, not just identical
-    aatp <- as.numeric(duplicated(aas$pos))
-    raas <- aas$median
-    aad <- data.frame(type=aaco,#aatp,
-                      name=aaco,
+    aatp <- as.numeric(duplicated(round(aas$pos/10)))
+    tagp <- tagDuplicates(aas$pos)
+    aatp[aatp>0] <- tagp[aatp>0]
+    aad <- data.frame(type=aatp, #aaco,#
+                      name=aaco, #aas$to, #
                       start=aas$pos,
                       end=aas$pos,
                       chr=1, strand=".",
-                      size=log(aas$n)+.5,
+                      ##cex=log(aas$n)+.5,
                       color=aas$color,
                       codon=aas$codon)
     aad <- aad[aas$median >= min.raas, ]
@@ -383,17 +433,23 @@ for ( pid in pids ) {
     wscale <- 1/30
     if ( plen<100 ) wscale <- 1/10
     if ( plen>2000 ) wscale <- 1/100
+    mmai <- c(.05,1,.05,.1)
+    
     plotdev(ffile, width=min(c(100,plen*wscale)), height=3, type=ftyp,
             res=200)
-    layout(mat=rbind(1,2,3,4,5,6), heights=c(.5,.15,.15,.25,.1,.075))
-    par(mai=c(.05,1,.05,.1), xaxs="i", xpd=TRUE)
+    layout(mat=t(t(1:8)), heights=c(.1,.5,.175,.15,.25,.1,.1,.075))
+    par(mai=mmai, xaxs="i", xpd=TRUE)
+
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(x=plen/2, y=1,
+         labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
     
     ## domains as arrows
     if ( !is.null(pf) ) {
-        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE)
+        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
+                     typord=TRUE, axis2=FALSE)
     } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     mtext("Pfam\nclan", 2, 2)
-    text(x=plen/2, y=1, labels=paste(pnms[pid],"/",puni[pid]), cex=2)
     
     ## domains as blocks
     ##plotFeatureBlocks(pf, coors=coors)
@@ -415,7 +471,7 @@ for ( pid in pids ) {
     arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
     if ( length(arg) )
         arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
-axis(2, at=1.4, labels="K|R", las=2)
+    axis(2, at=1.4, labels="K|R", las=2)
     lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
     if ( length(lys) )
         arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
@@ -423,28 +479,42 @@ axis(2, at=1.4, labels="K|R", las=2)
     ## indicate ALL AAS
     arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
     arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
-axis(2, at=.6, labels="AAS", las=2)
+    axis(2, at=.6, labels="AAS", las=2)
+
+
     ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
     ## DETAILS for high RAAS AAS
-    if (FALSE) { # custom with n~size
+    if ( FALSE ) { # custom with n~size
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
         for ( tp in unique(aad$type) )
             shadowtext(x=aad$start[aad$type==tp],
                        y=1,#-rep(tp,sum(aad$type==tp))*.25,
                        labels=aaco[aad$type==tp],
-                           cex=aad$size[aad$type==tp],
+                       cex=aad$size[aad$type==tp],
                        col=aad$color[aad$type==tp])
     }
-    plotFeatures(aad, coors=coors, names=TRUE, tcx=1.5,
+    plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
                  typord=TRUE, axis2=FALSE)
     mtext("AAS\ntype", 2, 2)
     ## indicate ALL AAS
     arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
-    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color, xpd=TRUE)
-#    axis(1, at=aad$start, labels=FALSE, col=NA)
-#    axis(1, tcl=-.1, mgp=c(1,.2,0))
+    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
+           xpd=TRUE)
+
     ## AA context
-    
+    ## add AA sequences around AAS
+    pseq <- strsplit(psq,"")[[1]]
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    if ( nrow(aad)>0 )
+        for ( j in 1:nrow(aad) ) {
+            x <- aad$start[j]
+            prng <- (x-1):(x+1)
+            prng <- prng[prng>0 & prng <= plen]
+            text(x=x, y=1, labels=paste(pseq[prng], collapse=""),
+             family="monospace")
+        }
+    mtext("context", 2, las=2, cex=.8)
+
     ## codons
     if ( FALSE ) {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -465,22 +535,24 @@ axis(2, at=.6, labels="AAS", las=2)
     mtext("codon frq.", 2, las=2)
     ## EXONS
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    axis(3, at=c(1,cdl[[pid]]/3), tcl=1, label=FALSE)
-    axis(1, at=c(1,cdl[[pid]]/3), tcl=1, label=FALSE)
+    axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+    axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
     mtext("CDS", 2, las=2)
 
     dev.off()
+
     if ( pid%in%POI )
         file.copy(paste0(ffile,".",ftyp),
                   paste0(sfile,".",ftyp), overwrite = TRUE)
+
 }
  
 
 ##library(rtracklayer)
 ##bw = import.bw('~/data/mammary/originalData/hg38.phastCons7way.bw')
-library(Rpdb)
-pdbf <- file.path(mam.path, "originalData", "afold",
-                  "AF-P25786-F1-model_v4.pdb")
-x = read.pdb(pdbf)
-visualize(x, type="p")
+##library(Rpdb)
+##pdbf <- file.path(mam.path, "originalData", "afold",
+##                  "AF-P25786-F1-model_v4.pdb")
+##x = read.pdb(pdbf)
+##visualize(x, type="p")
 

@@ -153,6 +153,8 @@ tmt.file <- file.path(proj.path,"originalData",
 
 ## protein complexes
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
+## uniprot/ensembl mapping
+uni.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
 
 ### PARAMETERS
 
@@ -357,6 +359,7 @@ tmtf$sstruc <- hdat$sstruc[idx]
 tmtf$gene <- hdat$gene[idx]
 tmtf$transcript <- hdat$transcript[idx]
 tmtf$protein <- hdat$protein[idx]
+tmtf$ensembl <- hdat$ensembl[idx]
 
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 tmtf$extracellular <- hdat$extracellular[idx]
@@ -423,9 +426,6 @@ if (  exclude.nterm ) {
     tmtf <- tmtf[!rmsaap,]
 }
 
-
-### TODO: merge unique SAAP here to test effects of multiple
-### measurements.
 
 ## from this point on we only work with tmtf, which
 ## now should have all information
@@ -549,9 +549,53 @@ dotprofile(ovw, value="median",
 mtext(expression(log[10]~RAAS), 1, 1.1, adj=-.1)
 dev.off()
 
+## UNIPROT <-> ENSEMBL MAPPING
+## NOTE: ~90 duplicated ensembl IDs
+uni2ens <- read.delim(uni.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+## remove duplicate ensembl IDs
+## TODO: is the list sorted? best uniprot hit?
+uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
+  
+
 ### START ANALYSIS
-           
-## global distribution by cancer type
+
+## distribution in protein complexes
+humap <- read.csv(humap.file)
+hulst <- strsplit(humap[,3]," ")
+## replace complex uniprot genes by ALL ensembl proteins that map to it
+huens <- lapply(hulst, function(x) {
+    unique(uni2ens[uni2ens[,1]%in%x,2])
+})
+
+
+## replace complex ensembl IDs with rows in RAAS table
+huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$ensembl%in%x])
+
+## TODO: RAAS distributions, and p-values
+hustat <- lapply(huraas, function(x) {
+    tt=NA
+    tp=NA
+    if ( length(x)>2) {
+        tts <- use.test(x, tmtf$RAAS)
+        tt <- tts$statistic
+        tp <- tts$p.value
+    }
+    md <- log10(median(10^x))
+    mn <- log10(mean(10^x))
+    c(mean=mn, median=md, tt, p=tp)
+})
+hustat <- do.call(rbind, hustat)
+rownames(hustat) <- humap[,1]
+hustat <- as.data.frame(hustat)
+##hustat <- hustat[!is.na(hustat[,"p"]),]
+
+## TODO: nice plots, try to use raasProfiler!
+plot(hustat$median, -log10(hustat$p))
+humap[which(-log10(hustat$p)>30 & hustat$median>-1),4]
+
+## GLOBAL DISTRIBUTION BY CANCER TYPE
            
 ylm <- range(tmtf$RAAS)
 plotdev(file.path(fig.path,paste0("RAAS_distribution")),
