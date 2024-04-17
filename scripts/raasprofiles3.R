@@ -612,7 +612,7 @@ covl$p.value <- hustat[,"p",drop=FALSE]
 
 plotdev(file.path(fig.path,paste0("corum_volcano")),
         type="png", res=300, width=4.4,height=4)
-par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
 res <- volcano(covl, value="median",
                p.txt=20, v.txt=c(-Inf,-1), cut=50, mid=0,
         xlab=expression(log[10](bar(RAAS))))
