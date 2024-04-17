@@ -564,12 +564,15 @@ uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
 
 ## PROTEIN COMPLEXES
 
+## TODO: first boil down RAAS to median per site to avoid
+## over-estimation by single sites, eg. Q->G in PSMA1.
+
 ## distribution in protein complexes
 humap <- read.csv(humap.file)
 hulst <- strsplit(humap[,3]," ")
 
 humap <- read.delim(corum.file)
-hulst <- strsplit(comap$subunits.UniProt.IDs.,";")
+hulst <- strsplit(humap$subunits.UniProt.IDs.,";")
 
 ## replace complex uniprot genes by ALL ensembl proteins that map to it
 huens <- lapply(hulst, function(x) {

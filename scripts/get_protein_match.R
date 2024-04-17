@@ -47,17 +47,21 @@ bp$transcript <- tpmap[bp$ensembl,1]
 ## TODO: stats on how many MANE vs. canonical
 ## NA: scaffold proteins w/o match in genome feature table
 ## "": no MANE or canonical annotation
-mains <- data.frame(MANE=features$MANE[gidx[bp$ensembl]],
-                    canonical=features$canonical[gidx[bp$ensembl]])
-mains[mains==""] <- NA 
-tmp <- apply(mains,1, unique) # merge unique MANE/canonical
-tmp <- lapply(tmp, function(x) x[!is.na(x)]) # replace non-found by proper NAs
-tmp <- lapply(tmp, function(x) {if (length(x)==0) x<-NA;x})
-
-if ( any(lengths(tmp)!=1) )
+if ( FALSE ) {
+    mains <- data.frame(MANE=features$MANE[gidx[bp$ensembl]],
+                        canonical=features$canonical[gidx[bp$ensembl]])
+    mains[mains==""] <- NA 
+    tmp <- apply(mains,1, unique) # merge unique MANE/canonical
+    tmp <- lapply(tmp, function(x) x[!is.na(x)]) # replace non-found by NAs
+    tmp <- lapply(tmp, function(x) {if (length(x)==0) x<-NA;x})
+    
+    if ( any(lengths(tmp)!=1) )
     stop("check MANE/canonical mapping")
-
-bp$MANE <- unlist(tmp)
+}
+## ONLY USE MANE!!
+tmp <- features$MANE[gidx[bp$ensembl]]
+tmp[tmp==""] <- NA
+bp$MANE <- features$MANE[gidx[bp$ensembl]] ##unlist(tmp)
 bp$MANE.protein <- pampt[match(bp$MANE,rownames(pampt)),1]
 
 bp$numGO <- gol[gidx[bp$ensembl]]
@@ -94,9 +98,16 @@ bp <- bp[order(bp$identity,
 
 ## .. and remove duplicated, which should appear below better hits!!
 
-## TODO: analyze this step a bit, e.g  we retain BCL2L2-PABN1, a read-through
+## TODO: analyze this step a bit, e.g
+## * we retain BCL2L2-PABN1, a read-through
 ## fusion protein with only 1 AAS; could be the single gene!
 ##bp[bp$BP=="SIYVGNVDYGATAEELEAHFHGCGSVNR",]
+## * all proteasome results are lost  if Q:G in PSMA1 is mapped to
+## the SHORTER
+## PSMA1 hits lost by new preference for smaller proteins:
+## AQSELAAHQK (Q->A and Q->G) and NQYDNDVTVWSPQGR (V->N), the former
+## matches ENSP00000457299, a "novel protein" that does have a canonical
+## transcript annotation, but no other information.
 
 ## REMOVE DUPLICATE BP
 dupb <- duplicated(paste0(bp$BP))
