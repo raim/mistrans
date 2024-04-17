@@ -63,18 +63,40 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ## 3.A) blast SP against ensembl+mutations
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv
 
-## 4) find best matching protein
+## some statistics on blast
+## TODO: expand this QC analysis a bit,
+## do SAAP have the expected mismatches?
+R --vanilla < ${THIS}/scripts/saap_blast_stats.R
+
+### 4) COLLECT DATA FOR ALL BP/SAAP
+
+## 4.A) find best matching protein
+##    GENERATES ${MISDATA}/processedData/bp_mapped.tsv
 R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt
 
-## map each peptide to position in protein and transcript
+## 4.B) map each peptide to it's positions in proteins and transcripts, and
+## add a variety of collected information on protein structure, e.g.
+## iupred3, anchor2, s4pred, codon, ...
+##    GENERATES ${MISDATA}/processedData/saap_mapped3.tsv, and
+##    QC figures in ${MISDATA}/figures/saap_mapping3/
 R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
+### 5) ANALYSIS
+
 ## export sequence context of AAS
+R --vanilla < ${THIS}/scripts/extract_aas_context.R > ${THIS}/log/context.txt
+
+## TODO: run deep learning script here! currently done interactively
+## from above script, but instead sequence input variation should be done
+## in python script.
 
 ## get and analyze sequences surrounding the ASS
+## TODO: split this script, use output from above extract_aas_context.R
 R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 
 ## kplogo
+## TODO: run over all from:to classes and find a way to collect and plot
+## results by RAAS!
 ~/programs/kpLogo/bin/kpLogo seqcontext_all_.fa  -alphabet protein -o kplogo/all
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_Q:G.fa -alphabet protein -o kplogo/QG
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
