@@ -64,16 +64,15 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv
 
 ## 4) find best matching protein
-R --vanilla < ${THIS}/scripts/get_protein_match.R > log/match.txt
-
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt
 
 ## map each peptide to position in protein and transcript
-R --vanilla < ${THIS}/scripts/map_peptides3.R > log/map3.txt
+R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
 ## export sequence context of AAS
 
 ## get and analyze sequences surrounding the ASS
-R --vanilla < ${THIS}/scripts/get_aas_context.R > log/context.txt
+R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 
 ## kplogo
 ~/programs/kpLogo/bin/kpLogo seqcontext_all_.fa  -alphabet protein -o kplogo/all

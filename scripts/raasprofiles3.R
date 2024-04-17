@@ -153,6 +153,7 @@ tmt.file <- file.path(proj.path,"originalData",
 
 ## protein complexes
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
+corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
 ## uniprot/ensembl mapping
 uni.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
 
@@ -561,9 +562,15 @@ uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
 
 ### START ANALYSIS
 
+## PROTEIN COMPLEXES
+
 ## distribution in protein complexes
 humap <- read.csv(humap.file)
 hulst <- strsplit(humap[,3]," ")
+
+humap <- read.delim(corum.file)
+hulst <- strsplit(comap$subunits.UniProt.IDs.,";")
+
 ## replace complex uniprot genes by ALL ensembl proteins that map to it
 huens <- lapply(hulst, function(x) {
     unique(uni2ens[uni2ens[,1]%in%x,2])
@@ -584,16 +591,43 @@ hustat <- lapply(huraas, function(x) {
     }
     md <- log10(median(10^x))
     mn <- log10(mean(10^x))
-    c(mean=mn, median=md, tt, p=tp)
+    c(mean=mn, median=md, t=tt, p=tp, n=length(x))
 })
 hustat <- do.call(rbind, hustat)
-rownames(hustat) <- humap[,1]
+
+## only for hu.MAP
+huids <- humap[,1]
+## only for corum
+huids <- sub(" complex$","",humap[,2])
+
+
+rownames(hustat) <- huids
 hustat <- as.data.frame(hustat)
 ##hustat <- hustat[!is.na(hustat[,"p"]),]
 
 ## TODO: nice plots, try to use raasProfiler!
-plot(hustat$median, -log10(hustat$p))
-humap[which(-log10(hustat$p)>30 & hustat$median>-1),4]
+covl <- list()
+covl$median <- as.matrix(hustat$median)
+covl$p.value <- hustat[,"p",drop=FALSE]
+
+plotdev(file.path(fig.path,paste0("corum_volcano")),
+        type="png", res=300, width=4.4,height=4)
+par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+res <- volcano(covl, value="median",
+               p.txt=20, v.txt=c(-Inf,-1), cut=50, mid=0,
+        xlab=expression(log[10](bar(RAAS))))
+abline(v=0)
+dev.off()
+
+## NOTE: EZR, MSN, 
+
+## investigate
+humap[grep("Spliceosome, E", humap$ComplexName),c("ComplexName",
+                                               "Complex.comment",
+                                               "subunits.Gene.name.")]
+humap[grep("Drosha", humap$ComplexName),c("ComplexName",
+                                               "Complex.comment",
+                                               "subunits.Gene.name.")]
 
 ## GLOBAL DISTRIBUTION BY CANCER TYPE
            

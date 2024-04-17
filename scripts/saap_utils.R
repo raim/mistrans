@@ -400,12 +400,16 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
 
     show <- which(show)
     if ( length(show) ){
+        if ( ncol(pvals)==1 )
+            names(tpv)<- sub(".*:", "", names(tpv))
+        names(tpv)
         if ( missing(mid) )
             mid <- mean(vals,na.rm=TRUE)
         shadowtext(tmv[show], tpv[show], labels=names(tpv)[show],
                    pos=ifelse(tmv[show]<mid, 2,4), col="red",
                    font=2, cex=.8, xpd=TRUE)
     }
+    invisible(names(tpv)[show])
 }
 
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
