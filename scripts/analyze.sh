@@ -83,6 +83,10 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
 ### 5) ANALYSIS
 
+## PROTEINS: protein level analysis
+## TODO: revisit previous saap_function.R and saap_analysis.R
+R --vanilla < ${THIS}/scripts/saap_proteins.R > ${THIS}/log/proteins.txt
+
 ## export sequence context of AAS
 R --vanilla < ${THIS}/scripts/extract_aas_context.R > ${THIS}/log/context.txt
 
@@ -90,7 +94,7 @@ R --vanilla < ${THIS}/scripts/extract_aas_context.R > ${THIS}/log/context.txt
 ## from above script, but instead sequence input variation should be done
 ## in python script.
 
-## get and analyze sequences surrounding the ASS
+## MOTIFS: get and analyze sequences surrounding the ASS
 ## TODO: split this script, use output from above extract_aas_context.R
 R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 
