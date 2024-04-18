@@ -324,6 +324,9 @@ puni <- genes$swissprot[gidx]
 puni[is.na(puni)] <- names(aasl)[is.na(puni)]
 names(puni)  <- names(aasl)
 
+## INVESTIGATE SOME CASES
+pid=names(which(pnms=="HNRNPD")) # several adjacent T:S from different BP
+## TODO: fuse BP
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -420,7 +423,7 @@ for ( pid in pids ) {
                       start=aas$pos,
                       end=aas$pos,
                       chr=1, strand=".",
-                      cex=log(aas$n)+.5,
+                      cex=log10(aas$n)+1,
                       color=aas$color,
                       codon=aas$codon)
     aad <- aad[aas$median >= min.raas, ]
@@ -503,6 +506,7 @@ for ( pid in pids ) {
 
     ## AA context
     ## add AA sequences around AAS
+    ## TODO: fuse overlapping
     pseq <- strsplit(psq,"")[[1]]
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     if ( nrow(aad)>0 )
