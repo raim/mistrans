@@ -230,6 +230,11 @@ for ( i in 1:nrow(dat) ) {
             anbg[i] <- mean(iud[, 4])
             iubg[i] <- mean(iud[, 3])
         }
+
+        ## NOTE: COPY TO SELECTED FOLDER FOR TRANSFER TO LAPTOP
+        tof <- file.path(paste0(iupred,"_selected"),iufile)
+        if ( Sys.info() ["nodename"]=="exon" ) 
+            file.copy(from=file.path(iupred,iufile), to=tof, overwrite = FALSE)
     }
     
     ## GET CODON

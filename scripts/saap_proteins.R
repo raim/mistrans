@@ -420,7 +420,7 @@ for ( pid in pids ) {
                       start=aas$pos,
                       end=aas$pos,
                       chr=1, strand=".",
-                      ##cex=log(aas$n)+.5,
+                      cex=log(aas$n)+.5,
                       color=aas$color,
                       codon=aas$codon)
     aad <- aad[aas$median >= min.raas, ]
