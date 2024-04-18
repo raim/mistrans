@@ -345,7 +345,7 @@ POI <- c(pamrt[genes[genes$name=="TARDBP","canonical"],],
          pamrt[genes[genes$name=="ACTC1","canonical"],])
 
 ## map gene names and uniprot
-gidx <-  match(trmap[names(aasl),1], genes$canonical)
+gidx <-  match(trmap[names(aasl),1], genes$MANE)
 pnms <- genes$name[gidx]
 pnms[is.na(pnms)] <- names(aasl)[is.na(pnms)]
 names(pnms)  <- names(aasl)
@@ -357,6 +357,7 @@ names(puni)  <- names(aasl)
 ## INVESTIGATE SOME CASES
 pid=names(which(pnms=="HNRNPD")) # several adjacent T:S from different BP
 ## TODO: fuse BP
+
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -436,8 +437,7 @@ for ( pid in pids ) {
                      type="official",
                      name=pfdl[[pid]]$"hmm name",
                      color="#ff0000")
-        pf <- rbind(pf, npf)
-                    
+        pf <- rbind(pf, npf)                    
     }
 
     ## PREPARE AAS PLOT
@@ -456,10 +456,10 @@ for ( pid in pids ) {
                       cex=log10(aas$n)+1,
                       color=aas$color,
                       codon=aas$codon)
-    aad <- aad[aas$median >= min.raas, ]
+    ##aad <- aad[aas$median >= min.raas, ]
 
     ## skip plot if no RAAS is higher than minimum
-    if ( nrow(aad)==0 & !pid%in%POI ) next
+    if ( sum(aas$median >= min.raas)==0 & !pid%in%POI ) next
 
     cat(paste("PLOTTING", pnms[pid], pid, "\n"))
 
@@ -530,8 +530,8 @@ for ( pid in pids ) {
                  typord=TRUE, axis2=FALSE)
     mtext("AAS\ntype", 2, 2)
     ## indicate ALL AAS
-    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
-    arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
+    ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
+    ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
            xpd=TRUE)
 
     ## AA context

@@ -16,13 +16,15 @@ bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
 out.file <- file.path(proj.path,"processedData","bp_mapped.tsv")
 
-## LOAD BLAST RESULTS
+
+### LOAD & ANNOTATE BLAST RESULTS
+
 bp <- read.delim(bp.file, header=FALSE)
 colnames(bp) <- c("BP","protein","identity", "mismatches",
                   "alen", "qlen", "slen", "sstart", "send", "e", "bitscore")
 bp$ensembl <- sub("_.*", "", bp$protein)
 
-## LOAD FEATURE FILE
+## load feature file
 features <- read.delim(feature.file)
 ## use number of GO annotations as a filter criterium: best annotated
 gol <- unlist(lapply(strsplit(features$GO, ";"),length))
@@ -42,94 +44,84 @@ names(gidx) <- unlist(plst)
 bp$gene <- features$ID[gidx[bp$ensembl]]
 bp$transcript <- tpmap[bp$ensembl,1]
 
-## FUSE MANE and canonical annotation
-## NOTE: NO CONFLICTS noted between MANE and canonical
-## TODO: stats on how many MANE vs. canonical
-## NA: scaffold proteins w/o match in genome feature table
-## "": no MANE or canonical annotation
-if ( FALSE ) {
-    mains <- data.frame(MANE=features$MANE[gidx[bp$ensembl]],
-                        canonical=features$canonical[gidx[bp$ensembl]])
-    mains[mains==""] <- NA 
-    tmp <- apply(mains,1, unique) # merge unique MANE/canonical
-    tmp <- lapply(tmp, function(x) x[!is.na(x)]) # replace non-found by NAs
-    tmp <- lapply(tmp, function(x) {if (length(x)==0) x<-NA;x})
-    
-    if ( any(lengths(tmp)!=1) )
-    stop("check MANE/canonical mapping")
-}
-## ONLY USE MANE!!
+## ADD MANE transcript/protein
+## MANE: Matched Annotation from NCBI and EBI
+## see ensembl MANE project: consistently annotated
 tmp <- features$MANE[gidx[bp$ensembl]]
 tmp[tmp==""] <- NA
 bp$MANE <- features$MANE[gidx[bp$ensembl]] ##unlist(tmp)
 bp$MANE.protein <- pampt[match(bp$MANE,rownames(pampt)),1]
-
 bp$numGO <- gol[gidx[bp$ensembl]]
 
 
-## filter - only those where we found a gene, others
-## w/o gene are encoded on scaffolds, TODO: check all.
+### SORT & FILTER BLAST HITS
+
+## sort by quality - such that the best option is always
+## selected (e.g. protein==MANE) when filtering duplicates
+## in this order:
+## identity > mismatch>
+## MANE present > initial match==MANE >
+## shortest> number of annotations
+bp <- bp[order(bp$identity,
+                   -bp$mismatches,
+                   !is.na(bp$MANE.protein),
+                   bp$protein==bp$MANE.protein,
+                   -bp$slen,
+                   bp$numGO, decreasing=TRUE),]
+
+## FIRST HANDLE PERFECT HITS 
+
 all <- bp ## store to analyze missing below
 
+## filter - only those where we found a gene, others
+## w/o gene are encoded on scaffolds, TODO: check all.
 ina <- is.na(bp$gene)
 cat(paste("removing", sum(ina), "blast hits without a mapped gene!\n"))
 bp <- bp[!ina,] # proteins annotated to a scaffold
 
-## filter too many mismatches
-mm <- bp$mismatches>=3
-cat(paste("removing", sum(mm), "blast hits with >= 3 mismatches\n"))
+
+mm <- bp$mismatches>0 | bp$identity <100
+cat(paste("removing", sum(mm), "hits with mismatches or <100% identity\n"))
 bp <- bp[!mm,]
 
-## SORT & FILTER
-## sort by
-## 1) identity,
-## 2) -mismatches (perhaps redundant?),
-## 3) whether protein is the annotated MANE, and
-##    prefer if the blasted protein IS the MANE,
-## 4) protein length - TAKE SHORTEST,
-## 5) number of annotations.
-## -> remove duplicated after sorting!
-bp <- bp[order(bp$identity,
-               -bp$mismatches,
-               !is.na(bp$MANE.protein),
-               bp$protein==bp$MANE.protein,
-               -bp$slen,
-               bp$numGO, decreasing=TRUE),]
+## number of AAS per MANE protein
+app <- table(bp$MANE.protein) 
 
-## .. and remove duplicated, which should appear below better hits!!
+## split into lists by BP
+bpl <- split(bp, paste(bp$BP)) 
 
-## TODO: instead use a "the winner takes it all" approach and
-## and assign AAS to the protein with most overall matches.
+## TODO: why is this not the ensembl hit
+pid="ENSP00000397499"
 
-## TODO: analyze this step a bit, e.g
-## * we retain BCL2L2-PABN1, a read-through
-## fusion protein with only 1 AAS; could be the single gene!
-##bp[bp$BP=="SIYVGNVDYGATAEELEAHFHGCGSVNR",]
-## * all proteasome results are lost  if Q:G in PSMA1 is mapped to
-## the SHORTER
-## PSMA1 hits lost by new preference for smaller proteins:
-## AQSELAAHQK (Q->A and Q->G) and NQYDNDVTVWSPQGR (V->N), the former
-## matches ENSP00000457299, a "novel protein" that does have a canonical
-## transcript annotation, but no other information.
+winner <- list()
+for ( i in seq_along(bpl) ) {
+    x <- bpl[[i]]
+    mane <- x$MANE.protein
+    if ( length(unique(mane))>1 ) {
+        cat(paste(i, x$BP[1], "selecting protein from multiple hits", nrow(x)))
+        manemax <- which(mane==mane[which.max(app[mane])])
+        x <- x[manemax,,drop=FALSE] 
+        cat(paste("->", nrow(x), "\n"))
+    }
+    winner[[i]] <- x[1,,drop=FALSE] ## ONLY TAKE FIRST
+}
+best <- do.call(rbind, winner)
 
-## REMOVE DUPLICATE BP
-dupb <- duplicated(paste0(bp$BP))
-cat(paste("removing", sum(dupb), "multiple matches\n"))
-bp <- bp[!dupb,]
+## HANDLE REST
+rest <- all[!all$BP%in%c(best$BP),]
 
-## TAG QUALITY
-bad <- bp$mismatches >0 | bp$MANE=="" | bp$identity<100
-bp$match <- ifelse(bad, "bad", "good")
-bp <- bp[order(bp$match, decreasing=TRUE),]
+## SIMPLY REMOVE DUPLICATE BP and rely on above sorting
+dupb <- duplicated(paste0(rest$BP))
+cat(paste("removing", sum(dupb), "multiple matches from rest\n"))
+rest <- rest[!dupb,]
 
-## rest:
-rest <- all[!all$BP%in%c(bp$BP),]
-rest <- rest[order(rest$identity, rest$MANE, -rest$numGO, decreasing=TRUE),]
-rest <- rest[!duplicated(rest$BP),]
+## combine again and tag quality
+all <- rbind(cbind(best, match="good"),
+             cbind(rest, match="bad"))
 
-## FUSE
-best <- rbind(bp,
-              cbind(rest, match="wrong"))
+## tag really bad hits
+all$match[all$mismatch>=3 | is.na(all$gene)] <- "wrong"
+
 
 ## replace tagged proteins with their original long name
 ##lids <- read.delim(bp.ids, header=FALSE, row.names=2, sep=" ")
@@ -138,31 +130,31 @@ best <- rbind(bp,
 
 ### TAG CATEGORIES
 
-type <- features$type[gidx[best$ensembl]]
-best$IG <- FALSE
-best$IG[grep("^IG",type)] <- TRUE
+type <- features$type[gidx[all$ensembl]]
+all$IG <- FALSE
+all$IG[grep("^IG",type)] <- TRUE
 
-desc <- features$description[gidx[best$ensembl]]
-best$albumin <- FALSE
-best$albumin[grep("albumin",desc)] <- TRUE
-best$globin <- FALSE
-best$globin[grep("globin",desc)] <- TRUE
+desc <- features$description[gidx[all$ensembl]]
+all$albumin <- FALSE
+all$albumin[grep("albumin",desc)] <- TRUE
+all$globin <- FALSE
+all$globin[grep("globin",desc)] <- TRUE
 
 ## load GO terms
 ## extracellular region: GO:0005576
 ## |- extracellular space: GO:0005615
-gots <- features$GO[gidx[best$ensembl]]
-best$extracellular <- FALSE
-best$extracellular[grep("GO:0005576", gots)] <- TRUE
+gots <- features$GO[gidx[all$ensembl]]
+all$extracellular <- FALSE
+all$extracellular[grep("GO:0005576", gots)] <- TRUE
 
 ## exclude tag  - TODO: any K/R                 
-best$exclude <- best$globin|best$albumin|best$IG
+all$exclude <- all$globin|all$albumin|all$IG
 
 ## ADD GENE NAME
-best$name <- features$name[gidx[best$ensembl]]
+all$name <- features$name[gidx[all$ensembl]]
 
 if ( !interactive() ) {
-    write.table(best, file=out.file, sep="\t",
+    write.table(all, file=out.file, sep="\t",
                 quote=FALSE, na="", row.names=FALSE)
 }
 
