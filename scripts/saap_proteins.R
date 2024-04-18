@@ -532,7 +532,7 @@ for ( pid in pids ) {
     ## indicate ALL AAS
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
-           xpd=TRUE)
+    ##       xpd=TRUE)
 
     ## AA context
     ## add AA sequences around AAS
