@@ -98,6 +98,9 @@ bp <- bp[order(bp$identity,
 
 ## .. and remove duplicated, which should appear below better hits!!
 
+## TODO: instead use a "the winner takes it all" approach and
+## and assign AAS to the protein with most overall matches.
+
 ## TODO: analyze this step a bit, e.g
 ## * we retain BCL2L2-PABN1, a read-through
 ## fusion protein with only 1 AAS; could be the single gene!

@@ -108,6 +108,7 @@ dat <- dat[!rm,]
 ## TMT Level RAAS Values
 tmtf <- read.delim(tmt.file)
 
+
 ## exclude NA or Inf
 ## NOTE: since we don't to tests against the global
 ## distribution and only calculate protein-specific
@@ -116,7 +117,35 @@ rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
 cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
 tmtf <- tmtf[!rm,]
 
-## ADD RAAS STATS
+### FILTER: filter only tmtf for global distribution tests
+
+## convert to logical
+tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
+dat$Keep.SAAP <- !dat$IG
+
+alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
+              tmtf[,c("Keep.SAAP","SAAP")])
+alls <- split(alls$Keep.SAAP, alls$SAAP)
+
+## remove if tagged so for any dataset
+keep <- unlist(lapply(alls, all))
+dat$keep <- keep[dat$SAAP]
+tmtf$keep <- keep[tmtf$SAAP]
+
+## remove excluded
+cat(paste("removing", sum(!dat$keep),
+          "tagged as false positive on protein level\n"))
+dat <- dat[which(dat$keep),]
+
+## get raw RAAS data TMT level
+## remove excluded
+cat(paste("removing", sum(!tmtf$keep),
+          "tagged as false positive on TMT level\n"))
+tmtf <- tmtf[tmtf$keep,]
+
+
+
+### ADD RAAS STATS to protein mapping table
 
 ## split RAAS by BP/SAAP
 tmtl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP))
@@ -126,6 +155,7 @@ tmt2dat <- match(paste(dat$BP, dat$SAAP), names(tmtl))
 tmtl <- tmtl[tmt2dat]
 
 ## RAAS statistics
+## TODO: add w/t test p-value
 tmts <- lapply(tmtl, function(x) {
     x <- 10^x
     mn <- mean(x)
@@ -550,7 +580,13 @@ for ( pid in pids ) {
                   paste0(sfile,".",ftyp), overwrite = TRUE)
 
 }
- 
+
+## HOTSPOT SCAN
+
+pids <- names(aasl)#POI #
+for ( pid in pids ) {
+    aas <- aasl[[pid]]
+}
 
 ##library(rtracklayer)
 ##bw = import.bw('~/data/mammary/originalData/hg38.phastCons7way.bw')

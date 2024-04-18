@@ -176,7 +176,11 @@ dot.sze <- c(.3,2)
 
 use.test <- t.test # w.test # 
 
+## CANCERS OR HEALTHY TISSUES
 healthy <- FALSE # TRUE #  
+
+
+## DATA FILTERS
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.nterm <- FALSE # TRUE # 
@@ -254,11 +258,11 @@ alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
               tmtf[,c("Keep.SAAP","SAAP")])
 alls <- split(alls$Keep.SAAP, alls$SAAP)
 
-## inconsistents
+## TODO: INCONSISTENT tags between my protein mapping and Shiri's TMT file
 ##alls[which(unlist(lapply(alls, function(x) length(unique(x))))>1)]
 
 ## remove if tagged so for any dataset
-keep <- unlist(lapply(alls, all))
+keep <- unlist(lapply(alls, all)) # all keep tags must be tree
 dat$keep <- keep[dat$SAAP]
 tmtf$keep <- keep[tmtf$SAAP]
 
