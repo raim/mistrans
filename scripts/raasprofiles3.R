@@ -591,14 +591,10 @@ genes <- genes[genes$name!="" & !is.na(genes$name),]
 ptl <- strsplit(genes$proteins, ";")
 ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)
+pnms <- ens2nam
 
 
 ### START ANALYSIS
-
-## WINDOWS
-
-## TODO: split each protein into overlapping 50 AA windows
-## and do volcano plot as below
 
 ## PROTEINS
 
@@ -623,8 +619,8 @@ covl <- list()
 covl$median <- as.matrix(pbstat$median)
 covl$p.value <- pbstat[,"p",drop=FALSE]
 ## replace by gene names
-rownames(covl$p.value) <-
-    head(pnms[rownames(covl$p.value)])
+##rownames(covl$p.value) <-
+##    pnms[rownames(covl$p.value)]
 
 dense2d(pbstat$median, log10(pbstat$n))
 
@@ -632,9 +628,8 @@ plotdev(file.path(fig.path,paste0("volcano_proteins_unique")),
         type="png", res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
 res <- volcano(covl, value="median",
-               p.txt=-log10(0.05), v.txt=c(-2,-1), cut=5, mid=0,
+               p.txt=-log10(0.01), v.txt=c(-2,-2), cut=5, mid=-2,
                ids=pnms, xlab=expression(log[10](bar(RAAS))))
-abline(v=0)
 dev.off()
 
 
@@ -655,6 +650,25 @@ res <- volcano(covl, value="median",
                ids=pnms, xlab=expression(log[10](bar(RAAS))))
 abline(v=0)
 dev.off()
+
+## PROTEIN WINDOWS - 50 AA
+plen <- dat$len[!duplicated(dat$ensembl)]
+names(plen) <- dat$ensembl[!duplicated(dat$ensembl)]
+plen <- plen[!is.na(plen)]
+
+## generate protein windows of length 50
+## NOTE: last window to end is <=50
+pwins <- sapply(plen, function(x) unique(c(seq(0,x,50),x)))
+pwins <- lapply(pwins, function(x) cbind(start=1+x[1:(length(x)-1)],
+                                         end=x[2:length(x)]))
+pwins <- data.frame(ID=rep(names(pwins), lengths(pwins)/2),
+                    do.call(rbind, pwins))
+## TODO: collect unique and site-specific median RAAS for each window
+## and do tests.
+
+## TODO: split each protein into overlapping 50 AA windows
+## and do volcano plot as below
+
 
 ## PROTEIN COMPLEXES
 
@@ -680,7 +694,7 @@ huens <- lapply(hulst, function(x) {
 })
 
 
-## MEDIAN SITE RAAS
+## COMPLEXES - MEDIAN SITE RAAS
 ## replace complex ensembl IDs with rows in RAAS table
 huraas <- lapply(huens, function(x) c(na.omit(pbstat[x,"median"])))
 
@@ -693,7 +707,7 @@ covl <- list()
 covl$median <- as.matrix(hustat$median)
 covl$p.value <- hustat[,"p",drop=FALSE]
 
-plotdev(file.path(fig.path,paste0("volcano_corum")),
+plotdev(file.path(fig.path,paste0("volcano_corum_unique")),
         type="png", res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
 res <- volcano(covl, value="median",
@@ -703,8 +717,7 @@ abline(v=0)
 dev.off()
 
 
-
-## UNIQUE RAAS
+## COMPLEXES - UNIQUE RAAS
 ## replace complex ensembl IDs with rows in RAAS table
 huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$ensembl%in%x])
 
@@ -870,6 +883,7 @@ if ( interactive() ) {
     plot(ovw$median, -log(ovw$p.value))
 }
 
+
 ## by "from" amino acid
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="from", cols="Dataset",
@@ -911,6 +925,38 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    fname=file.path(dpath,paste0("AA_",SETID,"_")),
                    xlab=expression(TMT~level~log[10]*RAAS),
                    verb=0)
+
+## by AA property transition
+for ( ptype in unique(tmtf$pfromto) ) {
+
+    ## sort by to
+    qsrt <- sort(unique(tmtf$fromto[tmtf$pfromto==ptype]))
+    ft <- unlist(lapply(strsplit(qsrt,":"), function(x) x[2]))
+    qsrt <- qsrt[order(ft)]
+                 
+    ovwp <- sortOverlaps(ovw, srt=qsrt)
+
+    plotProfiles(ovwp, fname=file.path(fig.path,paste0(ptype,"_",SETID)),
+                 mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
+                 p.min=p.min, p.txt=p.txt,
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 rlab=LAB, llab="", mtxt=ptype, mtxt.line=3,
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols)
+    ## cut
+    ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
+    if ( nrow(ovwp$p.value)>1 ) #TODO: fix error with nrow=1 in 
+        plotProfiles(ovwp,
+                     fname=file.path(fig.path,paste0(ptype,"_",SETID,"_cut")),
+                     mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
+                     p.min=p.min, p.txt=p.txt,
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     rlab=LAB, llab="",mtxt=ptype, mtxt.line=3,
+                     vcols=vcols, vbrks=vbrks,
+                     gcols=gcols)
+    
+}
+
 
 ## plot only significantly high RAAS
 ovwp <-ovw
@@ -965,36 +1011,6 @@ for ( ds in auds ) {
 }
 
 
-## by AA property transition
-for ( ptype in unique(tmtf$pfromto) ) {
-
-    ## sort by to
-    qsrt <- sort(unique(tmtf$fromto[tmtf$pfromto==ptype]))
-    ft <- unlist(lapply(strsplit(qsrt,":"), function(x) x[2]))
-    qsrt <- qsrt[order(ft)]
-                 
-    ovwp <- sortOverlaps(ovw, srt=qsrt)
-
-    plotProfiles(ovwp, fname=file.path(fig.path,paste0(ptype,"_",SETID)),
-                 mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
-                 p.min=p.min, p.txt=p.txt,
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab="", mtxt=ptype, mtxt.line=3,
-                 vcols=vcols, vbrks=vbrks,
-                 gcols=gcols)
-    ## cut
-    ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
-    if ( nrow(ovwp$p.value)>1 ) #TODO: fix error with nrow=1 in 
-        plotProfiles(ovwp,
-                     fname=file.path(fig.path,paste0(ptype,"_",SETID,"_cut")),
-                     mai=c(.8,1.5,.5,.5), ttcols=ttcols, value="median",
-                     p.min=p.min, p.txt=p.txt,
-                     dot.sze=dot.sze, p.dot=p.dot,
-                     rlab=LAB, llab="",mtxt=ptype, mtxt.line=3,
-                     vcols=vcols, vbrks=vbrks,
-                     gcols=gcols)
-    
-}
 
 
 
@@ -1613,12 +1629,12 @@ for ( ds in auds ) {
                           cl2.srt=raas.srt)
     plotdev(file.path(fig.path,paste0("structure_iupred3_",SETID,"_ovl_",ds)),
             type="png", res=300, width=3,height=3)
-    par(mai=c(.9,.9,.4,.4), mgp=c(3.3,.3,0), tcl=-.25)
+    par(mai=c(.9,.9,.5,.5), mgp=c(3.3,.3,0), tcl=-.25)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
                  xlab=NA, ylab=NA,
                  show.total=TRUE)
     mtext("disordered score", 2, 3.5)
-    mtext(expression(log[10]*bar(RAAS[unique])), 1, 2.7)
+    mtext(expression(log[10]*bar(RAAS[unique])), 1, 3.5)
     figlabel(ds, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()

@@ -88,14 +88,14 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 R --vanilla < ${THIS}/scripts/saap_proteins.R > ${THIS}/log/proteins.txt
 
 ## export sequence context of AAS
-R --vanilla < ${THIS}/scripts/extract_aas_context.R > ${THIS}/log/context.txt
+R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context.txt
 
 ## TODO: run deep learning script here! currently done interactively
 ## from above script, but instead sequence input variation should be done
 ## in python script.
 
 ## MOTIFS: get and analyze sequences surrounding the ASS
-## TODO: split this script, use output from above extract_aas_context.R
+## TODO: split this script, use output from above export_aas_context.R
 R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 
 ## kplogo
