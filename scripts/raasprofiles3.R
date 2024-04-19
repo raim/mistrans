@@ -154,8 +154,15 @@ tmt.file <- file.path(proj.path,"originalData",
 ## protein complexes
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
-## uniprot/ensembl mapping
-uni.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+
+## gene name mappings
+
+## uniprot/ensembl/name mappings
+uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
+
+## genome feature file
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
 ### PARAMETERS
 
@@ -346,6 +353,7 @@ if ( length(ina)>0 ) {
 }
 
 
+tmtf$pos <- hdat$pos[idx]
 tmtf$from <- hdat$from[idx]
 tmtf$to <- hdat$to[idx]
 tmtf$fromto <- hdat$fromto[idx]
@@ -361,10 +369,16 @@ tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
 tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
 tmtf$sstruc <- hdat$sstruc[idx]
 
+tmtf$name <- hdat$name[idx]
 tmtf$gene <- hdat$gene[idx]
 tmtf$transcript <- hdat$transcript[idx]
 tmtf$protein <- hdat$protein[idx]
 tmtf$ensembl <- hdat$ensembl[idx]
+tmtf$MANE.protein <- hdat$MANE.protein[idx]
+
+tnm <- tmtf$name
+tnm[tnm==""] <- tmtf$ensembl[tnm==""]
+tmtf$name <- tnm
 
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 tmtf$extracellular <- hdat$extracellular[idx]
@@ -381,7 +395,8 @@ if ( healthy ) {
 }
 
 ### MEAN AND MEDIAN RAAS
-## per data set and unique SAAP
+
+## STATS PER DATA SET and UNIQUE SAAP
 usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
 araas <- split(tmtf$RAAS, usaap)
 
@@ -556,27 +571,108 @@ dev.off()
 
 ## UNIPROT <-> ENSEMBL MAPPING
 ## NOTE: ~90 duplicated ensembl IDs
-uni2ens <- read.delim(uni.file, header=FALSE)
+uni2ens <- read.delim(uni2ens.file, header=FALSE)
 uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
 uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
 ## remove duplicate ensembl IDs
 ## TODO: is the list sorted? best uniprot hit?
 uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
-  
+
+## UNIPROT <-> NAME MAPPING
+## TODO: add MANE column
+uni2nam <- read.delim(uni2nam.file, header=FALSE)
+uni2nam[,1] <- sub("-.*", "", uni2nam[,1]) # remove uniprot version tag
+
+## ENSEMBL <-> NAME MAPPING
+## TODO: add MANE column
+genes <- read.delim(feature.file)
+genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
+genes <- genes[genes$name!="" & !is.na(genes$name),]
+ptl <- strsplit(genes$proteins, ";")
+ens2nam <- rep(genes$name, lengths(ptl))
+names(ens2nam) <- unlist(ptl)
+
 
 ### START ANALYSIS
+
+## WINDOWS
+
+## TODO: split each protein into overlapping 50 AA windows
+## and do volcano plot as below
+
+## PROTEINS
+
+## unique BP/SAAP specific RAAS
+source("~/work/mistrans/scripts/saap_utils.R")
+
+## median RAAS per unique protein position
+posl <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
+posl <- as.data.frame(listProfile(posl, y=tmtf$RAAS))
+colnames(posl) <- paste0("RAAS.", colnames(posl))
+posl$ensembl <- sub(" .*", "", rownames(posl))
+
+## MEDIAN RAAS FOR EACH UNIQUE PROTEIN POSITION
+posl <- split(posl$RAAS.median, posl$ensembl)
+
+## protein median of median RAAS
+pbstat <- listProfile(posl, y=tmtf$RAAS)
+
+
+## volcano
+covl <- list()
+covl$median <- as.matrix(pbstat$median)
+covl$p.value <- pbstat[,"p",drop=FALSE]
+## replace by gene names
+rownames(covl$p.value) <-
+    head(pnms[rownames(covl$p.value)])
+
+dense2d(pbstat$median, log10(pbstat$n))
+
+plotdev(file.path(fig.path,paste0("volcano_proteins_unique")),
+        type="png", res=300, width=4.4,height=4)
+par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
+res <- volcano(covl, value="median",
+               p.txt=-log10(0.05), v.txt=c(-2,-1), cut=5, mid=0,
+               ids=pnms, xlab=expression(log[10](bar(RAAS))))
+abline(v=0)
+dev.off()
+
+
+## ALL RAAS per protein
+ptl <- split(tmtf$RAAS, tmtf$ensembl)
+ptstat <- listProfile(ptl, y=tmtf$RAAS)
+
+## TODO: nice plots, try to use raasProfiler!
+covl <- list()
+covl$median <- as.matrix(ptstat$median)
+covl$p.value <- ptstat[,"p",drop=FALSE]
+
+plotdev(file.path(fig.path,paste0("volcano_proteins")),
+        type="png", res=300, width=4.4,height=4)
+par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
+res <- volcano(covl, value="median",
+               p.txt=12, v.txt=c(-2,-1), cut=50, mid=0,
+               ids=pnms, xlab=expression(log[10](bar(RAAS))))
+abline(v=0)
+dev.off()
 
 ## PROTEIN COMPLEXES
 
 ## TODO: first boil down RAAS to median per site to avoid
 ## over-estimation by single sites, eg. Q->G in PSMA1.
 
+## rename names by ensembl in position-wise RAAS medians
+
 ## distribution in protein complexes
 humap <- read.csv(humap.file)
 hulst <- strsplit(humap[,3]," ")
+huids <- humap[,1]
 
 humap <- read.delim(corum.file)
 hulst <- strsplit(humap$subunits.UniProt.IDs.,";")
+huids <- sub(" complex$","",humap[,2])
+
+names(hulst)<- huids
 
 ## replace complex uniprot genes by ALL ensembl proteins that map to it
 huens <- lapply(hulst, function(x) {
@@ -584,45 +680,49 @@ huens <- lapply(hulst, function(x) {
 })
 
 
+## MEDIAN SITE RAAS
 ## replace complex ensembl IDs with rows in RAAS table
-huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$ensembl%in%x])
+huraas <- lapply(huens, function(x) c(na.omit(pbstat[x,"median"])))
 
-## TODO: RAAS distributions, and p-values
-hustat <- lapply(huraas, function(x) {
-    tt=NA
-    tp=NA
-    if ( length(x)>2) {
-        tts <- use.test(x, tmtf$RAAS)
-        tt <- tts$statistic
-        tp <- tts$p.value
-    }
-    md <- log10(median(10^x))
-    mn <- log10(mean(10^x))
-    c(mean=mn, median=md, t=tt, p=tp, n=length(x))
-})
-hustat <- do.call(rbind, hustat)
-
-## only for hu.MAP
-huids <- humap[,1]
-## only for corum
-huids <- sub(" complex$","",humap[,2])
-
-
-rownames(hustat) <- huids
+## RAAS statistics
+hustat <- listProfile(huraas, y=tmtf$RAAS)
 hustat <- as.data.frame(hustat)
-##hustat <- hustat[!is.na(hustat[,"p"]),]
 
 ## TODO: nice plots, try to use raasProfiler!
 covl <- list()
 covl$median <- as.matrix(hustat$median)
 covl$p.value <- hustat[,"p",drop=FALSE]
 
-plotdev(file.path(fig.path,paste0("corum_volcano")),
+plotdev(file.path(fig.path,paste0("volcano_corum")),
+        type="png", res=300, width=4.4,height=4)
+par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
+res <- volcano(covl, value="median",
+               p.txt=3, v.txt=c(-Inf,-1.5), cut=50, mid=-1,
+               xlab=expression(log[10](bar(RAAS))))
+abline(v=0)
+dev.off()
+
+
+
+## UNIQUE RAAS
+## replace complex ensembl IDs with rows in RAAS table
+huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$ensembl%in%x])
+
+## RAAS statistics
+hustat <- listProfile(huraas, y=tmtf$RAAS)
+hustat <- as.data.frame(hustat)
+
+## TODO: nice plots, try to use raasProfiler!
+covl <- list()
+covl$median <- as.matrix(hustat$median)
+covl$p.value <- hustat[,"p",drop=FALSE]
+
+plotdev(file.path(fig.path,paste0("volcano_corum")),
         type="png", res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.1,.5), mgp=c(1.2,.3,0), tcl=-.25)
 res <- volcano(covl, value="median",
                p.txt=20, v.txt=c(-Inf,-1), cut=50, mid=0,
-        xlab=expression(log[10](bar(RAAS))))
+               xlab=expression(log[10](bar(RAAS))))
 abline(v=0)
 dev.off()
 

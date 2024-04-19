@@ -357,7 +357,7 @@ plotovl <- function(ovl, text="count", cut=TRUE, value="median",
 ## volcano plot function for overlap class
 ## produced by raasProfile
 volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
-                    lg2=FALSE, mxr, density=TRUE, xlab, ...) {
+                    ids, lg2=FALSE, mxr, density=TRUE, xlab, ...) {
 
     ## values for coloring
     vals <- ovl[[value]]
@@ -400,14 +400,23 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
 
     show <- which(show)
     if ( length(show) ){
+
+        ## clean plot names
         if ( ncol(pvals)==1 )
             names(tpv)<- sub(".*:", "", names(tpv))
-        names(tpv)
+        if ( nrow(pvals)==1 )
+            names(tpv)<- sub(":.*", "", names(tpv))
+        ## optional plot IDs
+        labels <- names(tpv)[show]
+        if ( !missing(ids) )
+            labels <- ids[labels]
+        ## vertical line
         if ( missing(mid) )
             mid <- mean(vals,na.rm=TRUE)
-        shadowtext(tmv[show], tpv[show], labels=names(tpv)[show],
-                   pos=ifelse(tmv[show]<mid, 2,4), col="red",
-                   font=2, cex=.8, xpd=TRUE)
+        ## plot labels
+        segmenTools::shadowtext(tmv[show], tpv[show], labels=labels,
+                                pos=ifelse(tmv[show]<mid, 2,4), col="red",
+                                font=2, cex=.8, xpd=TRUE)
     }
     invisible(names(tpv)[show])
 }
@@ -574,6 +583,29 @@ raasProfile.old <- function(x=cdat, id="SAAP", values=tmt,
     ova
 }
 
+listProfile <- function(x, y, delog=TRUE) {
+
+    stat <- lapply(x, function(x) {
+        tt=NA
+        tp=NA
+        if ( length(x)>2) {
+            tts <- use.test(x, y)
+            tt <- tts$statistic
+            tp <- tts$p.value
+        }
+        lx <- x
+        if ( delog ) 
+            lx <- 10^x
+        xmn <- mean(lx)
+        xmd <- median(lx)
+        if ( delog ) {
+            xmn <- log10(xmn)
+            xmd <- log10(xmd)
+        }
+        c(mean=xmn, median=xmd, t=tt, p=tp, n=length(x))
+    })
+    as.data.frame(do.call(rbind, stat))
+}
 ##ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
 ##                    delog=TRUE, rows="pfromto", cols="Dataset",
 ##                    bg=TRUE, row.srt=srt, col.srt=uds,
