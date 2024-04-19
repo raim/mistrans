@@ -666,9 +666,6 @@ pwins <- data.frame(ID=rep(names(pwins), lengths(pwins)/2),
 ## TODO: collect unique and site-specific median RAAS for each window
 ## and do tests.
 
-## TODO: split each protein into overlapping 50 AA windows
-## and do volcano plot as below
-
 
 ## PROTEIN COMPLEXES
 
