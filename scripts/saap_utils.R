@@ -356,25 +356,38 @@ plotovl <- function(ovl, text="count", cut=TRUE, value="median",
 
 ## volcano plot function for overlap class
 ## produced by raasProfile
-volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
+volcano <- function(ovl, cut=15, value="median", pid="p.value",
+                    p.txt=6, v.txt, mid,
                     ids, lg2=FALSE, mxr, density=TRUE, xlab, ...) {
 
     ## values for coloring
-    vals <- ovl[[value]]
-    if ( lg2 ) {
-        vals <- log2(vals)
-        if ( missing(mxr) ) mxr <- max(abs(vals))
-        vals[vals >  mxr] <-  mxr
-        vals[vals < -mxr] <- -mxr
+    if ( inherits(ovl, "list") ) { # for clusterOverlaps class
+        
+        tmv <- gdata::unmatrix(t(ovl[[value]]))
+        tpv <-  gdata::unmatrix(t(ovl[[pid]]))
+
+        ## clean plot names
+        if ( ncol(ovl[[pid]])==1 )
+            names(tpv)<- sub(".*:", "", names(tpv))
+        if ( nrow(ovl[[pid]])==1 )
+            names(tpv)<- sub(":.*", "", names(tpv))
+ 
+    } else if ( inherits(ovl, "matrix") | inherits(ovl, "data.frame") ) {
+        tmv <- ovl[,value]
+        tpv <- ovl[,pid]
+        ## used for name plotting
+        names(tpv) <- rownames(ovl)
     }
 
-    
-    tmv <- gdata::unmatrix(t(vals))
-    ##tmv <- c(ovl[[value]])
-
-    pvals <- ovl$p.value
-    
-    tpv <- -log10(gdata::unmatrix(t(pvals)))
+    ## process x values
+    if ( lg2 ) {
+        tmv <- log2(tmv)
+        if ( missing(mxr) ) mxr <- max(abs(tmv))
+        tmv[tmv >  mxr] <-  mxr
+        tmv[tmv < -mxr] <- -mxr
+    }
+    ## process p values
+    tpv <- -log10(tpv)
     tpv[tpv>cut] <- cut
 
     na <- is.na(tmv) | is.na(tpv)
@@ -399,20 +412,15 @@ volcano <- function(ovl, cut=15, value="mean", p.txt=6, v.txt, mid,
         show <- show & (tmv<v.txt[1] | tmv>v.txt[2])
 
     show <- which(show)
-    if ( length(show) ){
+    if ( length(show) ) {
 
-        ## clean plot names
-        if ( ncol(pvals)==1 )
-            names(tpv)<- sub(".*:", "", names(tpv))
-        if ( nrow(pvals)==1 )
-            names(tpv)<- sub(":.*", "", names(tpv))
         ## optional plot IDs
         labels <- names(tpv)[show]
         if ( !missing(ids) )
             labels <- ids[labels]
         ## vertical line
         if ( missing(mid) )
-            mid <- mean(vals,na.rm=TRUE)
+            mid <- mean(tmv,na.rm=TRUE)
         ## plot labels
         segmenTools::shadowtext(tmv[show], tpv[show], labels=labels,
                                 pos=ifelse(tmv[show]<mid, 2,4), col="red",
@@ -583,34 +591,41 @@ raasProfile.old <- function(x=cdat, id="SAAP", values=tmt,
     ova
 }
 
-listProfile <- function(x, y, delog=TRUE) {
+## NOTE: CV for log-normal data, see @Canchola2017
+## cv = sqrt(10^(log(100)*var) -1)
+cvl <- function(x) sqrt(10^(log(10)*var(x,na.rm=TRUE)) -1)
+
+## mean, median, and unpaired t/w tests
+listProfile <- function(x, y, delog=TRUE, use.test=t.test, min=3) {
 
     stat <- lapply(x, function(x) {
         tt=NA
         tp=NA
-        if ( length(x)>2) {
+        if ( length(x)>=min) {
             tts <- use.test(x, y)
-            tt <- tts$statistic
+            tt <- unname(tts$statistic)
             tp <- tts$p.value
         }
         lx <- x
         if ( delog ) 
             lx <- 10^x
         xmn <- mean(lx)
+        xsd <- sd(lx)
+        xcv <- xsd/xmn
+        xcvl <- cvl(lx)
         xmd <- median(lx)
         if ( delog ) {
             xmn <- log10(xmn)
             xmd <- log10(xmd)
+            xsd <- log10(xsd)
         }
-        c(mean=xmn, median=xmd, t=tt, p=tp, n=length(x))
+        c(mean=xmn, median=xmd,
+          sd=xsd, cv=xcv, cvl=xcvl,
+          statistic=tt, p.value=tp,
+          n=length(x))
     })
     as.data.frame(do.call(rbind, stat))
 }
-##ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
-##                    delog=TRUE, rows="pfromto", cols="Dataset",
-##                    bg=TRUE, row.srt=srt, col.srt=uds,
-##                    use.test=t.test, do.plots=TRUE, xlab="TMT level RAAS",
-##                    fname=fname, verb=1)
 
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
 ## but working on lists of unequal lengths instead of a matrix
