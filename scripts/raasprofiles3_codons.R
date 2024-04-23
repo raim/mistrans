@@ -271,7 +271,7 @@ for ( ds in auds ) {
     plotProfiles(ova, fname=file.path(cfig.path,paste0("codon_",
                                                       SETID,"_",ds,
                                                       "_all")),
-                 fw=.2, mai=c(.05,.5,.05,.5), ttcols=ttcols, value="median",
+                 fw=.2, mai=c(.05,.75,.05,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=dsLAB, ftyp=ftyp, mtxt="",
@@ -281,7 +281,7 @@ for ( ds in auds ) {
 
     plotProfiles(ovd, fname=file.path(cfig.path,paste0("codon_",
                                                       SETID,"_",ds,"_Dataset")),
-                 fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 fw=.2, mai=c(.8,.75,.5,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=dsLAB, ftyp=ftyp, mtxt="",
@@ -291,7 +291,7 @@ for ( ds in auds ) {
 
     ## TODO: re-create previous codon plots
     plotProfiles(ovw, fname=file.path(cfig.path,paste0("codon_",SETID,"_",ds)),
-                 fw=.2, mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 fw=.2, mai=c(.8,.75,.5,.5), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=dsLAB, ftyp=ftyp, mtxt="substituted AA",
@@ -300,11 +300,7 @@ for ( ds in auds ) {
 
 ### CODON FREQUENCY ANALYSIS
 
-    mai <- c(.05,.5,.1,.5)
-    fw <- .2
-    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-
-    ## sort by amino acid property via shapely colors!
+   ## sort by amino acid property via shapely colors!
     ##aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
     aasrt <-
         aa.srt[aa.srt%in%sub("-.*","",names(Fbg.ds))]
@@ -486,13 +482,18 @@ for ( ds in auds ) {
         dev.off()
     }
 
-    ## codon RAAS aligned with codon dotplot 
+    ## full codon dotplots!
+    mai <- c(.05,.75,.1,.5)
+    fw <- .2
+    nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+
+     ## codon RAAS aligned with codon dotplot 
     ramm <- matrix(Craas.ds,nrow=1)
     colnames(ramm) <- names(Craas.ds)
     plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_raas")),
             type=ftyp, res=300, width=nw, height=.25+.1)
-    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    par(mai=c(.05,.75,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     image_matrix(ramm, col=vcols, breaks=vbrks,
                  axis=NA, las=2, ylab=NA)
     mtext(expression(bar(RAAS)), 2, .15, las=2, cex=1)
@@ -504,7 +505,7 @@ for ( ds in auds ) {
     plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequency_raas")),
             type=ftyp, res=300, width=nw,height=3)
-    par(mai=c(.8,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    par(mai=c(.8,.75,.5,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     boxplot(dtmt$RAAS ~ factor(dtmt$aacodon, levels=cdsrt),
             las=2, xlab="", ylab=xl.raas,
             cex=.5, pch=19, pars=list(outcol="#00000055"))
@@ -624,7 +625,7 @@ for ( ds in auds ) {
     plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_hypergeo")),
             type=ftyp, res=300, width=nw, height=.25+.1)
-    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    par(mai=c(.05,.75,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=NA, xlab=NA, ylab=NA,
                  text.cex=.7, col=ttcols)
     ##axis(1, at=1:length(aac), labels=aac, las=2)
@@ -644,7 +645,7 @@ for ( ds in auds ) {
     plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_hypergeo2")),
             type=ftyp, res=300, width=nw, height=.35+.1)
-    par(mai=c(.05,.5,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    par(mai=c(.05,.75,.05,.5), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, axis=2, xlab=NA, ylab=NA,
                  text.cex=.7, col=ttcols)
     ##axis(1, at=1:length(aac), labels=aac, las=2)
