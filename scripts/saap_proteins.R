@@ -67,6 +67,9 @@ s4pred <- file.path(mam.path,"processedData",
 ## iupred3/anchor2
 iupred <- file.path(mam.path,"processedData","iupred3")
 
+## phastcons data (retrieved by Andrew Leduc)
+phastcons.file <- file.path(mam.path,"processedData","first3k_proteins.RData")
+
 ## pfam hits
 pfam <- file.path(mam.path,"processedData",
                   "Homo_sapiens.GRCh38.pep.large_annotations.csv")
@@ -209,6 +212,10 @@ names(s4p) <- sub("\\.[0-9]+", "", names(s4p))
 iufiles <- list.files(pattern=paste0(".*iupred3.tsv.gz"), path=iupred)
 names(iufiles) <- sub("\\..*","", iufiles)
 
+## phastcons : list with protein IDs
+phastcons <- readRDS(phastcons.file)
+names(phastcons) <- sub("\\..*", "", names(phastcons))
+
 ## load transcript and protein fasta
 ## GET ENSEMBL PROTEINS - from project mammary
 pfas <- segmenTools::readFASTA(pfasta, grepID=TRUE)
@@ -225,6 +232,9 @@ rownames(pamrt) <- trmap[,1]
 ## rename by protein names via trmap, for quick access
 ## of protein-specific transcript
 names(tfas) <- pamrt[names(tfas),1]
+
+## rename phastcons by protein names
+names(phastcons) <- pamrt[names(phastcons),1]
 
 
 ## load global gene-wise codon counts
@@ -365,30 +375,40 @@ for ( pid in pids ) {
 
     
     ffile <- file.path(fig.path, pnms[pid])
-    if ( pid%in%POI )
-        sfile <- file.path(fig.path, "selected", pnms[pid])
+    sfile <- file.path(fig.path, "selected", pnms[pid])
 
-    ##if ( file.exists(ffile) ) next
+    cat(paste("getting data for", pnms[pid], pid, "\n"))
+
+    ##if ( file.exists(ffile)l) next
 
     ## collect all data for protein
     aas <- aasl[[pid]]
     pf <- pfl[[pid]]
     s4 <- gsub("H","0",gsub("E","/",gsub("C","-",s4p[[pid]]$seq)))
-    iu <- read.delim(file.path(iupred,iufiles[pid]), header=FALSE)
+    iu <- NULL
+    if ( pid %in% names(iufiles) )
+        iu <- read.delim(file.path(iupred,iufiles[pid]), header=FALSE)
     psq <- pfas[[pid]]$seq
     tsq <- tfas[[pid]]$seq
+    phc <- NULL
+    if ( pid %in% names(phastcons) )
+        phc <- phastcons[[pid]]
+   # else next
     ## check lengths
     tlen <- nchar(tsq)/3 -1
     plen <- nchar(psq)
     slen <- nchar(s4)
     ilen <- nrow(iu)
+    ## QC
+    ## check lengths
     if ( length(unique(c(tlen,plen,slen,ilen)))>1 )
         cat(paste("WARNING:", pid, "lengths differ",
                   paste(unique(round(c(tlen,plen,slen,ilen),1)),
                         collapse=";"), "\n"))
     ## check sequence via translate
-    if ( paste0(iu[,2],collapse="")!=psq)
-        cat(paste("WARNING:", pid, "wrong iupred3 seq\n"))
+    if ( !is.null(iu) )
+        if ( paste0(iu[,2],collapse="")!=psq)
+            cat(paste("WARNING:", pid, "wrong iupred3 seq\n"))
     if ( is.null(tsq) ) {
         cat(paste("WARNING:", pid, "no transcript\n"))
     } else {
@@ -398,7 +418,11 @@ for ( pid in pids ) {
         if ( tpsq!=psq )
             cat(paste("WARNING:", pid, "wrong translation\n"))
     }
-
+    ## check phastcons sequence
+    if ( !is.null(phc) ) {
+        if ( psq!=paste(phc[,"AA"], collapse="") )
+            cat(paste("WARNING:", pid, "wrong phastcons sequences\n"))
+    }        
     ## calculate vector of codon frequencies
     cmt <- tsq
     if ( !is.null(tsq) ) {
@@ -470,7 +494,7 @@ for ( pid in pids ) {
     
     plotdev(ffile, width=min(c(100,plen*wscale)), height=3, type=ftyp,
             res=200)
-    layout(mat=t(t(1:8)), heights=c(.1,.5,.175,.15,.25,.1,.1,.075))
+    layout(mat=t(t(1:9)), heights=c(.1,.5,.175,.075,.15,.25,.1,.1,.075))
     par(mai=mmai, xaxs="i", xpd=TRUE)
 
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -488,15 +512,33 @@ for ( pid in pids ) {
     ##plotFeatureBlocks(pf, coors=coors)
 
 
-    ## data as heatmap
-    iud <- cbind(chr=1,coor=iu[,"V1"],
-                 iupred3=iu[,c("V3")],
-                 anchor2=iu[,c("V4")])
-    brks <- 50:100/100
-    ## TODO: saver y-axis labelling in plotHeat!
-    plotHeat(iud, coors=coors, breaks=brks, colors=c(viridis(length(brks)-1)))
-    axis(2, at=c(1,2), labels=c("iupred3","anchor2"), las=2, cex.axis=1.2)
-    
+
+    ## iupred3/anchor2 as heatmap
+    if ( !is.null(iu) ) {
+        iud <- cbind(chr=1,coor=iu[,"V1"],
+                     iupred3=iu[,c("V3")],
+                     anchor2=iu[,c("V4")])
+        brks <- 50:100/100
+        ## TODO: saver y-axis labelling in plotHeat!
+        plotHeat(iud, coors=coors, breaks=brks,
+                 colors=c(viridis(length(brks)-1)))
+        axis(2, at=c(1,2), labels=c("iupred3","anchor2"), las=2, cex.axis=1.2)
+    } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    }
+    ## phastcons data as heatmap
+    if ( !is.null(phc) ) {
+        ##
+        phc$Score[is.na(phc$Score)] <- 0
+        phd <- cbind(chr=1,coor=1:nrow(phc),
+                     phastcons=phc[,c("Score")])
+        brks <- 1:100/100
+        plotHeat(phd, coors=coors, breaks=brks,
+                 colors=c(viridis(length(brks)-1)))
+        axis(2, at=c(1), labels=c("phastcons"), las=2, cex.axis=1.2)
+    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+
+    ## secondary structure, K|R and AAS
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
     axis(2, at=1, labels="PSSP", las=2)
@@ -575,7 +617,7 @@ for ( pid in pids ) {
 
     dev.off()
 
-    if ( pid%in%POI )
+    if ( pid%in%POI | file.exists(paste0(sfile,".",ftyp)) )
         file.copy(paste0(ffile,".",ftyp),
                   paste0(sfile,".",ftyp), overwrite = TRUE)
 

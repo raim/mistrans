@@ -322,7 +322,11 @@ rpos <- pos/len
 bgsss <- sssbg
 colnames(bgsss) <- paste0(colnames(bgsss), ".protein")
 dat <- cbind(dat,
-             site=mut, pos=pos, len=len, rpos=pos/len, from=aaf, to=aat,
+             site=mut,  # mutated site within peptide
+             pos=pos,   # position of AAS within protein
+             len=len,
+             rpos=pos/len,
+             from=aaf, to=aat,
              codon=cdn, gcoor, 
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg)

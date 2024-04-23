@@ -3,6 +3,8 @@ require(segmenTools)
 require(qvalue)
 library(viridis)
 
+### PLOT UTILS
+
 ## COLOR FUNCTION ARNO
 ## generate colors similar to inferno but with
 ## a better yellow (viridis)
@@ -10,6 +12,7 @@ mcol <- viridis::inferno(5)
 vcol <- viridis::viridis(5)
 mcol[5] <- vcol[5]
 arno <- colorRampPalette(mcol)
+
 
 # from->to as expression, e.g. for axis labels
 ftlabels <- function(srt) {
@@ -22,6 +25,19 @@ ftlabels <- function(srt) {
     axex
 }
 
+## currently unused
+addPoints <- function(ovl, value="median") {
+    z <- t(apply(ovl[[value]], 2, rev))
+    cx <- c(z)
+    mx <- max(cx,na.rm=TRUE)
+    mn <- min(cx,na.rm=TRUE)
+    cx <- 3*(cx-mn)/(mx-mn)
+    points(x = rep(1:ncol(z), nrow(z)),
+           y = rep(nrow(z):1, each = ncol(z)), cex = cx)
+}
+
+### STATISTICS 
+
 ## wilcox test with normalized U-statistic, to
 ## be used for statistical profile plots
 w.test <- function(x,y) {
@@ -33,6 +49,9 @@ w.test <- function(x,y) {
     rt$p.value <- unlist(res$p.value)
     rt
 }
+
+
+### HIGH LEVEL PLOT FUNCTIONS
 
 dotprofile <- function(x, value, vcols=viridis::viridis(100),
                        vbrks, p.dot=1e-10, dot.sze=c(.3,2),
@@ -165,6 +184,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          count="unique", gcols=gcols,
                          fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
                          ffam="sans",
+                         ftyp="png",
                          col.lines, # column classes - vertical lines
                          verb=0) {
 
@@ -190,8 +210,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     ## p-value profiles
     outf <- paste0(fname,"_wtests")
     if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
-    segmenTools::plotdev(outf,
-                         height=nh, width=nw, res=300)
+    segmenTools::plotdev(outf, height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
                  text.cex=.8, axis=1, ylab=NA, xlab=NA,
@@ -214,7 +233,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     ## combined effect size and p-value plot
     if ( verb ) cat(paste("plotting dotplot\n"))
     segmenTools::plotdev(paste0(fname,"_dotplot"),
-                         height=nh, width=nw, res=300)
+                         height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     dotprofile(x=ovw, value=value, vbrks=vbrks,
                vcols=vcols, p.dot=p.dot,
@@ -237,7 +256,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
     
     segmenTools::plotdev(paste0(fname,"_raas_",value),
-                         height=nh, width=nw, res=300)
+                         height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ovw[["count"]]
     txt[txt==0] <- ""
@@ -256,7 +275,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if (verb>0) cat(paste("plotting unique number\n"))
    
     segmenTools::plotdev(paste0(fname,"_count_unique"),
-                         height=nh, width=nw, res=300)
+                         height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     cnt <- ovw$unique
     cnt[cnt==0] <- NA
@@ -277,7 +296,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if (verb>0) cat(paste("plotting volcano\n"))
 
     segmenTools::plotdev(paste0(fname,"_volcano"),
-                         height=3, width=4, res=300)
+                         height=3, width=4, res=300, type=ftyp)
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ovw, cut=100, p.txt=-log10(p.txt),
             v.txt=c(-Inf,-1), density=TRUE,
@@ -311,7 +330,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                                                max(unlist(z["y"])),-10))))
     
     segmenTools::plotdev(paste0(fname,"_densities"),
-                         res=300, width=4, height=2)
+                         res=300, width=4, height=2, type=ftyp)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dns <- ovw$ALL
     hist(unlist(dns), col="#77777755", border=NA, 
@@ -361,7 +380,7 @@ volcano <- function(ovl, cut=15, value="median", pid="p.value",
                     ids, lg2=FALSE, mxr, density=TRUE, xlab, ...) {
 
     ## values for coloring
-    if ( inherits(ovl, "list") ) { # for clusterOverlaps class
+    if ( inherits(ovl, "clusterOverlaps") ) { # for clusterOverlaps class
         
         tmv <- gdata::unmatrix(t(ovl[[value]]))
         tpv <-  gdata::unmatrix(t(ovl[[pid]]))
@@ -911,8 +930,10 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
     ovl
 }
 
-sortOverlaps2 <-
-function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmetric = "no") 
+
+## derived from segmenTools::sortOverlaps but trying
+## to better handle two-sided tests - TODO: integrate in segmenTools
+sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmetric = "no") 
 {
     if (symmetric != "no") {
         if (symmetric == "upper") 

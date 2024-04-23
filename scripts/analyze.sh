@@ -74,6 +74,20 @@ R --vanilla < ${THIS}/scripts/saap_blast_stats.R
 ##    GENERATES ${MISDATA}/processedData/bp_mapped.tsv
 R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt
 
+## collect ONLY required iupred3 data for transfer to intron
+if [ false ]; then
+    cd ~/data/mammary/processedData
+    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped.tsv |sort|uniq|grep ENSP|grep -v "_")
+    for i in $all
+    do
+	echo "$i"
+	# or do whatever with individual element of the array
+	find iupred3/ -name "${i}*.tsv.gz" -exec cp -a {} iupred3_selected \;
+    done
+    zip -r iupred3_selected iupred3_selected
+fi  
+
+
 ## 4.B) map each peptide to it's positions in proteins and transcripts, and
 ## add a variety of collected information on protein structure, e.g.
 ## iupred3, anchor2, s4pred, codon, ...
@@ -112,25 +126,32 @@ R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
 
 ### CALCULATE RAAS PROFILES
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
+
+## OUTDATED: data selection now occurs in raasprofiles3_init.R
+## called by _codons, _aminoacids, and _proteins
+
 ## TODO: log files
 ## with Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## without Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 
 ## same for healthy tissues
 ## with Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## without Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla &
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
 ## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3.R | R --vanilla
+sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla
 
 
 ## OLD and OBSOLETE - TODO: redo functional analysis
