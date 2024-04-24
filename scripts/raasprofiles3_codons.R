@@ -71,8 +71,7 @@ Craas <- sapply(COD.SRT, function(cl)
 ## taking codon median RAAS
 site <- split(ctmt$RAAS, ctmt$unique.site)
 site <- listProfile(site, y=ctmt$RAAS, use.test=use.test, min=3)
-site.codons <- lapply(split(ctmt$aacodon,  ctmt$unique.site),
-                      unique)
+site.codons <- lapply(split(ctmt$aacodon,  ctmt$unique.site), unique)
 if ( length(table(lengths(site.codons)))!=1 )
     stop("multiple codons per protein site")
 site <- cbind(site, codon=unlist(site.codons))
@@ -82,7 +81,6 @@ Craas.site <- sapply(COD.SRT, function(cl)
 
 
 ## codon frequencies at AAS
-## NOTE: in the loop below we count per unique BP
 lcodt <- table(site$codon)
 names(lcodt) <- sub(".*-","",names(lcodt))
 ## AAS codon frequencies per AA
@@ -90,6 +88,12 @@ lcodl <- split(lcodt, GENETIC_CODE[names(lcodt)])
 
 lcodl <- lapply(lcodl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
 lcodl <- lcodl[names(aaprop)] ## ##SORT BY AA PROP
+
+## store for sanity check:
+## why more codons via raasProfile unique counter than here?
+lcodt.global <- lcodt
+Fbg.lst <- codl
+Faas.lst <- lcodl
 
 ## AA-specific codon frequency
 Faas <- unlist(lapply(lcodl, function(x) x/sum(x)))
@@ -228,7 +232,14 @@ for ( ds in auds ) {
     codl <- codl[names(aaprop)[names(aaprop)%in%names(codl)]] ## SORT BY AA PROP
     Fbg.ds <- unlist(lapply(codl, function(x) x/sum(x)))
     names(Fbg.ds) <- sub("\\.","-", names(Fbg.ds))
- 
+
+    ## why is global codon count at AAS lower than that via raasProfile?
+    if ( ds=="all" ) {
+        Fbg.ds.lst <- codl
+        Faas.ds.lst <- lcodl
+        tmp <- cbind(unlist(lcodt.global[names(lcodt)]), lcodt)
+    }
+
     ## MEDIAN CODON RAAS
     ## get median RAAS for each codon and plot against codon frequency
     Craas.ds <- sapply(codon.srt, function(cl)
@@ -562,7 +573,7 @@ for ( ds in auds ) {
                                        ds,"_codons_barplot")),
             type=ftyp, res=300, width=nw, height=.75)
     par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    bp  <- barplot(rbind(Faas.ds,cods[names(Faas.ds)]),
+    bp  <- barplot(rbind(Faas.ds,Fbg.ds[names(Faas.ds)]),
                    axes=FALSE, xlab=NA, beside=TRUE,
                    ylab="", las=2, xaxt='n')
     cdn.cn <- head(cdn.cnt, length(cdn.cnt)-1)
@@ -663,8 +674,20 @@ for ( ds in auds ) {
 plotCor(codon.raas[names(Craas),"all"], Craas)
 plotCor(codon.Fbg[names(Fbg),"all"], Fbg)
 ## TODO: why is this not exact?
+## -> calculation of Faas via raasProfile is likely
+## wring since codons where counted multiple times
+## for each substitution: DO NOT USE the unique counter!
 plotCor(codon.Faas[names(Faas),"all"], Faas)
 
+## re-plot main result based on global version
+plotCor(Fbg, Faas[names(Fbg)],
+        xlab=expression(f[bg]),
+        ylab=expression("relative codon frequency"~f[AAS]),
+        line.methods="ols", density=FALSE, pch=19)
+plotCor(Fbg, Craas[names(Fbg)],
+        line.methods="ols", density=FALSE, pch=19,
+        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+    
 ### NOT USED: remove or archive?
 
 ## CODON BINS by Dataset

@@ -96,6 +96,21 @@ colors <- "arno" # "inferno" #"rocket" # "viridis" #
 
 COLF <- get(colors)
 
+## shapely/rasmol via 
+shapely.cols <- character()
+shapely.cols[c("D","E")]   <- "#E60A0A"  # acidic
+shapely.cols[c("K","R")]   <- "#145AFF"  # basic
+shapely.cols[c("S","T")]   <- "#FA9600"  # S/T - P-targets
+shapely.cols[c("C","M")]   <- "#E6E600"  # sulfur-containing
+shapely.cols[c("P")]     <- "#DC9682"    # stiff backbone 
+shapely.cols[c("F","Y")]   <- "#3232AA"  # aromatic
+shapely.cols[c("W")]     <- "#B45AB4"    # large aromatic
+shapely.cols[c("H")]     <- "#8282D2"    # aromatic, nitrogen
+shapely.cols[c("N","Q")]   <- "#00DCDC"  # nitrogen-containing
+shapely.cols[c("G")]     <- "#EBEBEB"    # just backbone
+shapely.cols[c("L","V","I")] <- "#0F820F"# branched chain
+shapely.cols[c("A")]     <- "#C8C8C8"    # minimal residue
+
 ## PARSE & FILTER DATA
 
 ## proteins
@@ -329,7 +344,8 @@ app <- unlist(lapply(aasl, nrow))
 appc <- app
 appc   [app>30 ] <- 30
 
-hist(appc, breaks=1:30, xlab="AAS per protein")
+if ( interactive() )
+    hist(appc, breaks=1:30, xlab="AAS per protein")
 
 
 
@@ -373,7 +389,6 @@ pid=names(which(pnms=="HNRNPD")) # several adjacent T:S from different BP
 pids <- names(aasl)#POI #
 for ( pid in pids ) {
 
-    
     ffile <- file.path(fig.path, pnms[pid])
     sfile <- file.path(fig.path, "selected", pnms[pid])
 
@@ -492,9 +507,10 @@ for ( pid in pids ) {
     if ( plen>2000 ) wscale <- 1/100
     mmai <- c(.05,1,.05,.1)
     
-    plotdev(ffile, width=min(c(100,plen*wscale)), height=3, type=ftyp,
-            res=200)
-    layout(mat=t(t(1:9)), heights=c(.1,.5,.175,.075,.15,.25,.1,.1,.075))
+    plotdev(ffile, width=min(c(100,plen*wscale)),
+            height=3.1, type=ftyp, res=200)
+    layout(mat=t(t(1:10)), heights=c(.1,.5,.175,.075,.15,.25,
+                                     .1,.075,0.075,.075))
     par(mai=mmai, xaxs="i", xpd=TRUE)
 
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -591,25 +607,31 @@ for ( pid in pids ) {
         }
     mtext("context", 2, las=2, cex=.8)
 
-    ## codons
-    if ( FALSE ) {
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-        if ( nrow(aad)>0 )
-            shadowtext(x=aad$start, y=rep(1, nrow(aad)),
-                       labels=aad$codon, cex=2, col=aad$color)
-    }
+    ## AA by amino acid color code
+    mmaiaa <- mmai
+    mmaiaa[1] <- 0.01
+    aam <- cbind(chr=1,coor=1:length(pseq),
+                 vals=match(pseq, names(shapely.cols)))
+    par(mai=mmaiaa)
+    plotHeat(aam, coors=coors, colors=shapely.cols)
+    axis(3, at=aas$pos, labels=FALSE)
+    mtext("amino acid", 2, las=2)
     ## codons as heatmap
+    mmaiaa <- mmai
+    mmaiaa[3] <- 0.01
     if ( !is.null(cmt) ) {
         cmm <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
         brks <- 0:100/100
+        par(mai=mmaiaa)
         plotHeat(cmm, coors=coors, breaks=brks,
                  colors=c(viridis(length(brks)-1)))
-        axis(3, at=aas$pos, labels=FALSE)
+        ##axis(3, at=aas$pos, labels=FALSE)
     } else {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     }
     mtext("codon frq.", 2, las=2)
     ## EXONS
+    par(mai=mmai)
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
     axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
@@ -625,10 +647,7 @@ for ( pid in pids ) {
 
 ## HOTSPOT SCAN
 
-pids <- names(aasl)#POI #
-for ( pid in pids ) {
-    aas <- aasl[[pid]]
-}
+
 
 ##library(rtracklayer)
 ##bw = import.bw('~/data/mammary/originalData/hg38.phastCons7way.bw')
