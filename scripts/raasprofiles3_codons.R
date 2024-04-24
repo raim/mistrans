@@ -220,7 +220,7 @@ for ( ds in auds ) {
     dsite.codons <- lapply(split(dtmt$aacodon,  dtmt$unique.site), unique)
     if ( length(table(lengths(dsite.codons)))!=1 )
         stop("multiple codons per protein site")
-    dsite <- cbind(dsite, codon=unlist(site.codons))
+    dsite <- cbind(dsite, codon=unlist(dsite.codons))
     
     ## codon frequencies at AAS
     lcodt <- table(dsite$codon)
@@ -475,20 +475,21 @@ for ( ds in auds ) {
     
     ## TODO: why doesn't mean correlate to RAAS, while median does!
     if ( interactive() ) {
-        plotCor(ova$median[,names(Faas.ds)], Faas.ds, density=FALSE, col=NA)
-        points(ova$median[,names(Faas.ds)], Faas.ds, lwd=1, cex=1,
-               col=aa.cols[sub("-.*","",names(Faas.ds))],
-               pch=aa.pchs[sub("-.*","",names(Faas.ds))])
-        plotCor(ova$mean[,names(Faas.ds)], Faas.ds, density=FALSE, col=NA)
-        points(ova$mean[,names(Faas.ds)], Faas.ds, lwd=1, cex=1,
-               col=aa.cols[sub("-.*","",names(Faas.ds))],
-               pch=aa.pchs[sub("-.*","",names(Faas.ds))])
-        plotCor(ova$mean[,names(Faas.ds)], ova$median[,names(Faas.ds)],
+        fds <- fds[names(fds)%in%colnames(ova$median)]
+        plotCor(ova$median[,names(fds)], fds, density=FALSE, col=NA)
+        points(ova$median[,names(fds)], fds, lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(fds))],
+               pch=aa.pchs[sub("-.*","",names(fds))])
+        plotCor(ova$mean[,names(fds)], fds, density=FALSE, col=NA)
+        points(ova$mean[,names(fds)], fds, lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(fds))],
+               pch=aa.pchs[sub("-.*","",names(fds))])
+        plotCor(ova$mean[,names(fds)], ova$median[,names(fds)],
                 density=FALSE, col=NA)
-        points(ova$mean[,names(Faas.ds)],
-               ova$median[,names(Faas.ds)], lwd=1, cex=1,
-               col=aa.cols[sub("-.*","",names(Faas.ds))],
-               pch=aa.pchs[sub("-.*","",names(Faas.ds))])
+        points(ova$mean[,names(fds)],
+               ova$median[,names(fds)], lwd=1, cex=1,
+               col=aa.cols[sub("-.*","",names(fds))],
+               pch=aa.pchs[sub("-.*","",names(fds))])
     }
 
     if ( exists("decode", mode="numeric") ) {
@@ -636,9 +637,10 @@ for ( ds in auds ) {
         paste0(GENETIC_CODE[colnames(aam)],"-", colnames(aam))
 
     ## sort
-    aam <- aam[,codon.srt,drop=FALSE]
-    aap <- aap[,codon.srt,drop=FALSE]
-    aac <- aac[,codon.srt,drop=FALSE]
+    csrt <- codon.srt[codon.srt%in%colnames(aam)]
+    aam <- aam[,csrt,drop=FALSE]
+    aap <- aap[,csrt,drop=FALSE]
+    aac <- aac[,csrt,drop=FALSE]
 
     ## construct overlap class
     ovl <- list()

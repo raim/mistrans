@@ -14,7 +14,7 @@ tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 bp.file <- file.path(proj.path,"processedData","unique_bp_blast.tsv")
 bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
-out.file <- file.path(proj.path,"processedData","bp_mapped.tsv")
+out.file <- file.path(proj.path,"processedData","bp_mapped2.tsv")
 
 
 ### LOAD & ANNOTATE BLAST RESULTS
@@ -66,7 +66,7 @@ bp <- bp[order(bp$identity,
                -bp$mismatches,
                !is.na(bp$MANE.protein),
                bp$protein==bp$MANE.protein,
-               -bp$slen,
+               bp$slen,
                bp$numGO, decreasing=TRUE),]
 
 ## FIRST HANDLE PERFECT HITS 

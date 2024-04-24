@@ -20,7 +20,7 @@ out.path <- file.path(proj.path,"processedData")
 saapf <- file.path(out.path,"unique_saap.tsv")
 
 ## BP:protein blast results
-bpmap <- file.path(out.path,"bp_mapped.tsv")
+bpmap <- file.path(out.path,"bp_mapped2.tsv")
 
 
 ## protein fasta
