@@ -209,8 +209,23 @@ for ( ds in auds ) {
     ## CUSTOM CODON FREQUENCY PLOTS
 
     ## CODON COUNTS AT THE AAS OF UNIQUE BP
-    lcodt <- apply(ovw$unique, 2, sum)
+    ## NOTE: this was wrong, since the same codon
+    ## with different substitutions is counted several times
+    ## lcodt <- apply(ovw$unique, 2, sum)
+    ## names(lcodt) <- sub(".*-","",names(lcodt))
+
+
+    dsite <- split(dtmt$RAAS, dtmt$unique.site)
+    dsite <- listProfile(dsite, y=dtmt$RAAS, use.test=use.test, min=3)
+    dsite.codons <- lapply(split(dtmt$aacodon,  dtmt$unique.site), unique)
+    if ( length(table(lengths(dsite.codons)))!=1 )
+        stop("multiple codons per protein site")
+    dsite <- cbind(dsite, codon=unlist(site.codons))
+    
+    ## codon frequencies at AAS
+    lcodt <- table(dsite$codon)
     names(lcodt) <- sub(".*-","",names(lcodt))
+  
     ## AAS codon frequencies per AA
     lcodl <- split(lcodt, GENETIC_CODE[names(lcodt)])
     
@@ -404,7 +419,7 @@ for ( ds in auds ) {
     plotCor(Craas.ds, Faas.ds, ylim=c(0,1),
             density=FALSE, xlab=xl.raas,
             ylab=expression(codon~frequency~f[AAS]), col="#00000099", pch=19,
-            lwd=0,cex=1, line.methods="")
+            lwd=0,cex=1) #, line.methods="")
     ##figlabel(dsLAB, pos="bottomleft", font=2, cex=1.2)
     ##figlabel(LAB, pos="bottomright", cex=.7)
     for ( ax in 3:4 )  axis(ax, labels=FALSE)
@@ -668,7 +683,11 @@ for ( ds in auds ) {
     
 }
 
-## sanity checks
+## CODON FREQUENCY ANALYSIS
+
+source("~/programs/segmenTools/R/plotUtils.R")
+
+## sanity check
 ## data set 'all' values should correspond to
 ## the values calculated above the loop
 plotCor(codon.raas[names(Craas),"all"], Craas)
@@ -677,21 +696,144 @@ plotCor(codon.Fbg[names(Fbg),"all"], Fbg)
 ## -> calculation of Faas via raasProfile is likely
 ## wring since codons where counted multiple times
 ## for each substitution: DO NOT USE the unique counter!
-plotCor(codon.Faas[names(Faas),"all"], Faas)
+
+codon.freq <- data.frame(codon=sub(".*-","",names(Fbg)),
+                         AA=sub("-.*","",names(Fbg)),
+                         frequency_all=Fbg,
+                         frequency_AAS=Faas[names(Fbg)],
+                         RAAS=Craas[names(Fbg)])
+write.table(codon.freq, file=file.path(cfig.path, "codon_frequencies.tsv"),
+            sep="\t", row.names=FALSE, quote=FALSE, na="")
+
+fftyp <- "pdf"
+
+## exclude the single codon AA (M and W) for correlation analysis
+fbg <- Fbg
+fbg[fbg==1] <- NA
+
+plotdev(file.path(cfig.path,paste0("codons_faas_both_correct")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(codon.Faas[names(Faas),"all"], Faas, round=4,
+        xlab=expression(f[AAS]~"NOT via raasProfile function"),
+        ylab=expression(f[AAS]~"from unique protein AAS sites"),
+        density=FALSE, pch=19)
+dev.off()
 
 ## TODO: 
 ## re-plot main result based on global version
 ## get p-values for TLS - https://stats.stackexchange.com/questions/166483/p-values-for-regression-coefficients-in-total-least-squares-regression
-fbg <- Fbg
-fbg[fbg==1] <- NA
-plotCor(fbg, Faas[names(fbg)],
-        xlab=expression(f[bg]), xlim=c(0,1), ylim=c(0,1),
-        ylab=expression("relative codon frequency"~f[AAS]),
-        line.methods="ols", density=FALSE, pch=19)
-plotCor(fbg, Craas[names(fbg)], xlim=c(0,1),
+
+plotdev(file.path(cfig.path,paste0("codons_faas_fbg")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)], outliers=which(Fbg==1),
+        xlab=expression("relative codon frequency, MTP"~f[bg]),
+        xlim=c(0,1), ylim=c(0,1),
+        ylab=expression("relative codon frequency, AAS"~f[AAS]),
+        line.methods=c("ols","tls"), density=FALSE, pch=19)
+abline(a=0, b=1, col="gray")
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_woMW")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)]/Fbg, outliers=which(Fbg==1),
+        legpos="bottomright",
+        xlab=expression("relative codon frequency"~f[bg]),
+        xlim=c(0,1), ##ylim=c(0,1),
+        ylab=expression(f[AAS]/f[bg]),
+        line.methods=c("ols","tls"), density=FALSE, pch=19)
+dev.off()
+plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_withMW")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)]/Fbg, ##outliers=which(Fbg==1),
+        legpos="bottomright",
+        xlab=expression("relative codon frequency"~f[bg]),
+        xlim=c(0,1), ##ylim=c(0,1),
+        ylab=expression(f[AAS]/f[bg]),
+        line.methods=c("ols","tls"), density=FALSE, pch=19)
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codons_raas_fbg_woMW")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), outliers=which(Fbg==1),
         line.methods=c("tls","ols"), density=FALSE, pch=19,
         xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
-points(Fbg[is.na(fbg)],  Craas[names(fbg)[is.na(fbg)]], pch=4, col=2)   
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codons_raas_fbg_withMW")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), ##outliers=which(Fbg==1),
+        line.methods=c("tls","ols"), density=FALSE, pch=19,
+        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+dev.off()
+
+## NOTE:
+## * do not exclude M and W,
+## * show fbg instead of fAAS vs. RAAS,
+## * ignore fAAS > fbg.
+
+## official publication figures
+## no lines, to tls; colors for supplement
+
+plotdev(file.path(cfig.path,paste0("codons_raas_fbg")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), ##outliers=which(Fbg==1),
+        line.methods=c("ols"), density=FALSE, pch=19,
+        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+dev.off()
+
+## encoded amino acid for coloring
+aatmp <- sub("-.*", "", names(Fbg))
+aasort <- names(sort(aa.cols))
+aasort <- aasort[aasort%in%aatmp]
+
+plotdev(file.path(cfig.path,paste0("codons_raas_fbg_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1),
+        line.methods=c("tls","ols"), density=FALSE, pch=19,
+        xlab=expression("relative codon frequency"~f[bg]),
+        ylab=xl.raas, col=NA)
+points(Fbg, Craas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp])
+dev.off()
+
+
+plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)]/Fbg,
+        legpos="bottomright",
+        xlab=expression("relative codon frequency, MTP"~f[bg]),
+        xlim=c(0,1), col=NA,
+        ylab=expression(f[AAS]/f[bg]),
+        line.methods=c("ols","tls"), density=FALSE, pch=19)
+points(Fbg, Faas[names(Fbg)]/Fbg, col=aa.cols[aatmp], pch=aa.pchs[aatmp])
+dev.off()
+
+
+plotdev(file.path(cfig.path,paste0("codons_faas_fbg_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)], 
+        xlab=expression("relative codon frequency, MTP"~f[bg]),
+        xlim=c(0,1), ylim=c(0,1), col=NA,
+        ylab=expression("relative codon frequency, AAS"~f[AAS]),
+        line.methods=c("ols","tls"), density=FALSE, pch=19)
+##abline(a=0, b=1, col="gray")
+points(Fbg, Faas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp])
+legend("bottomright",aasort,
+       col=aa.cols[aasort],
+       pch=aa.pchs[aasort],
+       pt.cex=1, lwd=1, lty=NA, seg.len=0.1, ncol=2, cex=.8, y.intersp=.8,
+       bty="n")
+dev.off()
+
 
 ### NOT USED: remove or archive?
 

@@ -128,6 +128,13 @@ colnames(errors) <- c("no protein",
                       "no transcript", "wrong codon",
                       "AAS > CDS len")
 if ( !use.regex ) errors[,"using blast"] <- 1
+
+
+## trouble shooting 20240424
+pid="ENSP00000354876" # no transcript even though its in protein_transcript_map
+## it's not in coding.fa, why??
+
+
 for ( i in 1:nrow(dat) ) {
    
     oid <- dat$protein[i] # ID with mutation index

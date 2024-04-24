@@ -36,7 +36,7 @@ pampt <- matrix(rownames(tpmap), ncol=1)
 rownames(pampt) <- tpmap[,1]
 
 ## map proteins to feature table!
-plst <- strsplit(features$proteins,";")
+plst <- strsplit(features$proteins, ";")
 gidx <- rep(1:nrow(features), lengths(plst))
 names(gidx) <- unlist(plst)
 
@@ -63,11 +63,11 @@ bp$numGO <- gol[gidx[bp$ensembl]]
 ## MANE present > initial match==MANE >
 ## shortest> number of annotations
 bp <- bp[order(bp$identity,
-                   -bp$mismatches,
-                   !is.na(bp$MANE.protein),
-                   bp$protein==bp$MANE.protein,
-                   -bp$slen,
-                   bp$numGO, decreasing=TRUE),]
+               -bp$mismatches,
+               !is.na(bp$MANE.protein),
+               bp$protein==bp$MANE.protein,
+               -bp$slen,
+               bp$numGO, decreasing=TRUE),]
 
 ## FIRST HANDLE PERFECT HITS 
 
