@@ -680,14 +680,17 @@ plotCor(codon.Fbg[names(Fbg),"all"], Fbg)
 plotCor(codon.Faas[names(Faas),"all"], Faas)
 
 ## re-plot main result based on global version
-plotCor(Fbg, Faas[names(Fbg)],
-        xlab=expression(f[bg]),
+fbg <- Fbg
+fbg[fbg==1] <- NA
+plotCor(fbg, Faas[names(fbg)],
+        xlab=expression(f[bg]), xlim=c(0,1), ylim=c(0,1),
         ylab=expression("relative codon frequency"~f[AAS]),
         line.methods="ols", density=FALSE, pch=19)
-plotCor(Fbg, Craas[names(Fbg)],
+plotCor(fbg, Craas[names(fbg)], xlim=c(0,1),
         line.methods="ols", density=FALSE, pch=19,
         xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
-    
+points(Fbg[is.na(fbg)],  Craas[names(fbg)[is.na(fbg)]], pch=4, col=2)   
+
 ### NOT USED: remove or archive?
 
 ## CODON BINS by Dataset
