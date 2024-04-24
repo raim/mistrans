@@ -679,6 +679,7 @@ plotCor(codon.Fbg[names(Fbg),"all"], Fbg)
 ## for each substitution: DO NOT USE the unique counter!
 plotCor(codon.Faas[names(Faas),"all"], Faas)
 
+## TODO: 
 ## re-plot main result based on global version
 fbg <- Fbg
 fbg[fbg==1] <- NA
@@ -687,7 +688,7 @@ plotCor(fbg, Faas[names(fbg)],
         ylab=expression("relative codon frequency"~f[AAS]),
         line.methods="ols", density=FALSE, pch=19)
 plotCor(fbg, Craas[names(fbg)], xlim=c(0,1),
-        line.methods="ols", density=FALSE, pch=19,
+        line.methods=c("tls","ols"), density=FALSE, pch=19,
         xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
 points(Fbg[is.na(fbg)],  Craas[names(fbg)[is.na(fbg)]], pch=4, col=2)   
 
