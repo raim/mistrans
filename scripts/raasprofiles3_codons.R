@@ -681,6 +681,7 @@ plotCor(codon.Faas[names(Faas),"all"], Faas)
 
 ## TODO: 
 ## re-plot main result based on global version
+## get p-values for TLS - https://stats.stackexchange.com/questions/166483/p-values-for-regression-coefficients-in-total-least-squares-regression
 fbg <- Fbg
 fbg[fbg==1] <- NA
 plotCor(fbg, Faas[names(fbg)],
