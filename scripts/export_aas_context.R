@@ -88,7 +88,7 @@ mutp <- grep("_", names(wrongp), invert=TRUE)
 cat(paste(length(mutp),
           "non-matching sequences DO NOT contain a _ mutation tag!\n"))
 
-## inspect some
+## inspect some: they contain *and X
 if ( interactive() ) {
     head(wrongp[mutp])
     p2p[wrongp[mutp][1]]
@@ -100,10 +100,12 @@ isig <- dat$IG[wrongp[mutp]]
 
 cat(paste(sum(!isig),
           "non-matching sequences ARE NOT immunoglobulins!\n"))
+
 isu <- grep("U",p2p[wrongp[mutp[!isig]]]) 
 isu <- wrongp[mutp[!isig]][isu]
 cat(paste(length(isu),
           "non-matching sequences contain a selenocysteine\n"))
+
 isx <- grep("X",p2p[wrongp[mutp[!isig]]])
 isx <- wrongp[mutp[!isig]][isx]
 cat(paste(length(isx),
@@ -122,6 +124,7 @@ if ( interactive() ) {
 cat(paste(length(unex),
           "non-matching sequences have a non-standard START codon (CTG,GTG)",
           "as indicated by manual inspecting\n"))
+
 if ( length(unex)!=3 )
     stop("manual inspection of non-matching transcript and protein sequences",
          "is not valid anymore - RECHECK")
@@ -213,10 +216,12 @@ isig <- dat$IG[wrongp[mutp]]
 
 cat(paste(sum(!isig),
           "non-matching sequences ARE NOT immunoglobulins!\n"))
+
 isu <- grep("U",p2p[wrongp[mutp[!isig]]]) 
 isu <- wrongp[mutp[!isig]][isu]
 cat(paste(length(isu),
           "non-matching sequences contain a selenocysteine\n"))
+
 isx <- grep("X",p2p[wrongp[mutp[!isig]]])
 isx <- wrongp[mutp[!isig]][isx]
 cat(paste(length(isx),
@@ -228,7 +233,7 @@ unex <- unex[!unex%in% c(isu,isx)]
 
 cat(paste(length(unex),
           "non-matching sequences remaining\n"))
-if ( length(unex)!=0 )
+if ( length(unex)!=0 ) ## 20240425 - currently 3
     warning("do manual inspection of non-matching transcript and protein seqs",
          "is not valid anymore - RECHECK")
 
@@ -260,7 +265,7 @@ tmts <- as.data.frame(do.call(rbind, tmts))
 ## w and w/o AAS, and for peptides and codons.
 
 ## RESULTS
-dst <- 0
+dst <- DST
 omit.aas <- c() #-20:20
 plim <- as.character(-dst:dst)
 tlim <- as.character(-(3*dst):(3*dst+2))
@@ -273,7 +278,7 @@ if ( length(omit.aas)>0 ) {
 res <- cbind(BP=dat$BP, SAAP=dat$SAAP,
              peptide=gsub("-","Z",apply(pctx[,plim, drop=FALSE],
                                         1, paste, collapse="")),
-             codon=apply(tctx[,tlim, drop=FALSE], 1, paste, collapse=""),
+             transcript=apply(tctx[,tlim, drop=FALSE], 1, paste, collapse=""),
              tmts)
 rownames(res) <- NULL
 
@@ -301,8 +306,10 @@ if ( randomize.peptides ) {
     res$peptide <- pepr
 }
 
-sum(!is.na(res$cv))
-hist(res$cv)
+if ( interactive() ) {
+    sum(!is.na(res$cv))
+    hist(res$cv)
+}
 
 out.file <- file.path(dat.path, "saap_context.tsv")
 write.table(res, file=out.file, sep="\t", quote=FALSE, na="", row.names=FALSE)

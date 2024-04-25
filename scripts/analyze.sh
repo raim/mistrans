@@ -102,19 +102,20 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 R --vanilla < ${THIS}/scripts/saap_proteins.R > ${THIS}/log/proteins.txt
 
 ## export sequence context of AAS
-R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context.txt
-
-## TODO: run deep learning script here! currently done interactively
-## from above script, but instead sequence input variation should be done
-## in python script.
+R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context_export.txt
 
 ## MOTIFS: get and analyze sequences surrounding the ASS
 ## TODO: split this script, use output from above export_aas_context.R
-R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
+R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context_analysis.txt
+
+## TODO: fuse two context scripts; and move randomization etc. to deep learning
+## python script; run kplogo; select motifs and sequences for RAAS analysis.
+
 
 ## kplogo
 ## TODO: run over all from:to classes and find a way to collect and plot
 ## results by RAAS!
+cd ~/data/mistrans/processedData/motifs
 ~/programs/kpLogo/bin/kpLogo seqcontext_all_.fa  -alphabet protein -o kplogo/all
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_Q:G.fa -alphabet protein -o kplogo/QG
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
@@ -129,6 +130,9 @@ R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context.txt
 R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
+
+## all protein profiles
+R --vanilla <  ${THIS}/scripts/saap_proteins.R
 
 ## OUTDATED: data selection now occurs in raasprofiles3_init.R
 ## called by _codons, _aminoacids, and _proteins
