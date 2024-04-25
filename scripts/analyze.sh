@@ -71,13 +71,13 @@ R --vanilla < ${THIS}/scripts/saap_blast_stats.R
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
 ## 4.A) find best matching protein
-##    GENERATES ${MISDATA}/processedData/bp_mapped.tsv
+##    GENERATES ${MISDATA}/processedData/bp_mapped2.tsv
 R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
     cd ~/data/mammary/processedData
-    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped.tsv |sort|uniq|grep ENSP|grep -v "_")
+    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped2.tsv |sort|uniq|grep ENSP|grep -v "_")
     for i in $all
     do
 	echo "$i"
@@ -97,20 +97,17 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
 ### 5) ANALYSIS
 
-## PROTEINS: protein level analysis
-## TODO: revisit previous saap_function.R and saap_analysis.R
-R --vanilla < ${THIS}/scripts/saap_proteins.R > ${THIS}/log/proteins.txt
-
-## export sequence context of AAS
-R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context_export.txt
 
 ## MOTIFS: get and analyze sequences surrounding the ASS
-## TODO: split this script, use output from above export_aas_context.R
+
+## export sequence context of AAS - used in DNN.ipynb
+R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context_export.txt
+
+## binomial distribution (hypergeo) tests of AA around AAS
 R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context_analysis.txt
 
 ## TODO: fuse two context scripts; and move randomization etc. to deep learning
 ## python script; run kplogo; select motifs and sequences for RAAS analysis.
-
 
 ## kplogo
 ## TODO: run over all from:to classes and find a way to collect and plot

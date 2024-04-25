@@ -111,6 +111,10 @@ shapely.cols[c("G")]     <- "#EBEBEB"    # just backbone
 shapely.cols[c("L","V","I")] <- "#0F820F"# branched chain
 shapely.cols[c("A")]     <- "#C8C8C8"    # minimal residue
 
+## darker grays for white background
+shapely.cols[c("G")]     <- "#A0A0A0"   
+shapely.cols[c("A")]     <- "#909090"    # minimal residue
+
 ## PARSE & FILTER DATA
 
 ## proteins

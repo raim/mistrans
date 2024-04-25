@@ -185,10 +185,13 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
                          ffam="sans",
                          ftyp="png",
+                         axis1.col,
+                         axis2.col,
                          col.lines, # column classes - vertical lines
                          verb=0) {
 
     ## replace row labels with arrows
+    ## TODO: adapt to plot by AA colors
     rows <- rownames(ovw$p.value)
     axex <- rep("",length(rows))
     names(axex) <- rows
@@ -210,12 +213,23 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     ## p-value profiles
     outf <- paste0(fname,"_wtests")
     if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
-    segmenTools::plotdev(outf, height=nh, width=nw, res=300, type=ftyp)
+    plotdev(outf, height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=1, ylab=NA, xlab=NA,
+                 text.cex=.8, axis=NA, ylab=NA, xlab=NA,
                  col=ttcols, show.total=TRUE)
-    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    if ( !missing(axis2.col) )
+        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
+            col.axis=axis2.col[rows])
+    else
+        axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    if ( !missing(axis1.col) )
+        Map(axis, 1, 1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam,
+            col.axis=axis1.col)
+    else
+        axis(1,  1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -232,18 +246,29 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
 
     ## combined effect size and p-value plot
     if ( verb ) cat(paste("plotting dotplot\n"))
-    segmenTools::plotdev(paste0(fname,"_dotplot"),
-                         height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    plotdev(paste0(fname,"_dotplot"),
+            height=nh, width=nw, res=300, type=ftyp)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
     dotprofile(x=ovw, value=value, vbrks=vbrks,
                vcols=vcols, p.dot=p.dot,
                dot.sze=dot.sze,
-               axis=1, xlab=NA, ylab=NA)
+               axis=NA, xlab=NA, ylab=NA)
     box()
-    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    if ( !missing(axis1.col) )
+        Map(axis, 1, at=1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam,
+            col.axis=axis1.col)
+    else
+        axis(1,  1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam)
+     if ( !missing(axis2.col) )
+        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
+            col.axis=axis2.col[rows])
+    else
+        axis(2, length(axex):1, labels=axex, las=2, family=ffam)
     axis(3, at=1:ncol(ovw$num.target),
          labels=format(ovw$num.target[1,], big.mark=",", trim=TRUE),las=2)
-    axis(4, at=nrow(ovw$num.query):1,
+    axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
@@ -255,16 +280,27 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
 
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
     
-    segmenTools::plotdev(paste0(fname,"_raas_",value),
-                         height=nh, width=nw, res=300, type=ftyp)
+    plotdev(paste0(fname,"_raas_",value),
+            height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     txt <- ovw[["count"]]
     txt[txt==0] <- ""
     q1 <- quantile(c(ovw[[value]]), probs=.4, na.rm=TRUE)
     txt.col <- ifelse(ovw[[value]]<q1, "white","black")
-    image_matrix(ovw[[value]], col=vcols, breaks=vbrks, axis=1,
+    image_matrix(ovw[[value]], col=vcols, breaks=vbrks, axis=NA,
                  text=txt, text.col=txt.col, xlab=NA, ylab=NA, text.cex=.8)
-    axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    if ( !missing(axis1.col) )
+        Map(axis, 1, 1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam,
+            col.axis=axis1.col)
+    else
+        axis(1,  1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam)
+     if ( !missing(axis2.col) )
+        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
+            col.axis=axis2.col[rows])
+    else
+        axis(2, length(axex):1, labels=axex, las=2, family=ffam)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
@@ -274,7 +310,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
 
     if (verb>0) cat(paste("plotting unique number\n"))
    
-    segmenTools::plotdev(paste0(fname,"_count_unique"),
+    plotdev(paste0(fname,"_count_unique"),
                          height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     cnt <- ovw$unique
@@ -295,7 +331,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
 
     if (verb>0) cat(paste("plotting volcano\n"))
 
-    segmenTools::plotdev(paste0(fname,"_volcano"),
+    plotdev(paste0(fname,"_volcano"),
                          height=3, width=4, res=300, type=ftyp)
     par(mai=c(.5,.75,.1,.75), mgp=c(1.3,.3,0), tcl=-.25)
     volcano(ovw, cut=100, p.txt=-log10(p.txt),
@@ -329,7 +365,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                                         ifelse("y"%in%names(z),
                                                max(unlist(z["y"])),-10))))
     
-    segmenTools::plotdev(paste0(fname,"_densities"),
+    plotdev(paste0(fname,"_densities"),
                          res=300, width=4, height=2, type=ftyp)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     dns <- ovw$ALL
