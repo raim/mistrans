@@ -188,8 +188,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          axis1.col,
                          axis2.col,
                          col.lines, # column classes - vertical lines
-                         verb=0) {
-
+                         plot.all=FALSE, verb=0) {
+    
     ## replace row labels with arrows
     ## TODO: adapt to plot by AA colors
     rows <- rownames(ovw$p.value)
@@ -201,41 +201,12 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
             axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
         } else axex[i] <- as.expression(bquote(.(rows[i])))
     }
-  
-
-    
+      
     ## calculate optimal figure height: result fields + figure margins (mai)
     nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
-
-
     ## p-value profiles
-    outf <- paste0(fname,"_wtests")
-    if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
-    plotdev(outf, height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
-                 text.cex=.8, axis=NA, ylab=NA, xlab=NA,
-                 col=ttcols, show.total=TRUE)
-    if ( !missing(axis2.col) )
-        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
-            col.axis=axis2.col[rows])
-    else
-        axis(2, length(axex):1, labels=axex, las=2, family=ffam)
-    if ( !missing(axis1.col) )
-        Map(axis, 1, 1:ncol(ovw$p.value),
-            labels=colnames(ovw$p.value), las=2, family=ffam,
-            col.axis=axis1.col)
-    else
-        axis(1,  1:ncol(ovw$p.value),
-            labels=colnames(ovw$p.value), las=2, family=ffam)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
-    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
-    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-    if ( !missing(col.lines) )
-        abline(v=.5+col.lines, lwd=1, xpd=FALSE)
-    dev.off()
 
     if ( missing(vbrks) ) {
         vals <- ovw[[value]]
@@ -260,10 +231,11 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
             col.axis=axis1.col)
     else
         axis(1,  1:ncol(ovw$p.value),
-            labels=colnames(ovw$p.value), las=2, family=ffam)
-     if ( !missing(axis2.col) )
-        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
-            col.axis=axis2.col[rows])
+             labels=colnames(ovw$p.value), las=2, family=ffam)
+     if ( !missing(axis2.col) ) {
+         Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
+             col.axis=axis2.col[rows])
+     }
     else
         axis(2, length(axex):1, labels=axex, las=2, family=ffam)
     axis(3, at=1:ncol(ovw$num.target),
@@ -289,7 +261,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     bp <- barplot(c(ovw$num.target), axes=FALSE, xlab=NA, #beside=TRUE,
                   ylab="", las=2, xaxt='n', 
                   width=.5, space=.5)
-    mtext(expression(count), 2, 2.5)
+    ##mtext(expression(count), 2, 2.5)
     if ( !missing(col.lines) ) {
         cdn.cn <- head(col.lines, length(col.lines)-1)
         abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
@@ -308,13 +280,40 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                   horiz=TRUE,
                   ylab="", las=2, yaxt='n', 
                   width=.5, space=.5)
-    mtext(expression(count), 2, 2.5)
+    ##mtext(expression(count), 2, 2.5)
     for ( ax in c(1,3) ) {
         axis(ax, las=2)
     }
     dev.off()
 
+    if ( !plot.all ) return()
     
+    ## classical p value profile
+    outf <- paste0(fname,"_wtests")
+    if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))
+    plotdev(outf, height=nh, width=nw, res=300, type=ftyp)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt,
+                 text.cex=.8, axis=NA, ylab=NA, xlab=NA,
+                 col=ttcols, show.total=TRUE)
+    if ( !missing(axis2.col) )
+        Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
+            col.axis=axis2.col[rows])
+    else
+        axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+    if ( !missing(axis1.col) )
+        Map(axis, 1, 1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam,
+            col.axis=axis1.col)
+    else
+        axis(1,  1:ncol(ovw$p.value),
+            labels=colnames(ovw$p.value), las=2, family=ffam)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
+    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
+    if ( !missing(col.lines) )
+        abline(v=.5+col.lines, lwd=1, xpd=FALSE)
+    dev.off()
     
     if (verb>0) cat(paste("plotting",value,"RAAS\n"))
     
