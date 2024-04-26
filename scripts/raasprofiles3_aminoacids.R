@@ -17,6 +17,9 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
 
 
+
+## indicate properties
+
 ## RAAS profiles by AAS site in peptides
 ## TODO: median RAAS of unique BP/SAAP vs. rel.position,
 ##       similar to iupred3
@@ -181,6 +184,17 @@ ovwp <-ovw
 ## only significant
 ovwp <- sortOverlaps2(ovwp, axis=2, p.min=p.min, cut=TRUE)
 
+aaprop.srt <- c("charged","polar","special","hydrophobic")
+aap.srt <- names(AAPROP[order(match(AAPROP, aaprop.srt))])
+
+## manual
+aap.srt <- c("R","H","K","D","E","S","T","N","Q",
+             "P","U","C","G","A","V","I","L","M","F","Y","W")
+
+## TODO: from:to sorting by property
+aap.ftsrt <- cbind(rep(aaprop.srt, length(aaprop.srt)),
+                   rep(aaprop.srt, each=length(aaprop.srt)))
+
 if ( nrow(ovwp$p.value)>0 ) {
 
     ## sort plot
@@ -189,8 +203,8 @@ if ( nrow(ovwp$p.value)>0 ) {
     taa <- sub(".*:","",oldsrt)
     faa <- sub(":.*","",oldsrt)
     laa <- split(taa, faa)
-    laa <- lapply(laa, function(x) x[order(match(x, aa.srt))])
-    laa <- laa[order(match(names(laa),aa.srt))]
+    laa <- lapply(laa, function(x) x[order(match(x, aap.srt))])
+    laa <- laa[order(match(names(laa),aap.srt))]
     laa <- unlist(laa)
     newsrt <- gsub("[0-9]","",paste0(names(laa),":",laa))
     ovwp <- sortOverlaps2(ovwp, axis=2, srt=newsrt)
@@ -203,7 +217,7 @@ if ( nrow(ovwp$p.value)>0 ) {
     
     plotProfiles(ovwp,
                  fname=file.path(afig.path,paste0("AA_",SETID,"_cut")),
-                 mai=c(.8,.6,.6,.6), fw=.2, fh=.2,
+                 mai=c(.8,.8,.6,.6), fw=.2, fh=.2,
                  ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
@@ -211,15 +225,15 @@ if ( nrow(ovwp$p.value)>0 ) {
                  ffam="monospace",
                  axis2.col=ft.cols,
                  vcols=vcols, vbrks=vbrks,
-                 gcols=gcols)
+                 gcols=gcols, plot.all=TRUE)
 
     ## calculate optimal figure height: result fields + figure margins (mai)
     nr <- nrow(ovwp$p.value)
     nc <- ncol(ovwp$p.value)
-    mai <- c(.8,.6,.6,.6)
+    mai <- c(.8,.8,.6,.6)
     nh <- nr *fh + mai[1] + mai[3]
     nw <- nc *fw + mai[2] + mai[4]
-    ffam <- "monospace"
+    ffam <- "monospace"#"sans"
 
     rsrt <- rownames(ovwp$p.value)
     taa <- sub(".*:","", rsrt)
@@ -237,16 +251,20 @@ if ( nrow(ovwp$p.value)>0 ) {
     axis(1,  1:ncol(ovwp$p.value),
          labels=colnames(ovwp$p.value), las=2, family=ffam)
     ##axis(2, length(axex):1, labels=axex, las=2, family=ffam)
-    shadowtext(rep(-2, nr), nr:1, faa, col=aa.cols[faa], xpd=TRUE,
+    shadowtext(rep(-1.6, nr), nr:1, faa, col=aaprop.cols[AAPROP[faa]], xpd=TRUE,
                font=2, r=.1)
-    text(rep(-1,nr), nr:1, expression(""%->%""), xpd=TRUE)
-    shadowtext(rep( 0, nr), nr:1, taa, col=aa.cols[taa], xpd=TRUE,
+    text(rep(-.8,nr), nr:1, expression(""%->%""), xpd=TRUE)
+    shadowtext(rep( 0, nr), nr:1, taa, col=aaprop.cols[AAPROP[taa]], xpd=TRUE,
                font=2, r=.1)
     axis(3, at=1:ncol(ovwp$num.target),
          labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
     axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
          labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
 
+    ## properties
+    text(x=rep(-2.75, length(aaprop.srt)), y=c(29.5, 21.5, 13.5, 5.5), srt=90,
+               labels=aaprop.srt, col=aaprop.cols[aaprop.srt], xpd=TRUE, font=2)
+    
     dev.off()
  }
 
