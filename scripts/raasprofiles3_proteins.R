@@ -120,8 +120,11 @@ axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 dev.off()
 
-
-      
+if ( interactive() ) {
+    ## TODO: compare iupred3 and half-lives for all proteins, not just RAAS
+    idx <- match(dat$name,names(hlv))
+    plotCor(dat$iupred3.protein, log10(hlv[idx]))
+}
 
 for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
     cidx <- grep("half_life", colnames(hlvd), value=TRUE)
