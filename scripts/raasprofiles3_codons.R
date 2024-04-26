@@ -323,7 +323,6 @@ for ( ds in auds ) {
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols, col.lines=cdn.cnt, ffam="monospace")
 
-
     plotProfiles(ovw, fname=file.path(cfig.path,paste0("codon_",SETID,"_",ds)),
                  fw=.2, mai=c(.6,.75,.6,.6), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
@@ -332,7 +331,8 @@ for ( ds in auds ) {
                  vcols=vcols, vbrks=vbrks,
                  axis1.col=aa.cols[sub("-.*","",colnames(ovw$p.value))],
                  axis2.col=aa.cols[rownames(ovw$p.value)],
-                 gcols=gcols, col.lines=cdn.cnt, ffam="monospace")
+                 gcols=gcols, col.lines=cdn.cnt, ffam="monospace", verb=1)
+        
 
 ### CODON FREQUENCY ANALYSIS
 
