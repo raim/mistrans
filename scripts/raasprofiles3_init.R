@@ -1,0 +1,709 @@
+
+### LOAD BP/SAAP MAPPING AND TMT LEVEL RAAS DATA
+## for further downstream analyses, RAAS profiles by
+## AA properties and codons (raasprofiles3_codons.R), and by
+## protein complexes, proteins and protein windows
+## (raasprofiles3_proteins.R).
+
+library(Biostrings) # for blosum62
+library(viridis)
+library(segmenTools)
+
+
+options(stringsAsFactors=FALSE)
+options(scipen=0) # use e notation for p-values
+
+
+## TODO:
+## * which AA are missing from mapped file and why? likely
+## because BP didnt match, generate from SAAP/BP,
+## * global or local background distribution?
+
+####!!!
+## TODO 20240215:
+## * rows: plot only largest contributor! Q->G, T->V,
+##   TODO: find largest RAAS effect size.
+## * RAAS distributions: show all and scale/color by pval
+## * formal approach to missing data: map measured peptides to the
+##   full peptide space (main peptides or all possible).
+## * plot by protein class, e.g only Albumins.
+## * CHECK HANDLING OF DUPLICATE SAAP here and in tmt retrieval
+
+
+## FROM->TO BY AA PROPERTY CLASSES
+## DONT FILTER FOR CODONS, use hdat
+
+## TODO 20240222
+## * plotovl: plot all function,
+## * fall back on median,
+## * re-blast saap, re-annotate,
+## * Healthy: untangle tissues and collapse cancer.
+
+### PARAMETERS
+
+## TODO: use for raasProfile and aaProfile calls
+p.adjust <- "none" ## multiple hypothesis testing
+
+RAAS.MIN <- -4
+RAAS.MAX <-  1
+colors <- "arno" # "inferno" #"rocket" # "viridis" # 
+
+COLF <- get(colors)
+
+p.min <- 1e-10
+p.txt <- 1e-5
+
+p.dot <- p.min # p.txt
+dot.sze <- c(.3,2)
+
+## STATISTICAL TEST TO RUN
+use.test <- t.test # w.test # 
+
+ftyp <- "png" # "pdf" # 
+
+## heatmap colors
+docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
+upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
+ttcols <- unique(c(rev(docols), upcols))
+gcols <- grey.colors(n=100, start=.9, end=0)
+
+## RAAS axis labels
+xl.raas <- expression(log[10](RAAS)) # *bar(RAAS))
+xl.raaa <- expression(log[10](RAAS))
+xl.raau <- expression(log[10]*bar(RAAS[unique]))
+xl.site <- expression(log[10](RAAS[site]))
+xl.all <- expression(log[10](RAAS[all]))
+
+
+### TODO: move AA colors, codons etc. to saap_utils.R or a new
+## saap_params.R
+
+## AA PROPERTY CLASSES
+## https://en.wikipedia.org/wiki/Amino_acid#/media/File:ProteinogenicAminoAcids.svg
+AAPROP <- list(charged=c("R","H","K","D","E"),
+               polar=c("S","T","N","Q"),
+               special=c("C","U","G","P"),
+               hydrophobic=c("A","V","I","L","M","F","Y","W"))
+tmp <- unlist(AAPROP)
+AAPROP <- sub("[0-9]+","", names(tmp))
+names(AAPROP) <- tmp
+aaprop <- sub("hydrophobic", "hphobic", AAPROP)
+
+aaprop.cols <- c(charged="#00DCDC",
+                 polar="#8282D2",
+                 special="#33b864",
+                 hphobic="#ffcc00",
+                 hydrophobic="#ffcc00")
+aaprop.cols["hydrophobic"] <- rgb(0.8745098,
+                                  0.3254902,
+                                  0.4196078)
+aaprop.cols["hphobic"] <- aaprop.cols["hydrophobic"]
+
+###  CODONS
+aa <- unique(GENETIC_CODE)
+CODONS <- rep("", length(aa))
+for ( i in seq_along(aa) )
+    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
+names(CODONS) <- aa
+ACODONS <- paste0(names(CODONS),": ", CODONS)
+names(ACODONS) <- aa
+
+## SORT CODONS BY AA PROPERTY
+CODL <- strsplit(CODONS, ";")[names(aaprop)]
+CODL <- CODL[unlist(lapply(CODL, function(x) !is.null(x)))]
+CODL <- lapply(CODL, sort)
+COD.SRT <- paste(GENETIC_CODE[unlist(CODL)], unlist(CODL), sep="-")
+
+## 3<->1 letter code
+AAC <- seqinr::aaa( seqinr::a())
+names(AAC) <-  seqinr::a()
+AAC <- AAC[AAC!="Stp"]
+
+## AA colors; most divergent from
+## https://stackoverflow.com/questions/15282580/how-to-generate-a-number-of-most-distinctive-colors-in-r
+color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+n <- length(CODL)
+set.seed(1)
+aa.cols <- sample(color, n)
+names(aa.cols) <- names(CODL)
+
+## clustal, via https://www.bioinformatics.nl/~berndb/aacolour.html
+clustal.cols <- aa.cols
+clustal.cols[] <- "gray"
+clustal.cols[c("G","P","S","T")] <- "orange"
+clustal.cols[c("H","K","R")] <- "red"
+clustal.cols[c("F","W","Y")] <- "blue"
+clustal.cols[c("I","L","M","V")] <- "green"
+
+
+## lesk, via https://www.bioinformatics.nl/~berndb/aacolour.html
+lesk.cols <- aa.cols
+lesk.cols[c("G","A","S","T")] <- "orange" # small nonpolar
+lesk.cols[c("C","V","I","L","P","F","Y","M","W")] <- "green" ## hydrophobic
+lesk.cols[c("N","Q","H")] <- "magenta" # polar
+lesk.cols[c("D","E")] <- "red" # negatively charged
+lesk.cols[c("K","R")] <- "blue" # positively charged
+
+
+## shapely/rasmol via 
+shapely.cols <- aa.cols
+shapely.cols[c("D","E")]   <- "#E60A0A"  # acidic
+shapely.cols[c("K","R")]   <- "#145AFF"  # basic
+shapely.cols[c("S","T")]   <- "#FA9600"  # S/T - P-targets
+shapely.cols[c("C","M")]   <- "#E6E600"  # sulfur-containing
+shapely.cols[c("P")]     <- "#DC9682"    # stiff backbone 
+shapely.cols[c("F","Y")]   <- "#3232AA"  # aromatic
+shapely.cols[c("W")]     <- "#B45AB4"    # large aromatic
+shapely.cols[c("H")]     <- "#8282D2"    # aromatic, nitrogen
+shapely.cols[c("N","Q")]   <- "#00DCDC"  # nitrogen-containing
+shapely.cols[c("G")]     <- "#EBEBEB"    # just backbone
+shapely.cols[c("L","V","I")] <- "#0F820F"# branched chain
+shapely.cols[c("A")]     <- "#C8C8C8"    # minimal residue
+
+## darker grays for white background
+shapely.cols[c("G")]     <- "#A0A0A0"   
+shapely.cols[c("A")]     <- "#909090"    # minimal residue
+
+aa.pchs <- rep(5, length(aa.cols))
+names(aa.pchs) <- names(aa.cols)
+aa.pchs[c("G","P","S","T")] <- 1:4
+aa.pchs[c("H","K","R")] <- 1:3
+aa.pchs[c("F","W","Y")] <- 1:3
+aa.pchs[c("I","L","M","V")] <- 1:4
+
+## AA pch, based on coloring scheme
+shapely.pchs <- aa.pchs
+shapely.pchs[c("D","E")]   <- c(19,4)
+shapely.pchs[c("C","M")]   <- c(4,19)
+shapely.pchs[c("K","R")]   <- c(19,4)
+shapely.pchs[c("S","T")]   <- c(19,4)
+shapely.pchs[c("F","Y")]   <- c(19,4)
+shapely.pchs[c("N","Q")]   <- c(19,4)
+shapely.pchs[c("G")]     <- 19 #light grey
+shapely.pchs[c("L","V","I")] <- c(19,2,4)
+shapely.pchs[c("A")]     <- 19
+shapely.pchs[c("W")]     <- 4
+shapely.pchs[c("H")]     <- 19
+shapely.pchs[c("P")]     <- 4
+
+
+## SELECT AA COLOR SCHEME
+aa.cols <- shapely.cols
+aa.pchs <- shapely.pchs
+
+## AA SORTING
+aa.srt <- names(sort(aa.cols))
+
+aa.cols <- aa.cols[aa.srt]
+aa.pchs <- aa.pchs[aa.srt]
+
+## color by codon frequency
+if ( FALSE ) {
+    aa.cols <-
+        unlist(lapply(CODL, length))
+    aa.pchs[] <- 1
+}
+
+
+
+#### PATHS AND FILES
+
+proj.path <- "/home/raim/data/mistrans"
+dat.path <- file.path(proj.path,"originalData")
+out.path <- file.path(proj.path,"processedData")
+
+mam.path <- "~/data/mammary/"
+codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
+dana14.file <- file.path(mam.path,"originalData","dana14_codons.csv")
+
+in.file <- file.path(out.path,"saap_mapped3.tsv")
+tmt.file <- file.path(proj.path,"originalData",
+                      "All_SAAP_TMTlevel_quant_df.txt")
+
+## protein complexes
+humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
+corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
+
+## protein half-lives
+math18.file <- file.path(mam.path,"originalData",
+                         "41467_2018_3106_MOESM5_ESM.xlsx")
+
+## gene name mappings
+
+## uniprot/ensembl/name mappings
+uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
+
+## genome feature file
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+
+
+
+## DATA FILTERS
+
+## CANCERS OR HEALTHY TISSUES
+healthy <- FALSE # TRUE #  
+
+## TODO: extracellular is mostly album/globin - analyze
+exclude.nterm <- FALSE # TRUE # 
+exclude.extracellular <- FALSE # TRUE # 
+exclude.albumin <- FALSE # TRUE # 
+only.unique <- FALSE # TRUE # 
+include.kr <- FALSE # TRUE # 
+
+exclude.frequent <- FALSE # TRUE # 
+frequent <- c("Q","W","T","S")
+
+LAB <- "" # "all"
+fig.path <- file.path(proj.path,"figures","raasprofiles3")
+if (  exclude.albumin ) {
+    fig.path <- paste0(fig.path,"_noalb")
+    LAB <- "-Alb./Hemog."
+}
+if ( exclude.frequent ) {
+    tmp <- paste(frequent,collapse=",")
+    fig.path <- paste0(fig.path,"_", gsub(",","",tmp))
+    LAB <- paste0("-", tmp)
+}
+if ( only.unique ) {
+    fig.path <- paste0(fig.path,"_unique")
+    LAB <- paste0(LAB, ", unique SAAP")
+}
+if ( exclude.extracellular ) {
+    fig.path <- paste0(fig.path,"_no_extracellular")
+    LAB <- paste0(LAB, " -extracell.")
+}
+if ( include.kr ) {
+    fig.path <- paste0(fig.path,"_wKR")
+    LAB <- paste0(LAB, "+K/R")
+}
+if (  exclude.nterm ) {
+    fig.path <- paste0(fig.path,"_nterm")
+    LAB <- paste0(LAB, "-N3")
+}
+
+SETID <- ifelse(healthy,"tissues","cancer")
+
+
+## figure output paths
+dir.create(fig.path, showWarnings=FALSE)
+## folder for detailed distributions
+dpath <- file.path(fig.path,"dists")
+dir.create(dpath, showWarnings=FALSE)
+
+### START
+
+## PARSE & FILTER DATA
+dat <- read.delim(in.file)
+tmtf <- read.delim(tmt.file)
+
+## convert to logical
+tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
+
+if ( include.kr ) {
+    tmtf$Keep.SAAP[grep("R|K", tmtf$AAS)] <- TRUE
+}
+
+## tag albumin/hemoglobin
+## TODO: compare and fuse with protein level annotation
+##       as.logical(dat$Hemoglobin.Albumin)
+dat$Hemoglobin.Albumin <- dat$albumin|dat$globin 
+dat$Keep.SAAP <- !dat$IG
+
+#### TODO: find out which/how many TMT level SAAP are missing
+## from the protein level file, and why.
+
+### UNIFY FILTER COLUMNS
+
+## fuse all excluded tags for each unique SAAP
+alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
+              tmtf[,c("Keep.SAAP","SAAP")])
+alls <- split(alls$Keep.SAAP, alls$SAAP)
+
+## TODO: INCONSISTENT tags between my protein mapping and Shiri's TMT file
+##alls[which(unlist(lapply(alls, function(x) length(unique(x))))>1)]
+
+## remove if tagged so for any dataset
+keep <- unlist(lapply(alls, all)) # all keep tags must be tree
+dat$keep <- keep[dat$SAAP]
+tmtf$keep <- keep[tmtf$SAAP]
+
+## remove excluded
+cat(paste("removing", sum(!dat$keep, na.rm=TRUE),
+          "tagged as false positive on protein level\n"))
+hdat <- dat[which(dat$keep),]
+
+## get raw RAAS data TMT level
+## remove excluded
+cat(paste("removing", sum(!tmtf$keep, na.rm=TRUE),
+          "tagged as false positive on TMT level\n"))
+tmtf <- tmtf[tmtf$keep,]
+## exclude NA or Inf
+rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
+cat(paste("removing", sum(rm), "with NA or Inf RAAS from TMT level\n"))
+tmtf <- tmtf[!rm,]
+
+## CLEAN PROTEIN LEVEL
+tmtsaap <- unique(tmtf$SAAP)
+rm <- !hdat$SAAP%in%tmtsaap
+
+cat(paste("removing", sum(rm), "SAAP without values at TMT level\n"))
+hdat <- hdat[!rm,]
+
+
+## first find mutated AA pairs
+## (column AASin input mixes I/L)
+## and split mutated AA pairs into from/to
+## TODO: get this from the columns in the mapped file, once clear
+## why missing
+saaps <- strsplit(hdat$SAAP,"")
+bases <- strsplit(hdat$BP, "")
+fromtol <- lapply(1:length(saaps), function(i) {
+    pos <- which(saaps[[i]]!=bases[[i]])
+    c(from=bases[[i]][pos], to=saaps[[i]][pos])
+})
+fromto <- do.call(rbind, fromtol)
+
+## replace from/to columns
+hdat$from <- fromto[,1]
+hdat$to <- fromto[,2]
+
+## just useful for plots instead of raw codons
+hdat$aacodon <- paste(hdat$from, hdat$codon, sep="-")
+
+## fromto column
+hdat$fromto <- apply(fromto, 1, paste0, collapse=":")
+
+## generate columns by AA property
+hdat$pfrom <- aaprop[fromto[,1]]
+hdat$pto <- aaprop[fromto[,2]]
+hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
+hdat$frompto <- paste0(hdat$from, ":", hdat$pto)
+
+## STRUCTURE: add bins for numeric values
+## iupred3
+iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
+rsrt <- levels(iupred3.bins)
+hdat$iupred3.bins <- as.character(iupred3.bins)
+hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
+## anchor2
+anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
+rsrt <- levels(anchor2.bins)
+hdat$anchor2.bins <- as.character(anchor2.bins)
+hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
+## secondary structure by names
+ssrt <- c(E="sheet", H="helix", C="coil")
+hdat$sstruc <- ssrt[hdat$s4pred]
+hdat$sstruc[hdat$sstruc==""] <- "na"
+
+## MAP protein level info to TMT Data
+idx <- match(tmtf$SAAP, hdat$SAAP)
+
+ina <- which(is.na(idx))
+if ( length(ina)>0 ) {
+    cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
+    tmtf <- tmtf[-ina,]
+    idx <- idx[-ina]
+    
+}
+
+
+tmtf$pos <- hdat$pos[idx]
+tmtf$from <- hdat$from[idx]
+tmtf$to <- hdat$to[idx]
+tmtf$fromto <- hdat$fromto[idx]
+tmtf$pfrom <- hdat$pfrom[idx]
+tmtf$pto <- hdat$pto[idx]
+tmtf$pfromto <- hdat$pfromto[idx]
+tmtf$frompto <- hdat$frompto[idx]
+tmtf$codon <- hdat$codon[idx]
+tmtf$aacodon <- hdat$aacodon[idx]
+tmtf$iupred3 <- hdat$iupred3[idx]
+tmtf$anchor2 <- hdat$anchor2[idx]
+tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
+tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
+tmtf$sstruc <- hdat$sstruc[idx]
+
+tmtf$name <- hdat$name[idx]
+tmtf$gene <- hdat$gene[idx]
+tmtf$transcript <- hdat$transcript[idx]
+tmtf$protein <- hdat$protein[idx]
+tmtf$ensembl <- hdat$ensembl[idx]
+tmtf$MANE.protein <- hdat$MANE.protein[idx]
+
+## tag protein sites
+tmtf$unique.site <- paste0(tmtf$ensembl, "_", tmtf$pos)
+
+tnm <- tmtf$name
+tnm[tnm==""] <- tmtf$ensembl[tnm==""]
+tmtf$name <- tnm
+
+tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
+tmtf$extracellular <- hdat$extracellular[idx]
+
+tmtf$site <- hdat$site[idx]
+tmtf$rsite <- hdat$site[idx]/nchar(hdat$BP)[idx]
+tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2))
+
+### CHOOSE DATASETS
+if ( healthy ) {
+    ds <- tmtf$Dataset
+    tmtf$Dataset[ds=="Healthy"] <- tmtf$TMT.Tissue[ds=="Healthy"]
+    tmtf$Dataset[ds!="Healthy"] <- "Cancer"
+}
+
+### MEAN AND MEDIAN RAAS
+
+## STATS PER DATA SET and UNIQUE SAAP
+usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
+araas <- split(tmtf$RAAS, usaap)
+
+raas.emedian <- unlist(lapply(araas, median))
+raas.median <- unlist(lapply(araas, function(x) {log10(median(10^x))}))
+raas.emean <- unlist(lapply(araas, mean))
+raas.mean <- unlist(lapply(araas, function(x) {log10(mean(10^x))}))
+
+tmtf$unique <- usaap
+tmtf$RAAS.mean <- raas.emean[usaap]
+tmtf$RAAS.median <- raas.emedian[usaap]
+
+raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3))
+raas.srt <- levels(raas.bins)
+tmtf$raas.bins <- as.character(raas.bins)
+tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
+
+## TODO: albumin vs. globin
+if ( FALSE ) {
+    ovl <- clusterCluster(cl1=tmtf$extracellular, cl2=tmtf$albumin)
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
+    dev.off()
+}
+
+### FILTER
+if (  exclude.albumin ) {
+    rmsaap <- tmtf$SAAP[tmtf$albumin]
+    tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
+}
+if ( exclude.frequent ) {
+    rmsaap <- tmtf$SAAP[tmtf$from%in%frequent]
+    tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
+}
+if ( only.unique ) {
+
+    ## just take the first of each SAAP/BP per Dataset
+    tmtf <- tmtf[!duplicated(tmtf$unique),]
+    tmtf$RAAS.orig <- tmtf$RAAS
+    tmtf$RAAS <- tmtf$RAAS.median #TODO: use delogged mean?
+}
+if (  exclude.extracellular ) {
+    rmsaap <- tmtf$SAAP[tmtf$extracellular]
+    tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
+}
+if (  exclude.nterm ) {
+    rmsaap <- tmtf$site <4
+    tmtf <- tmtf[!rmsaap,]
+}
+
+
+## from this point on we only work with tmtf, which
+## now should have all information
+
+## sorting and labels
+uds <- sort(unique(tmtf$Dataset))
+uds <- c("Healthy",uds[uds!="Healthy"])
+uds <- c("Cancer",uds[uds!="Cancer"])
+uds <- uds[uds%in%tmtf$Dataset]
+
+## additionally all and cancer-only
+auds <- uds
+if ( SETID=="cancer" )
+    auds <- c("cancer", auds)
+auds <- c("all", auds)
+
+srt <- c("charged","polar","hphobic","special")
+srt <- paste(rep(srt,each=4), rep(srt,4), sep=":")
+
+axex <- ftlabels(srt) # axis labels with arrows
+
+
+## RAAS COLORS
+png(file.path(fig.path,paste0("legend_raas.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+lraas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MIN, mx=RAAS.MAX,colf=COLF,
+                          n=50, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(colors, pos="bottomleft", cex=1)
+figlabel(LAB, pos="bottomright", cex=1)
+dev.off()
+
+## globally used RAAS colors!!
+vcols <- lraas.col$col
+vbrks <- lraas.col$breaks
+
+## legend for all two-sided statistics
+png(file.path(fig.path,paste0("legend_wtests.png")),
+    res=300, width=2, height=2, units="in")
+par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
+dev.off()
+
+## legend for dot plot
+pp <- seq(0, -log10(p.dot), length.out=6)
+rs <- seq(RAAS.MIN,RAAS.MAX, length.out=6)
+
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+    
+ovw <- list()
+ovw$p.value <- t(10^-pm)
+ovw$median <- t(rm)
+
+plab <- expression(log[10]~p)
+if ( p.adjust=="q" )
+    plab <- expression(log[10]~q)
+
+mai <- c(.5,.5,.1,.1)
+fh <- fw <- .2
+nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+
+for ( colstyle in c("viridis","rocket","inferno","arno") ) {
+
+    scols <- get(colstyle, mode="function")(length(vcols))
+    
+    segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_",colstyle)),
+                         height=nh, width=nw, res=300)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+    dotprofile(ovw, value="median",
+               vbrks=vbrks,
+               vcols=scols, 
+               dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+               ylab=plab,
+               xlab=expression(log[10]~RAAS))
+    figlabel(colstyle, pos="bottomleft", cex=1)
+    dev.off()
+}
+segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot")),
+                     height=nh, width=nw, res=300)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=plab,
+           xlab=expression(log[10]~RAAS))
+figlabel(colors, pos="bottomleft", cex=1)
+dev.off()
+
+## legend for dot plot
+pp <- seq(0, -log10(p.dot), length.out=3)
+rs <- c(-4,-2,0,1) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+ovw <- list(p.value=t(10^-pm),
+            median=t(rm))
+
+mai <- c(.4,.5,.05,.06)
+fh <- fw <- .2
+nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
+                     height=nh, width=nw, res=300)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=plab,
+           xlab=NA)
+mtext(expression(log[10]~RAAS), 1, 1.1, adj=-.1)
+dev.off()
+
+## UNIPROT <-> ENSEMBL MAPPING
+## NOTE: ~90 duplicated ensembl IDs
+uni2ens <- read.delim(uni2ens.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+## remove duplicate ensembl IDs
+## TODO: is the list sorted? best uniprot hit?
+uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
+
+## UNIPROT <-> NAME MAPPING
+## TODO: add MANE column
+uni2nam <- read.delim(uni2nam.file, header=FALSE)
+uni2nam[,1] <- sub("-.*", "", uni2nam[,1]) # remove uniprot version tag
+
+## ENSEMBL <-> NAME MAPPING
+## TODO: add MANE column
+genes <- read.delim(feature.file)
+genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
+genes <- genes[genes$name!="" & !is.na(genes$name),]
+ptl <- strsplit(genes$proteins, ";")
+ens2nam <- rep(genes$name, lengths(ptl))
+names(ens2nam) <- unlist(ptl)
+pnms <- ens2nam
+
+## 
+### GLOBAL DISTRIBUTION BY CANCER TYPE
+           
+ylm <- range(tmtf$RAAS)
+plotdev(file.path(fig.path,paste0("RAAS_distribution")),
+        type=ftyp, res=300, width=3,height=2)
+par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+boxplot(tmtf$RAAS ~ factor(tmtf$Dataset, levels=uds), ylim=ylm, las=2,
+        xlab=NA, ylab=xl.raaa, cex=.5, pch=19,
+        pars=list(outcol="#00000055"), axes=FALSE)
+for ( ax in c(2,4) ) axis(ax)
+axis(1, at=1:length(uds), labels=uds, las=2)
+figlabel(LAB, pos="bottomright", cex=.9)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("RAAS_distribution_density")),
+        type=ftyp, res=300, width=3,height=2)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plot(density(tmtf$RAAS), ylim=c(0,.5), col=NA,
+     xlab=xl.raaa, main=NA, xlim=ylm)
+for ( i in seq_along(uds) )
+    lines(density(tmtf$RAAS[tmtf$Dataset==uds[i]]), col=i, lwd=2)
+legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
+       ncol=1, cex=.8, y.intersp=.9)
+figlabel(LAB, pos="bottomleft", cex=.8)
+dev.off()
+
+tmtu <- tmtf[!duplicated(tmtf$unique),]
+plotdev(file.path(fig.path,paste0("RAAS_distribution_unique")),
+        type=ftyp, res=300, width=3,height=2)
+par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds), ylim=ylm, las=2,
+        xlab=NA, ylab=xl.raau,
+        cex=.5, pch=19, pars=list(outcol="#00000055"), axes=FALSE)
+for ( ax in c(2,4) ) axis(ax)
+axis(1, at=1:length(uds), labels=uds, las=2)
+figlabel(LAB, pos="bottomright", cex=.9)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("RAAS_distribution_unique_density")),
+        type=ftyp, res=300, width=3,height=2)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+plot(density(tmtu$RAAS.median), ylim=c(0,.5), col=NA,
+     xlab=NA, main=NA, xlim=ylm)
+mtext(xl.raau, 1, 1.5)
+for ( i in seq_along(uds) )
+    lines(density(tmtu$RAAS.median[tmtu$Dataset==uds[i]]), col=i, lwd=2)
+legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
+       ncol=1, cex=.8, y.intersp=.9)
+figlabel(LAB, pos="bottomleft", cex=.8)
+dev.off()
+
+## TODO: pairs of same SAAP
+##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
