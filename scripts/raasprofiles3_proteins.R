@@ -216,7 +216,7 @@ p20 <- data.frame(readxl::read_xlsx(pepe24.file, sheet=2))
 xl.20s <- expression(median~log[2]("20S"/control))
 
 ## MEDIAN LG2FC PER PROTEIN
-p20s <- p20#[p20$adj.pvalue<0.01,]
+p20s <- p20[!is.na(p20$Log2.FC.),]
 p20l <- split(p20s[,c("Log2.FC.")],
               p20s[,"UniprotID"])
 p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
@@ -242,7 +242,7 @@ plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_site")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, lg2fc, xlab=xl.prots,
-        ylab=xl.20s)
+        ylab=xl.20s, signif=2, round=2)
 dev.off()
 lg2fc <- p20p
 names(lg2fc) <- p2el[names(lg2fc)]
@@ -251,7 +251,7 @@ plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,
-        ylab=xl.20s)
+        ylab=xl.20s, signif=2, round=2)
 dev.off()
 
 ## brute force
@@ -291,6 +291,7 @@ if ( FALSE ) {
     dev.off()
 }
 
+
 ### PROTEIN RAAS vs. IUPRED
 
 ## get whole protein mean iupred3 score
@@ -309,8 +310,7 @@ plotCor(ptstat$median, log(hlv[idx]), signif = 1,
         ylab="iupred3")
 dev.off()
 
-
-## PROTEIN WINDOWS - 50 AA WINDOWS
+### PROTEIN WINDOWS - 50 AA WINDOWS
 
 
 ## add position windows to raas table

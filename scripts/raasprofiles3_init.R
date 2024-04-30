@@ -270,6 +270,14 @@ math18.file <- file.path(mam.path,"originalData",
 pepe24.file <- file.path(mam.path,"originalData",
                          "44320_2024_15_moesm1_esm.xlsx")
 
+##  @Watson2023 - T/osmo
+## NOTE/TODO: unused since this is data from mouse cells;
+## perhaps useful when mapped to human orthologs.
+w23prot.file <- file.path(mam.path,"originalData",
+                          "41586_2023_6626_MOESM4_ESM.xlsx")
+w23pprot.file <- file.path(mam.path,"originalData",
+                           "41586_2023_6626_MOESM5_ESM.xlsx")
+
 
 ## gene name mappings
 

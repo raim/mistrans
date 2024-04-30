@@ -84,21 +84,27 @@ mm <- bp$mismatches>0 | bp$identity <100
 cat(paste("removing", sum(mm), "hits with mismatches or <100% identity\n"))
 bp <- bp[!mm,]
 
+## THE WINNER TAKES IT ALL/RICH GET RICHER APPROACH.
+## TODO: check this approach, perhaps there is a better way?
+
 ## number of AAS per MANE protein
+## this is used to select the "winner" protein match below.
 app <- table(bp$MANE.protein) 
 
 ## split into lists by BP
 bpl <- split(bp, paste(bp$BP)) 
 
-## TODO: why is this not the ensembl hit
-pid="ENSP00000397499"
-
+## for each BP select the MANE protein with the
+## the most global matches.
 winner <- list()
 for ( i in seq_along(bpl) ) {
     x <- bpl[[i]]
     mane <- x$MANE.protein
     if ( length(unique(mane))>1 ) {
-        cat(paste(i, x$BP[1], "selecting protein from multiple hits", nrow(x)))
+        ## only keep the mane protein with most hits globally
+        cat(paste(i, x$BP[1],
+                  "selecting MANE protein from multiple hits",
+                  nrow(x)))
         manemax <- which(mane==mane[which.max(app[mane])])
         x <- x[manemax,,drop=FALSE] 
         cat(paste("->", nrow(x), "\n"))

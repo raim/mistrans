@@ -16,7 +16,8 @@ dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures","saap_mapping4")
 out.path <- file.path(proj.path,"processedData")
 
-stop("reset mapping to version 3, or fix new MANE mapping")
+##if ( !interactive() )
+##    stop("reset mapping to version 3, or fix new MANE mapping")
 
 ## SAAP/BP pairs
 saapf <- file.path(out.path,"unique_saap.tsv")
@@ -140,12 +141,14 @@ pid="ENSP00000354876" # no transcript even though its in protein_transcript_map
 for ( i in 1:nrow(dat) ) {
    
     oid <- dat$protein[i] # ID with mutation index
-    ## TODO: use MANE?
     gid <- dat$ensembl[i] # original gene ID
-    gid <- dat$MANE.protein[i] # original gene ID
-    if ( gid=="" ) 
-        gid <- dat$ensembl[i]
-    
+    ## TODO: use MANE already here?
+    ## problem is that we use oid for AAS mapping
+    if ( FALSE ) {
+        gid <- dat$MANE.protein[i] # original gene ID
+        if ( is.na(gid)|gid=="" ) 
+            gid <- dat$ensembl[i]
+    }
     j <- which(names(fas)==oid)
     if ( length(j)==0 ) { # 
         cat(paste("WARNING:",i, oid, "no protein sequence found\n"))
@@ -431,7 +434,7 @@ table(dat[,"extracellular"], dat[,"IG"])
 
 ### WRITE OUT TABLE with positions for downstream analysis
 if ( !interactive() ) {
-    write.table(dat, file=file.path(out.path,"saap_mapped4.tsv"),
+    write.table(dat, file=file.path(out.path,"saap_mapped3.tsv"),
                 sep="\t", quote=FALSE, na="", row.names=FALSE)
 }
 
