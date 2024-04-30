@@ -22,10 +22,10 @@ dir.create(pfig.path, showWarnings=FALSE)
 
 ## TODO: align use of raasProfile vs. listProfile
 
-## MEDIAN RAAS PER UNIQUE PROTEIN SITE
-source("~/work/mistrans/scripts/saap_utils.R")
-site <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
-site <- listProfile(site, y=tmtf$RAAS, use.test=use.test, min=3)
+### MEDIAN RAAS PER UNIQUE MANE PROTEIN SITE
+
+sitl <- split(tmtf$RAAS, paste(tmtf$mane, tmtf$pos))
+site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 if ( interactive() ) {
     ## test alternative measures of consistent RAAS
@@ -37,13 +37,66 @@ if ( interactive() ) {
 
 ## mod. column names and add protein and site info
 colnames(site) <- paste0("RAAS.", colnames(site))
-site$ensembl <- sub(" .*", "", rownames(site))
+site$mane <- sub(" .*", "", rownames(site))
 site$pos <- as.numeric(sub(".* ", "", rownames(site)))
+
+### SCAN HOTSPOTS
+
+## order proteins by RAAS
+pbstat$rank <- rank(pbstat$median)
+
+## make sure its ordered
+## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
+site <-site[order(site$mane, site$pos),]
+
+site$rank <- pbstat[site$mane,"rank"]
+site <-site[order(site$rank, site$pos),]
+
+##
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$mane)))
+nsites[is.na(nsites)] <- 1
+site$n <- nsites
+
+## list sites per protein
+
+## ONLY PROTEINS>1
+multip <- split(site$pos, site$mane)
+multip <- names(lengths(multip)[lengths(multip)>1])
+sites <- site[site$mane%in%multip,]
+cpos <- cumsum(sites$pos)
+
+## AAS and RAAS along all concatenated proteins
+
+intv <- findInterval(sites$RAAS.median, vec=vbrks)
+## raise to min/max
+intv[intv==0] <- 1
+intv[intv>length(vcols)] <- length(vcols)
+raas.col <- vcols[intv]
+plotdev(file.path(pfig.path,"hotspots_problem"), type=ftyp,
+        width=10, height=3, res=200)
+layout(t(t(1:3)), heights=c(.1,.4,.6))
+par(mai=c(0.1,.5,.05,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+## TODO: number of RAAS
+par(mai=c(0,.5,.05,.1))
+dense2d(cpos, rep(1, length(cpos)), axes=FALSE, ylab=NA, xlab=NA)
+par(mai=c(0.1,.5,.01,.1))
+plot(x=cpos, y=sites$RAAS.n, col=raas.col, pch=19, cex=.5,
+     ylab="#RAAS per site",
+     axes=FALSE, log="y", xpd=TRUE)
+axis(2)
+axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.25)
+par(mai=c(.35,.5,0.1,.1))
+plot(cpos, sites$RAAS.median, type="h", col=raas.col, xpd=TRUE,
+     xlab="position in concatenated proteins with >1 AAS, sorted by protein RAAS", ylab=xl.site)
+points(cpos, sites$RAAS.median, col=raas.col, pch=19, cex=.2, xpd=TRUE)
+## TODO: protein lines
+axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.5)
+dev.off()
 
 ## MEDIAN RAAS FOR EACH UNIQUE PROTEIN POSITION
 
-## protein median of median RAAS
-sitl <- split(site$RAAS.median, site$ensembl)
+## protein median of site median RAAS
+sitl <- split(site$RAAS.median, site$mane)
 pbstat <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 
@@ -53,27 +106,27 @@ if ( interactive() )
 
 ## volcano
 plotdev(file.path(pfig.path,paste0("proteins_volcano_sites")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(pbstat, value="median",
                p.txt=-log10(0.01), v.txt=c(-2,-2), cut=5, mid=-2,
-               ids=pnms, xlab=xl.site)
+               ids=pnms, xlab=xl.prots)
 mtext("protein RAAS, median of site medians", 3,0)
 dev.off()
 
 
 ## PROTEIN MEDIAN RAAS per protein w/o site-specific median first
 
-ptl <- split(tmtf$RAAS, tmtf$ensembl)
+ptl <- split(tmtf$RAAS, tmtf$mane)
 ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 
 plotdev(file.path(pfig.path,paste0("proteins_volcano_all")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(ptstat, value="median",
                p.txt=12, v.txt=c(-2,-1), cut=50, mid=0,
-               ids=pnms, xlab=xl.all)
+               ids=pnms, xlab=xl.prota)
 mtext("protein RAAS, median of all RAAS", 3,0)
 dev.off()
 
@@ -98,11 +151,11 @@ xl.hlf <- expression(protein~"half-life"/h)
 
 ## halflives site
 plotdev(file.path(pfig.path,paste0("protein_halflives_site")),
-        type="png", res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(pnms[rownames(pbstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, log10(hlv[idx]),
-        xlab=xl.site, ylab=xl.hlf, axes=FALSE)
+        xlab=xl.prots, ylab=xl.hlf, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 ## TODO: log tick marks
@@ -111,11 +164,11 @@ dev.off()
 
 ## halflives all
 plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
-        type="png", res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(pnms[rownames(ptstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
-        xlab=xl.all, ylab=xl.hlf, axes=FALSE)
+        xlab=xl.prota, ylab=xl.hlf, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 dev.off()
@@ -133,43 +186,126 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
     names(hlv) <- unlist(hlvd[,1])
     
     plotdev(file.path(pfig.path,paste0("protein_halflives_sites_",ctype)),
-            type="png", res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3.5,height=3.5)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     idx <- match(pnms[rownames(pbstat)], names(hlv))
     plotCor(pbstat$median, log10(hlv[idx]),
-            xlab=xl.site, ylab=xl.hlf, axes=FALSE)
+            xlab=xl.prots, ylab=xl.hlf, axes=FALSE)
     axis(1)
     axis(2, at=1:10, labels=10^(1:10))
     figlabel(ctype, pos="bottomleft")
     dev.off()
     
     plotdev(file.path(pfig.path,paste0("protein_halflives_all_",ctype)),
-            type="png", res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3.5,height=3.5)
     idx <- match(pnms[rownames(ptstat)], names(hlv))
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
-        xlab=xl.all, ylab=xl.hlf, axes=FALSE)
+        xlab=xl.prota, ylab=xl.hlf, axes=FALSE)
     axis(1)
     axis(2, at=1:10, labels=10^(1:10))
     figlabel(ctype, pos="bottomleft")
     dev.off()
 }
 
-## PROTEIN RAAS vs. IUPRED
+### PROTEIN RAAS vs. 20S Targets - @Pepelnjak2024
+## TODO: p20 data is on peptide level with many duplicated prots
+    
+p20 <- data.frame(readxl::read_xlsx(pepe24.file, sheet=2))
+
+xl.20s <- expression(median~log[2]("20S"/control))
+
+## MEDIAN LG2FC PER PROTEIN
+p20s <- p20#[p20$adj.pvalue<0.01,]
+p20l <- split(p20s[,c("Log2.FC.")],
+              p20s[,"UniprotID"])
+p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
+
+
+## get uniprot mapping
+p2ens <- uni2ens
+p2ens <- p2ens[p2ens[,2]%in%tmtf$mane,]
+p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
+
+cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
+cat(paste(sum(duplicated(p2ens[,2])),"uniprot with multiple ensembl\n"))
+p2el <- unlist(split(p2ens[,2], p2ens[,1]))
+
+if ( length(unique(lengths(p2el)))>1 )
+    stop("non-unique uniprot 2 ensembl mapping")
+
+##
+lg2fc <- p20p
+names(lg2fc) <- p2el[names(lg2fc)]
+lg2fc <- lg2fc[rownames(pbstat)]
+plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_site")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(pbstat$median, lg2fc, xlab=xl.prots,
+        ylab=xl.20s)
+dev.off()
+lg2fc <- p20p
+names(lg2fc) <- p2el[names(lg2fc)]
+lg2fc <- lg2fc[rownames(ptstat)]
+plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, lg2fc, xlab=xl.prota,
+        ylab=xl.20s)
+dev.off()
+
+## brute force
+if ( FALSE ) {
+    ## get uniprot mapping
+    p2ens <- uni2ens
+    p2ens <- p2ens[p2ens[,2]%in%tmtf$mane,]
+    p2ens <- p2ens[p2ens[,1]%in%p20[,1],]
+    
+    cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
+    cat(paste(sum(duplicated(p2ens[,2])),"uniprot with multiple ensembl\n"))
+    p2el <- unlist(split(p2ens[,2], p2ens[,1]))
+    p20$ensembl <- p2ens[match(p20[,1],p2ens[,1]),2]
+    
+    
+    log2fc <- p20$Log2.FC.[match(rownames(pbstat), p20$ensembl)]
+    logp <- -log10(p20$adj.pvalue[match(rownames(pbstat), p20$ensembl)])
+    slogp <- logp*sign(log2fc)
+    plotdev(file.path(pfig.path,paste0("p20_peptide_volcano")),
+            type=ftyp, res=300, width=3.5,height=3.5)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+    dense2d(log2fc, logp, xlab=xl.20s, ylab="-log10(p)")
+    dev.off()
+    
+    plotdev(file.path(pfig.path,paste0("p20_peptide_protein_raas_pval_all")),
+            type=ftyp, res=300, width=3.5,height=3.5)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+    plotCor(pbstat$median, slogp, xlab=xl.prots,
+            ylab="p20/tryptic: sign(lg2fc)*-log10(p)")
+    dev.off()
+    
+    plotdev(file.path(pfig.path,paste0("p20_peptide_protein_raas_lg2fc_all")),
+            type=ftyp, res=300, width=3.5,height=3.5)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+    plotCor(pbstat$median, log2fc, xlab=xl.prots,
+            ylab=xl.20s)
+    dev.off()
+}
+
+### PROTEIN RAAS vs. IUPRED
 
 ## get whole protein mean iupred3 score
-iu3 <- split(dat$iupred3.protein, dat$ensembl)
+iu3 <- split(dat$iupred3.protein, dat$MANE.protein)
 ## QC: all protein level
 table(unlist(lapply(iu3, function(x) length(unique))))
 iu3 <- unlist(lapply(iu3, unique))
 
 ## NOTE: no correlation to protein-wide iupred3
 plotdev(file.path(pfig.path,paste0("protein_iupred3_all")),
-        type="png", res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(rownames(ptstat), names(iu3))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log(hlv[idx]), signif = 1,
-        xlab=xl.all,
+        xlab=xl.prota,
         ylab="iupred3")
 dev.off()
 
@@ -185,18 +321,18 @@ tmtf$win1 <- round(tmtf$pos/50) # first is 1:25
 tmtf$win2 <- round((tmtf$pos+25)/50) # first is 1:50
 
 ## search windows with high RAAS
-windows <- append(split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$win1)),
-                  split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$win2)))
+windows <- append(split(tmtf$RAAS, paste(tmtf$mane, tmtf$win1)),
+                  split(tmtf$RAAS, paste(tmtf$mane, tmtf$win2)))
 hist(lengths(windows), breaks=100)
 
 ## RAAS statistics for windows
 winstat <- listProfile(windows, y=tmtf$RAAS, min=3)
-winstat$ensembl <- sub("\\..*","",rownames(winstat))
-ids <- pnms[winstat$ensembl]
+winstat$mane <- sub("\\..*","",rownames(winstat))
+ids <- pnms[winstat$mane]
 names(ids) <- rownames(winstat)
 
 plotdev(file.path(pfig.path,paste0("windows_volcano_all")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 volcano(winstat, cut=50, v.txt=c(-2,0), p.txt=10,
         ids=ids,
@@ -211,20 +347,20 @@ site$win2 <- round((site$pos+25)/50) # first is 1:50
 
 ## search windows with high RAAS
 windows <- append(split(site$RAAS.median,
-                        paste0(site$ensembl,"-w1-",site$win1)),
+                        paste0(site$mane,"-w1-",site$win1)),
                   split(site$RAAS.median,
-                        paste0(site$ensembl,"-w2-",site$win2)))
+                        paste0(site$mane,"-w2-",site$win2)))
 hist(lengths(windows), breaks=100)
 
 winstat <- listProfile(windows, y=tmtf$RAAS, min=2)
-winstat$ensembl <- sub("-w.*","",rownames(winstat))
+winstat$mane <- sub("-w.*","",rownames(winstat))
 
 ids <- strsplit(rownames(winstat),"-")
 ids <- unlist(lapply(ids, function(x) pnms[x[1]]))
 names(ids) <- rownames(winstat)
 
 plotdev(file.path(pfig.path,paste0("windows_volcano_sites")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 volcano(winstat, value="median", cut=20, v.txt=c(-2,-2),
         p.txt=6, ids=unlist(ids),
@@ -236,7 +372,7 @@ shadowtext(winstat$median[show],
            -log10(winstat$p[show]),
            labels=ids[show],
            pos=4, xpd=TRUE, col=1, cex=.8)
-show <- pnms[winstat$ensembl] %in% c("PGM1","PSMA1")
+show <- pnms[winstat$mane] %in% c("PGM1","PSMA1")
 points(winstat$median[show],
        -log10(winstat$p[show]), col=3)
 shadowtext(winstat$median[show],
@@ -282,7 +418,7 @@ huraas <- lapply(huens, function(x) c(na.omit(pbstat[x,"median"])))
 hustat <- listProfile(huraas, y=tmtf$RAAS, min=3)
 
 plotdev(file.path(pfig.path,paste0("complex_volcano_sites")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(hustat, value="median",
                p.txt=3, v.txt=c(-Inf,-1.5), cut=50, mid=-1,
@@ -293,13 +429,13 @@ dev.off()
 
 ## COMPLEXES - ALL RAAS
 ## replace complex ensembl IDs with all RAAS in TMT level table
-huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$ensembl%in%x])
+huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$mane%in%x])
 
 ## RAAS statistics
 hustat <- listProfile(huraas, y=tmtf$RAAS, min=3)
 
 plotdev(file.path(pfig.path,paste0("complex_volcano_all")),
-        type="png", res=300, width=4.4,height=4)
+        type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(hustat, value="median",
                p.txt=20, v.txt=c(-Inf,-1), cut=50, mid=0,
@@ -321,3 +457,4 @@ if ( FALSE ) {
 
 
 
+### CLUSTER BY REGIONS

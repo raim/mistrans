@@ -13,6 +13,8 @@ library(segmenTools)
 options(stringsAsFactors=FALSE)
 options(scipen=0) # use e notation for p-values
 
+## project-specific functions
+source("~/work/mistrans/scripts/saap_utils.R")
 
 ## TODO:
 ## * which AA are missing from mapped file and why? likely
@@ -60,6 +62,7 @@ dot.sze <- c(.3,2)
 use.test <- t.test # w.test # 
 
 ftyp <- "png" # "pdf" # 
+if ( !interactive() ) ftyp="pdf"
 
 ## heatmap colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
@@ -73,6 +76,9 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
 xl.site <- expression(log[10](RAAS[site]))
 xl.all <- expression(log[10](RAAS[all]))
+xl.prot <- expression(log[10](RAAS[protein]))
+xl.prota <- expression(log[10](RAAS["protein,all"]))
+xl.prots <- expression(log[10](RAAS["protein,site"]))
 
 
 ### TODO: move AA colors, codons etc. to saap_utils.R or a new
@@ -113,6 +119,20 @@ CODL <- strsplit(CODONS, ";")[names(aaprop)]
 CODL <- CODL[unlist(lapply(CODL, function(x) !is.null(x)))]
 CODL <- lapply(CODL, sort)
 COD.SRT <- paste(GENETIC_CODE[unlist(CODL)], unlist(CODL), sep="-")
+
+## CODON PWM
+cod.pwm <- lapply(CODL, function(x) do.call(rbind,strsplit(x,"")))
+nucs <- unique(unlist(cod.pwm))
+nucm <- matrix(0,ncol=3, nrow=length(nucs))
+rownames(nucm) <- nucs
+CODP <- lapply(cod.pwm, function(x) {
+    mat <- nucm
+    for ( i in 1:3 ) {
+        tb <- table(x[,i])/nrow(x)
+        mat[names(tb),i] <- tb
+    }
+    as.data.frame(mat)
+})
 
 ## 3<->1 letter code
 AAC <- seqinr::aaa( seqinr::a())
@@ -204,6 +224,24 @@ if ( FALSE ) {
     aa.pchs[] <- 1
 }
 
+## AA sorting by property
+aaprop.srt <- c("charged","polar","special","hydrophobic")
+aap.srt <- names(AAPROP[order(match(AAPROP, aaprop.srt))])
+
+## MANUAL SORTING: based on above but P as first special
+aap.srt <- c("R","H","K","D","E","S","T","N","Q",
+             "P","U","C","G","A","V","I","L","M","F","Y","W")
+
+## TODO: from:to sorting by property
+aap.ftsrt <- cbind(rep(aaprop.srt, length(aaprop.srt)),
+                   rep(aaprop.srt, each=length(aaprop.srt)))
+
+
+aap.cols <- aaprop.cols[aaprop]
+names(aap.cols) <- names(aaprop)
+aap.cols <- aap.cols[aap.srt]
+
+
 
 
 #### PATHS AND FILES
@@ -224,9 +262,14 @@ tmt.file <- file.path(proj.path,"originalData",
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
 
-## protein half-lives
+## protein half-lives - @Mathieson2018
 math18.file <- file.path(mam.path,"originalData",
                          "41467_2018_3106_MOESM5_ESM.xlsx")
+
+## 20S targets - @Pepelnjak2024
+pepe24.file <- file.path(mam.path,"originalData",
+                         "44320_2024_15_moesm1_esm.xlsx")
+
 
 ## gene name mappings
 
@@ -431,7 +474,9 @@ tmtf$transcript <- hdat$transcript[idx]
 tmtf$protein <- hdat$protein[idx]
 tmtf$ensembl <- hdat$ensembl[idx]
 tmtf$MANE.protein <- hdat$MANE.protein[idx]
-
+tmtf$mane <- hdat$MANE.protein[idx]
+namane <- is.na(tmtf$mane)|tmtf$mane==""
+tmtf$mane[namane] <- tmtf$ensembl[namane]
 ## tag protein sites
 tmtf$unique.site <- paste0(tmtf$ensembl, "_", tmtf$pos)
 
@@ -566,9 +611,9 @@ ovw <- list()
 ovw$p.value <- t(10^-pm)
 ovw$median <- t(rm)
 
-plab <- expression(log[10]~p)
+plab <- expression(log[10](p))
 if ( p.adjust=="q" )
-    plab <- expression(log[10]~q)
+    plab <- expression(log[10](q))
 
 mai <- c(.5,.5,.1,.1)
 fh <- fw <- .2
@@ -587,7 +632,7 @@ for ( colstyle in c("viridis","rocket","inferno","arno") ) {
                vcols=scols, 
                dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
                ylab=plab,
-               xlab=expression(log[10]~RAAS))
+               xlab=xl.raas)
     figlabel(colstyle, pos="bottomleft", cex=1)
     dev.off()
 }
@@ -599,7 +644,7 @@ dotprofile(ovw, value="median",
            vcols=vcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
            ylab=plab,
-           xlab=expression(log[10]~RAAS))
+           xlab=xl.raas)
 figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
 
@@ -617,8 +662,9 @@ mai <- c(.4,.5,.05,.06)
 fh <- fw <- .2
 nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
-                     height=nh, width=nw, res=300)
+
+plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
+                     height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
            vbrks=vbrks,
@@ -626,17 +672,47 @@ dotprofile(ovw, value="median",
            dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
            ylab=plab,
            xlab=NA)
-mtext(expression(log[10]~RAAS), 1, 1.1, adj=-.1)
+##mtext(xl.raas, 1, 1.1, adj=-.4)
+text(1.5, -1, xl.raas, xpd=TRUE)
 dev.off()
+
+mair <- mai
+mair[2] <- .05
+mair[3] <- .01
+mair[4] <- .45
+nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
+nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
+plotdev(file.path(fig.path,paste0("legend_dotplot_tight_right")),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1,
+           ylab=NA,
+           xlab=NA)
+##mtext(xl.raas, 1, 1.25, adj=2)
+text(3, -1, xl.raas, xpd=TRUE)
+axis(4, at=1:3, labels=c(-10,-5,0), las=2)
+mtext(plab, 4, 1.5, adj=.2)
+dev.off()
+    
 
 ## UNIPROT <-> ENSEMBL MAPPING
 ## NOTE: ~90 duplicated ensembl IDs
 uni2ens <- read.delim(uni2ens.file, header=FALSE)
 uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
 uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+
+## filter for ensembl IDs in our data!
+uni2dat <- uni2ens[uni2ens[,2]%in%dat$ensembl,]
+## 1-many lists
+uni2e <- split(uni2ens[,2], uni2ens[,1])
+ens2u <- split(uni2ens[,1], uni2ens[,2])
+
 ## remove duplicate ensembl IDs
 ## TODO: is the list sorted? best uniprot hit?
-uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
+##uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
 
 ## UNIPROT <-> NAME MAPPING
 ## TODO: add MANE column

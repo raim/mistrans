@@ -17,7 +17,6 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
 
 
-
 ## indicate properties
 
 ## RAAS profiles by AAS site in peptides
@@ -44,11 +43,12 @@ for ( ds in auds ) {
     dev.off()
 }
 
-
+rssrt <- levels(tmtf$rsite.bins)
 fname <- file.path(dpath,paste0("AASsite_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
                     delog=TRUE, rows="rsite.bins", cols="Dataset",
-                    bg=TRUE, row.srt=rev(rsrt), col.srt=uds,
+                    bg=TRUE, row.srt=rev(rssrt),
+                    col.srt=uds,
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     fname=fname, verb=0)
@@ -93,6 +93,90 @@ if ( nrow(ovwp$p.value)>0 )
                  rlab=LAB, llab="", ftyp=ftyp,
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
+
+## TODO: manual version with colored a
+
+## legend for dot plot
+## RAAS COLORS
+png(file.path(afig.path,paste0("AAprop_legend_raas.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+aaprop.raas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MIN, mx=0,colf=COLF,
+                          n=50, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(colors, pos="bottomleft", cex=1)
+figlabel(LAB, pos="bottomright", cex=1)
+dev.off()
+
+## globally used RAAS colors!!
+acols <- aaprop.raas.col$col
+abrks <- aaprop.raas.col$breaks
+
+pp <- seq(0, -log10(p.dot), length.out=3)
+rs <- c(-4,-2,-1,0) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+ovlg <- list(p.value=t(10^-pm),
+            median=t(rm))
+
+mai <- c(.4,.5,.05,.06)
+fh <- fw <- .2
+nh <- nrow(ovlg$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovlg$p.value) *fw + mai[2] + mai[4]
+
+plotdev(file.path(afig.path,paste0("AAprop_legend_dotplot_tight")),
+                     height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovlg, value="median",
+           vbrks=abrks,
+           vcols=acols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=plab,
+           xlab=NA)
+##mtext(xl.raas, 1, 1.1, adj=-.4)
+text(1.5, -1, xl.raas, xpd=TRUE)
+dev.off()
+
+    ## calculate optimal figure height: result fields + figure margins (mai)
+    nr <- nrow(ovw$p.value)
+    nc <- ncol(ovw$p.value)
+    mai <- c(.8,1.75,.6,.6)
+    nh <- nr *fh + mai[1] + mai[3]
+    nw <- nc *fw + mai[2] + mai[4]
+    ffam <- "monospace"#"sans"
+
+    rsrt <- rownames(ovw$p.value)
+    tap <- sub(".*:","", rsrt)
+    fap <- sub(":.*","", rsrt)
+
+fname <- file.path(afig.path,paste0("AAprop_",SETID))
+## combined effect size and p-value plot
+plotdev(paste0(fname,"_dotplot_manual"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovw, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(1,  1:ncol(ovw$p.value),
+     labels=colnames(ovw$p.value), las=2, family=ffam)
+##axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+shadowtext(rep(-6, nr), nr:1, fap, col=aaprop.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+text(rep(-3.75,nr), nr:1, expression(""%->%""), xpd=TRUE)
+shadowtext(rep(-1.5, nr), nr:1, tap, col=aaprop.cols[tap], xpd=TRUE,
+           font=2, r=.1)
+axis(3, at=1:ncol(ovw$num.target),
+     labels=format(ovw$num.target[1,], big.mark=",", trim=TRUE),las=2)
+axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+     labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
 
 ## TODO: median vs. p-value as a measure of effect size
 if ( interactive() ) {
@@ -184,16 +268,6 @@ ovwp <-ovw
 ## only significant
 ovwp <- sortOverlaps2(ovwp, axis=2, p.min=p.min, cut=TRUE)
 
-aaprop.srt <- c("charged","polar","special","hydrophobic")
-aap.srt <- names(AAPROP[order(match(AAPROP, aaprop.srt))])
-
-## manual
-aap.srt <- c("R","H","K","D","E","S","T","N","Q",
-             "P","U","C","G","A","V","I","L","M","F","Y","W")
-
-## TODO: from:to sorting by property
-aap.ftsrt <- cbind(rep(aaprop.srt, length(aaprop.srt)),
-                   rep(aaprop.srt, each=length(aaprop.srt)))
 
 if ( nrow(ovwp$p.value)>0 ) {
 
@@ -302,6 +376,8 @@ for ( ds in auds ) {
 
 
 ### BY STRUCTURAL FEATURES
+## TODO: align this with protein profiles "site" matrix,
+## use unique site raas instead of unique BP/SAAP Raas.
 for ( ds in auds ) {
 
     tmtd <- tmtf
@@ -349,9 +425,10 @@ for ( ds in auds ) {
 ##
 
 ## IUPRED3
+iusrt <- levels(iupred3.bins)
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="iupred3.bins", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
@@ -368,9 +445,10 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_iupred3_",SETID)),
              gcols=gcols)
 
 ## ANCHOR2
+ansrt <- levels(anchor2.bins)
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="anchor2.bins", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=rev(rsrt),
+                   bg=TRUE, value="RAAS", row.srt=rev(ansrt),
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
@@ -407,7 +485,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_s4pred_",SETID)),
 if ( FALSE ) {
 
     ## developing dot plots for combined effect/p plot
-plotOverlaps(ovw, p.min=p.min, p.txt=p.txt, txt.col=NA,
+    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt, txt.col=NA,
                  text.cex=.8, axis=1:2, ylab=NA, xlab=NA,
                  col=ttcols, show.total=TRUE)
     mai=c(.8,.9,.5,.5)

@@ -182,13 +182,14 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          dot.sze=dot.sze, p.dot=p.dot, ## TODO: legend
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
-                         fname="profile", mtxt, mtxt.line=1.3, llab, rlab,
+                         fname="profile", mtxt, mtxt.line=1.3, mtxt.cex=1,
+                         llab, rlab,
                          ffam="sans",
                          ftyp="png",
                          axis1.col,
                          axis2.col,
                          col.lines, # column classes - vertical lines
-                         plot.all=FALSE, verb=0) {
+                         plot.all=FALSE, plot.legend=FALSE, verb=0) {
     
     ## replace row labels with arrows
     ## TODO: adapt to plot by AA colors
@@ -228,13 +229,13 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     if ( !missing(axis1.col) )
         Map(axis, 1, at=1:ncol(ovw$p.value),
             labels=colnames(ovw$p.value), las=2, family=ffam,
-            col.axis=axis1.col)
+            col.axis=axis1.col, font=2)#, cex.axis=1.2)
     else
         axis(1,  1:ncol(ovw$p.value),
              labels=colnames(ovw$p.value), las=2, family=ffam)
      if ( !missing(axis2.col) ) {
          Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
-             col.axis=axis2.col[rows])
+             col.axis=axis2.col[rows], font=2, cex.axis=1.2)
      }
     else
         axis(2, length(axex):1, labels=axex, las=2, family=ffam)
@@ -242,7 +243,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
          labels=format(ovw$num.target[1,], big.mark=",", trim=TRUE),las=2)
     axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
@@ -286,6 +287,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     }
     dev.off()
 
+    if ( plot.legend ) {
+    }
+    
     if ( !plot.all ) return()
     
     ## classical p value profile
@@ -1080,4 +1084,118 @@ sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmet
     ovl$nsig <- nsig
     ovl$nsigdir <- axis
     ovl
+}
+
+
+## TODO: use as axis in codon/AA plots?
+## plot codons as seqlogo and AA
+plotCodonAxis <- function(CODP, aa.cols=aa.cols, cex=1) {
+
+    library(DiffLogo)
+    source("~/work/mistrans/scripts/saap_utils.R")
+    
+    N <- length(CODP)
+    layout(cbind(1:N, N +1:N), widths=c(3,1))
+    par(mai=rep(0,4), family="monospace")#, yaxs="i")
+    for ( i in 1:length(CODP) ) 
+        mySeqLogo(CODP[[i]], stackHeight = sumProbabilities, sparse=TRUE,
+                  drawLines=1, ylim=c(-.1,1.1))
+    for ( i in 1:length(CODP) ) { 
+        plot(0,0, axes=FALSE, col=NA)
+        shadowtext(0,0,names(CODP)[i], col=aa.cols[names(CODP)[i]], cex=cex,font=2)
+    }
+}
+
+
+## NOTE: customizing DiffLogo::seqLogo
+mySeqLogo <- 
+function (pwm, sparse = FALSE, drawLines = 0.5, stackHeight = sumProbabilities,
+    baseDistribution = probabilities, alphabet = DNA, main = NULL, ylim) 
+{
+
+    source("/home/raim/programs/DiffLogo/R/seqLogo.R")
+    source("/home/raim/programs/DiffLogo/R/alphabet.R")
+
+    require(DiffLogo)
+    # appends the letter which to the object letters
+    addLetter = function (letters, letterPolygon, x.pos, y.pos, ht, wt, col="black") {
+        x = x.pos + wt * letterPolygon$x
+        y = y.pos + ht * letterPolygon$y
+        polygons = sum(is.na(x))+1  # a letter can consist of more then one polygon
+        letters$x = c(letters$x, NA, x)
+        letters$y = c(letters$y, NA, y)
+        letters$col = c(letters$col, rep(col, polygons))
+        letters
+    }
+    preconditionPWM = function(pwm) {
+        if (any(abs(1 - apply(pwm, 2, sum)) > 0.01)) { # check if the sum of each columns is near 1
+            stop("Columns of PWM must add up to 1.0")
+        }
+    }
+    preconditionTransformPWM = function(pwm, alphabet) {
+    if (is(pwm, "pwm")) {
+        return (pwm@pwm)
+    } else if (is(pwm, "data.frame")) {
+        return (as.matrix(pwm))
+    } else if (is(pwm, "matrix")) {
+        print("pwm must be of class matrix or data.frame. Trying to convert")
+        return (matrix(pwm,alphabet$size,length(pwm)/alphabet$size))
+    }
+    return(pwm)
+}
+
+    pwm = preconditionTransformPWM(pwm, alphabet)
+    preconditionPWM(pwm)
+    letters = list(x = NULL, y = NULL, id = NULL, fill = NULL)
+    npos = ncol(pwm)
+    ylim.negMax = 0
+    ylim.posMax = 0
+    wt = 1
+    x.pos = 0.5
+    eps = 0
+    heights = c()
+    ymins = c()
+    ymaxs = c()
+    for (j in 1:npos) {
+        column = pwm[, j]
+        sh = stackHeight(column)
+        hts = baseDistribution(column) * sh$height
+        letterOrder = order(abs(hts))
+        yneg.pos = 0
+        ypos.pos = 0
+        for (i in 1:alphabet$size) {
+            ht = hts[letterOrder[i]]
+            y.pos = ypos.pos
+            ht = ht - eps
+            ypos.pos = ypos.pos + ht + eps
+            char = alphabet$chars[letterOrder[i]]
+            col = alphabet$cols[letterOrder[i]]
+            letters = addLetter(letters, letterPolygons[[char]], 
+                x.pos, y.pos, ht, wt * 0.99, col = col)
+        }
+        x.pos = x.pos + wt
+    }
+    if ( missing(ylim) ) ylim <- c(0, log2(alphabet$size))
+    if (sparse) {
+        plot(NA, xlim = c(0.5, x.pos), ylim = ylim, 
+            xaxt = "n", ylab = "", mgp = c(0, 0.35, 0), tck = -0.02, 
+            cex.axis = 0.8, frame.plot = FALSE, xlab = "", main = main)
+    }
+    else {
+        plot(NA, xlim = c(0.5, x.pos), ylim = ylim, 
+            xaxt = "n", ylab = sh$ylab, frame.plot = FALSE, xlab = "Position", 
+            main = main)
+    }
+    for (y in seq(0, log2(alphabet$size), drawLines)) {
+        abline(y, 0, col = "gray")
+    }
+    if (sparse) {
+        axis(1, labels = c("", rep("", npos), ""), at = c(0, 
+            1:npos, npos + 1), tck = -0.02)
+    }
+    else {
+        axis(1, labels = c("", 1:npos, ""), at = c(0, 1:npos, 
+            npos + 1))
+    }
+    polygon(letters, col = letters$col, border = NA)
 }

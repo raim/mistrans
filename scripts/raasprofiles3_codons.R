@@ -42,13 +42,16 @@ if ( file.exists(dana14.file) )
 cod  <- codons[unique(ctmt$transcript),]
 codt <- apply(cod,2,sum) # total count
 
+if ( any(!ctmt$transcript%in%rownames(codons)) )
+    stop("some codon frequencies not found, rerun calculation")
+
 ### CODON SORTING
 
 ## PER AA
 ## transcript codon frequencies per AA and SORTING by frequency and AA prop
 codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
 codl <- lapply(codl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
-codl <- codl[aa.srt[aa.srt%in%names(codl)]] ## SORT BY AA PROP
+codl <- codl[aap.srt[aap.srt%in%names(codl)]] ## SORT BY AA PROP
 
 ## LOCAL CODON SORTING by background frequencies
 ## (AA property ->codon frequency)
@@ -209,7 +212,7 @@ for ( ds in auds ) {
     
     ## sort by amino acid property via shapely colors!
     ##aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
-    aasrt <- aa.srt[aa.srt%in%rownames(ovw$p.value)]
+    aasrt <- aap.srt[aap.srt%in%rownames(ovw$p.value)]
     ovw <- sortOverlaps(ovw, axis=2, srt=aasrt, cut=TRUE)
 
 
@@ -237,7 +240,7 @@ for ( ds in auds ) {
     lcodl <- split(lcodt, GENETIC_CODE[names(lcodt)])
     
     lcodl <- lapply(lcodl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
-    lcodl <- lcodl[aa.srt] ## ##SORT BY AA PROP
+    lcodl <- lcodl[aap.srt] ## ##SORT BY AA PROP
 
     ## AA-specific codon frequency
     Faas.ds <- unlist(lapply(lcodl, function(x) x/sum(x)))
@@ -251,7 +254,7 @@ for ( ds in auds ) {
     ## transcript codon frequencies per AA
     codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
     codl <- lapply(codl, sort, decreasing=TRUE) # SORT BY MOST FREQUENT
-    codl <- codl[aa.srt[aa.srt%in%names(codl)]] # SORT BY AA PROP
+    codl <- codl[aap.srt[aap.srt%in%names(codl)]] # SORT BY AA PROP
     Fbg.ds <- unlist(lapply(codl, function(x) x/sum(x)))
     names(Fbg.ds) <- sub("\\.","-", names(Fbg.ds))
 
@@ -287,7 +290,7 @@ for ( ds in auds ) {
     codon.bins <- cut(Faas.ds[dtmt$aacodon], seq(0,1,.2))
 
     ## codon class lines in plots
-    cdn.cnt <- table(sub("-.*","",colnames(ovw$p.value)))[aa.srt]
+    cdn.cnt <- table(sub("-.*","",colnames(ovw$p.value)))[aap.srt]
     cdn.cnt <- cumsum(cdn.cnt[!is.na(cdn.cnt)])
     
     ## SORT CODON FREQUENCIES as in main plots
@@ -322,24 +325,24 @@ for ( ds in auds ) {
                  rlab=LAB, llab=dsLAB, ftyp=ftyp, mtxt="",
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols, col.lines=cdn.cnt, ffam="monospace")
-
+    maimain <- c(.6,.75,.6,.6) # re-used for codon axis
     plotProfiles(ovw, fname=file.path(cfig.path,paste0("codon_",SETID,"_",ds)),
-                 fw=.2, mai=c(.6,.75,.6,.6), ttcols=ttcols, value="median",
+                 fw=.2, mai=maimain, ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab=dsLAB, ftyp=ftyp, mtxt="substituted AA",
+                 rlab=LAB, llab=dsLAB, ftyp=ftyp,
+                 mtxt="incorporated AA", mtxt.cex=1.5,
                  vcols=vcols, vbrks=vbrks,
-                 axis1.col=aa.cols[sub("-.*","",colnames(ovw$p.value))],
-                 axis2.col=aa.cols[rownames(ovw$p.value)],
+                 axis1.col=aap.cols[sub("-.*","",colnames(ovw$p.value))],
+                 axis2.col=aap.cols[rownames(ovw$p.value)],
                  gcols=gcols, col.lines=cdn.cnt, ffam="monospace", verb=1)
         
-
 ### CODON FREQUENCY ANALYSIS
 
    ## sort by amino acid property via shapely colors!
     ##aasrt <- names(aaprop)[names(aaprop)%in%rownames(ovw$p.value)]
     aasrt <-
-        aa.srt[aa.srt%in%sub("-.*","",names(Fbg.ds))]
+        aap.srt[aap.srt%in%sub("-.*","",names(Fbg.ds))]
 
 
     ## CODON FREQUENCY CORRELATIONS
@@ -524,6 +527,17 @@ for ( ds in auds ) {
     fw <- .2
     nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
+    source("~/work/mistrans/scripts/saap_utils.R")
+    maix <- maimain
+    maix[1] <- maix[3] <- 0.5
+    nhm <- nrow(ovw$p.value) *fw + maix[1] + maix[3]
+    plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
+                                      "_codons_axis")),
+            type=ftyp, res=300, width=1, height=nhm)
+    par(mai=maimain, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plotCodonAxis(CODP[rownames(ovw$p.value)], aa.cols=aap.cols, cex=2)
+    dev.off()
+    
      ## codon RAAS aligned with codon dotplot 
     ramm <- matrix(Craas.ds,nrow=1)
     colnames(ramm) <- names(Craas.ds)
@@ -541,8 +555,8 @@ for ( ds in auds ) {
     
     plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
                                       "_codons_frequency_raas")),
-            type=ftyp, res=300, width=nw,height=2.5)
-    par(mai=c(.6,.75,.05,.6), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i",
+            type=ftyp, res=300, width=nw,height=2.9)
+    par(mai=c(1,.75,.05,.6), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i",
         family="monospace")
     tmp <- boxplot(dtmt$RAAS ~ factor(dtmt$aacodon, levels=cdsrt),
                    las=2, xlab="", ylab=xl.raas, axes=FALSE,
@@ -550,11 +564,14 @@ for ( ds in auds ) {
     ##axis(3, at=1:length(cdsrt), labels=round(Faas.ds[cdsrt],2), las=2)
     axis(4); axis(2)
     Map(axis, 1, at=1:length(tmp$names), labels=tmp$names, las=2,
-        col.axis=aa.cols[sub("-.*","",tmp$names)], col=NA)
-    abline(v=.5+cdn.cnt, lwd=1, xpd=TRUE)
+        col.axis=aap.cols[sub("-.*","",tmp$names)], col=NA, font=2)
+    abline(v=.5+cdn.cnt, lwd=1, xpd=FALSE)
+    axis(1, at=c(0,.5+cdn.cnt), labels=FALSE, tcl=-.5)
     figlabel(dsLAB, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
-    #for ( ax in 3:4 )  axis(ax, labels=FALSE)
+    text(c(3.25,13,25,42),rep(-9.5, 5), cex=1.2, font=2,
+         labels=aaprop.srt, col=aaprop.cols[aaprop.srt], xpd=TRUE)
+    mtext("mRNA codons at amino acid substitution sites", 1, 4, cex=1.5)
     dev.off()
 
     
@@ -613,6 +630,28 @@ for ( ds in auds ) {
     ##abline(v=.5+x2*rel.cnt, lwd=1, xpd=TRUE)
     axis(2, las=2, line=.2)
     axis(4, las=2, line=.2)
+    dev.off()
+
+
+    plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",
+                                       ds,"_codons_barplot_onlyfbg")),
+            type=ftyp, res=300, width=nw, height=1)
+    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    bp  <- barplot(rbind(Fbg.ds[names(Faas.ds)]),
+                   axes=FALSE, xlab=NA, beside=TRUE,
+                   ylab="", las=2, xaxt='n')
+    cdn.cn <- head(cdn.cnt, length(cdn.cnt)-1)
+    abline(v=bp[,cdn.cn]+unique(diff(bp[1,]))/2)
+   
+    ##x2 <- par("usr")[2]
+    ##rel.cnt <- cdn.cnt/max(cdn.cnt)
+    ##rel.cnt <- head(rel.cnt, length(rel.cnt)-1)
+    ##abline(v=.5+x2*rel.cnt, lwd=1, xpd=TRUE)
+    for ( ax in c(2,4) ) {
+        axis(ax, at=c(0,.5,1), las=2, line=.2)
+        axis(ax, at=seq(0,1,.1), labels=FALSE, line=.2, tcl=par("tcl")/2)
+    }
+    mtext("codon\nfrequency", 2, 2)
     dev.off()
     
 
@@ -718,7 +757,7 @@ codon.freq <- data.frame(codon=sub(".*-","",names(Fbg)),
 write.table(codon.freq, file=file.path(cfig.path, "codon_frequencies.tsv"),
             sep="\t", row.names=FALSE, quote=FALSE, na="")
 
-fftyp <- "pdf" # "png" #
+fftyp <- "pdf" # 
 
 ## exclude the single codon AA (M and W) for correlation analysis
 fbg <- Fbg
