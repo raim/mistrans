@@ -22,25 +22,36 @@ dir.create(pfig.path, showWarnings=FALSE)
 
 ## TODO: align use of raasProfile vs. listProfile
 
-### MEDIAN RAAS PER UNIQUE MANE PROTEIN SITE
+## MEDIAN SITE AND PROTEIN RAAS
+
+### median raas per unique mane protein site
 
 sitl <- split(tmtf$RAAS, paste(tmtf$mane, tmtf$pos))
 site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
-
-if ( interactive() ) {
-    ## test alternative measures of consistent RAAS
-    ## CV:
-    dense2d(site$cv, -log10(site$p), xlab="CV", ylab=expression(-log10(p)))
-    dense2d(site$cv, site$sd, xlab="CV", ylab="SD")
-    hist(site$sd)
-}
 
 ## mod. column names and add protein and site info
 colnames(site) <- paste0("RAAS.", colnames(site))
 site$mane <- sub(" .*", "", rownames(site))
 site$pos <- as.numeric(sub(".* ", "", rownames(site)))
 
-### SCAN HOTSPOTS
+## protein median of site median RAAS
+sitl <- split(site$RAAS.median, site$mane)
+pbstat <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## protein median raas per protein w/o site-specific median first
+ptl <- split(tmtf$RAAS, tmtf$mane)
+ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+if ( interactive() ) {
+    ## test alternative measures of consistent RAAS
+    ## CV:
+    dense2d(site$RAAS.cv, -log10(site$RAAS.p.value),
+            xlab="CV", ylab=expression(-log10(p)))
+    dense2d(site$RAAS.cv, site$RAAS.sd, xlab="CV", ylab="SD")
+    hist(site$RAAS.sd)
+}
+
+## ORDER SITES
 
 ## order proteins by RAAS
 pbstat$rank <- rank(pbstat$median)
@@ -49,6 +60,7 @@ pbstat$rank <- rank(pbstat$median)
 ## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
 site <-site[order(site$mane, site$pos),]
 
+## order by protein RAAS rank (for hotspot plot)
 site$rank <- pbstat[site$mane,"rank"]
 site <-site[order(site$rank, site$pos),]
 
@@ -95,9 +107,6 @@ dev.off()
 
 ## MEDIAN RAAS FOR EACH UNIQUE PROTEIN POSITION
 
-## protein median of site median RAAS
-sitl <- split(site$RAAS.median, site$mane)
-pbstat <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 
 ## median RAAS vs. number of sites
@@ -116,10 +125,6 @@ dev.off()
 
 
 ## PROTEIN MEDIAN RAAS per protein w/o site-specific median first
-
-ptl <- split(tmtf$RAAS, tmtf$mane)
-ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
-
 
 plotdev(file.path(pfig.path,paste0("proteins_volcano_all")),
         type=ftyp, res=300, width=4.4,height=4)
