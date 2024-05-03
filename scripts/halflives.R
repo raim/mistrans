@@ -57,6 +57,11 @@ yhld <- yhld[!duplicated(yhld$hgene),]
 rownames(yhld) <- yhld$hgene
 
 xl.hlf <- expression(protein~"half-life"/h)
+xl.hhlf <- expression(human~protein~"half-life"/h)
+xl.yhlf <- expression(yeast~protein~"half-life"/h)
+xl.hlgd <- expression(human~degradation~log(1/h))
+xl.ylgd <- expression(yeast~degradation~log(1/h))
+
 
 yhlf <- yhld[names(hhlf),"t1.2..hours."]
 yhlf[yhlf==">= 100"] <- 100
@@ -66,8 +71,8 @@ plotdev(file.path(fig.path,"protein_halflives_human_yeast_zoom"),
         type=ftyp, height=3, width=4, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hhlf, yhlf, xlim=c(0,200), ylim=c(0,20),
-        xlab="protein halflive/h, human",
-        ylab="protein halflive/h, yeast")#, legpos="topright")
+        xlab=xl.hhlf,
+        ylab=xl.yhlf)#, legpos="topright")
 ##abline(v=48)
 dev.off()
 
@@ -75,20 +80,41 @@ plotdev(file.path(fig.path,"protein_halflives_human_yeast"),
         type=ftyp, height=3, width=4, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hhlf, yhlf, 
-        xlab="protein halflive/h, human",
-        ylab="protein halflive/h, yeast")#, legpos="topright")
+        xlab=xl.hhlf,
+        ylab=xl.yhlf)#, legpos="topright")
 ##abline(v=48)
 dev.off()
+
+hlgd <- log(log(2)/(hhlf/24))
+ylgd <- log(log(2)/(yhlf/24))
+
 
 plotdev(file.path(fig.path,"protein_degradation_human_yeast"),
-        type=ftyp, height=3, width=4, res=200)
+        type=ftyp, height=4, width=4, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(log(log(2)/(hhlf/24)), log(log(2)/(yhlf/24)),
-        xlab="log deg. rate/d, human",
-        ylab="log deg. rate/d, yeast")#, legpos="topright")
+plotCor(hlgd, ylgd,
+        xlab=xl.hlgd,
+        ylab=xl.ylgd)#, legpos="topright")
+showl <- (hlgd < -4 & ylgd < -1)
+showh <- (ylgd > 1 & hlgd > 0) | ylgd> 3
+showb <- (hlgd < -4) | (hlgd > -1 & ylgd < 0)
+showby <- ylgd < -1 & hlgd < -1
+show <- TRUE
+if ( show ) {
+shadowtext(hlgd[showl], ylgd[showl], labels=names(hlgd)[showl],
+     xpd=TRUE, pos=4, cex=.7, col=1)
+shadowtext(hlgd[showh], ylgd[showh], labels=names(hlgd)[showh],
+     xpd=TRUE, pos=4, cex=.7, col=1)
+shadowtext(hlgd[showb], ylgd[showb], labels=names(hlgd)[showb],
+     xpd=TRUE, pos=4, cex=.7, col=1)
+shadowtext(hlgd[showby], ylgd[showby], labels=names(hlgd)[showby],
+           xpd=TRUE, pos=3, cex=.7, col=1, srt=90)
+}
 ##abline(v=48)
 dev.off()
 
-hist(hhlf,breaks=100)
-hist(log(2)/hhlf, breaks=100)
-hist(log(log(2)/(hhlf/24)))
+if ( interactive() ) {
+    hist(hhlf,breaks=100)
+    hist(log(2)/hhlf, breaks=100)
+    hist(log(log(2)/(hhlf/24)))
+}
