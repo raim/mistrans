@@ -59,13 +59,24 @@ rownames(yhld) <- yhld$hgene
 xl.hlf <- expression(protein~"half-life"/h)
 xl.hhlf <- expression(human~protein~"half-life"/h)
 xl.yhlf <- expression(yeast~protein~"half-life"/h)
-xl.hlgd <- expression(human~degradation~log(1/h))
-xl.ylgd <- expression(yeast~degradation~log(1/h))
+xl.hdeg <- expression(human~degradation/h^-1)
+xl.ydeg <- expression(yeast~degradation/h^-1)
+
+xl.hlgd <- expression(human~degradation/log(d^-1))
+xl.ylgd <- expression(yeast~degradation/log(d^-1))
 
 
 yhlf <- yhld[names(hhlf),"t1.2..hours."]
-yhlf[yhlf==">= 100"] <- 100
+yhlf[yhlf==">= 100"] <- 120
 yhlf <- as.numeric(yhlf)
+
+# deg rate in days
+hdeg <- log(2)/(hhlf)
+ydeg <- log(2)/(yhlf)
+
+hlgd <- log(log(2)/(hhlf/24))
+ylgd <- log(log(2)/(yhlf/24))
+
 
 plotdev(file.path(fig.path,"protein_halflives_human_yeast_zoom"),
         type=ftyp, height=3, width=4, res=200)
@@ -85,11 +96,36 @@ plotCor(hhlf, yhlf,
 ##abline(v=48)
 dev.off()
 
-hlgd <- log(log(2)/(hhlf/24))
-ylgd <- log(log(2)/(yhlf/24))
-
-
 plotdev(file.path(fig.path,"protein_degradation_human_yeast"),
+        type=ftyp, height=4, width=4, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(hdeg, ydeg,
+        xlab=xl.hdeg,
+        ylab=xl.ydeg)#, legpos="topright")
+showl <- (hlgd < -4 & ylgd < -1)
+showh <- (ylgd > 1 & hlgd > 0) | ylgd> 3
+showb <- (hlgd < -4) | (hlgd > -1 & ylgd < 0)
+showby <- ylgd < -1 & hlgd < -1
+show <- TRUE
+
+dev.off()
+
+plotdev(file.path(fig.path,"protein_degradation_human_yeast_zoom"),
+        type=ftyp, height=4, width=4, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(hdeg, ydeg,
+        xlab=xl.hdeg,
+        ylab=xl.ydeg, ylim=c(0,.3))#, legpos="topright")
+showl <- (hlgd < -4 & ylgd < -1)
+showh <- (ylgd > 1 & hlgd > 0) | ylgd> 3
+showb <- (hlgd < -4) | (hlgd > -1 & ylgd < 0)
+showby <- ylgd < -1 & hlgd < -1
+show <- TRUE
+
+dev.off()
+
+## log as in multi-species paper 
+plotdev(file.path(fig.path,"protein_degradation_human_yeast_log"),
         type=ftyp, height=4, width=4, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hlgd, ylgd,
@@ -101,14 +137,14 @@ showb <- (hlgd < -4) | (hlgd > -1 & ylgd < 0)
 showby <- ylgd < -1 & hlgd < -1
 show <- TRUE
 if ( show ) {
-shadowtext(hlgd[showl], ylgd[showl], labels=names(hlgd)[showl],
-     xpd=TRUE, pos=4, cex=.7, col=1)
-shadowtext(hlgd[showh], ylgd[showh], labels=names(hlgd)[showh],
-     xpd=TRUE, pos=4, cex=.7, col=1)
-shadowtext(hlgd[showb], ylgd[showb], labels=names(hlgd)[showb],
-     xpd=TRUE, pos=4, cex=.7, col=1)
-shadowtext(hlgd[showby], ylgd[showby], labels=names(hlgd)[showby],
-           xpd=TRUE, pos=3, cex=.7, col=1, srt=90)
+    shadowtext(hlgd[showl], ylgd[showl], labels=names(hlgd)[showl],
+               xpd=TRUE, pos=4, cex=.7, col=1)
+    shadowtext(hlgd[showh], ylgd[showh], labels=names(hlgd)[showh],
+               xpd=TRUE, pos=4, cex=.7, col=1)
+    shadowtext(hlgd[showb], ylgd[showb], labels=names(hlgd)[showb],
+               xpd=TRUE, pos=4, cex=.7, col=1)
+    shadowtext(hlgd[showby], ylgd[showby], labels=names(hlgd)[showby],
+               xpd=TRUE, pos=3, cex=.7, col=1, srt=90)
 }
 ##abline(v=48)
 dev.off()
