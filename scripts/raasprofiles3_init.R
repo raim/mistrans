@@ -713,7 +713,7 @@ uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
 uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
 
 ## filter for ensembl IDs in our data!
-uni2dat <- uni2ens[uni2ens[,2]%in%dat$ensembl,]
+uni2dat <- uni2ens[uni2ens[,2]%in%c(dat$ensembl, dat$mane),]
 ## 1-many lists
 uni2e <- split(uni2ens[,2], uni2ens[,1])
 ens2u <- split(uni2ens[,1], uni2ens[,2])

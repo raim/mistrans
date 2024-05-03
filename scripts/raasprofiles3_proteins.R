@@ -34,6 +34,16 @@ colnames(site) <- paste0("RAAS.", colnames(site))
 site$mane <- sub(" .*", "", rownames(site))
 site$pos <- as.numeric(sub(".* ", "", rownames(site)))
 
+## add gene names
+site$name <- ens2nam [site$mane]
+
+## add uniprot id
+site$uniprot <- unlist(lapply(ens2u[site$mane], paste, collapse=";"))
+
+## RAAS COLOR
+site$RAAS.color <- num2col(site$RAAS.median,
+                           limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
+
 ## protein median of site median RAAS
 sitl <- split(site$RAAS.median, site$mane)
 pbstat <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
@@ -68,6 +78,16 @@ site <-site[order(site$rank, site$pos),]
 nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$mane)))
 nsites[is.na(nsites)] <- 1
 site$n <- nsites
+
+### WRITE OUT SITE FILE
+## TODO: do this upstream and make site file central protein level file
+write.table(site, file=file.path(out.path, "aas_sites.tsv"), sep="\t",
+            na="", row.names=FALSE, quote=FALSE)
+
+if ( interactive() ) { # inspect some proteins
+    site[grep("PSMA1", site$name),]
+}
+
 
 ## list sites per protein
 
@@ -228,6 +248,7 @@ p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
 
 
 ## get uniprot mapping
+## TODO: akugb with uni2e and ens2u  in init script.
 p2ens <- uni2ens
 p2ens <- p2ens[p2ens[,2]%in%tmtf$mane,]
 p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
@@ -235,6 +256,9 @@ p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
 cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
 cat(paste(sum(duplicated(p2ens[,2])),"uniprot with multiple ensembl\n"))
 p2el <- unlist(split(p2ens[,2], p2ens[,1]))
+
+e2u <- names(p2el)
+names(e2u) <- p2el
 
 if ( length(unique(lengths(p2el)))>1 )
     stop("non-unique uniprot 2 ensembl mapping")
@@ -460,6 +484,44 @@ if ( FALSE ) {
                                               "subunits.Gene.name.")]
 }
 
+### WRITE CHIMERAX ATTRIBUTE FILES
 
+## LOAD PDB2ENSEMBL
+## and write RAAS color display for selected/all structures
+pdb2ens <- read.csv("~/data/mistrans/originalData/pdb_chain_ensembl.csv",
+                    skip=1)
+
+## filter all structures where we have AAS
+pdb2ens <- pdb2ens[pdb2ens$TRANSLATION_ID%in%site$mane,]
+
+
+pdb.path <- file.path(out.path,"pdb_attributes")
+dir.create(pdb.path)
+
+pdbid <- "6kwy"
+
+pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
+
+sink(file.path(pdb.path, paste0(pdbid, "_raas.defattr")))
+cat(paste0("attribute: raas\nrecipient: residues\n\n"))
+
+
+ens="ENSP00000044462"
+
+chain="E"
+
+for ( chain in unique(pdb$CHAIN) ) {
+    ens <- unique(pdb$TRANSLATION_ID[pdb$CHAIN==chain])
+    sts <- site[site$mane==ens,]
+    for ( i in 1:nrow(sts) )
+        cat(paste0("\t/", chain, ":",sts$pos[i],"\t",sts$RAAS.median[i],"\n"))
+}
+sink()
+
+## commandline string to copy paste into chimeraX
+cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; hide all cartoons; color /c light gray; open /home/raim/data/mistrans/processedData/pdb_attributes/",pdbid,"_raas.defattr; color byattribute raas palette ^RdYlBu\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
+
+## TODO: can we set RAAS colors palette in chimeraX?
+paste(arno(5),collapse=";")
 
 ### CLUSTER BY REGIONS

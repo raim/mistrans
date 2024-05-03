@@ -170,6 +170,7 @@ tmtf <- tmtf[tmtf$keep,]
 ### ADD RAAS STATS to protein mapping table
 
 ## split RAAS by BP/SAAP
+## TODO: use site-specific split as in raasprofiles3_proteins.R
 tmtl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP))
 
 ## match to main data
