@@ -502,24 +502,27 @@ pdbid <- "6kwy"
 
 pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
 
-sink(file.path(pdb.path, paste0(pdbid, "_raas.defattr")))
-cat(paste0("attribute: raas\nrecipient: residues\n\n"))
+show.str <- "show "
 
+## TODO: write RAAS coloring string
 
-ens="ENSP00000044462"
-
-chain="E"
-
+cat(paste0("attribute: raas\nrecipient: residues\n\n"),
+    file=file.path(pdb.path, paste0(pdbid, "_raas.defattr")))
 for ( chain in unique(pdb$CHAIN) ) {
     ens <- unique(pdb$TRANSLATION_ID[pdb$CHAIN==chain])
     sts <- site[site$mane==ens,]
-    for ( i in 1:nrow(sts) )
-        cat(paste0("\t/", chain, ":",sts$pos[i],"\t",sts$RAAS.median[i],"\n"))
+    for ( i in 1:nrow(sts) ) {
+        sid <-
+            paste0("/",chain, ":",sts$pos[i])
+        show.str <- paste0(show.str, " ", sid)
+        cat(paste0("\t", sid,"\t",sts$RAAS.median[i],"\n"),
+            file=file.path(pdb.path, paste0(pdbid, "_raas.defattr")),
+            append=TRUE)
+    }
 }
-sink()
 
 ## commandline string to copy paste into chimeraX
-cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; hide all cartoons; color /c light gray; open /home/raim/data/mistrans/processedData/pdb_attributes/",pdbid,"_raas.defattr; color byattribute raas palette ^RdYlBu\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
+cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; show all cartoons;",show.str,"; open /home/raim/data/mistrans/processedData/pdb_attributes/",pdbid,"_raas.defattr; color byattribute raas palette ^RdYlBu\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
 
 ## TODO: can we set RAAS colors palette in chimeraX?
 paste(arno(5),collapse=";")
