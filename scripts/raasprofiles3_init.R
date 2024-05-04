@@ -360,20 +360,31 @@ if ( include.kr ) {
 ## TODO: compare and fuse with protein level annotation
 ##       as.logical(dat$Hemoglobin.Albumin)
 dat$Hemoglobin.Albumin <- dat$albumin|dat$globin 
-dat$Keep.SAAP <- !dat$IG
+dat$KR <- dat$from%in%c("K","R") | dat$to%in%c("K","R")
+
+if ( include.kr ) {
+    dat$KR <- FALSE
+}
+
+dat$Keep.SAAP <- !dat$IG & !dat$KR
 
 #### TODO: find out which/how many TMT level SAAP are missing
 ## from the protein level file, and why.
 
 ### UNIFY FILTER COLUMNS
 
+
 ## fuse all excluded tags for each unique SAAP
 alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
               tmtf[,c("Keep.SAAP","SAAP")])
 alls <- split(alls$Keep.SAAP, alls$SAAP)
 
-## TODO: INCONSISTENT tags between my protein mapping and Shiri's TMT file
-##alls[which(unlist(lapply(alls, function(x) length(unique(x))))>1)]
+## NOTE/TODO: better analyze conflicting tags and synchronize use with Shiri.
+## tmtf has exclusion based on "Potential.uncaptured.transcript",
+## Unfortunately, this excludes two nice AAS in KRAS.
+allu <- lapply(alls, unique)
+table(lengths(allu))
+
 
 ## remove if tagged so for any dataset
 keep <- unlist(lapply(alls, all)) # all keep tags must be tree
