@@ -500,31 +500,43 @@ dir.create(pdb.path)
 
 pdbid <- "6kwy"
 
-pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
+for ( pdbid in unique(pdb2ens[,1]) ) {
 
-show.str <- "show "
+    pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
 
-## TODO: write RAAS coloring string
+    show.str <- ""
+    col.str <- ""
 
-cat(paste0("attribute: raas\nrecipient: residues\n\n"),
-    file=file.path(pdb.path, paste0(pdbid, "_raas.defattr")))
-for ( chain in unique(pdb$CHAIN) ) {
-    ens <- unique(pdb$TRANSLATION_ID[pdb$CHAIN==chain])
-    sts <- site[site$mane==ens,]
-    for ( i in 1:nrow(sts) ) {
-        sid <-
-            paste0("/",chain, ":",sts$pos[i])
-        show.str <- paste0(show.str, " ", sid)
-        cat(paste0("\t", sid,"\t",sts$RAAS.median[i],"\n"),
-            file=file.path(pdb.path, paste0(pdbid, "_raas.defattr")),
-            append=TRUE)
+    
+    defattr.file <- file.path(pdb.path, paste0(pdbid, "_raas.defattr"))
+    
+    if ( FALSE ) cat(paste0("attribute: raas\nrecipient: residues\n\n"),
+                     file=defattr.file)
+    for ( chain in unique(pdb$CHAIN) ) {
+        ens <- na.omit(unique(pdb$TRANSLATION_ID[pdb$CHAIN==chain]))
+        sts <- site[site$mane==ens,]
+        for ( i in 1:nrow(sts) ) {
+            sid <-
+                paste0("/",chain, ":",sts$pos[i])
+            show.str <- paste(show.str, "show", sid, "atoms;")
+            col.str <- paste(col.str, "color",sid, sts$RAAS.color[i],";")
+            if ( FALSE) cat(paste0("\t", sid,"\t",sts$RAAS.median[i],"\n"),
+                            file=defattr.file,
+                            append=TRUE)
+        }
     }
+    
+    ## commandline string to copy paste into chimeraX
+    if ( FALSE) cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; show all cartoons;",show.str,"; open /home/raim/data/mistrans/processedData/pdb_attributes/",pdbid,"_raas.defattr; color byattribute raas palette ^RdYlBu\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas_attribute.txt")))
+    
+    
+    ## TODO: can we set RAAS colors palette in chimeraX?
+    cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; show all cartoons; show surfaces; transparency all 30;",col.str,show.str,"\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
 }
 
-## commandline string to copy paste into chimeraX
-cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; show all cartoons;",show.str,"; open /home/raim/data/mistrans/processedData/pdb_attributes/",pdbid,"_raas.defattr; color byattribute raas palette ^RdYlBu\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
+## find specific
+grep("P04075", pdb2ens[,3])
 
-## TODO: can we set RAAS colors palette in chimeraX?
 paste(arno(5),collapse=";")
 
 ### CLUSTER BY REGIONS
