@@ -145,14 +145,28 @@ tmtf <- tmtf[!rm,]
 tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 dat$Keep.SAAP <- !dat$IG
 
+## NOTE/TODO: KRAS removed via TMT leve file filter,
+## since its tagged as "Potential.uncaptured.transcript".
+## Here, for the protein plotter, BUT NOT in RAAS profile
+## analysis, I remove this filter to also plot KRAS.
+##pid="ENSP00000308495" # KRAS
+##bp="LVVVGAGGVGK"
+
+## OVERRULE TMT LEVEL KEEP SAAP COLUMN
+tmtf$Keep.SAAP <- TRUE
+
 alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
               tmtf[,c("Keep.SAAP","SAAP")])
 alls <- split(alls$Keep.SAAP, alls$SAAP)
 
 ## remove if tagged so for any dataset
+
 keep <- unlist(lapply(alls, all))
 dat$keep <- keep[dat$SAAP]
 tmtf$keep <- keep[tmtf$SAAP]
+
+
+
 
 ## remove excluded
 cat(paste("removing", sum(!dat$keep),
@@ -367,7 +381,8 @@ if ( interactive() )
 ## calmodulin: CALM1, CALML3
 ## TODO: RAAS profiles for protein complexes, 
 
-POI <- c(pamrt[genes[genes$name=="TARDBP","canonical"],],
+POI <- c(pamrt[genes[genes$name=="KRAS","canonical"],],
+         pamrt[genes[genes$name=="TARDBP","canonical"],],
          ## proteasome 20S subunit alpha 1 
          pamrt[genes[genes$name=="PSMA1","canonical"],],
          ## actins
@@ -386,7 +401,7 @@ puni[is.na(puni)] <- names(aasl)[is.na(puni)]
 names(puni)  <- names(aasl)
 
 ## INVESTIGATE SOME CASES
-pid=names(which(pnms=="HNRNPD")) # several adjacent T:S from different BP
+pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
 ## TODO: fuse BP
 
 
