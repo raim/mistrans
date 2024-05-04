@@ -498,7 +498,8 @@ pdb2ens <- pdb2ens[pdb2ens$TRANSLATION_ID%in%site$mane,]
 pdb.path <- file.path(out.path,"pdb_attributes")
 dir.create(pdb.path)
 
-pdbid <- "6kwy"
+pdbid <- "6kwy" # proteasome cryoEM
+pdbid <- "6qzp" # ribosome cryoEM
 
 for ( pdbid in unique(pdb2ens[,1]) ) {
 
@@ -506,7 +507,7 @@ for ( pdbid in unique(pdb2ens[,1]) ) {
 
     show.str <- ""
     col.str <- ""
-
+    sel.str <- ""
     
     defattr.file <- file.path(pdb.path, paste0(pdbid, "_raas.defattr"))
     
@@ -518,6 +519,7 @@ for ( pdbid in unique(pdb2ens[,1]) ) {
         for ( i in 1:nrow(sts) ) {
             sid <-
                 paste0("/",chain, ":",sts$pos[i])
+            sel.str <- paste0(sel.str," ",sid)
             show.str <- paste(show.str, "show", sid, "atoms;")
             col.str <- paste(col.str, "color",sid, sts$RAAS.color[i],";")
             if ( FALSE) cat(paste0("\t", sid,"\t",sts$RAAS.median[i],"\n"),
@@ -531,7 +533,13 @@ for ( pdbid in unique(pdb2ens[,1]) ) {
     
     
     ## TODO: can we set RAAS colors palette in chimeraX?
-    cat(paste0("open ",pdbid,"; set bgColor black; color all #E6E6FA; hide all atoms; show all cartoons; show surfaces; transparency all 30;",col.str,show.str,"\n\n"), file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
+    cat(paste0("open ",pdbid,
+               "; set bgColor black",
+               "; color all #E6E6FA; hide all atoms; show all cartoons;",
+               col.str,
+               show.str,
+               "; select ",sel.str,"\n\n"),
+        file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
 }
 
 ## find specific
