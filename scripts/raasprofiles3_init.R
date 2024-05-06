@@ -48,6 +48,8 @@ p.adjust <- "none" ## multiple hypothesis testing
 
 RAAS.MIN <- -4
 RAAS.MAX <-  1
+RAAS.MINT <- -3  # tighter RAAS colors
+RAAS.MAXT <-  -1
 colors <- "arno" # "inferno" #"rocket" # "viridis" # 
 
 COLF <- get(colors)
@@ -608,6 +610,23 @@ dev.off()
 ## globally used RAAS colors!!
 vcols <- lraas.col$col
 vbrks <- lraas.col$breaks
+
+png(file.path(fig.path,paste0("legend_raas_tight.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+traas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MINT, mx=RAAS.MAXT,colf=COLF,
+                          n=50, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(colors, pos="bottomleft", cex=1)
+figlabel(LAB, pos="bottomright", cex=1)
+dev.off()
+
+## globally used RAAS colors!!
+tcols <- traas.col$col
+tbrks <- traas.col$breaks
 
 ## legend for all two-sided statistics
 png(file.path(fig.path,paste0("legend_wtests.png")),

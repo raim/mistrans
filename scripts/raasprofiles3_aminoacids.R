@@ -193,15 +193,19 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
                    verb=0)
+## SORT ROWS BY MEDIAN RAAS
+nsrt <- names(sort(apply(ovw$median, 1, median)))
+ovw <- sortOverlaps(ovw, axis=2, srt=nsrt)
 plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
              mtxt="encoded AA",
-             mai=c(.8,.5,.5,.5),
+             mai=c(.8,.5,.05,.6),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
-             vcols=vcols, vbrks=vbrks,
-             gcols=gcols, plot.all=TRUE)
+             axis2.col=aap.cols,
+             vcols=tcols, vbrks=tbrks,
+             gcols=gcols, plot.all=TRUE, ffam="monospace")
 
 ## by "to" amino acid
 ovw <- raasProfile(x=tmtf, id="SAAP", 
@@ -210,14 +214,19 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
                    verb=0)
+
+## SORT ROWS BY MEDIAN RAAS
+nsrt <- names(sort(apply(ovw$median, 1, median)))
+ovw <- sortOverlaps(ovw, axis=2, srt=nsrt)
 plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
-             mai=c(.8,.5,.5,.5),
+             mai=c(.8,.5,.05,.6),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              mtxt="incorporated AA", ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
-             vcols=vcols, vbrks=vbrks,
-             gcols=gcols, plot.all=TRUE)
+             axis2.col=aap.cols,
+             vcols=tcols, vbrks=tbrks,
+             gcols=gcols, plot.all=TRUE, ffam="monospace")
 
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
