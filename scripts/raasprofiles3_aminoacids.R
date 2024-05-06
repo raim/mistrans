@@ -201,7 +201,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
              vcols=vcols, vbrks=vbrks,
-             gcols=gcols)
+             gcols=gcols, plot.all=TRUE)
 
 ## by "to" amino acid
 ovw <- raasProfile(x=tmtf, id="SAAP", 
@@ -214,10 +214,10 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
              mai=c(.8,.5,.5,.5),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
-             mtxt="substituted AA", ttcols=ttcols, value="median",
+             mtxt="incorporated AA", ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
              vcols=vcols, vbrks=vbrks,
-             gcols=gcols)
+             gcols=gcols, plot.all=TRUE)
 
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
