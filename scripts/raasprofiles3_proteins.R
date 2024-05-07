@@ -594,7 +594,7 @@ mycs$optimal.sphere[,8]
 mycp <- SpaceClust(Mutations, Positions$Positions,
                    radii.vector = c(1:10), alpha = .99,
                    method = "Poisson")
-mycp$Positions
+mycp$result.poisson[,5]
 
 library(rgl)
 make.3D.Spheres <- function (position.matrix, center, radius, alpha = 0.5) 
@@ -620,7 +620,7 @@ make.3D.Spheres <- function (position.matrix, center, radius, alpha = 0.5)
                   alpha = alpha)
     }
 }
-make.3D.Spheres(Positions$Positions, center=usites$pos, radius=1:3)
+make.3D.Spheres(Positions$Positions, center=139, radius=3)
 
 ### spacepac example
 
