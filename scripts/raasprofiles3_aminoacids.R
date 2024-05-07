@@ -94,7 +94,6 @@ if ( nrow(ovwp$p.value)>0 )
                  vcols=vcols, vbrks=vbrks,
                  gcols=gcols)
 
-## TODO: manual version with colored a
 
 ## legend for dot plot
 ## RAAS COLORS
@@ -142,17 +141,17 @@ dotprofile(ovlg, value="median",
 text(1.5, -1, xl.raas, xpd=TRUE)
 dev.off()
 
-    ## calculate optimal figure height: result fields + figure margins (mai)
-    nr <- nrow(ovw$p.value)
-    nc <- ncol(ovw$p.value)
-    mai <- c(.8,1.75,.6,.6)
-    nh <- nr *fh + mai[1] + mai[3]
-    nw <- nc *fw + mai[2] + mai[4]
-    ffam <- "monospace"#"sans"
+## calculate optimal figure height: result fields + figure margins (mai)
+nr <- nrow(ovw$p.value)
+nc <- ncol(ovw$p.value)
+mai <- c(.8,1.75,.6,.6)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+ffam <- "monospace"#"sans"
 
-    rsrt <- rownames(ovw$p.value)
-    tap <- sub(".*:","", rsrt)
-    fap <- sub(":.*","", rsrt)
+rsrt <- rownames(ovw$p.value)
+tap <- sub(".*:","", rsrt)
+fap <- sub(":.*","", rsrt)
 
 fname <- file.path(afig.path,paste0("AAprop_",SETID))
 ## combined effect size and p-value plot
@@ -197,13 +196,13 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
 nsrt <- names(sort(apply(ovw$median, 1, median)))
 ovw <- sortOverlaps(ovw, axis=2, srt=nsrt)
 plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
-             mtxt="encoded AA",
+             mtxt="Encoded AA",
              mai=c(.8,.5,.05,.6),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
-             axis2.col=aap.cols,
+             ##axis2.col=aap.cols,
              vcols=tcols, vbrks=tbrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
@@ -222,9 +221,9 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
              mai=c(.8,.5,.05,.6),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
-             mtxt="incorporated AA", ttcols=ttcols, value="median",
+             mtxt="Incorporated AA", ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
-             axis2.col=aap.cols,
+             ##axis2.col=aap.cols,
              vcols=tcols, vbrks=tbrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 

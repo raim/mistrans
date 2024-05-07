@@ -43,9 +43,10 @@ source("~/work/mistrans/scripts/saap_utils.R")
 
 ### PARAMETERS
 
-## TODO: use for raasProfile and aaProfile calls
+## TODO: use p.adjust for raasProfile and aaProfile calls
 p.adjust <- "none" ## multiple hypothesis testing
 
+## TODO: fuse global and tight color scale?
 RAAS.MIN <- -4
 RAAS.MAX <-  1
 RAAS.MINT <- -3  # tighter RAAS colors
@@ -624,7 +625,8 @@ figlabel(colors, pos="bottomleft", cex=1)
 figlabel(LAB, pos="bottomright", cex=1)
 dev.off()
 
-## globally used RAAS colors!!
+
+## globally used RAAS colors for tight RAAS range!!
 tcols <- traas.col$col
 tbrks <- traas.col$breaks
 
@@ -734,7 +736,40 @@ text(3, -1, xl.raas, xpd=TRUE)
 axis(4, at=1:3, labels=c(-10,-5,0), las=2)
 mtext(plab, 4, 1.5, adj=.2)
 dev.off()
-    
+
+
+## legend for dot plot
+pp <- seq(0, -log10(p.dot), length.out=3)
+rs <- seq(RAAS.MINT,RAAS.MAXT, length.out=3)
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+ovw <- list(p.value=t(10^-pm),
+            median=t(rm))
+
+mai <- c(.4,.5,.05,.06)
+mair <- mai
+mair[2] <- .05
+mair[3] <- .01
+mair[4] <- .45
+nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
+nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
+plotdev(file.path(fig.path,paste0("legend_dotplot_tight_tight_right")),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovw, value="median",
+           vbrks=tbrks,
+           vcols=tcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1,
+           ylab=NA,
+           xlab=NA)
+##mtext(xl.raas, 1, 1.25, adj=2)
+text(3, -1, xl.raas, xpd=TRUE)
+axis(4, at=1:3, labels=c(-10,-5,0), las=2)
+mtext(plab, 4, 1.5, adj=.2)
+dev.off()
+   
 
 ## UNIPROT <-> ENSEMBL MAPPING
 ## NOTE: ~90 duplicated ensembl IDs

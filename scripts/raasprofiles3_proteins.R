@@ -547,4 +547,99 @@ grep("P04075", pdb2ens[,3])
 
 paste(arno(5),collapse=";")
 
+if ( !interactive() ) quit("no")
+
+###
+library(iPAC)
+library(SpacePAC)
+
+uid <- "P62834"
+CIF <- "https://files.rcsb.org/view/1gua.cif"
+Fasta <- paste0("https://www.uniprot.org/uniprot/", uid, ".fasta")
+Positions <- get.AlignedPositions(CIF, Fasta, "A")
+
+## generate mutation matrix
+seq <- readFASTA(Fasta)
+usites <- site[which(site$uniprot==uid),]
+Mutations <- matrix(0,
+                    ncol=nchar(seq[[1]]$seq),
+                    nrow=100*nrow(usites))
+for ( i in 1:(nrow(usites)) )
+    Mutations[i,usites$pos[i]] <- 1
+## OBLIGATORY COLUMN NAMES
+## strange errors without
+colnames(Mutations) <- paste0("V",1:ncol(Mutations))
+
+
+icl <- ClusterFind(mutation.data=Mutations, 
+                   position.data=Positions$Positions,
+                   create.map = "Y",Show.Graph = "Y")
+
+source("~/programs/SpacePAC/R/SpaceClust.R")
+source("~/programs/SpacePAC/R/cull.Mutation.Matrix.R")
+source("~/programs/SpacePAC/R/calc.Protein.Metrics.R")
+source("~/programs/SpacePAC/R/create.Distance.Matrix.R")
+allrs <- paste0(file.path("~/programs/SpacePAC/R/",
+                        list.files(path="~/programs/SpacePAC/R/",
+                                   pattern="*.R")))
+for ( file in allrs ) source(file)
+
+dst <- create.Distance.Matrix(Positions$Positions)
+
+mycs <- SpaceClust(Mutations, Positions$Positions,
+                   numsims =1000, simMaxSpheres = 3,
+                   radii.vector = 5:20, method = "SimMax")
+
+mycs$optimal.sphere[,8]
+
+mycp <- SpaceClust(Mutations, Positions$Positions,
+                   radii.vector = c(1:10), alpha = .99,
+                   method = "Poisson")
+mycp$Positions
+
+library(rgl)
+make.3D.Spheres <- function (position.matrix, center, radius, alpha = 0.5) 
+{
+    open3d()
+    bg3d(color = c("white"))
+    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
+        z = position.matrix[, 6], type = "s", size = 0.5, add = FALSE, 
+        xlab = "", ylab = "", zlab = "")
+    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
+        z = position.matrix[, 6], type = "l", add = TRUE, col = "blue")
+    decorate3d(main = "Protein Structure", axes = TRUE, xlab = "x-axis", 
+               ylab = "y-axis", zlab = "z-axis")
+    if ( length(radius)==1 )
+        radius <- rep(radius, length(center))
+    for ( c in seq_along(center) ) {
+        index <- which(position.matrix[, 2] == center[c])
+
+        spheres3d(x = position.matrix[index, 4],
+                  y = position.matrix[index, 5],
+                  z = position.matrix[index, 6],
+                  radius = radius[c], color = "red", 
+                  alpha = alpha)
+    }
+}
+make.3D.Spheres(Positions$Positions, center=usites$pos, radius=1:3)
+
+### spacepac example
+
+PIK3CA.CIF <- "https://files.rcsb.org/view/2ENQ.cif"
+PIK3CA.Fasta <- "https://www.uniprot.org/uniprot/P42336.fasta"
+PIK3CA.Positions <- get.AlignedPositions(PIK3CA.CIF, PIK3CA.Fasta, "A")
+
+## MUTATION MATRIX: COLUMNS are residues in FASTA,
+## rows contain 1 for individual mutations
+
+data(KRAS.Mutations) 
+data(PIK3CA.Mutations) 
+my.clusters <- SpaceClust(PIK3CA.Mutations, PIK3CA.Positions$Positions,
+                          numsims =1000, simMaxSpheres = 3,
+                          radii.vector = c(1,2,3,4), method = "SimMax")
+my.clusters <- SpaceClust(PIK3CA.Mutations, PIK3CA.Positions$Positions,
+                          radii.vector = c(1,2,3,4),
+                          alpha = .05, method = "Poisson")
+library(rgl)
+make.3D.Sphere(Positions$Positions, 12, 2)
 ### CLUSTER BY REGIONS
