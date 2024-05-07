@@ -563,7 +563,7 @@ seq <- readFASTA(Fasta)
 usites <- site[which(site$uniprot==uid),]
 Mutations <- matrix(0,
                     ncol=nchar(seq[[1]]$seq),
-                    nrow=100*nrow(usites))
+                    nrow=nrow(usites))
 for ( i in 1:(nrow(usites)) )
     Mutations[i,usites$pos[i]] <- 1
 ## OBLIGATORY COLUMN NAMES
@@ -575,20 +575,19 @@ icl <- ClusterFind(mutation.data=Mutations,
                    position.data=Positions$Positions,
                    create.map = "Y",Show.Graph = "Y")
 
-source("~/programs/SpacePAC/R/SpaceClust.R")
-source("~/programs/SpacePAC/R/cull.Mutation.Matrix.R")
-source("~/programs/SpacePAC/R/calc.Protein.Metrics.R")
-source("~/programs/SpacePAC/R/create.Distance.Matrix.R")
-allrs <- paste0(file.path("~/programs/SpacePAC/R/",
-                        list.files(path="~/programs/SpacePAC/R/",
-                                   pattern="*.R")))
-for ( file in allrs ) source(file)
+## load local copy of spacepac to learn and debug
+if ( FALSE ) {
+    allrs <- paste0(file.path("~/programs/SpacePAC/R/",
+                              list.files(path="~/programs/SpacePAC/R/",
+                                         pattern="*.R")))
+    for ( file in allrs ) source(file)
+}
 
 dst <- create.Distance.Matrix(Positions$Positions)
 
 mycs <- SpaceClust(Mutations, Positions$Positions,
                    numsims =1000, simMaxSpheres = 3,
-                   radii.vector = 5:20, method = "SimMax")
+                   radii.vector = 7:13, method = "SimMax")
 
 mycs$optimal.sphere[,8]
 
