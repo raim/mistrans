@@ -503,6 +503,7 @@ pdbid <- "6qzp" # ribosome cryoEM
 pdbid <- "1xk4" # EF hand example, S100A8,  AAS hotspot in heterodimer
                 # with S100A9
 
+
 for ( pdbid in unique(pdb2ens[,1]) ) {
 
     pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
@@ -556,10 +557,6 @@ if ( !interactive() ) quit("no")
 library(iPAC)
 library(SpacePAC)
 
-## RAP1A
-uid <- "P62834"
-pdbid <- "1gua" 
-chain <- "A"
 
 ## PSMA1
 
@@ -567,7 +564,24 @@ uid <- "P25786"
 pdbid <- "6kwy"
 chain <- "E"
 
+## RAP1A
+uid <- "P62834"
+pdbid <- "1gua" 
+chain <- "A"
+
+pdbid <- "1xk4" # EF hand example, S100A8,  AAS hotspot in heterodimer
+                # with S100A9
+
+## TODO: use bio3d package instead of iPAC,
+## TODO: use dssp to extract secondary structures from PDB,
+
+## get ensembl IDs for this structure
+pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
+eids <- unique(pdb$TRANSLATION_ID)
+
 ## get structure and fasta
+## TODO: loop over all fasta that map to a given structure
+## and fuse results?
 CIF <- paste0("https://files.rcsb.org/view/",pdbid,".cif")
 Fasta <- paste0("https://www.uniprot.org/uniprot/", uid, ".fasta")
 Positions <- iPAC::get.AlignedPositions(CIF, Fasta, chain)
