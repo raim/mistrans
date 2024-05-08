@@ -500,6 +500,8 @@ dir.create(pdb.path)
 
 pdbid <- "6kwy" # proteasome cryoEM
 pdbid <- "6qzp" # ribosome cryoEM
+pdbid <- "1xk4" # EF hand example, S100A8,  AAS hotspot in heterodimer
+                # with S100A9
 
 for ( pdbid in unique(pdb2ens[,1]) ) {
 
@@ -515,6 +517,7 @@ for ( pdbid in unique(pdb2ens[,1]) ) {
                      file=defattr.file)
     for ( chain in unique(pdb$CHAIN) ) {
         ens <- na.omit(unique(pdb$TRANSLATION_ID[pdb$CHAIN==chain]))
+        ## get AAS for this pdb chain!
         sts <- site[site$mane==ens,]
         for ( i in 1:nrow(sts) ) {
             sid <-
@@ -553,14 +556,47 @@ if ( !interactive() ) quit("no")
 library(iPAC)
 library(SpacePAC)
 
+## RAP1A
 uid <- "P62834"
-CIF <- "https://files.rcsb.org/view/1gua.cif"
+pdbid <- "1gua" 
+chain <- "A"
+
+## PSMA1
+
+uid <- "P25786"
+pdbid <- "6kwy"
+chain <- "E"
+
+## get structure and fasta
+CIF <- paste0("https://files.rcsb.org/view/",pdbid,".cif")
 Fasta <- paste0("https://www.uniprot.org/uniprot/", uid, ".fasta")
-Positions <- get.AlignedPositions(CIF, Fasta, "A")
+Positions <- iPAC::get.AlignedPositions(CIF, Fasta, chain)
+
+## AAS 
+usites <- site[which(site$uniprot==uid),]
+
+## TODO: add RAAS to position
+raas3d <- Positions$Position
+colnames(raas3d) <- c("AA","pos","chain","x","y","z")
+
+## get RAAS
+raas3d$RAAS <- rep(NA, nrow(raas3d))
+raas3d$RAAS <- median(sites$RAAS.median)
+midx <- match(usites$pos, raas3d$Can.Count)
+raas3d$RAAS[midx[!is.na(midx)]] <- usites$RAAS.median[!is.na(midx)]
+
+dst <- as.matrix(dist(raas3d[,c("x","y","z")],
+                      diag = TRUE, upper = FALSE))
+
+## NOTE: from SpacePAC
+source("~/work/mistrans/scripts/saap_utils.R")
+plotRaas3d(raas3d, center=usites$pos,
+           color=usites$RAAS.color, radius=usites$n-1,
+           name=paste(unique(usites$name),collapse=";"))
+
 
 ## generate mutation matrix
 seq <- readFASTA(Fasta)
-usites <- site[which(site$uniprot==uid),]
 Mutations <- matrix(0,
                     ncol=nchar(seq[[1]]$seq),
                     nrow=nrow(usites))
@@ -581,46 +617,23 @@ if ( FALSE ) {
                               list.files(path="~/programs/SpacePAC/R/",
                                          pattern="*.R")))
     for ( file in allrs ) source(file)
+
+    ## residue distance matrix
+    dst <- create.Distance.Matrix(Positions$Positions)
 }
 
-dst <- create.Distance.Matrix(Positions$Positions)
 
 mycs <- SpaceClust(Mutations, Positions$Positions,
                    numsims =1000, simMaxSpheres = 3,
-                   radii.vector = 7:13, method = "SimMax")
+                   radii.vector = 1:7, method = "SimMax")
 
 mycs$optimal.sphere[,8]
 
 mycp <- SpaceClust(Mutations, Positions$Positions,
                    radii.vector = c(1:10), alpha = .99,
-                   method = "Poisson")
+                   method = "Poisson", multcomp="none")
 mycp$result.poisson[,5]
 
-library(rgl)
-make.3D.Spheres <- function (position.matrix, center, radius, alpha = 0.5) 
-{
-    open3d()
-    bg3d(color = c("white"))
-    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
-        z = position.matrix[, 6], type = "s", size = 0.5, add = FALSE, 
-        xlab = "", ylab = "", zlab = "")
-    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
-        z = position.matrix[, 6], type = "l", add = TRUE, col = "blue")
-    decorate3d(main = "Protein Structure", axes = TRUE, xlab = "x-axis", 
-               ylab = "y-axis", zlab = "z-axis")
-    if ( length(radius)==1 )
-        radius <- rep(radius, length(center))
-    for ( c in seq_along(center) ) {
-        index <- which(position.matrix[, 2] == center[c])
-
-        spheres3d(x = position.matrix[index, 4],
-                  y = position.matrix[index, 5],
-                  z = position.matrix[index, 6],
-                  radius = radius[c], color = "red", 
-                  alpha = alpha)
-    }
-}
-make.3D.Spheres(Positions$Positions, center=139, radius=3)
 
 ### spacepac example
 
@@ -639,6 +652,4 @@ my.clusters <- SpaceClust(PIK3CA.Mutations, PIK3CA.Positions$Positions,
 my.clusters <- SpaceClust(PIK3CA.Mutations, PIK3CA.Positions$Positions,
                           radii.vector = c(1,2,3,4),
                           alpha = .05, method = "Poisson")
-library(rgl)
-make.3D.Sphere(Positions$Positions, 12, 2)
 ### CLUSTER BY REGIONS

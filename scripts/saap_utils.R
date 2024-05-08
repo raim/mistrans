@@ -13,6 +13,39 @@ vcol <- viridis::viridis(5)
 mcol[5] <- vcol[5]
 arno <- colorRampPalette(mcol)
 
+## NOTE: adapted from SpacePAC,
+## * multiple spheres
+plotRaas3d <- function (position.matrix, center, radius,
+                        color, name = "", alpha = 1) 
+{
+    require(rgl)
+    .check3d()
+    ##open3d()
+    bg3d(color = c("white"))
+    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
+        z = position.matrix[, 6], type = "s", size = 0.5, add = FALSE, 
+        xlab = "", ylab = "", zlab = "")
+    plot3d(x = position.matrix[, 4], y = position.matrix[, 5], 
+        z = position.matrix[, 6], type = "l", add = TRUE, col = "blue")
+    decorate3d(main = name, axes = TRUE, xlab = "x-axis", 
+               ylab = "y-axis", zlab = "z-axis")
+
+    if ( length(radius)==1 )
+        radius <- rep(radius, length(center))
+    if ( missing(color) ) color <- "red"
+     if ( length(color)==1 )
+        color <- rep(color, length(center))
+   
+    for ( c in seq_along(center) ) {
+        index <- which(position.matrix[, 2] == center[c])
+
+        spheres3d(x = position.matrix[index, 4],
+                  y = position.matrix[index, 5],
+                  z = position.matrix[index, 6],
+                  radius = radius[c], color = color[c], 
+                  alpha = alpha)
+    }
+}
 
 # from->to as expression, e.g. for axis labels
 ftlabels <- function(srt) {

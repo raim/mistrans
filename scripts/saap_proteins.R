@@ -403,6 +403,9 @@ names(puni)  <- names(aasl)
 ## INVESTIGATE SOME CASES
 pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
 ## TODO: fuse BP
+pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
+
+pid=names(which(pnms=="S100A8"))
 
 
 ## plot all proteins INCL. QC
@@ -523,7 +526,7 @@ for ( pid in pids ) {
     cat(paste("PLOTTING", pnms[pid], pid, "\n"))
 
     wscale <- 1/30
-    if ( plen<100 ) wscale <- 1/10
+    if ( plen<90 ) wscale <- 1/10
     if ( plen>2000 ) wscale <- 1/100
     mmai <- c(.05,1,.05,.1)
     
