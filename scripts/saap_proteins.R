@@ -406,10 +406,12 @@ pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
 pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
 
 pid=names(which(pnms=="S100A8"))
+pids=names(pnms)[grep("S100",pnms)]
 
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
+
 for ( pid in pids ) {
 
     ffile <- file.path(fig.path, pnms[pid])
