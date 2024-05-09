@@ -216,7 +216,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
                          fname="profile", mtxt, mtxt.line=1.3, mtxt.cex=1,
-                         llab, rlab,
+                         llab, rlab, xlab=expression(log[10](RAAS)),
                          ffam="sans",
                          ftyp="png",
                          axis1.col,
@@ -300,9 +300,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         cdn.cn <- head(col.lines, length(col.lines)-1)
         abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
     }
-    for ( ax in c(2,4) ) {
+    for ( ax in c(2,4) ) 
         axis(ax, las=2)
-    }
     dev.off()
     mai.bar <- mai
     mai.bar[c(2,4)] <- .075
@@ -315,12 +314,40 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                   ylab="", las=2, yaxt='n', 
                   width=.5, space=.5)
     ##mtext(expression(count), 2, 2.5)
-    for ( ax in c(1,3) ) {
+    for ( ax in c(1,3) )
         axis(ax, las=2)
-    }
     dev.off()
 
+    ## plot size adjusted legend
     if ( plot.legend ) {
+
+        ## vcols, vbreaks, p.min, p.dot, dot.sze
+        ## tigtht RAAS range - legend for acols/abreaks
+        pp <- seq(0, -log10(p.dot), length.out=3)
+        rs <- unique(round(seq(min(vbrks),max(vbrks),length.out=4) ))
+        pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+        rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+        colnames(pm) <- colnames(rm) <- -pp
+        rownames(pm) <- rownames(rm) <- round(rs,1)
+        ovlg <- list(p.value=t(10^-pm), median=t(rm))
+        
+        lmai <- c(.4,.5,.05,.06)
+        fh <- fw <- .2
+        lh <- nrow(ovlg$p.value) *fh + lmai[1] + lmai[3]
+        lw <- ncol(ovlg$p.value) *fw + lmai[2] + lmai[4]
+        
+        plotdev(paste0(fname,"_dotplot_legend"),
+                height=lh, width=lw, res=300, type=ftyp)
+        par(mai=lmai, mgp=c(1.3,.3,0), tcl=-.25)
+        dotprofile(ovlg, value="median",
+                   vbrks=vbrks,
+                   vcols=vcols, 
+                   dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+                   ylab=plab,
+                   xlab=NA)
+        ##mtext(xl.raas, 1, 1.1, adj=-.4)
+        text(1.5, -1, xlab, xpd=TRUE)
+        dev.off()
     }
     
     if ( !plot.all ) return()

@@ -84,6 +84,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("AAprop_",SETID)),
              rlab=LAB, llab="", ftyp=ftyp,
              vcols=vcols, vbrks=vbrks,
              gcols=gcols, verb=1)
+source("~/work/mistrans/scripts/saap_utils.R")
 if ( nrow(ovwp$p.value)>0 )
     plotProfiles(ovwp,
                  fname=file.path(afig.path,paste0("AAprop_",SETID,"_cut")),
@@ -91,55 +92,11 @@ if ( nrow(ovwp$p.value)>0 )
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="", ftyp=ftyp,
-                 vcols=vcols, vbrks=vbrks,
+                 vcols=acols, vbrks=abrks,
+                 plot.legend=TRUE,
                  gcols=gcols)
 
 
-## legend for dot plot
-## RAAS COLORS
-png(file.path(afig.path,paste0("AAprop_legend_raas.png")),
-    res=300, width=4, height=3, units="in")
-par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-aaprop.raas.col <- selectColors(tmtf$RAAS,
-                          mn=RAAS.MIN, mx=0,colf=COLF,
-                          n=50, plot=TRUE,
-                          mai=c(.5,.5,.1,.1),
-                          xlab=expression(TMT~level~log[10]*RAAS))
-axis(1, at=seq(-4,4,.5), labels=FALSE)
-figlabel(colors, pos="bottomleft", cex=1)
-figlabel(LAB, pos="bottomright", cex=1)
-dev.off()
-
-## globally used RAAS colors!!
-acols <- aaprop.raas.col$col
-abrks <- aaprop.raas.col$breaks
-
-pp <- seq(0, -log10(p.dot), length.out=3)
-rs <- c(-4,-2,-1,0) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
-pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
-rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
-colnames(pm) <- colnames(rm) <- -pp
-rownames(pm) <- rownames(rm) <- round(rs,1)
-ovlg <- list(p.value=t(10^-pm),
-            median=t(rm))
-
-mai <- c(.4,.5,.05,.06)
-fh <- fw <- .2
-nh <- nrow(ovlg$p.value) *fh + mai[1] + mai[3]
-nw <- ncol(ovlg$p.value) *fw + mai[2] + mai[4]
-
-plotdev(file.path(afig.path,paste0("AAprop_legend_dotplot_tight")),
-                     height=nh, width=nw, res=300, type=ftyp)
-par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-dotprofile(ovlg, value="median",
-           vbrks=abrks,
-           vcols=acols, 
-           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
-           ylab=plab,
-           xlab=NA)
-##mtext(xl.raas, 1, 1.1, adj=-.4)
-text(1.5, -1, xl.raas, xpd=TRUE)
-dev.off()
 
 ## calculate optimal figure height: result fields + figure margins (mai)
 nr <- nrow(ovw$p.value)
@@ -153,6 +110,7 @@ rsrt <- rownames(ovw$p.value)
 tap <- sub(".*:","", rsrt)
 fap <- sub(":.*","", rsrt)
 
+### NOTE: using tighter color range
 fname <- file.path(afig.path,paste0("AAprop_",SETID))
 ## combined effect size and p-value plot
 plotdev(paste0(fname,"_dotplot_manual"),

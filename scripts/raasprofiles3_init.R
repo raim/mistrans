@@ -47,10 +47,13 @@ source("~/work/mistrans/scripts/saap_utils.R")
 p.adjust <- "none" ## multiple hypothesis testing
 
 ## TODO: fuse global and tight color scale?
-RAAS.MIN <- -4
+RAAS.MIN <- -4   # broad RAAS colors: codon plot
 RAAS.MAX <-  1
-RAAS.MINT <- -3  # tighter RAAS colors
+RAAS.MINA <- -4  # tighter RAAS colors: AA properties
+RAAS.MAXA <- -0
+RAAS.MINT <- -3  # tighter RAAS colors: from/to AA
 RAAS.MAXT <-  -1
+
 colors <- "arno" # "inferno" #"rocket" # "viridis" # 
 
 COLF <- get(colors)
@@ -64,7 +67,7 @@ dot.sze <- c(.3,2)
 ## STATISTICAL TEST TO RUN
 use.test <- t.test # w.test # 
 
-ftyp <- "png" # "pdf" # 
+ftyp <- "png" # "pdf" # # 
 if ( !interactive() ) ftyp="pdf"
 
 ## heatmap colors
@@ -595,7 +598,7 @@ axex <- ftlabels(srt) # axis labels with arrows
 
 
 ## RAAS COLORS
-png(file.path(fig.path,paste0("legend_raas.png")),
+png(file.path(fig.path,paste0("legend_raas_vcols.png")),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(tmtf$RAAS,
@@ -612,7 +615,7 @@ dev.off()
 vcols <- lraas.col$col
 vbrks <- lraas.col$breaks
 
-png(file.path(fig.path,paste0("legend_raas_tight.png")),
+png(file.path(fig.path,paste0("legend_raas_tcols.png")),
     res=300, width=4, height=3, units="in")
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 traas.col <- selectColors(tmtf$RAAS,
@@ -626,9 +629,33 @@ figlabel(LAB, pos="bottomright", cex=1)
 dev.off()
 
 
-## globally used RAAS colors for tight RAAS range!!
+## tightest RAAS range!!
 tcols <- traas.col$col
 tbrks <- traas.col$breaks
+
+
+## legend for dot plot
+## RAAS COLORS
+png(file.path(fig.path,paste0("legend_raas_acols.png")),
+    res=300, width=4, height=3, units="in")
+par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+aaprop.raas.col <- selectColors(tmtf$RAAS,
+                          mn=RAAS.MINA, mx=RAAS.MAXA,colf=COLF,
+                          n=50, plot=TRUE,
+                          mai=c(.5,.5,.1,.1),
+                          xlab=expression(TMT~level~log[10]*RAAS))
+axis(1, at=seq(-4,4,.5), labels=FALSE)
+figlabel(colors, pos="bottomleft", cex=1)
+figlabel(LAB, pos="bottomright", cex=1)
+dev.off()
+
+## tight RAAS range
+acols <- aaprop.raas.col$col
+abrks <- aaprop.raas.col$breaks
+
+
+
+
 
 ## legend for all two-sided statistics
 png(file.path(fig.path,paste0("legend_wtests.png")),
@@ -676,7 +703,7 @@ for ( colstyle in c("viridis","rocket","inferno","arno") ) {
     figlabel(colstyle, pos="bottomleft", cex=1)
     dev.off()
 }
-segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot")),
+segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_vcols")),
                      height=nh, width=nw, res=300)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
@@ -688,22 +715,23 @@ dotprofile(ovw, value="median",
 figlabel(colors, pos="bottomleft", cex=1)
 dev.off()
 
-## legend for dot plot
+## LEGENDS FOR DOT PLOTs
+
+## broadest RAAS COLORS
 pp <- seq(0, -log10(p.dot), length.out=3)
 rs <- c(-4,-2,0,1) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
 pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 colnames(pm) <- colnames(rm) <- -pp
 rownames(pm) <- rownames(rm) <- round(rs,1)
-ovw <- list(p.value=t(10^-pm),
-            median=t(rm))
+ovw <- list(p.value=t(10^-pm), median=t(rm))
 
 mai <- c(.4,.5,.05,.06)
 fh <- fw <- .2
 nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
 
-plotdev(file.path(fig.path,paste0("legend_dotplot_tight")),
+plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_tight")),
                      height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
@@ -716,13 +744,32 @@ dotprofile(ovw, value="median",
 text(1.5, -1, xl.raas, xpd=TRUE)
 dev.off()
 
+plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_slim")),
+        height=5, width=1, res=300, type=ftyp)
+layout(1:2, heights=c(.5,.3))
+par(mai=c(0,0.15,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(y=vbrks, t(t(vbrks)), col=rev(vcols), xlab=NA, ylab=NA)
+mtext(xl.raas, 4, 1.4)
+axis(4)
+ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
+            median=ovlg$median[,1,drop=FALSE])
+##par(col.axis=1, col=NA)
+dotprofile(ovp, value="median",
+           vbrks=vbrks,
+           vcols=vcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           ylab=plab,
+           xlab=NA)
+mtext(plab, 4, 1.4)
+dev.off()
+
 mair <- mai
 mair[2] <- .05
 mair[3] <- .01
 mair[4] <- .45
 nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
 nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
-plotdev(file.path(fig.path,paste0("legend_dotplot_tight_right")),
+plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_tight_right")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
@@ -738,15 +785,14 @@ mtext(plab, 4, 1.5, adj=.2)
 dev.off()
 
 
-## legend for dot plot
+## tightest RAAS colors - legend for tcols/tbrks
 pp <- seq(0, -log10(p.dot), length.out=3)
 rs <- seq(RAAS.MINT,RAAS.MAXT, length.out=3)
 pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 colnames(pm) <- colnames(rm) <- -pp
 rownames(pm) <- rownames(rm) <- round(rs,1)
-ovw <- list(p.value=t(10^-pm),
-            median=t(rm))
+ovw <- list(p.value=t(10^-pm), median=t(rm))
 
 mai <- c(.4,.5,.05,.06)
 mair <- mai
@@ -755,7 +801,7 @@ mair[3] <- .01
 mair[4] <- .45
 nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
 nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
-plotdev(file.path(fig.path,paste0("legend_dotplot_tight_tight_right")),
+plotdev(file.path(fig.path,paste0("legend_dotplot_tcols_tight_right")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
@@ -769,7 +815,77 @@ text(3, -1, xl.raas, xpd=TRUE)
 axis(4, at=1:3, labels=c(-10,-5,0), las=2)
 mtext(plab, 4, 1.5, adj=.2)
 dev.off()
-   
+
+plotdev(file.path(fig.path,paste0("legend_dotplot_tcols_slim")),
+        height=5, width=1, res=300, type=ftyp)
+layout(1:2, heights=c(.5,.3))
+par(mai=c(0,0.15,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(y=tbrks, t(t(abrks)), col=rev(tcols), xlab=NA, ylab=NA)
+mtext(xl.raas, 4, 1.4)
+axis(4)
+ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
+            median=ovlg$median[,1,drop=FALSE])
+##par(col.axis=1, col=NA)
+dotprofile(ovp, value="median",
+           vbrks=tbrks,
+           vcols=tcols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           ylab=plab,
+           xlab=NA)
+mtext(plab, 4, 1.4)
+dev.off()
+
+
+
+
+## tigtht RAAS range - legend for acols/abreaks
+pp <- seq(0, -log10(p.dot), length.out=3)
+rs <- c(-4,-2,-1,0) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
+pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
+rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
+colnames(pm) <- colnames(rm) <- -pp
+rownames(pm) <- rownames(rm) <- round(rs,1)
+ovlg <- list(p.value=t(10^-pm), median=t(rm))
+
+mai <- c(.4,.5,.05,.06)
+fh <- fw <- .2
+nh <- nrow(ovlg$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovlg$p.value) *fw + mai[2] + mai[4]
+
+plotdev(file.path(fig.path,paste0("legend_dotplot_acols_tight")),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovlg, value="median",
+           vbrks=abrks,
+           vcols=acols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
+           ylab=plab,
+           xlab=NA)
+##mtext(xl.raas, 1, 1.1, adj=-.4)
+text(1.5, -1, xl.raas, xpd=TRUE)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("legend_dotplot_acols_slim")),
+        height=5, width=1, res=300, type=ftyp)
+layout(1:2, heights=c(.5,.3))
+par(mai=c(0,0.15,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(y=abrks, t(t(abrks)), col=rev(acols), xlab=NA, ylab=NA)
+mtext(xl.raas, 4, 1.4)
+axis(4)
+ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
+            median=ovlg$median[,1,drop=FALSE])
+##par(col.axis=1, col=NA)
+dotprofile(ovp, value="median",
+           vbrks=abrks,
+           vcols=acols, 
+           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           ylab=plab,
+           xlab=NA)
+mtext(plab, 4, 1.4)
+dev.off()
+
+
+
 
 ## UNIPROT <-> ENSEMBL MAPPING
 ## NOTE: ~90 duplicated ensembl IDs

@@ -2,8 +2,11 @@
 library(segmenTools)
 source("~/work/mistrans/scripts/saap_utils.R")
 
-tmt.file <- file.path("~/data/mistrans/originalData/",
+tmta.file <- file.path("~/data/mistrans/originalData/",
                       "All_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
+data <- readxl::read_xlsx(tmta.file)
+data <- as.data.frame(data)
+## use pre-filtered data here
 tmt.file <- file.path("~/data/mistrans/originalData/",
                       "All_filtered_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
 dat <- readxl::read_xlsx(tmt.file)
@@ -21,8 +24,9 @@ ddtyp[ddtyp=="tonsil" & dat$Digest == "Trypsin"] <- paste0("TONSIL_Trypsin")
 ddtyp[ddtyp=="tonsil" & dat$Digest != "Trypsin"] <- paste0("TONSIL_Other")
 
 digest <- dat$Digest
-digest[digest=="Trypsin" & dtyp=="tonsil"] <- "TONSIL_Trypsin"
-##digest[digest!="Trypsin" & dtyp=="tonsil"] <- "TONSIL_Other"
+digest[dat$Digest=="Trypsin" & dtyp=="CANCER"] <- "Trypsin_cancer"
+digest[dat$Digest=="Trypsin" & dtyp!="CANCER"] <- "Trypsin_tissues"
+digest[dat$Digest=="Trypsin" & dtyp=="tonsil"] <- "Trypsin_tonsil"
 
 ovl <- clusterCluster(ddtyp, dat$AAS, alternative="two.sided")
 fromq <- grep("^Q", colnames(ovl$p.value), value=TRUE)
