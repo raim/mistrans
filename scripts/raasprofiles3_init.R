@@ -753,14 +753,15 @@ mtext(xl.raas, 4, 1.4)
 axis(4)
 ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
             median=ovlg$median[,1,drop=FALSE])
-##par(col.axis=1, col=NA)
+par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=vbrks,
            vcols=vcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=4,
            ylab=plab,
            xlab=NA)
-mtext(plab, 4, 1.4)
+axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
+mtext(plab, 1, 0.5)
 dev.off()
 
 mair <- mai
@@ -825,14 +826,15 @@ mtext(xl.raas, 4, 1.4)
 axis(4)
 ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
             median=ovlg$median[,1,drop=FALSE])
-##par(col.axis=1, col=NA)
+par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=tbrks,
            vcols=tcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=4,
            ylab=plab,
            xlab=NA)
-mtext(plab, 4, 1.4)
+axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
+mtext(plab, 1, 0.5)
 dev.off()
 
 
@@ -874,14 +876,15 @@ mtext(xl.raas, 4, 1.4)
 axis(4)
 ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
             median=ovlg$median[,1,drop=FALSE])
-##par(col.axis=1, col=NA)
+par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=abrks,
            vcols=acols, 
-           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           dot.sze=dot.sze, p.dot=p.dot, axis=NA,
            ylab=plab,
            xlab=NA)
-mtext(plab, 4, 1.4)
+axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
+mtext(plab, 1, 0.5)
 dev.off()
 
 
