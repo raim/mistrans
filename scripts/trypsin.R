@@ -2,10 +2,11 @@
 library(segmenTools)
 source("~/work/mistrans/scripts/saap_utils.R")
 
-tmta.file <- file.path("~/data/mistrans/originalData/",
-                      "All_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
-data <- readxl::read_xlsx(tmta.file)
-data <- as.data.frame(data)
+
+##tmt.file <- file.path("~/data/mistrans/originalData/",
+##                      "All_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
+##dat <- readxl::read_xlsx(tmta.file)
+##dat <- as.data.frame(data)
 ## use pre-filtered data here
 tmt.file <- file.path("~/data/mistrans/originalData/",
                       "All_filtered_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
@@ -24,8 +25,8 @@ ddtyp[ddtyp=="tonsil" & dat$Digest == "Trypsin"] <- paste0("TONSIL_Trypsin")
 ddtyp[ddtyp=="tonsil" & dat$Digest != "Trypsin"] <- paste0("TONSIL_Other")
 
 digest <- dat$Digest
-digest[dat$Digest=="Trypsin" & dtyp=="CANCER"] <- "Trypsin_cancer"
-digest[dat$Digest=="Trypsin" & dtyp!="CANCER"] <- "Trypsin_tissues"
+#digest[dat$Digest=="Trypsin" & dtyp=="CANCER"] <- "Trypsin_cancer"
+#digest[dat$Digest=="Trypsin" & dtyp!="CANCER"] <- "Trypsin_tissues"
 digest[dat$Digest=="Trypsin" & dtyp=="tonsil"] <- "Trypsin_tonsil"
 
 ovl <- clusterCluster(ddtyp, dat$AAS, alternative="two.sided")
@@ -124,7 +125,11 @@ spt <- spt[!spt%in%spn]
 pases <- unique(dat$Digest)
 for ( i in seq_along(pases) ) {
     dig <- pases[i]
-    bps <- dat$BP[dat$AAS=="Q to G" &
-                  (dat$"TMT/Tissue"=="tonsil" & dat$Digest==dig)]
-    cat(paste0(">",dig,"\n",paste(bps,collapse="\n"),"\n"))
+    flt <- dat$AAS=="Q to G" &
+        (dat$"TMT/Tissue"=="tonsil" & dat$Digest==dig)
+    bps <- dat$BP[flt]
+    rss <- round(raas[flt],1)
+    sps <- dat$SAAP[flt]
+    cat(paste0(">",dig,"\n",
+               paste(paste(bps,",",sps,"\t",rss),collapse="\n"),"\n"))
 }
