@@ -13,6 +13,9 @@ tmt.file <- file.path("~/data/mistrans/originalData/",
 dat <- readxl::read_xlsx(tmt.file)
 dat <- as.data.frame(dat)
 
+p.min <- 1e-10
+p.txt <- 1e-3
+
 setwd("~/data/mistrans/figures/tonsil")
 
 raas <- as.numeric(dat$RAAS)
@@ -32,16 +35,16 @@ digest[dat$Digest=="Trypsin" & dtyp=="tonsil"] <- "Trypsin_tonsil"
 ovl <- clusterCluster(ddtyp, dat$AAS, alternative="two.sided")
 fromq <- grep("^Q", colnames(ovl$p.value), value=TRUE)
 ovlq <- t(sortOverlaps2(t(ovl), axis=2, srt=fromq))
-ovlc <- sortOverlaps(ovl, axis=1, p.min=1e-10, cut=TRUE)
+ovlc <- sortOverlaps(ovl, axis=1, p.min=p.min, cut=TRUE)
 
 plotdev("aas_dataset_fromq", width=6, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlq, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE)
+plotOverlaps(ovlq, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE)
 dev.off()
 
 plotdev("aas_dataset_signif", width=.25*ncol(ovlc$p.value)+2, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
 dev.off()
 
 
@@ -49,35 +52,35 @@ ovl <- clusterCluster(ddtyp[ddtyp!="CANCER"],
                       dat$AAS[ddtyp!="CANCER"], alternative="two.sided")
 fromq <- grep("^Q", colnames(ovl$p.value), value=TRUE)
 ovlq <- t(sortOverlaps2(t(ovl), axis=2, srt=fromq))
-ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=1e-10, cut=TRUE))
+ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=p.min, cut=TRUE))
 
 plotdev("aas_dataset_fromq_tissues", width=6, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlq, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE)
+plotOverlaps(ovlq, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE)
 figlabel("tissues", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
 plotdev("aas_dataset_signif_tissues", width=.25*ncol(ovlc$p.value)+2, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
 figlabel("tissues", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
 
 
 ovl <- clusterCluster(digest, dat$AAS, alternative="two.sided")
-ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=1e-10, cut=TRUE))
+ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=p.min, cut=TRUE))
 plotdev("aas_digest_signif", width=.25*ncol(ovlc$p.value)+2, height=2.5)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
 dev.off()
 
 ovl <- clusterCluster(digest[dtyp!="CANCER"],
                       dat$AAS[dtyp!="CANCER"], alternative="two.sided")
-ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=1e-10, cut=TRUE))
+ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=p.min, cut=TRUE))
 plotdev("aas_digest_signif_tissues", width=.25*ncol(ovlc$p.value)+2, height=2.5)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
 figlabel("tissues", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
@@ -86,42 +89,34 @@ ovl <- clusterCluster(digest[dtyp=="tonsil"],
 ovlc <- t(sortOverlaps2(t(ovl), axis=2, p.min=1e-2, cut=TRUE))
 plotdev("aas_digest_signif_tonsil", width=.25*ncol(ovlc$p.value)+2, height=2.5)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=1e-10, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
 figlabel("tonsil", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
 ## RAAS
 
 plotdev("tonsil_raas", width=6, height=4)
-par(mai=c(1.2,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(1.2,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
 boxplot(raas ~ dtyp, las=2, xlab=NA, ylab="RAAS")
+abline(h=-1.35, col=2)
+axis(4, at=-1.35, col.axis=2, col=2, las=2)
 dev.off()
 
 plotdev("digest_raas", width=3, height=4)
 par(mai=c(1.2,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 boxplot(raas ~ digest, las=2, xlab=NA, ylab="RAAS")
+abline(h=-1.35, col=2)
 dev.off()
 
 plotdev("digest_raas_tonsil", width=3, height=4)
 par(mai=c(1.2,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 boxplot(raas[dtyp=="tonsil"] ~ dat$Digest[dtyp=="tonsil"],
         las=2, xlab=NA, ylab="RAAS")
+figlabel("tonsil", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
-## KRAQ in tonsil/non-trypsin?
-q2g.nontryps <- dat$Digest!="Trypsin" & dat$AAS=="Q to G"
-dat$BP[q2g.nontryps]
 
-bpn <- dat$BP[dat$Digest!="Trypsin" & dat$AAS=="Q to G"]
-spn <- dat$SAAP[dat$Digest!="Trypsin" & dat$AAS=="Q to G"]
-
-bpt <- dat$BP[dat$"TMT/Tissue"=="tonsil" & dat$AAS=="Q to G"]
-bpt <- bpt[!bpt%in%bpn]
-
-spt <- dat$SAAP[dat$"TMT/Tissue"=="tonsil" & dat$AAS=="Q to G"]
-spt <- spt[!spt%in%spn]
-
-
+## inspect Q->G in tonsil
 pases <- unique(dat$Digest)
 for ( i in seq_along(pases) ) {
     dig <- pases[i]
