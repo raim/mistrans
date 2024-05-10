@@ -25,8 +25,8 @@ ddtyp[ddtyp=="tonsil" & dat$Digest == "Trypsin"] <- paste0("TONSIL_Trypsin")
 ddtyp[ddtyp=="tonsil" & dat$Digest != "Trypsin"] <- paste0("TONSIL_Other")
 
 digest <- dat$Digest
-#digest[dat$Digest=="Trypsin" & dtyp=="CANCER"] <- "Trypsin_cancer"
-#digest[dat$Digest=="Trypsin" & dtyp!="CANCER"] <- "Trypsin_tissues"
+digest[dat$Digest=="Trypsin" & dtyp=="CANCER"] <- "Trypsin_cancer"
+digest[dat$Digest=="Trypsin" & dtyp!="CANCER"] <- "Trypsin_tissues"
 digest[dat$Digest=="Trypsin" & dtyp=="tonsil"] <- "Trypsin_tonsil"
 
 ovl <- clusterCluster(ddtyp, dat$AAS, alternative="two.sided")

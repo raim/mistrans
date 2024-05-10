@@ -87,7 +87,7 @@ w.test <- function(x,y) {
 ### HIGH LEVEL PLOT FUNCTIONS
 
 dotprofile <- function(x, value, vcols=viridis::viridis(100),
-                       vbrks, p.dot=1e-10, dot.sze=c(.3,2),
+                       vbrks, p.dot=1e-10, dot.sze=c(.3,2), xpd=FALSE,
                        lg2=FALSE, mxr,
                        show.total=FALSE,
                        test=FALSE, ...) {
@@ -129,7 +129,7 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
     points(x = rep(1:ncol(z), nrow(z)),
            y = rep(nrow(z):1, each= ncol(z)),
            cex=d.sze, pch=19,
-           col=cols)
+           col=cols, xpd=xpd)
     
     toty <- totx <- FALSE
     if (is.logical(show.total)) {

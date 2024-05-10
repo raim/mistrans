@@ -757,9 +757,9 @@ par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=vbrks,
            vcols=vcols, 
-           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           dot.sze=1.5*dot.sze, p.dot=p.dot, axis=NA,
            ylab=plab,
-           xlab=NA)
+           xlab=NA, xpd=TRUE)
 axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
 mtext(plab, 1, 0.5)
 dev.off()
@@ -830,9 +830,9 @@ par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=tbrks,
            vcols=tcols, 
-           dot.sze=dot.sze, p.dot=p.dot, axis=4,
+           dot.sze=1.5*dot.sze, p.dot=p.dot, axis=NA,
            ylab=plab,
-           xlab=NA)
+           xlab=NA, xpd=TRUE)
 axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
 mtext(plab, 1, 0.5)
 dev.off()
@@ -880,9 +880,9 @@ par(mai=c(1,0.25,.15,.5))
 dotprofile(ovp, value="median",
            vbrks=abrks,
            vcols=acols, 
-           dot.sze=dot.sze, p.dot=p.dot, axis=NA,
+           dot.sze=1.5*dot.sze, p.dot=p.dot, axis=NA,
            ylab=plab,
-           xlab=NA)
+           xlab=NA, xpd=TRUE)
 axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
 mtext(plab, 1, 0.5)
 dev.off()
