@@ -1047,6 +1047,7 @@ for ( ds in auds ) {
         ts <- names(sort(table(dtmt$ccls)))
         d1 <- ts[1]
         d2 <- ts[2]
+
         
         plotdev(file.path(cfig.path,
                           paste0("codons_classes_gingold14_",ds,"_",type)),
@@ -1054,6 +1055,11 @@ for ( ds in auds ) {
         par(mai=c(1.25,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
         bp <- boxplot(dtmt$RAAS ~ dtmt$ccls, xlab=NA,
                       ylab=expression(log[10](RAAS)), axes=FALSE)
+        if ( min(table(dtmt$ccls)) < 50 )
+            stripchart(RAAS ~ ccls, vertical = TRUE, data = dtmt, 
+                       method = "jitter", add = TRUE, pch = 20,
+                       col="#00000077", cex=.7,
+                       axes=FALSE)
         axis(2)
         axis(1, at=1:length(bp$names), labels=bp$names, las=2)
         mtext("codon classes\nGingold et al. 2014", 1, 3)
