@@ -12,8 +12,23 @@ THIS=${HOME}/work/mistrans
 ## INPUT GENOME DATA IS GENERATED
 ## by from genomeBrowser/mammary/setup.sh
 
-## additional data
+### ADDITIONAL DATA
+
+## DEGRONS
 wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
+
+## CODON DATA
+## TODO: add download url for dana14_codons.ods/csv
+
+#
+## We calculated the codon stability coefficient (CSC) as the Pearson
+## correlation coefficient between mRNA stability and codon
+## occurrence. [...] The CSC scores do not present strong correlation
+## with codon usage (Figure 1—figure supplement 1C).
+wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D -P $MISDATA/originalData/ -O elife-45396-fig1-data2-v2.csv
+
+
+### SAAP/RAAS ANALYSIS
 
 ## analyze data structure, different number of replicates per unique SAAP
 R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt

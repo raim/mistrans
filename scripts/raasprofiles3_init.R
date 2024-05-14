@@ -5,10 +5,10 @@
 ## protein complexes, proteins and protein windows
 ## (raasprofiles3_proteins.R).
 
-library(Biostrings) # for blosum62
+library(Biostrings) # for genetic code, blosum62, etc
 library(viridis)
 library(segmenTools)
-
+library(readxl)
 
 options(stringsAsFactors=FALSE)
 options(scipen=0) # use e notation for p-values
@@ -258,7 +258,14 @@ out.path <- file.path(proj.path,"processedData")
 
 mam.path <- "~/data/mammary/"
 codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
-dana14.file <- file.path(mam.path,"originalData","dana14_codons.csv")
+trna.file <- file.path(mam.path, "codons_GRCh38.tsv")
+
+## external codon usage measures
+## @Dana2014, Dana and Tuller 2014: decoding time
+dana14.file <- file.path(dat.path,"dana14_codons.csv")
+## @Wu2019: codon stability coefficient (CSC)
+wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
+gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
 
 in.file <- file.path(out.path,"saap_mapped3.tsv")
 tmt.file <- file.path(proj.path,"originalData",

@@ -18,20 +18,48 @@ dir.create(cfig.path, showWarnings=FALSE)
 
 ## BY CODON->AA
 ## TODO:
-## * expand ovw to ALL codons and AA to align plots,
-## * plot log2 odds ratio vs.
+## * CODON POSITION ANALYSIS.
 
 ## only use RAAS with assigned codons
 ctmt <- tmtf[tmtf$codon!="",]
+
+## add columns for codon positions
+cpos <- strsplit(ctmt$codon,"")
+ctmt$pos1 <- unlist(lapply(cpos, function(x) x[1]))
+ctmt$pos2 <- unlist(lapply(cpos, function(x) x[2]))
+ctmt$pos3 <- unlist(lapply(cpos, function(x) x[3]))
 
 ## LOAD GLOBAL GENE-WISE CODON COUNTS
 codons <- read.delim(codon.file, row.names=1)
 
 ## Dana and Tuller 2014/2015
 ## decoding time/sec -> 1/decoding rate
-if ( file.exists(dana14.file) )
-    decod <- 1/read.csv(dana14.file,
-                         row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
+decod <- 1/read.csv(dana14.file,
+                    row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
+## Wu et al. 2019: codon stability coefficient
+csc <- read.csv(wu19.file, row.names=1)
+
+## Gingold et al. 2014: tRNAs in proliferation vs. differentiation vs. other
+## via trna file
+trnas <- read.delim(trna.file)
+## remove unclassified
+## TODO: clean this mapping in the tRNA annotation script,
+## and specifically also handle Met(e) vs. Met(i)
+trnas <- trnas[trnas$CL.gingold14!="",]
+
+## expand codons
+tcodons <- strsplit(trnas$codons, ",")
+tclasses <- trnas$CL.gingold14
+tclasses[tclasses==""] <- "na."
+tclasses <- rep(tclasses, lengths(tcodons))
+tcodons <- unlist(tcodons)
+
+## TODO: assign each codon by majority vote
+codtab <- table(tcodons, tclasses)
+ccls <- colnames(codtab)[apply(codtab,1,which.max)]
+names(ccls) <- rownames(codtab)
+
+ctmt$ccls <- ccls[ctmt$codon]
 
 ## global analysis: codon frequency vs. RAAS
 
@@ -81,6 +109,12 @@ if ( length(table(lengths(site.codons)))!=1 )
     stop("multiple codons per protein site")
 site <- cbind(site, codon=unlist(site.codons))
 
+## add columns for codon positions
+cpos <- strsplit(sub("[A-Z]-","",site$codon),"")
+site$pos1 <- unlist(lapply(cpos, function(x) x[1]))
+site$pos2 <- unlist(lapply(cpos, function(x) x[2]))
+site$pos3 <- unlist(lapply(cpos, function(x) x[3]))
+
 Craas.site <- sapply(COD.SRT, function(cl)
     log10(median(10^site$median[site$codon==cl])))
 
@@ -129,21 +163,34 @@ cod.bins <- cut(Fbg[ctmt$aacodon], seq(0,1,.1))
 ncod <- unlist(lapply(CODL, length))
 
 
-if ( interactive() & exists("decod", mode="numeric") ) {
-    ## TODO: analyze per AA - positive trend
-    ## globally: negative trend
-    plotCor(Fbg, decod[sub(".*-","", names(Fbg)),1], density=FALSE,
-            col=NA, xlab="codon frequency, all AAS transcripts",
-            ylab=expression(decoding~rate(codons/s)))
-    points(Fbg, decod[sub(".*-","", names(Fbg)),1], lwd=1, cex=1,
-           col=aa.cols[sub("-.*","",names(Fbg))],
-           pch=aa.pchs[sub("-.*","",names(Fbg))])
-    legend("top",unique(sub("-.*","",names(Fbg))),
-           col=aa.cols[unique(sub("-.*","",names(Fbg)))],
-           pch=aa.pchs[unique(sub("-.*","",names(Fbg)))],
-           pt.cex=1, ncol=2, cex=.8, y.intersp=.75,
-           bty="n")
-}
+
+## Dana and Tuller 2014: decoding times
+## TODO: analyze per AA - positive trend
+## globally: negative trend
+plotdev(file.path(cfig.path,paste0("codon_frequencies_decoding_dana14")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, decod[sub(".*-","", names(Fbg)),1], density=FALSE,
+        col=NA, xlab="codon frequency, all AAS transcripts",
+        ylab=expression(decoding~rate(codons/s)))
+points(Fbg, decod[sub(".*-","", names(Fbg)),1], lwd=1, cex=1,
+       col=aa.cols[sub("-.*","",names(Fbg))],
+       pch=aa.pchs[sub("-.*","",names(Fbg))])
+dev.off()
+
+## Wu et al. 2019: codon stability coefficient
+plotdev(file.path(cfig.path,paste0("codon_frequencies_CSC_wu19")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, csc[sub(".*-","", names(Fbg)),"X293T_endo"], density=FALSE,
+        col=NA, xlab="codon frequency, all AAS transcripts",
+        ylab=expression(codon~stability~coefficient),
+        legpos="bottomright")
+points(Fbg, csc[sub(".*-","", names(Fbg)),"X293T_endo"], lwd=1, cex=1,
+       col=aa.cols[sub("-.*","",names(Fbg))],
+       pch=aa.pchs[sub("-.*","",names(Fbg))])
+dev.off()
+
 
 
 
@@ -183,7 +230,7 @@ for ( ds in auds ) {
                        bg=FALSE, use.test=use.test, do.plots=FALSE, 
                        verb=0)
 
-    ## NOTE: bg=FALSE, no column-wise background !
+    ## NOTE: bg=TRUE :column-wise background
     ## TODO: move this outside loop and use rows as bg
     ovd <- raasProfile(x=dtmt, id="unique.site", 
                        rows="Dataset", cols="aacodon",
@@ -505,22 +552,38 @@ for ( ds in auds ) {
                pch=aa.pchs[sub("-.*","",names(fds))])
     }
 
-    if ( exists("decod", mode="numeric") ) {
-        plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
-                                          "_codons_frequencies_raas_dana14")),
-                type=ftyp, res=300, width=3,height=3)
-        par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-        plotCor(Craas.ds, decod[sub(".*-","",names(Craas.ds)),1],
-                density=FALSE, xlab=xl.raas,
-                ylab=expression(decoding~rate/(codons/s)), col=NA)
-        points(Craas.ds, decod[sub(".*-","",names(Craas.ds)),1], lwd=2, cex=1,
-               col=aa.cols[sub("-.*","",names(Craas.ds))],
-               pch=aa.pchs[sub("-.*","",names(Craas.ds))])
-        figlabel(dsLAB, pos="bottomleft", font=2, cex=1.2)
+    ## COMPARE TO EXTERNAL MEASURES
+
+    plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
+                                       "_codons_frequencies_raas_wu19")),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(Craas.ds, csc[sub(".*-","",names(Craas.ds)),"X293T_endo"],
+            density=FALSE, xlab=xl.raas,
+            ylab=expression(codon~stability~coefficient), col=NA)
+    points(Craas.ds, csc[sub(".*-","",names(Craas.ds)),"X293T_endo"],
+           lwd=2, cex=1, col=aa.cols[sub("-.*","",names(Craas.ds))],
+           pch=aa.pchs[sub("-.*","",names(Craas.ds))])
+    figlabel(dsLAB, pos="bottomleft", font=2, cex=1.2)
         figlabel(LAB, pos="bottomright", cex=.7)
-        for ( ax in 3:4 )  axis(ax, labels=FALSE)
-        dev.off()
-    }
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
+    dev.off()
+
+    plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
+                                       "_codons_frequencies_raas_dana14")),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(Craas.ds, decod[sub(".*-","",names(Craas.ds)),1],
+            density=FALSE, xlab=xl.raas,
+            ylab=expression(decoding~rate/(codons/s)), col=NA)
+    points(Craas.ds, decod[sub(".*-","",names(Craas.ds)),1], lwd=2, cex=1,
+           col=aa.cols[sub("-.*","",names(Craas.ds))],
+           pch=aa.pchs[sub("-.*","",names(Craas.ds))])
+    figlabel(dsLAB, pos="bottomleft", font=2, cex=1.2)
+        figlabel(LAB, pos="bottomright", cex=.7)
+    for ( ax in 3:4 )  axis(ax, labels=FALSE)
+    dev.off()
+
 
     ## full codon dotplots!
     mai <- c(.05,.75,.1,.6)
@@ -927,3 +990,87 @@ plotProfiles(ovw, fname=file.path(cfig.path,paste0("codon_rank_",SETID)),
              vcols=vcols, vbrks=vbrks,
              gcols=gcols)
 
+### CODON POSITION
+ovd <- raasProfile(x=ctmt, id="unique.site", 
+                   rows="pos2", cols="Dataset",
+                   col.srt=uds, filter=FALSE,
+                   bg=TRUE, #bg.dir="row",
+                   use.test=use.test, do.plots=FALSE, 
+                   verb=0)
+par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovd, value="median", vcols=vcols, vbrks=vbrks, axis=1:2,
+           p.dot=1e-10, dot.sze=c(.3,2), show.total=TRUE)
+
+boxplot(ctmt$RAAS ~ ctmt$pos1)
+boxplot(ctmt$RAAS ~ ctmt$pos2)
+boxplot(ctmt$RAAS ~ ctmt$pos3)
+
+## per unique site
+boxplot(site$median ~ site$pos1)
+boxplot(site$median ~ site$pos2)
+boxplot(site$median ~ site$pos3)
+
+### CODON CLASS
+ovd <- raasProfile(x=ctmt, id="unique.site", 
+                   rows="ccls", cols="Dataset",
+                   col.srt=uds, filter=FALSE,
+                   bg=TRUE, #bg.dir="row",
+                   use.test=use.test, do.plots=FALSE, 
+                   verb=0)
+par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+dotprofile(ovd, value="median", vcols=acols, vbrks=abrks, axis=1:2,
+           p.dot=1e-10, dot.sze=c(.3,2), show.total=TRUE)
+
+
+for ( ds in auds ) {
+
+
+    for ( type in c("all",unique(ctmt$from)) ) {
+        dtmt <- ctmt
+        dsl <- ""
+        if ( ds!="all" ) {
+            dsl <- ds
+            if ( ds!="cancer" )
+                dtmt <- ctmt[ctmt$Dataset==ds,]
+            else
+                dtmt <- ctmt[ctmt$Dataset!="Healthy",]
+        }
+
+        
+        if ( type!="all" )
+            dtmt <- dtmt[dtmt$from==type,]
+        if ( nrow(dtmt)<2 ) next
+
+        cat(paste(ds, "plotting", type, "\n"))
+        
+        ## comparison types
+        ts <- names(sort(table(dtmt$ccls)))
+        d1 <- ts[1]
+        d2 <- ts[2]
+        
+        plotdev(file.path(cfig.path,
+                          paste0("codons_classes_gingold14_",ds,"_",type)),
+                type=ftyp, res=300, width=3,height=4)
+        par(mai=c(1.25,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        bp <- boxplot(dtmt$RAAS ~ dtmt$ccls, xlab=NA,
+                      ylab=expression(log[10](RAAS)), axes=FALSE)
+        axis(2)
+        axis(1, at=1:length(bp$names), labels=bp$names, las=2)
+        mtext("codon classes\nGingold et al. 2014", 1, 3)
+        if ( sum(dtmt$ccls==d1, na.rm=TRUE)>1 &
+             sum(dtmt$ccls==d2, na.rm=TRUE)>1 ) {
+            tt <- t.test(dtmt$RAAS[dtmt$ccls==d1],
+                         dtmt$RAAS[dtmt$ccls==d2])
+            x0 <- which(bp$names==d1)
+            x1 <- which(bp$names==d2)
+            arrows(x0=x0, x1=x1,
+               y0=par("usr")[4], code=3, angle=90, length=.05, xpd=TRUE)
+            text((x0+x1)/2,
+                 par("usr")[4], paste0("p=",signif(tt$p.value,1)),
+                 pos=3, xpd=TRUE)
+        }
+        figlabel(dsl, pos="bottomleft", font=2, cex=1.2) 
+        figlabel(type, pos="bottomright", font=2, cex=1.2) 
+        dev.off()
+    }
+}
