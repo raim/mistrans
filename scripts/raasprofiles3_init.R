@@ -731,17 +731,17 @@ pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 colnames(pm) <- colnames(rm) <- -pp
 rownames(pm) <- rownames(rm) <- round(rs,1)
-ovw <- list(p.value=t(10^-pm), median=t(rm))
+ovlg <- list(p.value=t(10^-pm), median=t(rm))
 
 mai <- c(.4,.5,.05,.06)
 fh <- fw <- .2
-nh <- nrow(ovw$p.value) *fh + mai[1] + mai[3]
-nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
+nh <- nrow(ovlg$p.value) *fh + mai[1] + mai[3]
+nw <- ncol(ovlg$p.value) *fw + mai[2] + mai[4]
 
 plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_tight")),
                      height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-dotprofile(ovw, value="median",
+dotprofile(ovlg, value="median",
            vbrks=vbrks,
            vcols=vcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=1:2,
@@ -775,12 +775,12 @@ mair <- mai
 mair[2] <- .05
 mair[3] <- .01
 mair[4] <- .45
-nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
-nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
+nh <- nrow(ovlg$p.value) *fh + mair[1] + mair[3]
+nw <- ncol(ovlg$p.value) *fw + mair[2] + mair[4]
 plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_tight_right")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
-dotprofile(ovw, value="median",
+dotprofile(ovlg, value="median",
            vbrks=vbrks,
            vcols=vcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=1,
@@ -800,19 +800,19 @@ pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 colnames(pm) <- colnames(rm) <- -pp
 rownames(pm) <- rownames(rm) <- round(rs,1)
-ovw <- list(p.value=t(10^-pm), median=t(rm))
+ovlg <- list(p.value=t(10^-pm), median=t(rm))
 
 mai <- c(.4,.5,.05,.06)
 mair <- mai
 mair[2] <- .05
 mair[3] <- .01
 mair[4] <- .45
-nh <- nrow(ovw$p.value) *fh + mair[1] + mair[3]
-nw <- ncol(ovw$p.value) *fw + mair[2] + mair[4]
+nh <- nrow(ovlg$p.value) *fh + mair[1] + mair[3]
+nw <- ncol(ovlg$p.value) *fw + mair[2] + mair[4]
 plotdev(file.path(fig.path,paste0("legend_dotplot_tcols_tight_right")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mair, mgp=c(1.3,.3,0), tcl=-.25)
-dotprofile(ovw, value="median",
+dotprofile(ovlg, value="median",
            vbrks=tbrks,
            vcols=tcols, 
            dot.sze=dot.sze, p.dot=p.dot, axis=1,

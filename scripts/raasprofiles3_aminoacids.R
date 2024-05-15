@@ -97,7 +97,7 @@ if ( nrow(ovwp$p.value)>0 )
                  gcols=gcols)
 
 
-
+### FULL MANUAL DOTPLOT BY AAprop for MANUSCRIP MAIN
 ## calculate optimal figure height: result fields + figure margins (mai)
 nr <- nrow(ovw$p.value)
 nc <- ncol(ovw$p.value)
@@ -134,6 +134,43 @@ axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
      labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
 dev.off()
 
+## TIGHT MANUAL DOTPLOT BY AAprop for MANUSCRIP MAIN
+# calculate optimal figure height: result fields + figure margins (mai)
+nr <- nrow(ovwp$p.value)
+nc <- ncol(ovwp$p.value)
+mai <- c(.8,1.75,.6,.6)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+ffam <- "monospace"#"sans"
+
+rsrt <- rownames(ovwp$p.value)
+tap <- sub(".*:","", rsrt)
+fap <- sub(":.*","", rsrt)
+
+### NOTE: using tighter color range
+fname <- file.path(afig.path,paste0("AAprop_",SETID))
+## combined effect size and p-value plot
+plotdev(paste0(fname,"_cut_dotplot_manual"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwp, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(1,  1:ncol(ovwp$p.value),
+     labels=colnames(ovwp$p.value), las=2, family=ffam)
+##axis(2, length(axex):1, labels=axex, las=2, family=ffam)
+shadowtext(rep(-6, nr), nr:1, fap, col=aaprop.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+text(rep(-3.75,nr), nr:1, expression(""%->%""), xpd=TRUE)
+shadowtext(rep(-1.5, nr), nr:1, tap, col=aaprop.cols[tap], xpd=TRUE,
+           font=2, r=.1)
+axis(3, at=1:ncol(ovwp$num.target),
+     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+     labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
 
 ## TODO: median vs. p-value as a measure of effect size
 if ( interactive() ) {
@@ -164,13 +201,44 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
              vcols=tcols, vbrks=tbrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
-## by "to" amino acid
+## from AA - ONLY SIGNIFICANT
+
+ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+
+nr <- nrow(ovwp$p.value)
+nc <- ncol(ovwp$p.value)
+mai <- c(.8,.25,.6,.6)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+fap <- rownames(ovwp$p.value)
+
+fname <- file.path(afig.path,paste0("fromAA_",SETID))
+plotdev(paste0(fname,"_dotplot_manual"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwp, value="median", vbrks=tbrks,
+           vcols=tcols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(1,  1:ncol(ovwp$p.value),
+     labels=colnames(ovwp$p.value), las=2, family=ffam)
+shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+axis(3, at=1:ncol(ovwp$num.target),
+     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+     labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
+
+## BY "TO" AMINO ACID
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="to", cols="Dataset",
                    bg=TRUE, value="RAAS", col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
                    verb=0)
+
 
 ## SORT ROWS BY MEDIAN RAAS
 nsrt <- names(sort(apply(ovw$median, 1, median)))
@@ -185,6 +253,34 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
              vcols=tcols, vbrks=tbrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
+## to AA - ONLY SIGNIFICANT
+
+ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+
+nr <- nrow(ovwp$p.value)
+nc <- ncol(ovwp$p.value)
+mai <- c(.8,.25,.6,.6)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+fap <- rownames(ovwp$p.value)
+
+fname <- file.path(afig.path,paste0("toAA_",SETID))
+plotdev(paste0(fname,"_dotplot_manual"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwp, value="median", vbrks=tbrks,
+           vcols=tcols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(1,  1:ncol(ovwp$p.value),
+     labels=colnames(ovwp$p.value), las=2, family=ffam)
+shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+axis(3, at=1:ncol(ovwp$num.target),
+     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+     labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
 ovw <- raasProfile(x=tmtf, id="SAAP", 
