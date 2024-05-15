@@ -36,7 +36,7 @@ codons <- read.delim(codon.file, row.names=1)
 ## decoding time/sec -> 1/decoding rate
 decod <- 1/read.csv(dana14.file,
                     row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
-## Wu et al. 2019: codon stability coefficient
+## Wu et al. 2019: Codon Stability Coefficient
 csc <- read.csv(wu19.file, row.names=1)
 
 ## Gingold et al. 2014: tRNAs in proliferation vs. differentiation vs. other
@@ -178,13 +178,13 @@ points(Fbg, decod[sub(".*-","", names(Fbg)),1], lwd=1, cex=1,
        pch=aa.pchs[sub("-.*","",names(Fbg))])
 dev.off()
 
-## Wu et al. 2019: codon stability coefficient
+## Wu et al. 2019: Codon Stability Coefficient
 plotdev(file.path(cfig.path,paste0("codon_frequencies_CSC_wu19")),
         type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, csc[sub(".*-","", names(Fbg)),"X293T_endo"], density=FALSE,
         col=NA, xlab="codon frequency, all AAS transcripts",
-        ylab=expression(codon~stability~coefficient),
+        ylab="Codon Stability Coefficient",
         legpos="bottomright")
 points(Fbg, csc[sub(".*-","", names(Fbg)),"X293T_endo"], lwd=1, cex=1,
        col=aa.cols[sub("-.*","",names(Fbg))],
@@ -378,7 +378,7 @@ for ( ds in auds ) {
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab=dsLAB, ftyp=ftyp,
-                 mtxt="incorporated AA", mtxt.cex=1.5,
+                 mtxt="Incorporated AA", mtxt.cex=1.5,
                  vcols=vcols, vbrks=vbrks,
                  axis1.col=aap.cols[sub("-.*","",colnames(ovw$p.value))],
                  axis2.col=aap.cols[rownames(ovw$p.value)],
@@ -560,7 +560,7 @@ for ( ds in auds ) {
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(Craas.ds, csc[sub(".*-","",names(Craas.ds)),"X293T_endo"],
             density=FALSE, xlab=xl.raas,
-            ylab=expression(codon~stability~coefficient), col=NA)
+            ylab="Codon Stability Coefficient", col=NA)
     points(Craas.ds, csc[sub(".*-","",names(Craas.ds)),"X293T_endo"],
            lwd=2, cex=1, col=aa.cols[sub("-.*","",names(Craas.ds))],
            pch=aa.pchs[sub("-.*","",names(Craas.ds))])
@@ -832,7 +832,7 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(codon.Faas[names(Faas),"all"], Faas, round=4,
         xlab=expression(f[AAS]~"NOT via raasProfile function"),
         ylab=expression(f[AAS]~"from unique protein AAS sites"),
-        density=FALSE, pch=19)
+        density=FALSE, pch=19, col="#00000099")
 dev.off()
 
 
@@ -841,13 +841,13 @@ dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_faas_fbg")),
         type=fftyp, res=300, width=3,height=3)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(Fbg, Faas[names(Fbg)], outliers=which(Fbg==1),
-        xlab=expression("relative codon frequency, MTP"~f[bg]),
+par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
+plotCor(Fbg, Faas[names(Fbg)], ##outliers=which(Fbg==1),
+        xlab=expression("Relative codon frequency,"~f[bg]),
         xlim=c(0,1), ylim=c(0,1),
-        ylab=expression("relative codon frequency, AAS"~f[AAS]),
-        line.methods=c("ols","tls"), density=FALSE, pch=19)
-abline(a=0, b=1, col="gray")
+        ylab=expression("Relative codon frequency,"~f[AAS]),
+        line.methods=c("ols"), density=FALSE, pch=19, col="#00000099")
+#abline(a=0, b=1, col="gray")
 dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_woMW")),
@@ -855,20 +855,20 @@ plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_woMW")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Faas[names(Fbg)]/Fbg, outliers=which(Fbg==1),
         legpos="bottomright",
-        xlab=expression("relative codon frequency"~f[bg]),
+        xlab=expression("Relative codon frequency"~f[bg]),
         xlim=c(0,1), ##ylim=c(0,1),
         ylab=expression(f[AAS]/f[bg]),
-        line.methods=c("ols","tls"), density=FALSE, pch=19)
+        line.methods=c("ols","tls"), density=FALSE, pch=19, col="#00000099")
 dev.off()
 plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_withMW")),
         type=fftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Faas[names(Fbg)]/Fbg, ##outliers=which(Fbg==1),
         legpos="bottomright",
-        xlab=expression("relative codon frequency"~f[bg]),
+        xlab=expression("Relative codon frequency"~f[bg]),
         xlim=c(0,1), ##ylim=c(0,1),
         ylab=expression(f[AAS]/f[bg]),
-        line.methods=c("ols","tls"), density=FALSE, pch=19)
+        line.methods=c("ols","tls"), density=FALSE, pch=19, col="#00000099")
 dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_raas_fbg_woMW")),
@@ -876,15 +876,16 @@ plotdev(file.path(cfig.path,paste0("codons_raas_fbg_woMW")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), outliers=which(Fbg==1),
         line.methods=c("tls","ols"), density=FALSE, pch=19,
-        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+        col="#00000099",
+        xlab=expression("Relative codon frequency"~f[bg]), ylab=xl.raas)
 dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_raas_fbg_withMW")),
         type=fftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), ##outliers=which(Fbg==1),
-        line.methods=c("tls","ols"), density=FALSE, pch=19,
-        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+        line.methods=c("tls","ols"), density=FALSE, pch=19, col="#00000099",
+        xlab=expression("Relative codon frequency"~f[bg]), ylab=xl.raas)
 dev.off()
 
 ## NOTE:
@@ -897,10 +898,38 @@ dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_raas_fbg")),
         type=fftyp, res=300, width=3,height=3)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
 plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1), ##outliers=which(Fbg==1),
         line.methods=c("ols"), density=FALSE, pch=19,
-        xlab=expression("relative codon frequency"~f[bg]), ylab=xl.raas)
+        col="#00000099",
+        xlab=expression("Relative codon frequency"~f[bg]), ylab=NA)
+mtext(xl.raas, 2, 1.2)
+dev.off()
+
+## Wu et al. 2019: Codon Stability Coefficient
+plotdev(file.path(cfig.path,paste0("codons_raas_wu19")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
+plotCor(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas, 
+        line.methods=c("ols"), density=FALSE, ylab=NA,
+        xlab=NA, col=NA)
+mtext("Codon Stability Coefficient", 1, 1.2)
+points(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas, 
+       lwd=NA, cex=1, pch=19, col="#00000099")
+mtext(xl.raas, 2, 1.2)
+dev.off()
+
+## Dana and Tuller 2014: Decoding Rate
+plotdev(file.path(cfig.path,paste0("codons_raas_dana14")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
+pc <- plotCor(decod[sub(".*-","",names(Craas)),1], Craas, 
+        line.methods=c("ols"), density=FALSE, ylab=NA,
+        xlab=expression(decoding~rate/(codons/s)), col=NA,
+        legpos="bottomright")
+mtext(xl.raas, 2, 1.2)
+points(decod[sub(".*-","",names(Craas)),1], Craas, 
+       lwd=NA, cex=1, pch=19, col="#00000099")
 dev.off()
 
 ## encoded amino acid for coloring
@@ -913,7 +942,7 @@ plotdev(file.path(cfig.path,paste0("codons_raas_fbg_byAA")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1),
         line.methods=c("tls","ols"), density=FALSE, pch=19,
-        xlab=expression("relative codon frequency"~f[bg]),
+        xlab=expression("Relative codon frequency"~f[bg]),
         ylab=xl.raas, col=NA)
 points(Fbg, Craas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp])
 dev.off()
@@ -924,7 +953,7 @@ plotdev(file.path(cfig.path,paste0("codons_faas_fbg_ratio_byAA")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Faas[names(Fbg)]/Fbg,
         legpos="bottomright",
-        xlab=expression("relative codon frequency, MTP"~f[bg]),
+        xlab=expression("Relative codon frequency, MTP"~f[bg]),
         xlim=c(0,1), col=NA,
         ylab=expression(f[AAS]/f[bg]),
         line.methods=c("ols","tls"), density=FALSE, pch=19)
@@ -936,9 +965,9 @@ plotdev(file.path(cfig.path,paste0("codons_faas_fbg_byAA")),
         type=fftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(Fbg, Faas[names(Fbg)], 
-        xlab=expression("relative codon frequency, MTP"~f[bg]),
+        xlab=expression("Relative codon frequency, MTP"~f[bg]),
         xlim=c(0,1), ylim=c(0,1), col=NA,
-        ylab=expression("relative codon frequency, AAS"~f[AAS]),
+        ylab=expression("Relative codon frequency, AAS"~f[AAS]),
         line.methods=c("ols","tls"), density=FALSE, pch=19)
 ##abline(a=0, b=1, col="gray")
 points(Fbg, Faas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp])
@@ -947,6 +976,31 @@ legend("bottomright",aasort,
        pch=aa.pchs[aasort],
        pt.cex=1, lwd=1, lty=NA, seg.len=0.1, ncol=2, cex=.8, y.intersp=.8,
        bty="n")
+dev.off()
+
+
+plotdev(file.path(cfig.path,paste0("codons_raas_wu19_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas, 
+        line.methods=c("ols","tls"), density=FALSE, ylab=xl.raas,
+        xlab="Codon Stability Coefficient", col=NA)
+points(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas, 
+       lwd=2, cex=1, col=aa.cols[sub("-.*","",names(Craas))],
+       pch=aa.pchs[sub("-.*","",names(Craas.ds))])
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codons_raas_dana14_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(decod[sub(".*-","",names(Craas)),1], Craas, 
+        density=FALSE, ylab=xl.raas,
+        xlab=expression(decoding~rate/(codons/s)), col=NA,
+        legpos="bottomright")
+points(decod[sub(".*-","",names(Craas)),1], Craas, 
+       lwd=2, cex=1,
+       col=aa.cols[sub("-.*","",names(Craas))],
+       pch=aa.pchs[sub("-.*","",names(Craas))])
 dev.off()
 
 

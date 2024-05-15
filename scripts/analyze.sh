@@ -139,8 +139,8 @@ cd ~/data/mistrans/processedData/motifs
 ## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
 
 ### CALCULATE RAAS PROFILES
-R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R
-R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R # FIGURE 2
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R # FIGURE 3
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
 
 ## all protein profiles

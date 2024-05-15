@@ -215,12 +215,14 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          dot.sze=dot.sze, p.dot=p.dot, ## TODO: legend
                          value="median", vcols, vbrks,
                          count="unique", gcols=gcols,
-                         fname="profile", mtxt, mtxt.line=1.3, mtxt.cex=1,
+                         fname="profile",
+                         mtxt, mtxt1, mtxt.line=1.3, mtxt.cex=1,
                          llab, rlab, xlab=expression(log[10](RAAS)),
                          ffam="sans",
                          ftyp="png",
                          axis1.col,
                          axis2.col,
+                         axis1.las=2,
                          col.lines, # column classes - vertical lines
                          plot.all=FALSE, plot.legend=FALSE, verb=0) {
     
@@ -261,11 +263,11 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     box()
     if ( !missing(axis1.col) )
         Map(axis, 1, at=1:ncol(ovw$p.value),
-            labels=colnames(ovw$p.value), las=2, family=ffam,
+            labels=colnames(ovw$p.value), las=axis1.las, family=ffam,
             col.axis=axis1.col, font=2)#, cex.axis=1.2)
     else
         axis(1,  1:ncol(ovw$p.value),
-             labels=colnames(ovw$p.value), las=2, family=ffam)
+             labels=colnames(ovw$p.value), las=axis1.las, family=ffam)
      if ( !missing(axis2.col) ) {
          Map(axis, 2, length(axex):1, labels=axex, las=2, family=ffam,
              col.axis=axis2.col[rows], font=2, cex.axis=1.2)
@@ -277,6 +279,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
+    if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
@@ -372,7 +375,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     else
         axis(1,  1:ncol(ovw$p.value),
             labels=colnames(ovw$p.value), las=2, family=ffam)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
+    if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
@@ -402,7 +406,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
             col.axis=axis2.col[rows])
     else
         axis(2, length(axex):1, labels=axex, las=2, family=ffam)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
+    if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )
@@ -422,7 +427,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     image_matrix(cnt, col=gcols, axis=1:2,
                  text=txt, text.col=txt.col, ylab=NA, xlab=NA, text.cex=.8)
     ##axis(2, length(axex):1, labels=axex, las=2)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
+    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
+    if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
     if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
     if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
     if ( !missing(col.lines) )

@@ -59,7 +59,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("AASsite_",SETID)),
              ttcols=ttcols, value="median",
              mtxt="relative AAS position", mtxt.line=3.5,
              rlab=LAB, llab="", ftyp=ftyp,
-             vcols=vcols, vbrks=vbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols, verb=1)
   
 ## RAAS profiles by AA properties
@@ -82,7 +82,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("AAprop_",SETID)),
              dot.sze=dot.sze, p.dot=p.dot,
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
-             vcols=vcols, vbrks=vbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols, verb=1)
 source("~/work/mistrans/scripts/saap_utils.R")
 if ( nrow(ovwp$p.value)>0 )
@@ -138,7 +138,7 @@ dev.off()
 # calculate optimal figure height: result fields + figure margins (mai)
 nr <- nrow(ovwp$p.value)
 nc <- ncol(ovwp$p.value)
-mai <- c(.8,1.75,.6,.6)
+mai <- c(.8,1.75,.1,.6)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 ffam <- "monospace"#"sans"
@@ -165,8 +165,8 @@ shadowtext(rep(-6, nr), nr:1, fap, col=aaprop.cols[fap], xpd=TRUE,
 text(rep(-3.75,nr), nr:1, expression(""%->%""), xpd=TRUE)
 shadowtext(rep(-1.5, nr), nr:1, tap, col=aaprop.cols[tap], xpd=TRUE,
            font=2, r=.1)
-axis(3, at=1:ncol(ovwp$num.target),
-     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+##axis(3, at=1:ncol(ovwp$num.target),
+##     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
 axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
      labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
 dev.off()
@@ -198,36 +198,67 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
              ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
              ##axis2.col=aap.cols,
-             vcols=tcols, vbrks=tbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
 ## from AA - ONLY SIGNIFICANT
 
 ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+nsrt <- names(sort(apply(ovwp$median, 1, median)))
+ovwp <- sortOverlaps(ovwp, axis=2, srt=nsrt)
 
 nr <- nrow(ovwp$p.value)
 nc <- ncol(ovwp$p.value)
-mai <- c(.8,.25,.6,.6)
+mai <- c(.8,.5,.1,.6)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 fap <- rownames(ovwp$p.value)
 
 fname <- file.path(afig.path,paste0("fromAA_",SETID))
-plotdev(paste0(fname,"_dotplot_manual"),
+plotdev(paste0(fname,"_cut_dotplot_manual"),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
-dotprofile(x=ovwp, value="median", vbrks=tbrks,
-           vcols=tcols, p.dot=p.dot,
+dotprofile(x=ovwp, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
            dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
 box()
 axis(1,  1:ncol(ovwp$p.value),
      labels=colnames(ovwp$p.value), las=2, family=ffam)
 shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-axis(3, at=1:ncol(ovwp$num.target),
-     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+mtext("Encoded AA", 2, 1.3, family="monospace")
+##axis(3, at=1:ncol(ovwp$num.target),
+##     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
 axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
      labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
+## ROTATE
+ovwr <- t(ovwp)
+nr <- nrow(ovwr$p.value)
+nc <- ncol(ovwr$p.value)
+mai <- c(.4,.8,.6,.1)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+fap <- colnames(ovwr$p.value)
+
+fname <- file.path(afig.path,paste0("fromAA_",SETID))
+plotdev(paste0(fname,"_cut_dotplot_manual_rotated"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwr, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(2, nrow(ovwr$p.value):1,
+     labels=rownames(ovwr$p.value), las=2, family=ffam)
+shadowtext(1:nc, rep(0, nc), fap, col=aap.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+mtext("Encoded AA", 1, 1, family="monospace")
+axis(3, at=1:ncol(ovwr$num.target),
+     labels=format(ovwr$num.target[1,], big.mark=",", trim=TRUE),las=2)
+##axis(4, at=nrow(ovwr$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+##     labels=format(ovwr$num.query[,1], big.mark=",", trim=TRUE),las=2)
 dev.off()
 
 
@@ -250,36 +281,67 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
              mtxt="Incorporated AA", ttcols=ttcols, value="median",
              rlab=LAB, llab="", ftyp=ftyp,
              ##axis2.col=aap.cols,
-             vcols=tcols, vbrks=tbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
 ## to AA - ONLY SIGNIFICANT
 
 ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+nsrt <- names(sort(apply(ovwp$median, 1, median)))
+ovwp <- sortOverlaps(ovwp, axis=2, srt=nsrt)
 
 nr <- nrow(ovwp$p.value)
 nc <- ncol(ovwp$p.value)
-mai <- c(.8,.25,.6,.6)
+mai <- c(.8,.5,.1,.6)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 fap <- rownames(ovwp$p.value)
 
 fname <- file.path(afig.path,paste0("toAA_",SETID))
-plotdev(paste0(fname,"_dotplot_manual"),
+plotdev(paste0(fname,"_cut_dotplot_manual"),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
-dotprofile(x=ovwp, value="median", vbrks=tbrks,
-           vcols=tcols, p.dot=p.dot,
+dotprofile(x=ovwp, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
            dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
 box()
 axis(1,  1:ncol(ovwp$p.value),
      labels=colnames(ovwp$p.value), las=2, family=ffam)
 shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-axis(3, at=1:ncol(ovwp$num.target),
-     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+mtext("Incorporated AA", 2, 1.3, family="monospace", adj=1)
+##axis(3, at=1:ncol(ovwp$num.target),
+##     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
 axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
      labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
+## ROTATE
+ovwr <- t(ovwp)
+nr <- nrow(ovwr$p.value)
+nc <- ncol(ovwr$p.value)
+mai <- c(.4,.8,.6,.1)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+fap <- colnames(ovwr$p.value)
+
+fname <- file.path(afig.path,paste0("toAA_",SETID))
+plotdev(paste0(fname,"_cut_dotplot_manual_rotated"),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwr, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+box()
+axis(2, nrow(ovwr$p.value):1,
+     labels=rownames(ovwr$p.value), las=2, family=ffam)
+shadowtext(1:nc, rep(0, nc), fap, col=aap.cols[fap], xpd=TRUE,
+           font=2, r=.1)
+mtext("Incorporated AA", 1, 1, family="monospace", adj=1)
+axis(3, at=1:ncol(ovwr$num.target),
+     labels=format(ovwr$num.target[1,], big.mark=",", trim=TRUE),las=2)
+##axis(4, at=nrow(ovwr$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+##     labels=format(ovwr$num.query[,1], big.mark=",", trim=TRUE),las=2)
 dev.off()
 
 ## plot 16 plots for pfrom-to combos, for each to all AA
@@ -307,7 +369,7 @@ for ( ptype in unique(tmtf$pfromto) ) {
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="", ftyp=ftyp,
                  mtxt=ptype, mtxt.line=3,
-                 vcols=vcols, vbrks=vbrks,
+                 vcols=acols, vbrks=abrks,
                  gcols=gcols)
     ## cut
     ovwp <- sortOverlaps(ovwp, axis=2, p.min=p.txt, cut=TRUE)
@@ -319,7 +381,7 @@ for ( ptype in unique(tmtf$pfromto) ) {
                      dot.sze=dot.sze, p.dot=p.dot,
                      rlab=LAB, llab="", ftyp=ftyp,
                      mtxt=ptype, mtxt.line=3,
-                     vcols=vcols, vbrks=vbrks,
+                     vcols=acols, vbrks=abrks,
                      gcols=gcols)
     
 }
@@ -360,7 +422,7 @@ if ( nrow(ovwp$p.value)>0 ) {
                  rlab=LAB, llab="",  ftyp=ftyp,
                  ffam="monospace",
                  axis2.col=ft.cols,
-                 vcols=vcols, vbrks=vbrks,
+                 vcols=acols, vbrks=abrks,
                  gcols=gcols, plot.all=TRUE)
 
     ## calculate optimal figure height: result fields + figure margins (mai)
@@ -380,8 +442,8 @@ if ( nrow(ovwp$p.value)>0 ) {
     plotdev(paste0(fname,"_dotplot_manual"),
             height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
-    dotprofile(x=ovwp, value="median", vbrks=vbrks,
-               vcols=vcols, p.dot=p.dot,
+    dotprofile(x=ovwp, value="median", vbrks=abrks,
+               vcols=acols, p.dot=p.dot,
                dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
     box()
     axis(1,  1:ncol(ovwp$p.value),
@@ -410,10 +472,13 @@ plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
 
 
 ## by AA->AA
+source("~/work/mistrans/scripts/saap_utils.R")
 for ( ds in auds ) {
 
     tmtd <- tmtf
+    dsl <- ""
     if ( ds!="all" ) {
+        dsl <- ds
         if ( ds!="cancer" )
             tmtd <- tmtf[tmtf$Dataset==ds,]
         else
@@ -428,11 +493,14 @@ for ( ds in auds ) {
                        verb=0)
 
     plotProfiles(ovw, fname=file.path(afig.path,paste0("AA_",SETID,"_",ds)),
-                 mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+                 mai=c(.5,.5,.6,.6), ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
-                 rlab=LAB, llab=ds, ftyp=ftyp,
-                 vcols=vcols, vbrks=vbrks,
+                 rlab=LAB, llab=dsl, ftyp=ftyp,
+                 vcols=acols, vbrks=abrks,
+                 mtxt="Incorporated AA", 
+                 mtxt1="Encoded AA", ffam="monospace",
+                 axis1.las=1, fw=.22, fh=.22,
                  gcols=gcols)
 }
 
@@ -503,7 +571,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_iupred3_",SETID)),
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="disordered score", mtxt.line=3.3,
-             vcols=vcols, vbrks=vbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols)
 
 ## ANCHOR2
@@ -522,7 +590,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_anchor2_",SETID)),
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, ftyp=ftyp,
              mtxt="ANCHOR2", mtxt.line=3.3,
-             vcols=vcols, vbrks=vbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols)
 
 ## S4 PRED SECONDARY STRUCTURE
@@ -539,40 +607,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_s4pred_",SETID)),
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, ftyp=ftyp,
              mtxt="SPRED4", mtxt.line=3.3,
-             vcols=vcols, vbrks=vbrks,
+             vcols=acols, vbrks=abrks,
              gcols=gcols)
 
 
-
-if ( FALSE ) {
-
-    ## developing dot plots for combined effect/p plot
-    plotOverlaps(ovw, p.min=p.min, p.txt=p.txt, txt.col=NA,
-                 text.cex=.8, axis=1:2, ylab=NA, xlab=NA,
-                 col=ttcols, show.total=TRUE)
-    mai=c(.8,.9,.5,.5)
-    value <- "median"
-    vcols <- vcols
-    vbrks <- vbrks
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
-    navals <- ovw[[value]]
-    navals[] <- NA
-    image_matrix(navals, breaks=vbrks,
-                 col=vcols, axis=1, xlab=NA, ylab=NA)
-    p <- -log10(ovw$p.value)
-    p[p>-log10(p.min)] <- -log10(p.min)
-    z <- p/-log10(p.min)
-    points(x = rep(1:ncol(z), nrow(z)),
-           y = rep(nrow(z):1, each= ncol(z)),
-           cex=1.5*c(t(z)), pch=19,
-           col=num2col(t(ovw[[value]]),limits=range(vbrks),
-                       colf=viridis::viridis, n=length(vcols)))
-    axis(2, length(axex):1, labels=axex, las=2)
-    axis(4, at=nrow(ovw$num.query):1, labels=ovw$num.query[,1],las=2)
-    axis(3, at=1:ncol(ovw$num.target), labels=ovw$num.target[1,],las=2)
-    if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line)
-    if ( !missing(llab) ) figlabel(llab, pos="bottomleft", cex=1.2)
-    if ( !missing(rlab) ) figlabel(rlab, pos="bottomright", cex=.8)
-
-    
-}
