@@ -36,6 +36,17 @@ codons <- read.delim(codon.file, row.names=1)
 ## decoding time/sec -> 1/decoding rate
 decod <- 1/read.csv(dana14.file,
                     row.names=1)[,"H..sapiens5.HEK293",drop=FALSE]
+
+## relative rate per AA
+decodl <-
+    split(decod, GENETIC_CODE[rownames(decod)])
+decodl <- lapply(decodl, function(x) x/mean(x[,1]))
+decodl <- do.call(rbind, decodl)
+rownames(decodl) <- sub("M", "M.ATG", rownames(decodl))
+rownames(decodl) <- sub("W", "W.TGG", rownames(decodl))
+rownames(decodl) <- sub(".*\\.", "", rownames(decodl))
+
+
 ## Wu et al. 2019: Codon Stability Coefficient
 csc <- read.csv(wu19.file, row.names=1)
 
@@ -174,6 +185,17 @@ plotCor(Fbg, decod[sub(".*-","", names(Fbg)),1], density=FALSE,
         col=NA, xlab="codon frequency, all AAS transcripts",
         ylab=expression(decoding~rate(codons/s)))
 points(Fbg, decod[sub(".*-","", names(Fbg)),1], lwd=1, cex=1,
+       col=aa.cols[sub("-.*","",names(Fbg))],
+       pch=aa.pchs[sub("-.*","",names(Fbg))])
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codon_frequencies_reldecoding_dana14")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(Fbg, decodl[sub(".*-","", names(Fbg)),1], density=FALSE,
+        col=NA, xlab="codon frequency, all AAS transcripts",
+        ylab=expression(relative~decoding~rate))
+points(Fbg, decodl[sub(".*-","", names(Fbg)),1], lwd=1, cex=1,
        col=aa.cols[sub("-.*","",names(Fbg))],
        pch=aa.pchs[sub("-.*","",names(Fbg))])
 dev.off()
@@ -820,7 +842,7 @@ codon.freq <- data.frame(codon=sub(".*-","",names(Fbg)),
 write.table(codon.freq, file=file.path(cfig.path, "codon_frequencies.tsv"),
             sep="\t", row.names=FALSE, quote=FALSE, na="")
 
-fftyp <- "pdf" # 
+fftyp <- ftyp # "pdf" # 
 
 ## exclude the single codon AA (M and W) for correlation analysis
 fbg <- Fbg
@@ -931,6 +953,18 @@ mtext(xl.raas, 2, 1.2)
 points(decod[sub(".*-","",names(Craas)),1], Craas, 
        lwd=NA, cex=1, pch=19, col="#00000099")
 dev.off()
+## Dana and Tuller 2014: Relative Decoding Rate
+plotdev(file.path(cfig.path,paste0("codons_raas_dana14_rel")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
+pc <- plotCor(decodl[sub(".*-","",names(Craas)),1], Craas, 
+        line.methods=c("ols"), density=FALSE, ylab=NA,
+        xlab=expression(relative~decoding~rate), col=NA,
+        legpos="bottomright")
+mtext(xl.raas, 2, 1.2)
+points(decodl[sub(".*-","",names(Craas)),1], Craas, 
+       lwd=NA, cex=1, pch=19, col="#00000099")
+dev.off()
 
 ## encoded amino acid for coloring
 aatmp <- sub("-.*", "", names(Fbg))
@@ -944,7 +978,7 @@ plotCor(Fbg, Craas[names(Fbg)], xlim=c(0,1),
         line.methods=c("tls","ols"), density=FALSE, pch=19,
         xlab=expression("Relative codon frequency"~f[bg]),
         ylab=xl.raas, col=NA)
-points(Fbg, Craas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp])
+points(Fbg, Craas[names(Fbg)], col=aa.cols[aatmp], pch=aa.pchs[aatmp], lwd=2)
 dev.off()
 
 
@@ -987,7 +1021,7 @@ plotCor(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas,
         xlab="Codon Stability Coefficient", col=NA)
 points(csc[sub(".*-","",names(Craas)),"X293T_endo"], Craas, 
        lwd=2, cex=1, col=aa.cols[sub("-.*","",names(Craas))],
-       pch=aa.pchs[sub("-.*","",names(Craas.ds))])
+       pch=aa.pchs[sub("-.*","",names(Craas))])
 dev.off()
 
 plotdev(file.path(cfig.path,paste0("codons_raas_dana14_byAA")),
@@ -998,6 +1032,19 @@ plotCor(decod[sub(".*-","",names(Craas)),1], Craas,
         xlab=expression(decoding~rate/(codons/s)), col=NA,
         legpos="bottomright")
 points(decod[sub(".*-","",names(Craas)),1], Craas, 
+       lwd=2, cex=1,
+       col=aa.cols[sub("-.*","",names(Craas))],
+       pch=aa.pchs[sub("-.*","",names(Craas))])
+dev.off()
+
+plotdev(file.path(cfig.path,paste0("codons_raas_dana14_rel_byAA")),
+        type=fftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(decodl[sub(".*-","",names(Craas)),1], Craas, 
+        density=FALSE, ylab=xl.raas,
+        xlab=expression(relative~decoding~rate), col=NA,
+        legpos="bottomright")
+points(decodl[sub(".*-","",names(Craas)),1], Craas, 
        lwd=2, cex=1,
        col=aa.cols[sub("-.*","",names(Craas))],
        pch=aa.pchs[sub("-.*","",names(Craas))])

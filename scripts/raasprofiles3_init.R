@@ -751,13 +751,14 @@ dotprofile(ovlg, value="median",
 text(1.5, -1, xl.raas, xpd=TRUE)
 dev.off()
 
+## slim
 plotdev(file.path(fig.path,paste0("legend_dotplot_vcols_slim")),
         height=5, width=1, res=300, type=ftyp)
-layout(1:2, heights=c(.5,.3))
-par(mai=c(0,0.15,.15,.5), mgp=c(1.3,.3,0), tcl=-.25)
+layout(1:2, heights=c(.5,.4))
+par(mai=c(0,0.05,.15,.6), mgp=c(1.3,.3,0), tcl=-.25)
 image_matrix(y=vbrks, t(t(vbrks)), col=rev(vcols), xlab=NA, ylab=NA)
-mtext(xl.raas, 4, 1.4)
-axis(4, las=2)
+mtext(xl.raas, 4, 2, cex=1.5)
+axis(4, at=-5:5, las=2, cex.axis=1.5)
 ovp <- list(p.value=ovlg$p.value[,1,drop=FALSE],
             median=ovlg$median[,1,drop=FALSE])
 par(mai=c(1,0.25,.15,.5))
@@ -767,10 +768,13 @@ dotprofile(ovp, value="median",
            dot.sze=1.5*dot.sze, p.dot=p.dot, axis=NA,
            ylab=plab,
            xlab=NA, xpd=TRUE)
-axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA)
-mtext(plab, 1, 0.5)
+axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA,
+     cex.axis=1.5)
+mtext(plab, 1, 0.75, cex=1.5, adj=.4)
 dev.off()
 
+
+## tight
 mair <- mai
 mair[2] <- .05
 mair[3] <- .01
