@@ -17,8 +17,7 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
 
 
-## indicate properties
-
+## RAAS profiles by relative position of AAS in peptide
 rssrt <- levels(tmtf$rsite.bins)
 fname <- file.path(dpath,paste0("AASsite_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
