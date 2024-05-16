@@ -44,6 +44,8 @@ site$uniprot <- unlist(lapply(ens2u[site$mane], paste, collapse=";"))
 site$RAAS.color <- num2col(site$RAAS.median,
                            limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
 
+## 
+
 ## protein median of site median RAAS
 sitl <- split(site$RAAS.median, site$mane)
 pbstat <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
@@ -119,15 +121,15 @@ axis(2)
 axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.25)
 par(mai=c(.35,.5,0.1,.1))
 plot(cpos, sites$RAAS.median, type="h", col=raas.col, xpd=TRUE,
-     xlab="position in concatenated proteins with >1 AAS, sorted by protein RAAS", ylab=xl.site)
+     xlab="pos. concatenated proteins with >1 AAS, sorted by protein RAAS",
+     ylab=xl.site)
 points(cpos, sites$RAAS.median, col=raas.col, pch=19, cex=.2, xpd=TRUE)
 ## TODO: protein lines
 axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.5)
 dev.off()
 
-## MEDIAN RAAS FOR EACH UNIQUE PROTEIN POSITION
 
-
+### MEDIAN RAAS FOR EACH UNIQUE PROTEIN POSITION
 
 ## median RAAS vs. number of sites
 if ( interactive() )
@@ -321,20 +323,28 @@ if ( FALSE ) {
 }
 
 
+
 ### PROTEIN RAAS vs. IUPRED
 
 ## get whole protein mean iupred3 score
-iu3 <- split(dat$iupred3.protein, dat$MANE.protein)
+iu3 <- split(hdat$iupred3.protein, hdat$ensembl)
 ## QC: all protein level
 table(unlist(lapply(iu3, function(x) length(unique))))
 iu3 <- unlist(lapply(iu3, unique))
 
-## NOTE: no correlation to protein-wide iupred3
 plotdev(file.path(pfig.path,paste0("protein_iupred3_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(rownames(ptstat), names(iu3))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
-plotCor(ptstat$median, log(hlv[idx]), signif = 1,
+plotCor(ptstat$median, iu3[rownames(ptstat)], signif = 1,
+        xlab=xl.prota,
+        ylab="iupred3")
+dev.off()
+plotdev(file.path(pfig.path,paste0("protein_iupred3_site")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(rownames(ptstat), names(iu3))
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(pbstat$median, iu3[rownames(pbstat)], signif = 1,
         xlab=xl.prota,
         ylab="iupred3")
 dev.off()
@@ -484,7 +494,15 @@ if ( FALSE ) {
                                               "subunits.Gene.name.")]
 }
 
-### WRITE CHIMERAX ATTRIBUTE FILES
+### AAS along proteins
+head(tmtf$unique.site)
+
+tmtl <- split(tmtf$RAAS, tmtf$unique.site)
+tmtl <- listProfile(tmtl, y=tmtf$RAAS, use.test=use.test, min=3)
+tmts <- tmtf[!duplicated(tmtf$unique.site),]
+
+
+### 3D STRUCTURE - WRITE CHIMERAX ATTRIBUTE FILES
 
 ## LOAD PDB2ENSEMBL
 ## and write RAAS color display for selected/all structures

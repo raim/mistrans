@@ -107,8 +107,7 @@ names(Fbg) <- sub("\\.","-",names(Fbg))
 
 
 ## median codon RAAS:
-## NOTE: median over all, without accounting for
-## duplicate measurements.
+## NOTE: median over all measurements
 Craas <- sapply(COD.SRT, function(cl)
     log10(median(10^ctmt$RAAS[ctmt$aacodon==cl])))
 
@@ -121,17 +120,20 @@ if ( length(table(lengths(site.codons)))!=1 )
     stop("multiple codons per protein site")
 site <- cbind(site, codon=unlist(site.codons))
 
+## median of site medians
+## NOTE: correlation to codon frequency is lost
+## when using the median of medians.
+Craas.site <- sapply(COD.SRT, function(cl)
+    log10(median(10^site$median[site$codon==cl])))
+
 ## add columns for codon positions
 cpos <- strsplit(sub("[A-Z]-","",site$codon),"")
 site$pos1 <- unlist(lapply(cpos, function(x) x[1]))
 site$pos2 <- unlist(lapply(cpos, function(x) x[2]))
 site$pos3 <- unlist(lapply(cpos, function(x) x[3]))
 
-Craas.site <- sapply(COD.SRT, function(cl)
-    log10(median(10^site$median[site$codon==cl])))
 
-
-## codon frequencies at AAS
+## CODON FREQUENCIES at AAS
 lcodt <- table(site$codon)
 names(lcodt) <- sub(".*-","",names(lcodt))
 ## AAS codon frequencies per AA
@@ -152,6 +154,7 @@ names(Faas) <- sub("\\.","-", names(Faas))
 
 ## inspect
 if ( interactive() ) { # properly plotted below loop
+    plotCor(Craas.site[names(Craas)], Craas)
     plotCor(Craas.site[names(Faas)], Faas)
     plotCor(Craas[names(Faas)], Faas)
     plotCor(Craas[names(Fbg)], Fbg)
@@ -218,7 +221,7 @@ dev.off()
 
 
 
-## PER CODON RAAS PROFILES
+## PER CODON RAAS PROFILES per Dataset
 
 ## matrix to store codon frequencies in bg and at AAS
 allcodons <- sub("\\.","-",names(unlist(codl)))

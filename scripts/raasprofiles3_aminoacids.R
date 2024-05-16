@@ -19,30 +19,6 @@ xl.raau <- expression(log[10]*bar(RAAS[unique]))
 
 ## indicate properties
 
-## RAAS profiles by AAS site in peptides
-## TODO: median RAAS of unique BP/SAAP vs. rel.position,
-##       similar to iupred3
-for ( ds in auds ) {
-
-    tmtd <- tmtf
-    if ( ds!="all" ) {
-        if ( ds!="cancer" )
-            tmtd <- tmtf[tmtf$Dataset==ds,]
-        else
-            tmtd <- tmtf[tmtf$Dataset!="Healthy",]
-    }
-    plotdev(file.path(afig.path,paste0("AASsite_",SETID,"_cor_",ds)),
-            type=ftyp, res=300, width=3,height=3)
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(tmtd$RAAS.median, tmtd$rsite,
-            xlab=NA,
-            ylab="relative AAS position in peptide")
-    mtext(xl.raau, 1, 1.6)
-    figlabel(ds, pos="bottomleft", font=2, cex=1.2)
-    figlabel(LAB, pos="bottomright", cex=.7)
-    dev.off()
-}
-
 rssrt <- levels(tmtf$rsite.bins)
 fname <- file.path(dpath,paste0("AASsite_",SETID,"_wtests_"))
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",
@@ -507,8 +483,9 @@ for ( ds in auds ) {
 
 ### BY STRUCTURAL FEATURES
 ## TODO: align this with protein profiles "site" matrix,
-## use unique site raas instead of unique BP/SAAP Raas.
-for ( ds in auds ) {
+## use unique site raas instead of unique Dataset/BP/SAAP Raas.
+if ( FALSE )
+    for ( ds in auds ) {
 
     tmtd <- tmtf
     dsl <- ""
@@ -519,15 +496,19 @@ for ( ds in auds ) {
             tmtd <- tmtf[tmtf$Dataset!="Healthy",]
         dsl <- ds
     }
+
+    ## calculate RAAS BINS
+
+    
+    
     ovl <- clusterCluster(tmtd$iupred3.bins, paste0(tmtd$raas.bins), 
                           cl1.srt=c(rev(levels(iupred3.bins)),"na"),
                           cl2.srt=raas.srt)
     plotdev(file.path(afig.path,paste0("structure_iupred3_",SETID,"_ovl_",ds)),
-            type=ftyp, res=300, width=3,height=3)
+            type=ftyp, res=300, width=3, height=3)
     par(mai=c(.9,.9,.5,.5), mgp=c(3.3,.3,0), tcl=-.25)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt,
-                 xlab=NA, ylab=NA,
-                 show.total=TRUE)
+                 xlab=NA, ylab=NA, show.total=TRUE)
     mtext("disordered score", 2, 3.5)
     mtext(xl.raau, 1, 3.5)
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)

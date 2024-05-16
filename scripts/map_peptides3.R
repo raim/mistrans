@@ -19,9 +19,9 @@ out.path <- file.path(proj.path,"processedData")
 ##if ( !interactive() )
 ##    stop("reset mapping to version 3, or fix new MANE mapping")
 
+### MAIN INPUTS:
 ## SAAP/BP pairs
 saapf <- file.path(out.path,"unique_saap.tsv")
-
 ## BP:protein blast results
 bpmap <- file.path(out.path,"bp_mapped2.tsv")
 
@@ -99,15 +99,14 @@ iufiles <- iufiles[names(fas)]
 cat(paste("iupred3", sum(is.na(iufiles)), "proteins not found\n"))
 
 
-### READ IN SAAP/BP and blast results
+### READ IN and MERGE unique SAAP/BP pairs and BP blast results
 dat <- read.delim(saapf, header=FALSE)
 colnames(dat) <- c("SAAP","BP")
 bmap <- read.delim(bpmap)
 dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
-## grep each base peptide (dat$BP) in the corresponding fasta
-## brute force, each peptide
+## result vectors
 mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
 
@@ -119,6 +118,7 @@ colnames(sssbg) <- c("C","E","H")
 gcoor <- matrix(NA, nrow=nrow(dat), ncol=3)
 colnames(gcoor) <- c("chr","coor","strand")
 
+## Quality Control
 testit <- TRUE # TEST whether the mutation position is correct
 use.regex <- TRUE #FALSE # use TRUE to test blast results vs. direct regex
 
@@ -142,6 +142,7 @@ for ( i in 1:nrow(dat) ) {
    
     oid <- dat$protein[i] # ID with mutation index
     gid <- dat$ensembl[i] # original gene ID
+
     ## TODO: use MANE already here?
     ## problem is that we use oid for AAS mapping
     if ( FALSE ) {
@@ -149,6 +150,7 @@ for ( i in 1:nrow(dat) ) {
         if ( is.na(gid)|gid=="" ) 
             gid <- dat$ensembl[i]
     }
+
     j <- which(names(fas)==oid)
     if ( length(j)==0 ) { # 
         cat(paste("WARNING:",i, oid, "no protein sequence found\n"))

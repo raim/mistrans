@@ -473,18 +473,29 @@ hdat$sstruc <- ssrt[hdat$s4pred]
 hdat$sstruc[hdat$sstruc==""] <- "na"
 
 ## MAP protein level info to TMT Data
-idx <- match(tmtf$SAAP, hdat$SAAP)
+idx.old <- match(tmtf$SAAP, hdat$SAAP)
+idx <- match(paste(tmtf$BP, tmtf$SAAP), paste(hdat$BP, hdat$SAAP))
+
+## 20240516: switched from matching only via SAAP to matching via BP/SAAP!
+## compare differences between SAAP matching and BP/SAAP matching
+if ( interactive() ) {
+    sum(idx!=idx.old) ## 24 different matches
+    df <- which(idx!=idx.old)[2]
+    hdat[idx[df],]
+    hdat[idx.old[df],]
+}
 
 ina <- which(is.na(idx))
 if ( length(ina)>0 ) {
     cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
     tmtf <- tmtf[-ina,]
-    idx <- idx[-ina]
-    
+    idx <- idx[-ina]    
 }
 
 
+## AA/codon/structure mapping
 tmtf$pos <- hdat$pos[idx]
+tmtf$rpos <- hdat$rpos[idx]
 tmtf$from <- hdat$from[idx]
 tmtf$to <- hdat$to[idx]
 tmtf$fromto <- hdat$fromto[idx]
@@ -500,25 +511,28 @@ tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
 tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
 tmtf$sstruc <- hdat$sstruc[idx]
 
+## gene mapping
 tmtf$name <- hdat$name[idx]
 tmtf$gene <- hdat$gene[idx]
 tmtf$transcript <- hdat$transcript[idx]
 tmtf$protein <- hdat$protein[idx]
 tmtf$ensembl <- hdat$ensembl[idx]
-tmtf$MANE.protein <- hdat$MANE.protein[idx]
 tmtf$mane <- hdat$MANE.protein[idx]
 namane <- is.na(tmtf$mane)|tmtf$mane==""
 tmtf$mane[namane] <- tmtf$ensembl[namane]
 ## tag protein sites
 tmtf$unique.site <- paste0(tmtf$ensembl, "_", tmtf$pos)
 
+## gene names
 tnm <- tmtf$name
 tnm[tnm==""] <- tmtf$ensembl[tnm==""]
 tmtf$name <- tnm
 
+## tagging protein type
 tmtf$albumin <- hdat$Hemoglobin.Albumin[idx]
 tmtf$extracellular <- hdat$extracellular[idx]
 
+## AAS position in peptide
 tmtf$site <- hdat$site[idx]
 tmtf$rsite <- hdat$site[idx]/nchar(hdat$BP)[idx]
 tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2))
@@ -532,24 +546,26 @@ if ( healthy ) {
 
 ### MEAN AND MEDIAN RAAS
 
-## STATS PER DATA SET and UNIQUE SAAP
-usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
-araas <- split(tmtf$RAAS, usaap)
+## RAAS MEDIAN  PER DATA SET and UNIQUE BP/SAAP
+if ( only.unique ) {
+    usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
+    araas <- split(tmtf$RAAS, usaap)
+    
+    ##araasl <- listProfile(araas, y=tmtf$RAAS, use.test=use.test, min=3)
+    
+    raas.emedian <- unlist(lapply(araas, median))
+    raas.median <- unlist(lapply(araas, function(x) { log10(median(10^x)) } ))
+    raas.emean <- unlist(lapply(araas, mean))
+    raas.mean <- unlist(lapply(araas, function(x) { log10(mean(10^x)) } ))
 
-raas.emedian <- unlist(lapply(araas, median))
-raas.median <- unlist(lapply(araas, function(x) {log10(median(10^x))}))
-raas.emean <- unlist(lapply(araas, mean))
-raas.mean <- unlist(lapply(araas, function(x) {log10(mean(10^x))}))
-
-tmtf$unique <- usaap
-tmtf$RAAS.mean <- raas.emean[usaap]
-tmtf$RAAS.median <- raas.emedian[usaap]
-
-raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3))
-raas.srt <- levels(raas.bins)
-tmtf$raas.bins <- as.character(raas.bins)
-tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
-
+    tmtf$unique <- usaap
+    tmtf$RAAS.median <- raas.median[usaap]
+    
+    raas.bins <- cut(tmtf$RAAS.median.unique, breaks=c(-6,-4,-2,-1,0,3))
+    raas.srt <- levels(raas.bins)
+    tmtf$raas.bins <- as.character(raas.bins)
+    tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
+}
 ## TODO: albumin vs. globin
 if ( FALSE ) {
     ovl <- clusterCluster(cl1=tmtf$extracellular, cl2=tmtf$albumin)
@@ -567,11 +583,10 @@ if ( exclude.frequent ) {
     tmtf <- tmtf[!tmtf$SAAP%in%rmsaap,]
 }
 if ( only.unique ) {
-
     ## just take the first of each SAAP/BP per Dataset
     tmtf <- tmtf[!duplicated(tmtf$unique),]
     tmtf$RAAS.orig <- tmtf$RAAS
-    tmtf$RAAS <- tmtf$RAAS.median #TODO: use delogged mean?
+    tmtf$RAAS <- tmtf$RAAS.median 
 }
 if (  exclude.extracellular ) {
     rmsaap <- tmtf$SAAP[tmtf$extracellular]
@@ -933,7 +948,6 @@ ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)
 pnms <- ens2nam
 
-## 
 ### GLOBAL DISTRIBUTION BY CANCER TYPE
            
 ylm <- range(tmtf$RAAS)
@@ -960,30 +974,34 @@ legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
 figlabel(LAB, pos="bottomleft", cex=.8)
 dev.off()
 
-tmtu <- tmtf[!duplicated(tmtf$unique),]
-plotdev(file.path(fig.path,paste0("RAAS_distribution_unique")),
-        type=ftyp, res=300, width=3,height=2)
-par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
-boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds), ylim=ylm, las=2,
-        xlab=NA, ylab=xl.raau,
-        cex=.5, pch=19, pars=list(outcol="#00000055"), axes=FALSE)
-for ( ax in c(2,4) ) axis(ax)
-axis(1, at=1:length(uds), labels=uds, las=2)
-figlabel(LAB, pos="bottomright", cex=.9)
-dev.off()
+if ( only.unique ) {
 
-plotdev(file.path(fig.path,paste0("RAAS_distribution_unique_density")),
-        type=ftyp, res=300, width=3,height=2)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-plot(density(tmtu$RAAS.median), ylim=c(0,.5), col=NA,
-     xlab=NA, main=NA, xlim=ylm)
-mtext(xl.raau, 1, 1.5)
-for ( i in seq_along(uds) )
-    lines(density(tmtu$RAAS.median[tmtu$Dataset==uds[i]]), col=i, lwd=2)
-legend("topright", uds, col=seq_along(uds), lty=1, seg.len=.5, lwd=2, bty="n",
-       ncol=1, cex=.8, y.intersp=.9)
-figlabel(LAB, pos="bottomleft", cex=.8)
-dev.off()
+    tmtu <- tmtf[!duplicated(tmtf$unique),]
+    plotdev(file.path(fig.path,paste0("RAAS_distribution_unique")),
+            type=ftyp, res=300, width=3,height=2)
+    par(mai=c(.7,.5,.1,.1), mgp=c(1.2,.3,0), tcl=-.25, xaxs="i")
+    boxplot(tmtu$RAAS.median ~ factor(tmtu$Dataset, levels=uds),
+            ylim=ylm, las=2, xlab=NA, ylab=xl.raau,
+            cex=.5, pch=19, pars=list(outcol="#00000055"), axes=FALSE)
+    for ( ax in c(2,4) ) axis(ax)
+    axis(1, at=1:length(uds), labels=uds, las=2)
+    figlabel(LAB, pos="bottomright", cex=.9)
+    dev.off()
+    
+    plotdev(file.path(fig.path,paste0("RAAS_distribution_unique_density")),
+            type=ftyp, res=300, width=3,height=2)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    plot(density(tmtu$RAAS.median), ylim=c(0,.5), col=NA,
+         xlab=NA, main=NA, xlim=ylm)
+    mtext(xl.raau, 1, 1.5)
+    for ( i in seq_along(uds) )
+        lines(density(tmtu$RAAS.median[tmtu$Dataset==uds[i]]), col=i, lwd=2)
+    legend("topright", uds, col=seq_along(uds),
+           lty=1, seg.len=.5, lwd=2, bty="n",
+           ncol=1, cex=.8, y.intersp=.9)
+    figlabel(LAB, pos="bottomleft", cex=.8)
+    dev.off()
+}
 
 ## TODO: pairs of same SAAP
 ##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
