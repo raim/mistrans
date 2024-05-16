@@ -40,8 +40,9 @@ decod <- 1/read.csv(dana14.file,
 ## relative rate per AA
 decodl <-
     split(decod, GENETIC_CODE[rownames(decod)])
-decodl <- lapply(decodl, function(x) x/mean(x[,1]))
+decodl <- lapply(decodl, function(x) (x-min(x[,1]))/(max(x[,1]-min(x[,1]))))
 decodl <- do.call(rbind, decodl)
+decodl[is.na(decodl)] <- 1
 rownames(decodl) <- sub("M", "M.ATG", rownames(decodl))
 rownames(decodl) <- sub("W", "W.TGG", rownames(decodl))
 rownames(decodl) <- sub(".*\\.", "", rownames(decodl))
@@ -959,7 +960,7 @@ plotdev(file.path(cfig.path,paste0("codons_raas_dana14_rel")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.4,.3,0), tcl=-.25)
 pc <- plotCor(decodl[sub(".*-","",names(Craas)),1], Craas, 
         line.methods=c("ols"), density=FALSE, ylab=NA,
-        xlab=expression(relative~decoding~rate), col=NA,
+        xlab=expression(scaled~decoding~rate), col=NA,
         legpos="bottomright")
 mtext(xl.raas, 2, 1.2)
 points(decodl[sub(".*-","",names(Craas)),1], Craas, 
@@ -1042,7 +1043,7 @@ plotdev(file.path(cfig.path,paste0("codons_raas_dana14_rel_byAA")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(decodl[sub(".*-","",names(Craas)),1], Craas, 
         density=FALSE, ylab=xl.raas,
-        xlab=expression(relative~decoding~rate), col=NA,
+        xlab=expression(scaled~decoding~rate), col=NA,
         legpos="bottomright")
 points(decodl[sub(".*-","",names(Craas)),1], Craas, 
        lwd=2, cex=1,
