@@ -517,7 +517,7 @@ for ( ds in auds ) {
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tmtd$RAAS.median, tmtd$iupred3,
-            xlab=NA, ylab="disordered score")
+            xlab=NA, ylab="disordered, IUpred3")
     mtext(xl.raau, 1, 1.6)
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -527,7 +527,7 @@ for ( ds in auds ) {
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tmtd$RAAS.median, tmtd$flDPnn,
-            xlab=NA, ylab="disordered score")
+            xlab=NA, ylab="disordered, flDPnn")
     mtext(xl.raau, 1, 1.6)
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -602,6 +602,7 @@ plotProfiles(ovw,
              mtxt="DisoRDPbind", mtxt.line=3.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
+
 ## MMSeq2
 iusrt <- levels(MMSeq2.bins)
 ovw <- raasProfile(x=tmtf, id="SAAP", 
