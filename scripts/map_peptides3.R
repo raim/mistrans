@@ -46,6 +46,19 @@ s4pred <- file.path(mam.path,"processedData",
 ## iupred3/anchor2
 iupred <- file.path(mam.path,"processedData","iupred3")
 
+## uniprot<->ensembl mapping: required to find describePROT
+uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+
+## describePROT
+##  * sequence,
+##  * MMseqs2 - Fast sequence alignment [PMID:30615063],
+##  * ASAquick - Prediction of protein accessible surface area [PMID:27787824],
+##  * DisoRDPbind - Prediction of disordered RNA, DNA, and protein
+##    binding residues [PMID:26109352],
+##  * SCRIBER - Prediction of protein binding residues [PMID:31510679],
+##  * flDPnn - Prediction of intrinsically disordered residues [PMID:34290238].
+descrp <- file.path(mam.path,"processedData","describePROT")
+
 ## figures
 dir.create(fig.path, showWarnings=FALSE)
 
@@ -98,6 +111,12 @@ iufiles <- iufiles[names(fas)]
 
 cat(paste("iupred3", sum(is.na(iufiles)), "proteins not found\n"))
 
+## read uniprot<->ensembl mapping for describPROT
+uni2ens <- read.delim(uni2ens.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+uni2ens <- uni2ens[uni2ens[,2]%in%names(fas),]
+
 
 ### READ IN and MERGE unique SAAP/BP pairs and BP blast results
 dat <- read.delim(saapf, header=FALSE)
@@ -108,7 +127,9 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 ## result vectors
 mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
-    sss <- anc <- iup <- iubg <- anbg <- rep(NA, nrow(dat))
+    sss <- anc <- iup <- iubg <- anbg <-
+        mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
+            rep(NA, nrow(dat))
 
 ## secondary structure frequencies in whole protein
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
@@ -123,13 +144,15 @@ testit <- TRUE # TEST whether the mutation position is correct
 use.regex <- TRUE #FALSE # use TRUE to test blast results vs. direct regex
 
 ## count errors
+errtypes <- c("no protein", "using blast","no BP",
+              "wrong s4pred len","wrong iupred3 len",
+              "no describePROT",
+              "wrong descPROT len",
+              "no transcript", "wrong codon",
+              "AAS > CDS len")
 wiup <- character()
-errors <- matrix(0, nrow=nrow(dat), ncol=8)
-colnames(errors) <- c("no protein",
-                      "using blast","no BP",
-                      "wrong s4pred len","wrong iupred3 len",
-                      "no transcript", "wrong codon",
-                      "AAS > CDS len")
+errors <- matrix(0, nrow=nrow(dat), ncol=length(errtypes))
+colnames(errors) <- errtypes
 if ( !use.regex ) errors[,"using blast"] <- 1
 
 
@@ -254,6 +277,41 @@ for ( i in 1:nrow(dat) ) {
         if ( Sys.info() ["nodename"]=="exon" ) 
             file.copy(from=file.path(iupred,iufile), to=tof, overwrite = FALSE)
     }
+
+    ## get describePROT data
+    if ( gid%in%uni2ens[,2] ) {
+        idx <- which(uni2ens[,2]==gid)
+        if ( length(idx)>1 ) {
+            cat(paste("WARNING:", i, gid, "multiple uniprot hits,",
+                      "taking first\n"))
+            idx <- idx[1]
+        }
+        uid <- uni2ens[idx,1]
+        ## open file
+        dprt.file <- file.path(descrp, paste0(uid,".tsv.gz"))
+        if ( !file.exists(dprt.file) ) {
+                cat(paste("WARNING:", i,
+                          "desribePROT missing for",
+                          oid, uid, "\n"))
+                errors[i,"no describePROT"] <- 1
+        } else {
+            dprt <- read.delim(dprt.file, header=FALSE)
+
+            ## check sequence
+            if ( nrow(dprt)!=len[i] ) {
+                cat(paste("WARNING:", i,
+                          "desribePROT has wrong length for",
+                          oid, uid, "desribeP:",nrow(dprt), "vs. protein:",
+                          len[i],"\n"))
+                errors[i,"wrong descPROT len"] <- 1
+            }             
+            mmseq2[i] <- dprt[pos[i], 2] 
+            asaquick[i] <- dprt[pos[i], 3] 
+            disordRDPbind[i] <- dprt[pos[i], 4] 
+            scriber[i] <- dprt[pos[i], 5] 
+            flDPnn[i] <- dprt[pos[i], 6] 
+        }
+    }
     
     ## GET CODON
     ## protein:transcript mapping
@@ -347,7 +405,12 @@ dat <- cbind(dat,
              from=aaf, to=aat,
              codon=cdn, gcoor, 
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
-             anchor2=anc, anchor2.protein=anbg)
+             anchor2=anc, anchor2.protein=anbg,
+             MMSeq2=mmseq2,
+             ASAquick=asaquick,
+             DisoRDPbind=disordRDPbind,
+             SCRIBER=scriber,
+             flDPnn=flDPnn)
 
 ## FILTER DATA
 
@@ -436,7 +499,7 @@ table(dat[,"extracellular"], dat[,"IG"])
 
 ### WRITE OUT TABLE with positions for downstream analysis
 if ( !interactive() ) {
-    write.table(dat, file=file.path(out.path,"saap_mapped3.tsv"),
+    write.table(dat, file=file.path(out.path,"saap_mapped4.tsv"),
                 sep="\t", quote=FALSE, na="", row.names=FALSE)
 }
 

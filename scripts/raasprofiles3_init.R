@@ -267,7 +267,7 @@ dana14.file <- file.path(dat.path,"dana14_codons.csv")
 wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
 gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
 
-in.file <- file.path(out.path,"saap_mapped3.tsv")
+in.file <- file.path(out.path,"saap_mapped4.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
 
@@ -471,6 +471,31 @@ hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
 ssrt <- c(E="sheet", H="helix", C="coil")
 hdat$sstruc <- ssrt[hdat$s4pred]
 hdat$sstruc[hdat$sstruc==""] <- "na"
+## flDPnn - disordered
+flDPnn.bins <- cut(hdat$flDPnn, breaks=seq(0,1,.2))
+rsrt <- levels(flDPnn.bins)
+hdat$flDPnn.bins <- as.character(flDPnn.bins)
+hdat$flDPnn.bins[is.na(hdat$flDPnn.bins)] <- "na"
+## DisoRDPbind - 
+DisoRDPbind.bins <- cut(hdat$DisoRDPbind, breaks=seq(0,1,.2))
+rsrt <- levels(DisoRDPbind.bins)
+hdat$DisoRDPbind.bins <- as.character(DisoRDPbind.bins)
+hdat$DisoRDPbind.bins[is.na(hdat$DisoRDPbind.bins)] <- "na"
+## MMSeq2 - conservation
+MMSeq2.bins <- cut(hdat$MMSeq2, breaks=seq(0,4.5,.5))
+rsrt <- levels(MMSeq2.bins)
+hdat$MMSeq2.bins <- as.character(MMSeq2.bins)
+hdat$MMSeq2.bins[is.na(hdat$MMSeq2.bins)] <- "na"
+## SCRIBER - binding
+SCRIBER.bins <- cut(hdat$SCRIBER, breaks=seq(0,1,.2))
+rsrt <- levels(SCRIBER.bins)
+hdat$SCRIBER.bins <- as.character(SCRIBER.bins)
+hdat$SCRIBER.bins[is.na(hdat$SCRIBER.bins)] <- "na"
+## ASAquick - surface
+ASAquick.bins <- cut(hdat$ASAquick, breaks=seq(0,1,.2))
+rsrt <- levels(ASAquick.bins)
+hdat$ASAquick.bins <- as.character(ASAquick.bins)
+hdat$ASAquick.bins[is.na(hdat$ASAquick.bins)] <- "na"
 
 ## MAP protein level info to TMT Data
 idx.old <- match(tmtf$SAAP, hdat$SAAP)
@@ -511,6 +536,18 @@ tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
 tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
 tmtf$sstruc <- hdat$sstruc[idx]
 
+## discPROT
+tmtf$flDPnn <- hdat$flDPnn[idx]
+tmtf$flDPnn.bins <- hdat$flDPnn.bins[idx]
+tmtf$DisoRDPbind <- hdat$DisoRDPbind[idx]
+tmtf$DisoRDPbind.bins <- hdat$DisoRDPbind.bins[idx]
+tmtf$MMSeq2 <- hdat$MMSeq2[idx]
+tmtf$MMSeq2.bins <- hdat$MMSeq2.bins[idx]
+tmtf$ASAquick <- hdat$ASAquick[idx]
+tmtf$ASAquick.bins <- hdat$ASAquick.bins[idx]
+tmtf$SCRIBER <- hdat$SCRIBER[idx]
+tmtf$SCRIBER.bins <- hdat$SCRIBER.bins[idx]
+
 ## gene mapping
 tmtf$name <- hdat$name[idx]
 tmtf$gene <- hdat$gene[idx]
@@ -547,7 +584,7 @@ if ( healthy ) {
 ### MEAN AND MEDIAN RAAS
 
 ## RAAS MEDIAN  PER DATA SET and UNIQUE BP/SAAP
-if ( only.unique ) {
+##if ( only.unique ) {
     usaap <- paste0(tmtf$SAAP,"/",tmtf$BP,"/",tmtf$Dataset)
     araas <- split(tmtf$RAAS, usaap)
     
@@ -561,11 +598,11 @@ if ( only.unique ) {
     tmtf$unique <- usaap
     tmtf$RAAS.median <- raas.median[usaap]
     
-    raas.bins <- cut(tmtf$RAAS.median.unique, breaks=c(-6,-4,-2,-1,0,3))
+    raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3))
     raas.srt <- levels(raas.bins)
     tmtf$raas.bins <- as.character(raas.bins)
     tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"
-}
+##}
 ## TODO: albumin vs. globin
 if ( FALSE ) {
     ovl <- clusterCluster(cl1=tmtf$extracellular, cl2=tmtf$albumin)

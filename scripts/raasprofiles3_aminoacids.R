@@ -483,8 +483,7 @@ for ( ds in auds ) {
 ### BY STRUCTURAL FEATURES
 ## TODO: align this with protein profiles "site" matrix,
 ## use unique site raas instead of unique Dataset/BP/SAAP Raas.
-if ( FALSE )
-    for ( ds in auds ) {
+for ( ds in auds ) {
 
     tmtd <- tmtf
     dsl <- ""
@@ -497,9 +496,8 @@ if ( FALSE )
     }
 
     ## calculate RAAS BINS
-
-        ## NOTE: this approach leads to the same protein site being
-        ## included multiple times!
+    ## NOTE: this approach leads to the same protein site being
+    ## included multiple times!
     
     ovl <- clusterCluster(tmtd$iupred3.bins, paste0(tmtd$raas.bins), 
                           cl1.srt=c(rev(levels(iupred3.bins)),"na"),
@@ -524,6 +522,16 @@ if ( FALSE )
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
     dev.off()
+
+    plotdev(file.path(afig.path,paste0("structure_flDPnn_",SETID,"_cor_",ds)),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tmtd$RAAS.median, tmtd$flDPnn,
+            xlab=NA, ylab="disordered score")
+    mtext(xl.raau, 1, 1.6)
+    figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
+    figlabel(LAB, pos="bottomright", cex=.7)
+    dev.off()
 }
 
 ## TODO: IUPRED3 vs. RAAS bins
@@ -534,6 +542,105 @@ if ( FALSE )
 ##                   use.test=use.test, do.plots=FALSE, xlab="TMT level RAAS",
 ##                   verb=0)
 ##
+
+## ASAquick
+iusrt <- levels(ASAquick.bins)
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="ASAquick.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("ASAquick_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_ASAquick_",SETID)),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="ASAquick", mtxt.line=3.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+## SCRIBER
+iusrt <- levels(SCRIBER.bins)
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="SCRIBER.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("SCRIBER_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_SCRIBER_",SETID)),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="SCRIBER", mtxt.line=3.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+
+## DisoRDPbind
+iusrt <- levels(DisoRDPbind.bins)
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="DisoRDPbind.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("DisoRDPbind_",SETID,"_")))
+
+plotProfiles(ovw,
+             fname=file.path(afig.path,paste0("structure_DisoRDPbind_",SETID)),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="DisoRDPbind", mtxt.line=3.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+## MMSeq2
+iusrt <- levels(MMSeq2.bins)
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="MMSeq2.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("MMSeq2_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_MMSeq2_",SETID)),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="conservation score, MMSeq2", mtxt.line=3.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+
+## flDPnn
+iusrt <- levels(flDPnn.bins)
+ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="flDPnn.bins", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(iusrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("flDPnn_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_flDPnn_",SETID)),
+             mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="disordered score, flDPnn", mtxt.line=3.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
 
 ## IUPRED3
 iusrt <- levels(iupred3.bins)
@@ -551,7 +658,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_iupred3_",SETID)),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
-             mtxt="disordered score", mtxt.line=3.3,
+             mtxt="disordered score, IU3", mtxt.line=3.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
