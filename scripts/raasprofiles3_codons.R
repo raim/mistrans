@@ -1126,10 +1126,11 @@ par(mai=c(1,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovd, value="median", vcols=acols, vbrks=abrks, axis=1:2,
            p.dot=1e-10, dot.sze=c(.3,2), show.total=TRUE)
 
+ctmt$CCLS <-
+    toupper(sub("differentiation","diff.",
+                sub("proliferation", "proli.", ctmt$ccls)))
 
 for ( ds in auds ) {
-
-
     for ( type in c("all",unique(ctmt$from)) ) {
         dtmt <- ctmt
         dsl <- ""
@@ -1146,36 +1147,51 @@ for ( ds in auds ) {
             dtmt <- dtmt[dtmt$from==type,]
         if ( nrow(dtmt)<2 ) next
 
-        cat(paste(ds, "plotting", type, "\n"))
         
         ## comparison types
-        ts <- names(sort(table(dtmt$ccls)))
-        d1 <- ts[1]
-        d2 <- ts[2]
-
+        cnt <- sort(table(dtmt$CCLS))
+        ts <- names(cnt)
+        if ( length(ts)==3 ) {
+            d1 <- "DIFF."
+            d2 <- "PROLI."
+        } else {
+            d1 <- ts[1]
+            d2 <- ts[2]
+        }
         
+        tt <- NULL
+        if ( sum(dtmt$CCLS==d1, na.rm=TRUE)>1 &
+             sum(dtmt$CCLS==d2, na.rm=TRUE)>1 ) {
+            tt <- t.test(dtmt$RAAS[dtmt$CCLS==d1],
+                         dtmt$RAAS[dtmt$CCLS==d2])
+        } else next
+        if ( tt$p.value >0.05 ) next
+
+        cat(paste(ds, "plotting", type, "\n"))
+
         plotdev(file.path(cfig.path,
                           paste0("codons_classes_gingold14_",ds,"_",type)),
                 type=ftyp, res=300, width=2.5,height=3.5)
-        par(mai=c(1.25,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
-        bp <- boxplot(dtmt$RAAS ~ dtmt$ccls, xlab=NA,
-                      ylab=expression(log[10](RAAS)), axes=FALSE)
-        if ( min(table(dtmt$ccls)) < 50 )
-            stripchart(RAAS ~ ccls, vertical = TRUE, data = dtmt, 
+        par(mai=c(.6,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25, xpd=TRUE)
+        bp <- boxplot(dtmt$RAAS ~ dtmt$CCLS, xlab=NA,
+                      ylab=expression(log[10](RAAS)), axes=FALSE,
+                      ylim=c(-5.7,3.3))
+        if ( min(table(dtmt$CCLS)) < 50 )
+            stripchart(RAAS ~ CCLS, vertical = TRUE, data = dtmt, 
                        method = "jitter", add = TRUE, pch = 20,
                        col="#00000077", cex=1,
                        axes=FALSE)
         axis(2)
-        axis(1, at=1:length(bp$names), labels=bp$names, las=2)
+        axis(1, at=1:length(bp$names), labels=bp$names, las=2, col=NA,
+             mgp=c(0,0,0))
+        axis(3,  at=1:length(bp$names), labels=cnt[bp$names], las=1, col=NA,
+             mgp=c(0,-1,0), cex.axis=.8)
         ##mtext("codon classes\nGingold et al. 2014", 1, 3)
-        if ( sum(dtmt$ccls==d1, na.rm=TRUE)>1 &
-             sum(dtmt$ccls==d2, na.rm=TRUE)>1 ) {
-            tt <- t.test(dtmt$RAAS[dtmt$ccls==d1],
-                         dtmt$RAAS[dtmt$ccls==d2])
+        if ( !is.null(tt) ) {
             x0 <- which(bp$names==d1)
             x1 <- which(bp$names==d2)
             arrows(x0=x0, x1=x1,
-               y0=par("usr")[4], code=3, angle=90, length=.05, xpd=TRUE)
+                   y0=par("usr")[4], code=3, angle=90, length=.05, xpd=TRUE)
             text((x0+x1)/2,
                  par("usr")[4], paste0("p=",signif(tt$p.value,1)),
                  pos=3, xpd=TRUE)

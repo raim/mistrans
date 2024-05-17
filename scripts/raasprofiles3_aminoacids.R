@@ -498,7 +498,8 @@ if ( FALSE )
 
     ## calculate RAAS BINS
 
-    
+        ## NOTE: this approach leads to the same protein site being
+        ## included multiple times!
     
     ovl <- clusterCluster(tmtd$iupred3.bins, paste0(tmtd$raas.bins), 
                           cl1.srt=c(rev(levels(iupred3.bins)),"na"),
