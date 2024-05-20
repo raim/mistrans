@@ -20,7 +20,11 @@ wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dat
 ## CODON DATA
 ## TODO: add download url for dana14_codons.ods/csv
 
-#
+## @HernandezAlias2023: Using protein-per-mRNA differences among human
+## tissues in codon optimization
+wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/MediaObjects/13059_2023_2868_MOESM3_ESM.xlsx -P $MISDATA/originalData/ -O hernandez-alias23_file3.xlsx
+
+#W @Wu2019
 ## We calculated the codon stability coefficient (CSC) as the Pearson
 ## correlation coefficient between mRNA stability and codon
 ## occurrence. [...] The CSC scores do not present strong correlation

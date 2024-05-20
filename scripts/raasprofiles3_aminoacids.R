@@ -517,7 +517,7 @@ for ( ds in auds ) {
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tmtd$RAAS.median, tmtd$iupred3,
-            xlab=NA, ylab="disordered, IUpred3")
+            xlab=NA, ylab="disorder, IUpred3")
     mtext(xl.raau, 1, 1.6)
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -527,7 +527,7 @@ for ( ds in auds ) {
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tmtd$RAAS.median, tmtd$flDPnn,
-            xlab=NA, ylab="disordered, flDPnn")
+            xlab=NA, ylab="disorder, flDPnn")
     mtext(xl.raau, 1, 1.6)
     figlabel(dsl, pos="bottomleft", font=2, cex=1.2)
     figlabel(LAB, pos="bottomright", cex=.7)
@@ -554,7 +554,8 @@ ovw <- raasProfile(x=tmtf, id="SAAP",
                    verb=0, 
                    fname=file.path(dpath,paste0("ASAquick_",SETID,"_")))
 
-plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_ASAquick_",SETID)),
+plotProfiles(ovw,
+             fname=file.path(afig.path,paste0("structure_ASAquick_",SETID)),
              mai=c(.8,.9,.5,.5), ttcols=ttcols, value="median",
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
@@ -619,7 +620,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_MMSeq2_",SETID)),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
-             mtxt="conservation score, MMSeq2", mtxt.line=3.3,
+             mtxt="conservation score,\nMMSeq2", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
@@ -639,7 +640,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_flDPnn_",SETID)),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
-             mtxt="disordered score, flDPnn", mtxt.line=3.3,
+             mtxt="disorder, flDPnn", mtxt.line=3.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
@@ -659,7 +660,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_iupred3_",SETID)),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
-             mtxt="disordered score, IU3", mtxt.line=3.3,
+             mtxt="disorder, IU3", mtxt.line=3.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
@@ -700,3 +701,50 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_s4pred_",SETID)),
              gcols=gcols)
 
 
+### COMPARE STRUCTURAL MEASURES at AAS
+## iupred3 vs.flDPnn
+## anchor2 vs. DisoRDPbind
+
+fname <- file.path(afig.path,paste0("structure_cor_iupred3_flDPnn"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$iupred3, tmtf$flDPnn, xlab="iupred3", ylab="flDPnn")
+dev.off()
+
+fname <- file.path(afig.path,paste0("structure_cor_anchor2_DisoRDPbind"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$anchor2, tmtf$DisoRDPbind, xlab="anchor2", ylab="DisoRDPbind",
+        legpos="bottomright")
+dev.off()
+
+fname <- file.path(afig.path,paste0("structure_cor_MMSeq2_RAAS"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$MMSeq2, tmtf$RAAS,
+        xlab="conservation score, MMSeq2",
+        ylab=xl.raas, legpos="topright")
+dev.off()
+
+fname <- file.path(afig.path,paste0("structure_cor_MMSeq2_iupred3"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$MMSeq2, tmtf$iupred3,
+        xlab="conservation score, MMSeq2",
+        ylab="disordered score, iupred3")
+dev.off()
+
+fname <- file.path(afig.path,paste0("structure_cor_flDPnn_RAAS"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$flDPnn, tmtf$RAAS,
+        xlab="disordered score, flDPnn",
+        ylab=xl.raas, legpos="bottomright")
+dev.off()
+fname <- file.path(afig.path,paste0("structure_cor_iupred3_RAAS"))
+plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(tmtf$iupred3, tmtf$RAAS,
+        xlab="disordered score, iupred3",
+        ylab=xl.raas, legpos="bottomleft")
+dev.off()

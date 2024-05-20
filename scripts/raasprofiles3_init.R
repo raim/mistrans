@@ -482,7 +482,7 @@ rsrt <- levels(DisoRDPbind.bins)
 hdat$DisoRDPbind.bins <- as.character(DisoRDPbind.bins)
 hdat$DisoRDPbind.bins[is.na(hdat$DisoRDPbind.bins)] <- "na"
 ## MMSeq2 - conservation
-MMSeq2.bins <- cut(hdat$MMSeq2, breaks=seq(0,4.5,.5))
+MMSeq2.bins <- cut(hdat$MMSeq2, breaks=seq(0,5,1))
 rsrt <- levels(MMSeq2.bins)
 hdat$MMSeq2.bins <- as.character(MMSeq2.bins)
 hdat$MMSeq2.bins[is.na(hdat$MMSeq2.bins)] <- "na"
