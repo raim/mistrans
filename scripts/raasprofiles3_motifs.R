@@ -141,7 +141,7 @@ boxplot(bdat$median ~ met)
 ## CREATE POSITION WEIGHT MATRICES
 ## for certain sequence classes
 
-filt <- acd #bdat$site==2 #kr
+filt <- met # trp # acd #bdat$site==2 #kr
 
 ## generate frequencies at each position
 getPFM <- function(aa, alphabet=ASN$chars) {
@@ -160,15 +160,22 @@ getPFM <- function(aa, alphabet=ASN$chars) {
         ctl[alphabet[alphabet%in%rownames(ctl)],]
     ctm[is.na(ctm)] <- 0
 
+    ## frequencies
     ctf <- t(t(ctm)/apply(ctm,2,sum))
     ctf
 }
 
-cols <- as.character(c(-3:3))
-pfm1 <- getPFM(aam[ filt,cols])
-pfm2 <- getPFM(aam[!filt,cols])
+cols <- as.character(c(-10:10))
+pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
+pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
 
-dfob <- createDiffLogoObject(pfm2, pfm1, alphabet=ASN)
+## TODO: adapt colors
+ASN2 <- ASN
+ASN2$cols <- aa.cols[ASN2$chars]
+
+dfob <- createDiffLogoObject(pfm2, pfm1, alphabet=ASN2)
+
+
 diffLogo(dfob)
 
 
