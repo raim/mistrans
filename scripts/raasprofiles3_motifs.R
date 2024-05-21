@@ -18,6 +18,10 @@
 ## 3: from/to AA,
 ## 4: from/to by AA prop.
 
+## TODO:
+## * create sequence matrix WITH substitution,
+## * RAAS profiles for EACH selection, by cancer types.
+
 library(DiffLogo)
 
 ## project-specific functions
@@ -141,7 +145,7 @@ boxplot(bdat$median ~ met)
 ## CREATE POSITION WEIGHT MATRICES
 ## for certain sequence classes
 
-filt <- met # trp # acd #bdat$site==2 #kr
+filt <- bdat$median> -1 #fromto=="Q:A" #bdat$site%in%2 #kr # acd #bdat$pfromto=="polar:special" # bdat$site==2 #kr #met # trp # acd #
 
 ## generate frequencies at each position
 getPFM <- function(aa, alphabet=ASN$chars) {
@@ -169,15 +173,14 @@ cols <- as.character(c(-10:10))
 pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
 pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
 
-## TODO: adapt colors
+## use our internal AA colors
 ASN2 <- ASN
 ASN2$cols <- aa.cols[ASN2$chars]
 
 dfob <- createDiffLogoObject(pfm2, pfm1, alphabet=ASN2)
-
-
 diffLogo(dfob)
 
 
 
 
+## TODO: dotprofiles per cancer for each motif
