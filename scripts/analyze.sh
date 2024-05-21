@@ -32,6 +32,10 @@ wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/
 wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D -P $MISDATA/originalData/ -O elife-45396-fig1-data2-v2.csv
 
 
+## @Yang2022: thermal stability
+## https://structure-next.med.lu.se/ProTstab2/
+wget https://structure-next.med.lu.se/ProTstab2/download/download_human_predict_result -P $MISDATA/originalData/ -O ProTstab2_human.csv
+
 ### SAAP/RAAS ANALYSIS
 
 ## analyze data structure, different number of replicates per unique SAAP

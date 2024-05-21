@@ -28,7 +28,7 @@ randomize.peptides <- FALSE # TRUE #
 
 ## INPUT FILES
 ## list of SAAPs with coordinates
-in.file <- file.path(dat.path,"saap_mapped3.tsv")
+in.file <- file.path(dat.path,"saap_mapped4.tsv")
 ## RAAS values, TMT level
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")

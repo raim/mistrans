@@ -164,6 +164,27 @@ if ( interactive() ) {
 }
 
 
+### PROTEIN LENGTHS and AAS along proteins
+
+## get protein length with saap_mapped4.tcv
+plen <- split(hdat$len, hdat$ensembl)
+plen <- lapply(plen, unique)
+table(lengths(plen)) # check: all should be the same
+plen <- unlist(lapply(plen, function(x) x[1]))
+
+plotdev(file.path(pfig.path,paste0("protein_lengths_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(pnms[rownames(pbstat)], names(hlv))
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, log10(plen[rownames(ptstat)]), axes=FALSE,
+        xlab=xl.prots, ylab="protein length")
+axis(1)
+axis(2, at=1:10, labels=10^(1:10))
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+box()
+dev.off()
+
+
 ## PROTEIN HALF-LIVES, @Mathieson2018
 hlvd <- readxl::read_xlsx(math18.file)
 
@@ -185,8 +206,8 @@ plotCor(pbstat$median, log10(hlv[idx]),
         xlab=xl.prots, ylab=xl.hlf, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
-## TODO: log tick marks
-##axis(2, at=rep(1:10, 4) * 10^rep(0:3, each=10), labels=FALSE)
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+box()
 dev.off()
 
 ## halflives all
@@ -198,6 +219,23 @@ plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
         xlab=xl.prota, ylab=xl.hlf, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+box()
+dev.off()
+
+## halflives site
+plotdev(file.path(pfig.path,paste0("protein_halflives_lengths")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(pnms[names(plen)], names(hlv))
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(log10(plen), log10(hlv[idx]),
+        xlab="protein length", ylab=xl.hlf, axes=FALSE)
+axis(1, at=1:10, labels=10^(1:10))
+axis(2, at=1:10, labels=10^(1:10))
+## TODO: log tick marks
+axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+box()
 dev.off()
 
 if ( interactive() ) {
@@ -241,12 +279,19 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
 p20 <- data.frame(readxl::read_xlsx(pepe24.file, sheet=2))
 
 xl.20s <- expression(median~log[2]("20S"/control))
+xl.20p <- expression("20S target:"~sign~"x"~log[10](p))
 
 ## MEDIAN LG2FC PER PROTEIN
 p20s <- p20[!is.na(p20$Log2.FC.),]
 p20l <- split(p20s[,c("Log2.FC.")],
               p20s[,"UniprotID"])
 p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
+
+## median -log10(p)*sign
+p20s$pscale <- sign(p20s$Log2.FC.) * -log10(p20s$p.value)
+p20l <- split(p20s[,c("pscale")],
+              p20s[,"UniprotID"])
+p20pv <- unlist(lapply(p20l, median, na.rm=TRUE))
 
 
 ## get uniprot mapping
@@ -282,7 +327,17 @@ plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,
-        ylab=xl.20s, signif=2, round=2)
+        ylab=xl.20s, signif=2, round=2, legpos="bottomright")
+dev.off()
+
+lg2fc <- p20pv
+names(lg2fc) <- p2el[names(lg2fc)]
+lg2fc <- lg2fc[rownames(ptstat)]
+plotdev(file.path(pfig.path,paste0("p20_protein_pval_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, lg2fc, xlab=xl.prota,
+        ylab=xl.20p, signif=2, round=2)
 dev.off()
 
 ## brute force
@@ -337,16 +392,18 @@ plotdev(file.path(pfig.path,paste0("protein_iupred3_all")),
 idx <- match(rownames(ptstat), names(iu3))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, iu3[rownames(ptstat)], signif = 1,
+        legpos="topright",
         xlab=xl.prota,
-        ylab="iupred3")
+        ylab="disordered score, IUPred3")
 dev.off()
 plotdev(file.path(pfig.path,paste0("protein_iupred3_site")),
         type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(rownames(ptstat), names(iu3))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, iu3[rownames(pbstat)], signif = 1,
+        legpos="topright",
         xlab=xl.prota,
-        ylab="iupred3")
+        ylab="disordered score, IUPred3")
 dev.off()
 
 ### PROTEIN WINDOWS - 50 AA WINDOWS

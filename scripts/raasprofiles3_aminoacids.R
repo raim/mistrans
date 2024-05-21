@@ -620,7 +620,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("structure_MMSeq2_",SETID)),
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
-             mtxt="conservation score,\nMMSeq2", mtxt.line=2.3,
+             mtxt="conservation,\nMMSeq2", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
@@ -722,7 +722,7 @@ fname <- file.path(afig.path,paste0("structure_cor_MMSeq2_RAAS"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(tmtf$MMSeq2, tmtf$RAAS,
-        xlab="conservation score, MMSeq2",
+        xlab="conservation, MMSeq2",
         ylab=xl.raas, legpos="topright")
 dev.off()
 
@@ -730,7 +730,7 @@ fname <- file.path(afig.path,paste0("structure_cor_MMSeq2_iupred3"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(tmtf$MMSeq2, tmtf$iupred3,
-        xlab="conservation score, MMSeq2",
+        xlab="conservation, MMSeq2",
         ylab="disordered score, iupred3")
 dev.off()
 
