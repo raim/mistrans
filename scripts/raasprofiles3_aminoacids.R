@@ -1,4 +1,6 @@
 
+### ANALYZE AMINO ACID AND PROTEIN STRUCTURAL PROPERTIES at AAS
+
 ## project-specific functions
 source("~/work/mistrans/scripts/saap_utils.R")
 

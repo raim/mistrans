@@ -1,9 +1,11 @@
 
+### EXPORT AAS SEQUENCE CONTEXT FOR SEQUENCE MOTIF ANALYSIS.
+
 ## load AAS mapping, 
 ## load protein fasta,
 ## load transcript fasta,
 ## get sequences surrounding the AAS and analyze here,
-## and export for sequence motif analysis.
+## and export.
 
 
 source("~/work/mistrans/scripts/saap_utils.R")
@@ -125,7 +127,7 @@ cat(paste(length(unex),
           "non-matching sequences have a non-standard START codon (CTG,GTG)",
           "as indicated by manual inspecting\n"))
 
-if ( length(unex)!=3 )
+if ( length(unex)!=9 )
     stop("manual inspection of non-matching transcript and protein sequences",
          "is not valid anymore - RECHECK")
 
@@ -160,7 +162,7 @@ sum(pctx=="-")
 ## transcripts
 tctx <- sapply(1:nrow(dat), function(i) {
     ##for ( i in 1:nrow(dat) ){
-    fsq <- tfas[[i]]$seq # protein sequence
+    fsq <- tfas[[i]]$seq # transcript sequence
     nsq <- nchar(fsq)
     
     rrng <- seq(-DST*3,DST*3 +2,1)
@@ -293,14 +295,18 @@ dups <- duplicated(paste(dat$BP))#, dat$SAAP))
 ## REMOVE IG, inf/na RAAS and duplicate BP
 res <- res[!(isig|rmv|dups),]
 
+out.file <- file.path(dat.path, "saap_context.tsv")
+
 ## randomize RAAS associations
 if ( randomize ) {
+    out.file <- sub("\\.tsv", "_randomRAAS.tsv", out.file)
     res$median <-
         sample(res$median)
 }
 
 ## randomize AA sequence per peptide
 if ( randomize.peptides ) {
+    out.file <- sub("\\.tsv", "_randomSEQ.tsv", out.file)
     peps <- strsplit(res$peptide,"")
     pepr <- unlist(lapply(peps, function(x) paste(sample(x),collapse="")))
     res$peptide <- pepr
@@ -311,7 +317,6 @@ if ( interactive() ) {
     hist(res$cv)
 }
 
-out.file <- file.path(dat.path, "saap_context.tsv")
 write.table(res, file=out.file, sep="\t", quote=FALSE, na="", row.names=FALSE)
 
 ## TODO:

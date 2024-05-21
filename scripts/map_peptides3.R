@@ -129,7 +129,7 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <-
         mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
-            rep(NA, nrow(dat))
+            pctx <- nctx <- rep(NA, nrow(dat))
 
 ## secondary structure frequencies in whole protein
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
@@ -212,6 +212,20 @@ for ( i in 1:nrow(dat) ) {
     pos[i] <- AAS + mut[i] -1
     len[i] <- length(unlist(strsplit(target,"")))
 
+    ## GET AA SEQUENCE CONTEXT +/-25
+    DST <- 25
+    nsq <- nchar(target)
+    rrng <- seq(-DST,DST,1)
+    sq <- rep("-",length(rrng)) ## GAP
+    names(sq) <- rrng
+    ## GET RANGE AROUND AAS
+    rng <- (pos[i]-DST):(pos[i]+DST)
+    ## cut range to available
+    rrng <- rrng[rng>0 & rng<=nsq]
+    rng <- rng[rng>0 & rng<=nsq]
+    sq[as.character(rrng)] <- unlist(strsplit(target,""))[rng]
+    pctx[i] <- paste0(sq, collapse="")
+   
     ## test mutation
     if ( testit ) { #
         if ( length(grep(query,target))==0 ) {
@@ -343,7 +357,24 @@ for ( i in 1:nrow(dat) ) {
         cdn[i] <- codon
     }
     
-    ## get genomic position via CDS list and posl
+    ## GET NT SEQUENCE CONTEXT +/-25
+    fsq <- nt$seq # transcript sequence
+    nsq <- nchar(fsq)
+    
+    rrng <- seq(-DST*3,DST*3 +2,1)
+    sq <- rep("-",length(rrng)) ## GAP
+    names(sq) <- rrng
+
+    ## GET RANGE AROUND AAS
+    tpos <- pos[i]*3 -2
+    rng <- (tpos-DST*3):(tpos+DST*3 +2)
+    ## cut range to available
+    rrng <- rrng[rng>0 & rng<=nsq]
+    rng <- rng[rng>0 & rng<=nsq]
+    sq[as.character(rrng)] <- unlist(strsplit(fsq,""))[rng]
+    nctx[i] <- paste0(sq, collapse="")
+
+    ## GET GENOMIC POSITION via CDS list and posl
     cds <- cdl[[gid]]
     coors <- posl[[gid]]
 
@@ -410,7 +441,9 @@ dat <- cbind(dat,
              ASAquick=asaquick,
              DisoRDPbind=disordRDPbind,
              SCRIBER=scriber,
-             flDPnn=flDPnn)
+             flDPnn=flDPnn,
+             AA=pctx,
+             NT=nctx)
 
 ## FILTER DATA
 

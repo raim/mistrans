@@ -112,7 +112,7 @@ dir.create(fig.path, showWarnings=FALSE)
 
 ## INPUT FILES
 ## list of SAAPs with coordinates
-in.file <- file.path(dat.path,"saap_mapped3.tsv")
+in.file <- file.path(dat.path,"saap_mapped4.tsv")
 ## protein fasta
 fasta <- file.path(dat.path,"all_proteins.fa")
 ## coding region fasta
@@ -223,7 +223,23 @@ cls <- clusterCluster(bpd$from, asite.bins, cl2.srt=asite.srt,
 plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute")),
         height=5, width=mx/2+1, res=300)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="encoded AA at AAS", xlab=NA,
+plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="Encoded AA at AAS", xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
+axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
+mtext("position of AAS in peptide", 1, 1.5)
+figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
+cls <- clusterCluster(bpd$to, asite.bins, cl2.srt=asite.srt,
+                      alternative="two.sided")
+##cls <- sortOverlaps(cls, p.min=.1)
+plotdev(file.path(fig.path,paste0("peptide_AA_overlap_absolute_incorporated")),
+        height=5, width=mx/2+1, res=300)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
+plotOverlaps(cls, p.min=1e-10, p.txt=1e-5, ylab="Incorporated AA at AAS",
+             xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
 par(mgp=c(1.3,.3,0), tcl=-.25)
 axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)

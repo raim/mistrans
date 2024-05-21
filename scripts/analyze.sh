@@ -114,8 +114,8 @@ fi
 ## 4.B) map each peptide to it's positions in proteins and transcripts, and
 ## add a variety of collected information on protein structure, e.g.
 ## iupred3, anchor2, s4pred, codon, ...
-##    GENERATES ${MISDATA}/processedData/saap_mapped3.tsv, and
-##    QC figures in ${MISDATA}/figures/saap_mapping3/
+##    GENERATES ${MISDATA}/processedData/saap_mapped4.tsv, and
+##    QC figures in ${MISDATA}/figures/saap_mapping4/
 R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
 ### 5) ANALYSIS
@@ -123,10 +123,14 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 
 ## MOTIFS: get and analyze sequences surrounding the ASS
 
-## export sequence context of AAS - used in DNN.ipynb
+## export sequence context of AAS
+## generates file ${MISDATA}/processedData/saap_context.tsv
 R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context_export.txt
 
+## extract sequence sets from saap_context.tsv for motif analysis
+
 ## binomial distribution (hypergeo) tests of AA around AAS
+## including miscleavage etc.
 R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context_analysis.txt
 
 ## TODO: fuse two context scripts; and move randomization etc. to deep learning

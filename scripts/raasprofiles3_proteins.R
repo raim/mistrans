@@ -174,7 +174,6 @@ plen <- unlist(lapply(plen, function(x) x[1]))
 
 plotdev(file.path(pfig.path,paste0("protein_lengths_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
-idx <- match(pnms[rownames(pbstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(plen[rownames(ptstat)]), axes=FALSE,
         xlab=xl.prots, ylab="protein length")
