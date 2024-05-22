@@ -93,9 +93,9 @@ if ( interactive() ) { # inspect some proteins
 
 ## list sites per protein
 
-## ONLY PROTEINS>1
+## filter here for only proteins>1, but not used!
 multip <- split(site$pos, site$mane)
-multip <- names(lengths(multip)[lengths(multip)>1])
+multip <- names(lengths(multip)[lengths(multip)> 0 ])
 sites <- site[site$mane%in%multip,]
 cpos <- cumsum(sites$pos)
 

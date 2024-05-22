@@ -18,11 +18,12 @@
 ## 3: from/to AA,
 ## 4: from/to by AA prop.
 
-## TODO:
-## * create sequence matrix WITH substitution,
-## * RAAS profiles for EACH selection, by cancer types.
 
 library(DiffLogo)
+library(Biostrings)
+AAS <- sort(unique(GENETIC_CODE))
+AAT <- AAS[AAS!="*"]
+diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
 ## project-specific functions
 source("~/work/mistrans/scripts/saap_utils.R")
@@ -107,20 +108,14 @@ mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
-## get
-?createDiffLogoObject
-
-### ALL SEQUENCES HYPERGEO
+### AA MATRIX
 aam <- do.call(rbind, strsplit(bdat$AA,""))
 nc <- (ncol(aam)-1)/2
 colnames(aam) <- -nc:nc
 
 ## HYPERGEO TESTS - tigther context
 ovl <- aaProfile(aam, abc=AAT)
-
-
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
-
 dotprofile(ovl, value="ratio", vcols=ttcols, xlab=NA,
            p.dot=p.min, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
@@ -140,21 +135,36 @@ acd <-  apply(aam[,as.character(c(-6:-1,1:6))], 1,
 barplot(table(acd))
 acd <- acd>3
 
+long <- bdat$len > 1000  & bdat$median > -1
+high <- bdat$median > 0
+
+boxplot(bdat$median ~ high)
+boxplot(bdat$median ~ long)
+
 boxplot(bdat$median ~ met)
+
+boxplot(bdat$median ~ cut(bdat$len, seq(0,10000,1000)))
+
+plotCor(bdat$len, bdat$iupred3.protein)
 
 ## CREATE POSITION WEIGHT MATRICES
 ## for certain sequence classes
 
-filt <- bdat$median> -1 #fromto=="Q:A" #bdat$site%in%2 #kr # acd #bdat$pfromto=="polar:special" # bdat$site==2 #kr #met # trp # acd #
+filt <- bdat$fromto=="Q:G" #trp # met #bdat$fromto=="T:V" #met #long # high #trp # met # bdat$fromto=="Q:G" # bdat$median> -1 # bdat$site%in%2 #kr # acd #bdat$pfromto=="polar:special" # bdat$site==2 #kr # trp # acd #
+
+boxplot(bdat$median ~ filt)
+
 
 ## generate frequencies at each position
 getPFM <- function(aa, alphabet=ASN$chars) {
     ## column-wise table of AA
     ctl <- apply(aa, 2, table)
     ## aaids
-    aaids <- unique(unlist(lapply(ctl, names)))
-    ctl <- do.call(cbind, lapply(ctl, function(x) x[aaids]))
-    rownames(ctl) <- aaids
+    if ( inherits(ctl,"list") ) {
+        aaids <- unique(unlist(lapply(ctl, names)))
+        ctl <- do.call(cbind, lapply(ctl, function(x) x[aaids]))
+        rownames(ctl) <- aaids
+    }
     ctl[is.na(ctl)] <- 0
 
     ## remove all not in alphabet before taking col sum
@@ -169,7 +179,11 @@ getPFM <- function(aa, alphabet=ASN$chars) {
     ctf
 }
 
-cols <- as.character(c(-10:10))
+cols <- as.character(c(-4:-1,0,1:4))
+
+aa <- aam[!filt,cols,drop=FALSE]
+ctl <- apply(aa, 2, table)
+
 pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
 pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
 
@@ -180,7 +194,15 @@ ASN2$cols <- aa.cols[ASN2$chars]
 dfob <- createDiffLogoObject(pfm2, pfm1, alphabet=ASN2)
 diffLogo(dfob)
 
+plotdev(file.path(mfig.path,paste0("logos_fromto_QG")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+diffLogo(dfob)
+dev.off()
 
 
 
-## TODO: dotprofiles per cancer for each motif
+## TODO:
+## * create sequence matrix WITH substitution,
+## * RAAS profiles for EACH selection, by cancer types.
+## * set columns for each class, e.g. omit 0 for from/fromto
