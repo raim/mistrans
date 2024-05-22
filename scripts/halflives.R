@@ -11,12 +11,14 @@ dir.create(fig.path)
 ftyp <- "png"
 
 ## yeast protein halflives - @Christiano2014
+yfeature.file <- file.path(yeast.path,"feature_R64-1-1_20110208_allData.csv")
 yhlf.file <- file.path(yeast.path,"processedData","christiano14.csv")
 ## human protein halflives - @Mathieson2018
 hhlf.file <- file.path(mam.path,"originalData",
                        "41467_2018_3106_MOESM5_ESM.xlsx")
 ## orthologous genes via feature file
 hfeature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
 
 
 ## human genes - restrict to protein coding and MANE collection
@@ -154,3 +156,16 @@ if ( interactive() ) {
     hist(log(2)/hhlf, breaks=100)
     hist(log(log(2)/(hhlf/24)))
 }
+
+### HALF-LIFE and LENGTH
+## yeast genes
+ygenes <- read.delim(yfeature.file)
+ygenes <- ygenes[ygenes$type=="gene",]
+yhld <- read.delim(yhlf.file)
+
+yhlf <- yhld[match(ygenes$ID, yhld$ENSG), "t1.2..hours."]
+yhlf[which(yhlf==">= 100")] <- 120
+yhlf <- as.numeric(yhlf)
+##yhlf[which(yhlf>30)] <- 30
+
+plotCor(log10(ygenes$p.length), log10(yhlf), round=3)

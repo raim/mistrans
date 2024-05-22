@@ -193,7 +193,9 @@ cidx <- grep("half_life", colnames(hlvd), value=TRUE)
 hlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
 names(hlv) <- unlist(hlvd[,1])
 
+plotCor(unlist(hlvd[,cidx[1]]), unlist(hlvd[,cidx[3]]))
 
+xl.hlfm <- expression(mean~protein~"half-life"/h)
 xl.hlf <- expression(protein~"half-life"/h)
 
 ## halflives site
@@ -202,7 +204,7 @@ plotdev(file.path(pfig.path,paste0("protein_halflives_site")),
 idx <- match(pnms[rownames(pbstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, log10(hlv[idx]),
-        xlab=xl.prots, ylab=xl.hlf, axes=FALSE)
+        xlab=xl.prots, ylab=xl.hlfm, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
@@ -215,7 +217,7 @@ plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
 idx <- match(pnms[rownames(ptstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
-        xlab=xl.prota, ylab=xl.hlf, axes=FALSE)
+        xlab=xl.prota, ylab=xl.hlfm, axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
@@ -228,7 +230,7 @@ plotdev(file.path(pfig.path,paste0("protein_halflives_lengths")),
 idx <- match(pnms[names(plen)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(log10(plen), log10(hlv[idx]),
-        xlab="protein length", ylab=xl.hlf, axes=FALSE)
+        xlab="protein length", ylab=xl.hlfm, axes=FALSE)
 axis(1, at=1:10, labels=10^(1:10))
 axis(2, at=1:10, labels=10^(1:10))
 ## TODO: log tick marks
@@ -244,6 +246,7 @@ if ( interactive() ) {
 }
 
 for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
+
     cidx <- grep("half_life", colnames(hlvd), value=TRUE)
     cidx <- cidx[grep(ctype, cidx, ignore.case=TRUE)]
     hlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
@@ -268,6 +271,23 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
         xlab=xl.prota, ylab=xl.hlf, axes=FALSE)
     axis(1)
     axis(2, at=1:10, labels=10^(1:10))
+    figlabel(ctype, pos="bottomleft")
+    dev.off()
+## halflives site
+    plotdev(file.path(pfig.path,paste0("protein_halflives_lengths_",ctype)),
+            type=ftyp, res=300, width=3.5,height=3.5)
+    idx <- match(pnms[names(plen)], names(hlv))
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+    plotCor(log10(plen), log10(hlv[idx]),
+            xlab="protein length", ylab=xl.hlf, axes=FALSE)
+    axis(1, at=1:10, labels=10^(1:10))
+    axis(2, at=1:10, labels=10^(1:10))
+    ## TODO: log tick marks
+    axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)),
+         tcl=-.125, labels=FALSE)
+    axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)),
+         tcl=-.125, labels=FALSE)
+    box()
     figlabel(ctype, pos="bottomleft")
     dev.off()
 }
