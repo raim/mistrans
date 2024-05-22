@@ -16,6 +16,8 @@ yhlf.file <- file.path(yeast.path,"processedData","christiano14.csv")
 ## human protein halflives - @Mathieson2018
 hhlf.file <- file.path(mam.path,"originalData",
                        "41467_2018_3106_MOESM5_ESM.xlsx")
+hlen.file <- file.path(mam.path,"processedData",
+                       "protein_length.tsv")
 ## orthologous genes via feature file
 hfeature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
@@ -158,7 +160,8 @@ if ( interactive() ) {
 }
 
 ### HALF-LIFE and LENGTH
-## yeast genes
+
+## YEAST
 ygenes <- read.delim(yfeature.file)
 ygenes <- ygenes[ygenes$type=="gene",]
 yhld <- read.delim(yhlf.file)
@@ -166,6 +169,45 @@ yhld <- read.delim(yhlf.file)
 yhlf <- yhld[match(ygenes$ID, yhld$ENSG), "t1.2..hours."]
 yhlf[which(yhlf==">= 100")] <- 120
 yhlf <- as.numeric(yhlf)
-##yhlf[which(yhlf>30)] <- 30
 
 plotCor(log10(ygenes$p.length), log10(yhlf), round=3)
+
+
+## HUMAN
+hgenes <- read.delim(hfeature.file)
+filter <- hgenes$type=="protein_coding" & hgenes$MANE!=""
+hgenes <- hgenes[filter,]
+
+hhld <-  readxl::read_xlsx(math18.file)
+## mean half-live over all replicates and cell types
+## TODO: consider distribution
+hhld <- hhld[,-grep("Mouse", colnames(hhld))]
+hhld <- hhld[,grep("Hepatocytes", colnames(hhld))]
+cidx <- grep("half_life", colnames(hhld), value=TRUE)
+hhlf <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
+names(hhlf) <- unlist(hlvd[,1])
+
+## protein lengths
+hlen <- read.delim(hlen.file, header=FALSE, row.names=1)
+rownames(hlen) <- sub("\\.[0-9]*", "", rownames(hlen))
+
+## expand proteins and gene names
+hmap <- strsplit(hgenes$proteins,";")
+hmap <- cbind(rep(hgenes$name, lengths(hmap)),
+              unlist(hmap))
+hmap <- cbind.data.frame(hmap,
+                         len=hlen[hmap[,2],1],
+                         hlf=hhlf[hmap[,1]])
+
+## remove duplicated gene names AFTER SORTING FOR LENGTH
+## NOTE: correlation much stronger when taking the longest proteoform
+## for each gene.
+## NOTE/TODO: select MANE PROTEIN INSTEAD
+hmap <- hmap[order(hmap$len, decreasing=TRUE),]
+hmap <- hmap[!duplicated(hmap[,1]),]
+
+plotCor(log10(hmap$len), log10(hmap$hlf), round=3,
+        xlab="protein length", ylab="protein half-life/h")
+
+### TODO: add MANE.protein column to human feature file
+## or generate protein file

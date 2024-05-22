@@ -224,7 +224,8 @@ axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 box()
 dev.off()
 
-## halflives site
+## TODO: do this for all proteins and not just those
+## in the RAAS set.
 plotdev(file.path(pfig.path,paste0("protein_halflives_lengths")),
         type=ftyp, res=300, width=3.5,height=3.5)
 idx <- match(pnms[names(plen)], names(hlv))
