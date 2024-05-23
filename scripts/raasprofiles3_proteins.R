@@ -186,6 +186,7 @@ dev.off()
 
 ## PROTEIN HALF-LIVES, @Mathieson2018
 hlvd <- readxl::read_xlsx(math18.file)
+##hlvd <- hlvd[,-grep("Mouse", colnames(hlvd))]
 
 ## mean half-live over all replicates and cell types
 ## TODO: consider distribution
@@ -234,7 +235,6 @@ plotCor(log10(plen), log10(hlv[idx]),
         xlab="protein length", ylab=xl.hlfm, axes=FALSE)
 axis(1, at=1:10, labels=10^(1:10))
 axis(2, at=1:10, labels=10^(1:10))
-## TODO: log tick marks
 axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 box()
@@ -246,14 +246,16 @@ if ( interactive() ) {
     plotCor(dat$iupred3.protein, log10(hlv[idx]))
 }
 
-for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons") ) {
+for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons",
+                 "Mouse Neurons") ) {
 
     cidx <- grep("half_life", colnames(hlvd), value=TRUE)
     cidx <- cidx[grep(ctype, cidx, ignore.case=TRUE)]
     hlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
     names(hlv) <- unlist(hlvd[,1])
     
-    plotdev(file.path(pfig.path,paste0("protein_halflives_sites_",ctype)),
+    plotdev(file.path(pfig.path,paste0("protein_halflives_sites_",
+                                       sub(" ","_",ctype))),
             type=ftyp, res=300, width=3.5,height=3.5)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     idx <- match(pnms[rownames(pbstat)], names(hlv))
