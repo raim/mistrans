@@ -1172,6 +1172,135 @@ plotCodonAxis <- function(CODP, aa.cols=aa.cols, cex=1) {
     }
 }
 
+## generate frequencies at each position
+getPFM <- function(aa, alphabet=ASN$chars) {
+    ## column-wise table of AA
+        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
+    ctl <- apply(aa, 2, table)
+    ## aaids
+    if ( inherits(ctl,"list") ) {
+        aaids <- unique(unlist(lapply(ctl, names)))
+        ctl <- do.call(cbind, lapply(ctl, function(x) x[aaids]))
+        rownames(ctl) <- aaids
+    }
+    ctl[is.na(ctl)] <- 0
+
+    ## remove all not in alphabet before taking col sum
+    ctm <- matrix(0, nrow=length(alphabet), ncol=ncol(aa))
+    rownames(ctm) <- alphabet
+    ctm[alphabet[alphabet%in%rownames(ctl)],] <-
+        ctl[alphabet[alphabet%in%rownames(ctl)],]
+    ctm[is.na(ctm)] <- 0
+
+    ## frequencies
+    ctf <- t(t(ctm)/apply(ctm,2,sum))
+    as.data.frame(ctf)
+}
+
+## add significance indicators
+diffLogo_addPvals <- function(dfop, ymin, levels=10^-c(3,5,10)) {
+    leftOffset = 0
+    if (!is.null(dfop$unaligned_from_left)) {
+        leftOffset = dfop$unaligned_from_left
+    }
+    if (!is.null(dfop$unaligned_from_right)) {
+        rightOffset = dfop$unaligned_from_right
+    }
+    npos = ncol(dfop$pwm1)
+    for (j in (leftOffset + 1):(npos - rightOffset)) {
+        if (dfop$pvals[j] < levels[3]) {
+            text(j, ymin, "***")
+        } else  if (dfop$pvals[j] < levels[2]) {
+            text(j, ymin, "**")
+        } else  if (dfop$pvals[j] < levels[1]) {
+            text(j, ymin, "*")
+        }
+    }
+}
+
+## plot offsets for diffLogos
+DiffLogoObject_getOffsets <- function(diffLogoObj) {
+    
+    leftOffset = rightOffset = 0
+    if (!is.null(diffLogoObj$unaligned_from_left)) {
+        leftOffset = diffLogoObj$unaligned_from_left
+    }
+    if (!is.null(diffLogoObj$unaligned_from_right)) {
+        rightOffset = diffLogoObj$unaligned_from_right
+    }
+    c(leftOffset, rightOffset)
+}
+
+myDiffLogo <- function (diffLogoObj, ymin = 0, ymax = 0, sparse = FALSE,
+                        diffLogoConfiguration = list()) 
+{
+    if (!is(diffLogoObj, "DiffLogo")) {
+        msg = paste("Expected DiffLogo, but got ", class(diffLogoObj), 
+            ". Use #createDiffLogoObject to get an DiffLogo from two PWMs.", 
+            sep = "")
+        stop(msg)
+    }
+    if (ymin == 0) { ## NOTE: ylims flipped wrt original function
+        ymin = diffLogoObj$ylim.negMax
+    }
+    if (ymax == 0) {
+        ymax = diffLogoObj$ylim.posMax
+    }
+    ylab = diffLogoObj$ylab
+    if (sparse) {
+        plot(NA, xlim = c(0.5, diffLogoObj$npos + 0.5), ylim = c(ymin, 
+            ymax), xaxt = "n", ylab = "", mgp = c(0, 0.35, 0), 
+            tck = -0.02, cex.axis = 0.8, frame.plot = FALSE, 
+            xlab = "")
+    }
+    else {
+        plot(NA, xlim = c(0.5, diffLogoObj$npos + 0.5), ylim = c(ymin, 
+            ymax), xaxt = "n", ylab = ylab, xlab = "Position", 
+            frame.plot = FALSE, )
+    }
+    if (sparse) {
+        axis(1, labels = c(rep("", diffLogoObj$npos)),
+             at = (1:diffLogoObj$npos), 
+             tck = -0.02)
+        axis(1, labels = c("", ""), at = c(0, (diffLogoObj$npos + 
+            1)), tck = -0)
+    }
+    else {
+        axis(1, labels = c(1:diffLogoObj$npos), at = (1:diffLogoObj$npos))
+        axis(1, labels = c("", ""), at = c(0, (diffLogoObj$npos + 
+            1)), tck = -0)
+    }
+    polygon(diffLogoObj$letters, col = diffLogoObj$letters$col, 
+        border = FALSE)
+    if (!is.null(diffLogoObj$unaligned_from_left) &&
+        diffLogoObj$unaligned_from_left > 
+        0) {
+        rect(0.5, -ymin, diffLogoObj$unaligned_from_left + 0.5, 
+            -ymax, col = "gray", border = "gray")
+    }
+    if (!is.null(diffLogoObj$unaligned_from_right) &&
+        diffLogoObj$unaligned_from_right > 0) {
+        rect(diffLogoObj$npos - diffLogoObj$unaligned_from_right + 
+            0.5, -ymin, diffLogoObj$npos + 0.5, -ymax, col = "gray", 
+            border = "gray")
+    }
+    if (!is.null(diffLogoObj$pvals)) {
+        leftOffset = 0
+        if (!is.null(diffLogoObj$unaligned_from_left)) {
+            leftOffset = diffLogoObj$unaligned_from_left
+        }
+        if (!is.null(diffLogoObj$unaligned_from_right)) {
+            rightOffset = diffLogoObj$unaligned_from_right
+        }
+        npos = ncol(diffLogoObj$pwm1)
+        for (j in (leftOffset + 1):(npos - rightOffset)) {
+            if (diffLogoObj$pvals[j] < 0.05) {
+                text(j, ymin, "*")
+            }
+        }
+    }
+    lines(c(0, diffLogoObj$npos), c(0, 0))
+}
 
 ## NOTE: customizing DiffLogo::seqLogo
 mySeqLogo <- 
