@@ -31,115 +31,15 @@ source("~/work/mistrans/scripts/saap_utils.R")
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-source("~/work/mistrans/scripts/raasprofiles3_init.R")
+if ( !exists("bdat") )
+    source("~/work/mistrans/scripts/raasprofiles3_init.R")
+
 
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
-## FILTER UNIQUE BP - since those have the same AA CONTEXT
-## NOTE: that this looses different SAAPs for the same BP
 
-bpraas <- split(tmtf$RAAS, tmtf$BP)
-bpraas <- listProfile(bpraas, y=tmtf$RAAS, use.test=use.test, min=3)
-
-bdat <- hdat[!duplicated(hdat$BP),]
-rownames(bdat) <- bdat$BP
-
-## match rows
-
-## MISSING?
-## manual inspection shows this BP had infinite RAAS
-missing <- which(!rownames(bdat)%in%rownames(bpraas))
-if ( length(missing) )
-    cat(paste("WARNING:", length(missing), "BP missing from TMT level file\n"))
-
-## keep only bdat for which we have RAAS values
-bdat <- bdat[rownames(bpraas),]
-bdat <- cbind(bdat, bpraas)
-
-### POSITION OF AAS IN PEPTIDES
-
-## Categorize by N+i and C-i
-mx <- 10
-nt <- bdat$site
-ct <- nchar(bdat$BP)-bdat$site +1
-## fuse central AAS
-nt[nt>mx] <- ct[ct>mx] <- mx+1
-## take smaller
-at <- paste0("N",nt)
-at[ct<nt] <- paste0("C",ct[ct<nt])
-## re-name central AAS
-at[at==paste0("N",mx+1)] <- paste0(">",mx)
-at.srt <- c(
-    paste0("N",1:mx),
-    paste0(">",mx),
-    paste0("C",mx:1))
-
-asite.bins <- at
-asite.srt <- at.srt
-
-cls <- clusterCluster(bdat$from, asite.bins, cl2.srt=asite.srt,
-                      alternative="two.sided")
-##cls <- sortOverlaps(cls, p.min=.1)
-plotdev(file.path(mfig.path,paste0("AAS_position_encoded")),
-        height=5, width=mx/2+1, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="Encoded AA at AAS", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
-axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
-mtext("position of AAS in peptide", 1, 1.5)
-figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
-
-cls <- clusterCluster(bdat$to, asite.bins, cl2.srt=asite.srt,
-                      alternative="two.sided")
-plotdev(file.path(mfig.path,paste0("AAS_position_incorporated")),
-        height=5, width=mx/2+1, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="Incorporated AA at AAS",
-             xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
-axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
-mtext("position of AAS in peptide", 1, 1.5)
-figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
-
-cls <- clusterCluster(bdat$fromto, asite.bins, cl2.srt=asite.srt,
-                      alternative="two.sided")
-cls <- sortOverlaps(cls, p.min=1e-3)
-plotdev(file.path(mfig.path,paste0("AAS_position_AAStype")),
-        height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300)
-par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
-axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
-mtext("position of AAS in peptide", 1, 1.5)
-figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
-## sort by only enriched: TODO: implement in sortOverlaps
-tmp <- cls
-tmp$p.value[tmp$sign<0] <- 1
-tmp <- sortOverlaps(tmp, p.min=1e-3, cut=TRUE)
-cls <- sortOverlaps(cls, srt=rownames(tmp$p.value))
-
-plotdev(file.path(mfig.path,paste0("AAS_position_AAStype_cut")),
-        height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300)
-par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
-axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
-mtext("position of AAS in peptide", 1, 1.5)
-figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
-
+#### GENERAL SEQUENCE LOGOS
 
 ### AA MATRIX
 aam <- do.call(rbind, strsplit(bdat$AA,""))
@@ -152,71 +52,119 @@ aas[,"0"] <- bdat$to
 
 ## HYPERGEO TESTS - tigther context
 ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
+ovl <- sortOverlaps(ovl, p.min=p.txt)
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
         height=5, width=5, res=300)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE)
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+             xlab="Distance from AAS")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
         height=5, width=5, res=300)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-dotprofile(ovl, value="ratio", vcols=ttcols, xlab=NA,
+dotprofile(ovl, value="ratio", vcols=ttcols,
+           xlab="Distance from AAS",
            p.dot=p.min, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
 dev.off()
 
 ## DEFINE CLASSES
+do.all.motifs <- FALSE # for interactive use to get pngs
+
+aatight <- apply(aam[,as.character(-2:2)], 1, paste, collapse="")
+
+kraq <- rep(FALSE, nrow(bdat))
+kraq[grep("[KR]AQ",aatight)] <- TRUE
+krgq <- rep(FALSE, nrow(bdat))
+krgq[grep("[KR]GQ",aatight)] <- TRUE
+krxq <- rep(FALSE, nrow(bdat))
+krxq[grep("[KR][A-Z]Q",aatight)] <- TRUE
+
+CTXT <- as.character(c(-2,-1,1,2))
+Cyt <- apply(aam[,CTXT], 1, function(x) sum(x%in%c("C"))) > 0
+Met <- apply(aam[,CTXT], 1, function(x) sum(x%in%c("M"))) > 0
+Trp <- apply(aam[,CTXT], 1, function(x) any(x%in%c("W")))
+CTXTT <- as.character(c(-1,1))
+CytT <- apply(aam[,CTXTT], 1, function(x) sum(x%in%c("C"))) > 0
+MetT <- apply(aam[,CTXTT], 1, function(x) sum(x%in%c("M"))) > 0
+TrpT <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("W")))
+
+Wbranch <- Trp & bdat$from%in%c("I","L","V")
+Mphos <- Met & bdat$from%in%c("S","T")
 
 classes <- cbind(
     kr=apply(aam[,as.character(-3:-1)], 1,
              function(x) any(x%in%c("K","R"))),
-    Met=apply(aam[,as.character(c(-2,-1,1,2))], 1,
-              function(x) sum(x%in%c("M"))) > 0,
-    Trp=apply(aam[,as.character(c(-2,-1,1,2))], 1,
-              function(x) any(x%in%c("W"))),
+    KRAQ=kraq,
+    KRGQ=krgq,
+    KRXQ=krxq,
+    Cyt=Cyt,
+    Met=Met,
+    Trp=Trp,
+    CytT=CytT,
+    MetT=MetT,
+    TrpT=TrpT,
+    Wbranch=Wbranch,
+    Mphos=Mphos,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("E","D")))>3,
-    long=bdat$len > 1000  & bdat$median > -1,
+    short=bdat$len <= 1000  & bdat$median > -.5,
+    long=bdat$len > 1000  & bdat$median > -.5,
     high=bdat$median > -1,
+    low=bdat$median <= -1,
+    A=bdat$from=="A",
+    A1= bdat$from=="A"& bdat$site%in%1,
+    AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
+    P=bdat$from=="P",
+    to_G1=bdat$to%in%c("G","A") & bdat$site%in%1,
+    to_G23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
+    to_G13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
+    to_G=bdat$from%in%c("G","A"),
     Q=bdat$from=="Q",
     QA=bdat$fromto=="Q:A",
     QG=bdat$fromto=="Q:G",
     VQ=bdat$fromto=="V:Q",
+    TV=bdat$fromto=="T:V",
     branched=bdat$from%in%c("I","L","V"),
     Nterm1=bdat$site%in%1,
     Nterm2=bdat$site%in%2)
+selected <- colnames(classes)
+
 
 fts <- unique(bdat$fromto)
 ftcls <- matrix(NA, ncol=length(fts), nrow=nrow(aam))
 colnames(ftcls) <-  paste0("fromto_",fts)
 for ( i in seq_along(fts) ) 
     ftcls[,i] <- bdat$fromto==fts[i]
-classes <- cbind(classes, ftcls)
+if ( !interactive() | do.all.motifs ) classes <- cbind(classes, ftcls)
 
 frm <- unique(bdat$from)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("from_",frm)
 for ( i in seq_along(frm) ) 
     ftcls[,i] <- bdat$from==frm[i]
-#classes <- cbind(classes, ftcls)
+if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 frm <- unique(bdat$to)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("to_",frm)
 for ( i in seq_along(frm) ) 
     ftcls[,i] <- bdat$to==frm[i]
-#classes <- cbind(classes, ftcls)
+if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 cols <- as.character(c(-3:3))
 rngs <- rep(list(cols), ncol(classes))
 names(rngs) <- colnames(classes)
 
 ## custom ranges
-rngs$QG <- as.character(-3:1)
-rngs$QA <- as.character(-2:1)
+rngs$QG <- as.character(-4:1)
+rngs$QA <- as.character(-3:1)
+rngs$KRAQ <- as.character(-4:4)
 rngs$Acidic <- rngs$Long <- rngs$High <-as.character(-10:10)
-rngs$Met <- rngs$Trp <- as.character(-2:2)
+rngs$Met <- rngs$Trp <- rngs$Cyt <-as.character(-2:2)
+rngs$MetT <- rngs$TrpT <- rngs$CytT <-as.character(-1:1)
+rngs$to_G13 <- as.character(-3:0)
 
 psig <- 10^-c(3,5,10)
 
@@ -225,7 +173,8 @@ ASN2 <- ASN
 ASN2$cols <- aa.cols[ASN2$chars]
 ASN2$cols["V"] <- "#2eb774"
 
-
+tmp.path <- file.path(mfig.path, "selected")
+dir.create(tmp.path, showWarnings=FALSE)
 ##pwm <- getPFM(aam)
 ##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ASN2)
 
@@ -239,8 +188,13 @@ for ( i in 1:ncol(classes) ) {
     axlab[axlab=="0"] <- ""
  
     if ( sum(filt)<2 ) next
+
+    tmp.path <- mfig.path
+    if ( id %in% selected )
+        tmp.path <- file.path(mfig.path, "selected")
     
-    boxplot(bdat$median ~ filt)
+    if ( interactive() )
+        boxplot(bdat$median ~ filt)
 
     ## position weight matrices and diffLogo
     pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
@@ -250,21 +204,21 @@ for ( i in 1:ncol(classes) ) {
     dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
     dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
 
-    if ( any(dfop$pvals[cols!=0]<min(psig)) ) {
+    if ( any(dfop$pvals[cols!=0]<min(psig)) | id %in% selected ) {
 
         mmai <- c(.5,.5,.1,.1)
         wd <- .4*length(cols) + .6
         ht <- 3
         mn <- dfob$ylim.negMax
         mx <- dfob$ylim.posMax
-        plotdev(file.path(mfig.path,paste0("logos_", id)),
+        plotdev(file.path(tmp.path,paste0("logos_", id)),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="eAA", las=2)
+            axis(1, at=which(cols==0), labels="AAS", las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
         diffLogo_addPvals(dfop, ymin=mx)
         dev.off()
@@ -278,21 +232,21 @@ for ( i in 1:ncol(classes) ) {
     dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
     dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
 
-    if ( any(dfop$pvals[cols!=0]<min(psig)) ) {
+    if ( any(dfop$pvals[cols!=0]<min(psig))  | id %in% selected ) {
 
         mmai <- c(.5,.5,.1,.1)
         wd <- .4*length(cols) + .6
         ht <- 3
         mn <- dfob$ylim.negMax
         mx <- dfob$ylim.posMax
-        plotdev(file.path(mfig.path,paste0("logos_", id,"_S")),
+        plotdev(file.path(tmp.path,paste0("logos_", id,"_S")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="iAA", las=2)
+            axis(1, at=which(cols==0), labels=expression(INC), las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
         diffLogo_addPvals(dfop, ymin=mx)
         dev.off()
@@ -306,33 +260,192 @@ hist(bdat$rpos[bdat$to=="G"])
 dev.off()
 
 ## TODO:
-## * RAAS profiles for EACH selection, by cancer types.
+## * look at BP with multiple sites,
 
-## * GENERAL PEPTIDE ANALYSIS
+### RAAS dot profiles for EACH selection:
+## * spatial selections, as in _kraq.R;
+##   all ->G at position 1-3 (high RAAS), and
+##   PNEM-involving substitutions towards the center protein (AAS enrichments),
+## * simply by cleavage dimer (BP enrichments),
+## * all BP with [KR]AG in pos.1, or [KR]xQL in pos 2,  independent of AAS
+##   (BP enrichments),
+## * KRAQ (high RAAS),
+## * W/M context (current motif figures).
 
-pp.min <- p.min #1e-20
-pp.txt <- p.txt #1e-10
+## TODO: define motifs in bdat and map to tmtf
+## MAP protein level info to TMT Data
 
-## from N-term
-paa <- strsplit(bdat$BP, "")
-paa <- do.call(rbind,lapply(paa, function(x) x[1:10]))
-paa[is.na(paa)] <- "-"
-ovl <- aaProfile(paa, abc=c(AAT[!AAT%in%c("K","R","P","D","E")]))
-plotdev(file.path(mfig.path,paste0("peptides_AA_Nterm")),
-        height=5, width=5, res=300, type=ftyp)
-par(mai=rep(.5,4), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-plotOverlaps(ovl, p.min=pp.min, p.txt=pp.txt, show.total=TRUE,
-             xlab="Distance from peptide N-terminus", ylab="AA")
-dev.off()
+tmtm <- tmtf
 
-## from C-term
-paa <- strsplit(bdat$BP, "")
-paa <- do.call(rbind,lapply(paa, function(x) rev(x)[1:10]))
-paa[is.na(paa)] <- "-"
-ovl <- aaProfile(paa, abc=c(AAT[!AAT%in%c("K","R","P","D","E")]))
-plotdev(file.path(mfig.path,paste0("peptides_AA_Cterm")),
-        height=5, width=5, res=300, type=ftyp)
-par(mai=rep(.5,4), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-plotOverlaps(ovl, p.min=pp.min, p.txt=pp.txt, show.total=TRUE,
-             xlab="Distance from peptide C-terminus", ylab="AA")
-dev.off()
+idx <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
+ina <- which(is.na(idx))
+if ( length(ina)>0 ) {
+    cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
+    tmtm <- tmtm[-ina,]
+    idx <- idx[-ina]    
+}
+
+table(classes[,"Trp"],classes[,"QG"])
+
+### NOTE: top-down filtering emphasizes last!!
+### TODO: allow overlapping classes here!!
+###       * use listProfile? and generate ovw structure
+##          from multiple listProfile matrices?  
+
+motclass <- rep("n.a.", nrow(classes))
+##motclass[classes[,"QG"]] <- "QG"
+##motclass[classes[,"QA"]] <- "QA"
+##motclass[classes[,"KRXQ"]] <- "[KR]XQ"
+##motclass[classes[,"KRGQ"]] <- "[KR]GQ"
+##motclass[classes[,"KRAQ"]] <- "[KR]AQ"
+motclass[classes[,"CytT"]] <- "C ctxt"
+motclass[classes[,"MetT"]] <- "M ctxt"
+motclass[classes[,"TrpT"]] <- "W ctxt" ## NOTE: overrules more frequent Met
+##motclass[classes[,"Mphos"]] <- "Mphos"
+##motclass[classes[,"Wbranch"]] <- "Wbranch"
+##motclass[classes[,"TV"]] <- "TV"
+##
+##motclass[classes[,"A1"]] <- "A1>"
+##motclass[classes[,"AG1"]] <- "A>G1"
+##motclass[classes[,"to_G1"]] <- ">G1"
+motclass[classes[,"to_G13"]] <- "KRAQ"
+
+msrt <- c(
+    ##"A1>",
+    ##">G1",
+    ##"A>G1",
+    ##">[GA]123",
+    ##"[KR]XQ",
+    ##"[KR]AQ",
+    ##"QG",
+    ##"[KR]GQ",
+    ##"QA",
+    "KRAQ",
+    "C ctxt",
+    ##"Mphos","Wbranch",
+    "M ctxt",
+    ##"TV",
+    "W ctxt" )
+
+## AA/codon/structure mapping
+tmtm$motifs <- motclass[idx]
+
+
+ovw <- raasProfile(x=tmtm, id="SAAP", 
+                   rows="motifs", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=msrt,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("motifs_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(mfig.path,paste0("motifs_",SETID)),
+             mai=c(.8,.7,.6,.6), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+
+## first AA in BP
+bp1 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[1]))
+bp1[bp1==bdat$from & bdat$site==1] <- "AAS"
+##bp1[bdat$fromto=="Q:G"] <- "QG" ##- NOTE: this makes A at 1st insign.
+##bp1[bdat$fromto=="Q:A"] <- "QA" ##- NOTE: this makes A at 1st insign.
+## AA/codon/structure mapping
+tmtm$bp1 <- bp1[idx]
+
+ovw <- raasProfile(x=tmtm, id="SAAP", 
+                   rows="bp1", cols="Dataset",
+                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("bp1_",SETID,"_")))
+
+plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp1_",SETID)),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at position 1 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp1_",SETID,"_cut")),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at pos. 1 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+
+## second AA in BP
+bp2 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[2]))
+bp2[bp2==bdat$from & bdat$site==2] <- "AAS"
+
+## AA/codon/structure mapping
+tmtm$bp2 <- bp2[idx]
+
+ovw <- raasProfile(x=tmtm, id="SAAP", 
+                   rows="bp2", cols="Dataset",
+                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("bp2_",SETID,"_")))
+plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp2_",SETID)),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at position 2 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp2_",SETID,"_cut")),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at pos. 2 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+## second AA in BP
+bp3 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[3]))
+bp3[bp3==bdat$from & bdat$site==3] <- "AAS"
+
+## AA/codon/structure mapping
+tmtm$bp3 <- bp3[idx]
+
+ovw <- raasProfile(x=tmtm, id="SAAP", 
+                   rows="bp3", cols="Dataset",
+                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("bp3_",SETID,"_")))
+plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp3_",SETID)),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at position 3 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp3_",SETID,"_cut")),
+             mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="AA at pos. 3 in BP", mtxt.line=1.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)
+

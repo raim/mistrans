@@ -163,6 +163,9 @@ if ( interactive() ) {
             xlab="median of site median RAAS", ylab="median of all RAAS")
 }
 
+#### COMPARE PROTEIN RAAS TO VARIOUS PROTEIN LEVEL MEASURES
+## TODO: collect those values for all proteins e.g. in halflives,
+## and load here
 
 ### PROTEIN LENGTHS and AAS along proteins
 
@@ -183,6 +186,86 @@ axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 box()
 dev.off()
 
+## PROTEIN MELTING TEMPERATURE
+therm <- as.data.frame(read_xlsx(thermo.file, sheet=2))
+mlt <- therm$meltP_Jurkat
+names(mlt) <- therm[,2]
+
+## melting point vs. length
+plotdev(file.path(pfig.path,paste0("protein_Tmelt_length")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+plotCor(log10(plen), mlt[match(pnms[names(plen)], names(mlt))],
+        xlab="protein length",
+        ylab=expression(protein~melting~point~T[m]/"°C"),
+        axes=FALSE)
+axis(1, at=1:10, labels=10^(1:10))
+axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+axis(2)
+box()
+dev.off()
+
+## melting point all
+plotdev(file.path(pfig.path,paste0("protein_Tmelt_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(pnms[rownames(ptstat)], names(mlt))
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, mlt[idx],
+        xlab=xl.prota, ylab=expression(protein~melting~point~T[m]/"°C"),
+        axes=FALSE)
+axis(1)
+axis(2)
+box()
+dev.off()
+
+## Diff melting point with ATP
+therm <- as.data.frame(read_xlsx(thatp.file, sheet=2))
+mlt <- as.numeric(therm$diff_meltP_Exp1)
+names(mlt) <- therm[,2]
+
+## melting point difference with ATP
+plotdev(file.path(pfig.path,paste0("protein_TmeltDelta_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(pnms[rownames(ptstat)], names(mlt))
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, mlt[idx],
+        xlab=xl.prota,
+        ylab=expression(melting~point~difference~Delta*T[ATP-vehicle]/"°C"),
+        axes=FALSE)
+axis(1)
+axis(2)
+box()
+dev.off()
+
+
+## PROTEIN THERMOSTABILITY 
+protstab <- read.csv(protstab.file)
+## use refseq ID w/o version number as row names
+rownames(protstab) <- sub("\\.[0-9]*","", protstab$id)
+
+## get local reduced refseq mapping
+## TODO: use full n<->n mapping and maximize yield
+ps2ens <- refseq2ens[refseq2ens[,1] %in%rownames(pbstat),]
+ps2ens <- ps2ens[ps2ens[,2] %in%rownames(protstab),]
+protstab$ensembl <- ps2ens[match(rownames(protstab),ps2ens[,2]),1]
+## match to RAAS table
+
+
+## predicted stability 
+plotdev(file.path(pfig.path,paste0("protein_protstab2_all")),
+        type=ftyp, res=300, width=3.5,height=3.5)
+idx <- match(rownames(ptstat), protstab$ensembl)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
+plotCor(ptstat$median, protstab$Human_predict_Tm[idx],
+        xlab=xl.prota, ylab="ProtStab2", axes=FALSE)
+axis(1)
+axis(2)
+box()
+dev.off()
+
+## TODO: thermostability and ATP/GTP from @Sridharan2019:
+## Proteome-wide solubility and thermal stability profiling reveals
+## distinct regulatory roles for ATP
+## https://www.nature.com/articles/s41467-019-09107-y
 
 ## PROTEIN HALF-LIVES, @Mathieson2018
 hlvd <- readxl::read_xlsx(math18.file)

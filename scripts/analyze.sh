@@ -32,9 +32,6 @@ wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/
 wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D -P $MISDATA/originalData/ -O elife-45396-fig1-data2-v2.csv
 
 
-## @Yang2022: thermal stability
-## https://structure-next.med.lu.se/ProTstab2/
-wget https://structure-next.med.lu.se/ProTstab2/download/download_human_predict_result -P $MISDATA/originalData/ -O ProTstab2_human.csv
 
 ### SAAP/RAAS ANALYSIS
 
@@ -145,6 +142,9 @@ cd ~/data/mistrans/processedData/motifs
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
 ~/programs/kpLogo/bin/kpLogo seqcontext_methionine_TRUE.fa -alphabet protein -o kplogo/M
 ~/programs/kpLogo/bin/kpLogo seqcontext_tryptophane_TRUE.fa -alphabet protein -o kplogo/W
+
+## TODO: use new columns in saap_mapped4.tsv to extract fasta for
+## meme/momo
 
 
 ## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and

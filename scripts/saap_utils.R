@@ -1002,6 +1002,8 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
 
     if ( missing(abc) )
         abc <- sort(unique(c(x)))
+    if ( is.null(colnames(x)) )
+        colnames(x) <- 1:ncol(x)
 
     aam <- matrix(1, ncol=ncol(x), nrow=length(abc))
     rownames(aam) <- abc
@@ -1075,14 +1077,23 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
 
 
 ## derived from segmenTools::sortOverlaps but trying
-## to better handle two-sided tests - TODO: integrate in segmenTools
-sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmetric = "no") 
-{
+## to better handle two-sided tests -
+## TODO:
+## * integrate in segmenTools
+## * allow to only sort enriched or deprived.
+sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE,
+                           srt, symmetric = "no") {
+    
+    ## handle triangle matrix
+    ## NOTE: currently only produced by segmentOverlaps, where
+    ## p.values=1 and counts=0 in the lower triangle
     if (symmetric != "no") {
         if (symmetric == "upper") 
             symm.tri <- lower.tri
         else if (symmetric == "lower") 
             symm.tri <- upper.tri
+
+        ## copy upper to lower
         pvl <- abs(ovl$p.value)
         n <- nrow(pvl)
         m <- ncol(pvl)
@@ -1096,42 +1107,69 @@ sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmet
             ovl[[i]] <- x
         }
     }
+
+    ## transpose all, if sorting of x-axis (1) is requested
     if (axis == 1) 
         ovl <- t.clusterOverlaps(ovl)
     
-    pvl <- ovl$p.value * -ovl$sign
+    pvl <- ovl$p.value * -ovl$sign ## NOTE: *sign is NEW FOR TWO-SIDED
+
+    ## sort by significance
     if (missing(srt)) {
+
         cls.srt <- colnames(pvl)
+
+        if ( is.null(colnames(pvl)) )
+            stop("missing column names in p-value matrix")
+        
         sig.srt <- NULL
+        ## first, get highly significant
         for (cl in cls.srt) {
             tmp.srt <- order(pvl[, cl], decreasing = FALSE)
             ## cut by p value
-            sig.srt <- c(sig.srt, tmp.srt[tmp.srt %in% which(abs(pvl[, 
-                cl]) < p.min)])
+            sig.srt <- c(sig.srt,
+                         tmp.srt[tmp.srt %in% which(abs(pvl[,cl]) < p.min)])
+            ## NOTE: abs(pvl) is NEW FOR TWO-SIDED
         }
+        ## second, sort rest by increasing pval
         rest.srt <- which(!(1:nrow(pvl)) %in% sig.srt)
         rest.srt <- rest.srt[order(apply(pvl[rest.srt, , drop = FALSE], 
-            1, max), decreasing = FALSE)]
+                                         1, max), decreasing = FALSE)]
         new.srt <- sig.srt[!duplicated(sig.srt)]
         if (!cut) 
             new.srt <- c(new.srt, rest.srt)
+
+        ## remember row split between sig and non-sig
         nsig <- sum(!duplicated(sig.srt))
     }
     else {
+        ## used passed sorting!
         new.srt <- srt
         nsig <- NULL
+        ## 202307 - tested well in clusterGo.R
+        ## warning("custom sorting via `srt` is untested!")
     }
+    
+    ## resort all matrices in overlap structure (overlap, pvalue, jaccard, ...)
+    ## TODO: do this safer, check if everything got sorted?
     n <- nrow(pvl)
     m <- ncol(pvl)
-    for (i in 1:length(ovl)) if (inherits(ovl[[i]], "matrix")) {
-        if (nrow(ovl[[i]]) == n) 
-            ovl[[i]] <- ovl[[i]][new.srt, , drop = FALSE]
-        if (symmetric != "no" & ncol(ovl[[i]]) == m) 
-            ovl[[i]] <- ovl[[i]][, new.srt, drop = FALSE]
-    }
+    for (i in 1:length(ovl))
+        if (inherits(ovl[[i]], "matrix")) { ## check if matrix is of same dim
+            if (nrow(ovl[[i]]) == n) 
+                ovl[[i]] <- ovl[[i]][new.srt, , drop = FALSE]
+            if (symmetric != "no" & ncol(ovl[[i]]) == m) ## symmetric case!
+                ovl[[i]] <- ovl[[i]][, new.srt, drop = FALSE]
+        }
+
+    ## transpose back
     if (axis == 1) 
         ovl <- t.clusterOverlaps(ovl)
+
+    ## symmetric case: set other to NA
     if (symmetric != "no") {
+
+        ## copy upper to lower
         pvl <- abs(ovl$p.value)
         n <- nrow(pvl)
         m <- ncol(pvl)
@@ -1147,8 +1185,11 @@ sortOverlaps2 <- function (ovl, axis = 2, p.min = 0.05, cut = FALSE, srt, symmet
             ovl[[i]] <- x
         }
     }
-    ovl$nsig <- nsig
-    ovl$nsigdir <- axis
+
+    ## add number of sorted sig
+     ovl$nsig <- nsig
+    ovl$nsigdir <- axis # remember direction
+    
     ovl
 }
 

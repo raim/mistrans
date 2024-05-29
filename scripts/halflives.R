@@ -1,4 +1,5 @@
 
+library(readxl)
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
@@ -22,6 +23,27 @@ hlen.file <- file.path(mam.path,"processedData",
 hfeature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
 
+## @Pepelnjak2024: 20S targets
+pepe24.file <- file.path(mam.path,"originalData",
+                         "44320_2024_15_moesm1_esm.xlsx")
+
+## @Yang2022: thermal stability prediction
+## https://structure-next.med.lu.se/ProTstab2/
+protstab.file <- file.path(mam.path,"originalData",
+                           "ProTstab2_human.csv")
+
+## @Savitski2014: Tracking cancer drugs in living cells by thermal
+## profiling of the proteome
+thermo.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS11.xlsx")
+thatp.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS3.xlsx")
+
+## uniprot/refseq/ensembl/name mappings
+uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
+refseq.file <- file.path(mam.path,"originalData",
+                         "ensembl_refseq_20240528.tsv.gz")
 
 ## human genes - restrict to protein coding and MANE collection
 hgenes <- read.delim(hfeature.file)
@@ -52,7 +74,7 @@ hhlf <- apply(hhld[,cidx], 1, mean, na.rm=TRUE)
 names(hhlf) <- unlist(hhld[,1])
 
 ##hhlf[hhlf>1000] <- 1000
-
+## yeast half-lives
 yhld <- read.delim(yhlf.file)
 yhld$hgene <-
     y2h[yhld[,1]]
@@ -60,6 +82,19 @@ yhld <- yhld[!is.na(yhld$hgene),]
 yhld <- yhld[!duplicated(yhld$hgene),]
 rownames(yhld) <- yhld$hgene
 
+## UNIPROT <-> ENSEMBL MAPPING
+## NOTE: ~90 duplicated ensembl IDs
+uni2ens <- read.delim(uni2ens.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+## 1-many lists
+uni2e <- split(uni2ens[,2], uni2ens[,1])
+ens2u <- split(uni2ens[,1], uni2ens[,2])
+## REFSEQ <-> ENSEMBL MAPPING
+refseq2ens <- read.delim(refseq.file, header=TRUE)
+
+
+### AXIS LABELS
 xl.hlf <- expression(protein~"half-life"/h)
 xl.hhlf <- expression(human~protein~"half-life"/h)
 xl.yhlf <- expression(yeast~protein~"half-life"/h)
@@ -69,7 +104,7 @@ xl.ydeg <- expression(yeast~degradation/h^-1)
 xl.hlgd <- expression(human~degradation/log(d^-1))
 xl.ylgd <- expression(yeast~degradation/log(d^-1))
 
-
+## get half-lives
 yhlf <- yhld[names(hhlf),"t1.2..hours."]
 yhlf[yhlf==">= 100"] <- 120
 yhlf <- as.numeric(yhlf)
@@ -177,6 +212,12 @@ hgenes <- read.delim(hfeature.file)
 filter <- hgenes$type=="protein_coding" & hgenes$MANE!=""
 hgenes <- hgenes[filter,]
 
+## thermostability data
+therm <- as.data.frame(readxl::read_xlsx(thermo.file, sheet=2))
+mlt <- therm$meltP_Jurkat
+names(mlt) <- therm[,2]
+
+## half life data
 hhld <-  as.data.frame(readxl::read_xlsx(hhlf.file))
 ## mean half-live over all replicates and cell types, incl Mouse neurons
 ## TODO: consider distribution
@@ -190,17 +231,37 @@ names(hhlf) <-   hhld[,1]
 hlen <- read.delim(hlen.file, header=FALSE, row.names=1)
 rownames(hlen) <- sub("\\.[0-9]*", "", rownames(hlen))
 
+## TODO: predicted stability
+protstab <- read.csv(protstab.file)
+## use refseq ID w/o version number as row names
+rownames(protstab) <- sub("\\.[0-9]*","", protstab$id)
+
+## get local reduced refseq mapping
+## TODO: use full n<->n mapping and maximize yield
+ps2ens <- refseq2ens[refseq2ens[,1] %in%  hgenes$MANE.protein,]
+ps2ens <- ps2ens[ps2ens[,2] %in%rownames(protstab),]
+protstab$ensembl <- ps2ens[match(rownames(protstab),ps2ens[,2]),1]
+## match to RAAS table
+idx <- match(hgenes$MANE.protein, protstab$ensembl)
+pstab <- protstab$Human_predict_Tm[idx]
+names(pstab) <- hgenes$MANE.protein
+
 ## expand proteins and gene names
-hmap <- cbind(hgenes$name,hgenes$MANE.protein)
+hmap <- cbind(hgenes$name, hgenes$MANE.protein)
 hmap <- cbind.data.frame(hmap,
                          len=hlen[hmap[,2],1],
-                         hlf=hhlf[hmap[,1]])
+                         hlf=hhlf[hmap[,1]],
+                         mlt=mlt[hmap[,1]],
+                         mlt_predicted=pstab[hmap[,2]])
 
 ## remove duplicated gene names AFTER SORTING FOR LENGTH
 ## NOTE: correlation much stronger when taking the longest proteoform
 ## for each gene. MANE PROTEIN INSTEAD
 #hmap <- hmap[order(hmap$len, decreasing=TRUE),]
 #hmap <- hmap[!duplicated(hmap[,1]),]
+
+### TODO: add MANE.protein column to human feature file
+## or generate protein file
 
 ## plot half-lives vs lengths
 
@@ -232,5 +293,41 @@ for ( ax in 1:2 ) {
 figlabel("human", pos="bottomleft", cex=1.2, font=2)
 dev.off()
 
-### TODO: add MANE.protein column to human feature file
-## or generate protein file
+plotdev(file.path(fig.path,"protein_halflive_melting_human"),
+        type=ftyp, height=4, width=4, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(hmap$mlt, log10(hmap$hlf), round=3,
+        ##ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
+        xlab="melting T/°C", ylab="mean protein half-life/h", axes=FALSE)
+for ( ax in 2 ) {
+    axis(ax, at=0:9, labels=10^(0:9))
+    axis(ax, at=log10(rep(1:10, 6) * 10^rep(-1:4, each=10)),
+         tcl=-.125, labels=FALSE)
+}
+axis(1)
+figlabel("human", pos="bottomleft", cex=1.2, font=2)
+dev.off()
+
+plotdev(file.path(fig.path,"protein_length_melting_human"),
+        type=ftyp, height=4, width=4, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(hmap$mlt, log10(hmap$len), round=3,
+        ##ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
+        xlab="melting T/°C", ylab="protein length", axes=FALSE)
+for ( ax in 2 ) {
+    axis(ax, at=0:9, labels=10^(0:9))
+    axis(ax, at=log10(rep(1:10, 6) * 10^rep(-1:4, each=10)),
+         tcl=-.125, labels=FALSE)
+}
+axis(1)
+figlabel("human", pos="bottomleft", cex=1.2, font=2)
+dev.off()
+
+## NOTE: low correlation of melting to predicted
+## but both correlate well with length
+plotCor(hmap$mlt, hmap$mlt_predicted)
+plotCor(log(hmap$len),hmap$mlt_predicted)
+plotCor(log(hmap$len),hmap$mlt)
+
+hdat <- hmap[,3:ncol(hmap)]
+pca <- prcomp(hdat, scale=TRUE)

@@ -291,12 +291,26 @@ w23prot.file <- file.path(mam.path,"originalData",
 w23pprot.file <- file.path(mam.path,"originalData",
                            "41586_2023_6626_MOESM5_ESM.xlsx")
 
+## @Yang2022: thermal stability prediction
+## https://structure-next.med.lu.se/ProTstab2/
+protstab.file <- file.path(mam.path,"originalData",
+                           "ProTstab2_human.csv")
 
-## gene name mappings
+## @Savitski2014: Tracking cancer drugs in living cells by thermal
+## profiling of the proteome
+thermo.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS11.xlsx")
+thatp.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS3.xlsx")
 
-## uniprot/ensembl/name mappings
+## PROTEIN ID MAPPINGS
+
+## uniprot/refseq/ensembl/name mappings
 uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
 uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
+
+refseq.file <- file.path(mam.path,"originalData",
+                         "ensembl_refseq_20240528.tsv.gz")
 
 ## genome feature file
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
@@ -966,6 +980,8 @@ uni2dat <- uni2ens[uni2ens[,2]%in%c(dat$ensembl, dat$mane),]
 uni2e <- split(uni2ens[,2], uni2ens[,1])
 ens2u <- split(uni2ens[,1], uni2ens[,2])
 
+refseq2ens <- read.delim(refseq.file, header=TRUE)
+
 ## remove duplicate ensembl IDs
 ## TODO: is the list sorted? best uniprot hit?
 ##uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
@@ -984,6 +1000,14 @@ ptl <- strsplit(genes$proteins, ";")
 ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)
 pnms <- ens2nam
+
+## list of all MANE proteins
+MANES <- genes$MANE.protein
+MANES <- MANES[MANES!=""]
+
+## filter MANE.protein in mappings
+rs2ens <- refseq2ens[refseq2ens[,1]%in%names(ens2nam),] # available
+rs2mane <- refseq2ens[refseq2ens[,1]%in%MANES,] # MANE
 
 ### GLOBAL DISTRIBUTION BY CANCER TYPE
            
@@ -1042,3 +1066,36 @@ if ( only.unique ) {
 
 ## TODO: pairs of same SAAP
 ##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
+
+
+### MOTIFS & KRAQ
+## TODO: make sure this doesnt overwrite any of the above
+## it should mainly providebdat
+
+## additional input
+pep.file <- file.path(dat.path, "All_main_tryptic_peptide_list.txt")
+non.file <- file.path(dat.path, "All_main_nontryptic_peptide_list.txt")
+nkr.file <- file.path(dat.path, "All_main_nontryptic_noKR_peptide_list.txt")
+akr.file <- file.path(dat.path, "All_main_ArgC_LysC_peptide_list.txt")
+
+
+## FILTER UNIQUE BP - since those have the same AA CONTEXT
+## NOTE: that this looses different SAAPs for the same BP
+
+bpraas <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP)) #tmtf$BP)
+bpraas <- listProfile(bpraas, y=tmtf$RAAS, use.test=use.test, min=3)
+
+bdat <- hdat##[!duplicated(hdat$BP),]
+rownames(bdat) <- paste(bdat$BP, bdat$SAAP)
+
+## match rows
+
+## MISSING?
+## manual inspection shows this BP had infinite RAAS
+missing <- which(!rownames(bdat)%in%rownames(bpraas))
+if ( length(missing) )
+    cat(paste("WARNING:", length(missing), "BP missing from TMT level file\n"))
+
+## keep only bdat for which we have RAAS values
+bdat <- cbind(bdat[rownames(bpraas),], bpraas)
+
