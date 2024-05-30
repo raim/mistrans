@@ -330,4 +330,6 @@ plotCor(log(hmap$len),hmap$mlt_predicted)
 plotCor(log(hmap$len),hmap$mlt)
 
 hdat <- hmap[,3:ncol(hmap)]
-pca <- prcomp(hdat, scale=TRUE)
+##pca <- prcomp(hdat, scale=TRUE)
+
+
