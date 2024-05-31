@@ -143,7 +143,7 @@ frm <- unique(bdat$from)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("from_",frm)
 for ( i in seq_along(frm) ) 
-    ftcls[,i] <- bdat$from==frm[i])
+    ftcls[,i] <- bdat$from==frm[i]
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 frm <- unique(bdat$to)
