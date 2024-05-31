@@ -38,6 +38,8 @@ if ( !exists("bdat") )
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
+## NOTE: 1e-6 doesn't seem to be worth it, little gain.
+## but further experience required
 mp.min <- 1e-6 #p.min
 mp.dot <- 1e-6 #p.dot
 mp.txt <- 1e-3 #p.txt
