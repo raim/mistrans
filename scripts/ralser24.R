@@ -130,19 +130,22 @@ com <- cor(log10(m24int), use="pairwise.complete")
 image_matrix(com, breaks=seq(.7,1,length.out=length(ttcols)+1), col=ttcols)
 
 ## CORRECTED FOR GROWTH RATE
-## deg = deg_apparent+mu
-## to test matrix addition: m24hlfw[] <- log(2)
+## deg_apparent = deg + mu
 
-hist(c(m24hlfw), breaks=100, xlab="reported half-life/h")
 
 m24degw <- log(2)/m24hlfw
+## to test matrix addition: m24degw[] <- 0
 m24deg <- t(t(m24degw) - mus)
 m24hlf <- log(2)/m24deg ## CORRECTED HALF-LIVES
 
+hist(c(m24hlfw), breaks=100, xlab="reported half-life/h")
+hist(c(m24hlf), breaks=100, xlab="reported half-life/h")
+
+
 brks <- seq(0,5,.05)
-hist(m24degw, breaks=brks, freq=FALSE,
-     xlab=expression(reported~degradation~rate/h^-1))
-hist(mus, border=2, breaks=brks, freq=FALSE)#, add=TRUE)
+hist(mus, border=2, breaks=brks, freq=FALSE,
+     xlab=expression(reported~degradation~rate/h^-1))#
+hist(m24degw, breaks=brks, freq=FALSE, add=TRUE)
 
 ## corrected -> below 0
 hist(m24deg, breaks=100)
@@ -153,6 +156,8 @@ hist(ash(c(m24hlf)), xlab="arcsinh corrected half-lives")
 
 ## translation rate ~ int*(deg+mu)
 m24trnsl <- m24int * log(2)/m24hlfw
+
+### PLOT
 
 ## map to our main gene set
 idx <- match(ygenes$ID, m24genes)
@@ -168,7 +173,7 @@ for ( i in 1:nrow(m24mu) ) {
                   ylab=expression(log[10](intensity/total)), axes=FALSE)
     axis(3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
     axis(2)
-    mtext(paste("strain", strain), 1, 1, font=2)
+    mtext(paste("strain", strain), 1, 1, font=2, cex=1.3)
     dev.off()
 }
 
@@ -188,7 +193,7 @@ for ( i in 1:nrow(m24mu) ) {
     axis(2, at=-1:10, labels=10^(-1:10))
     axis(2, at=log10(rep(1:10, 5) * 10^rep(-1:3, each=10)), tcl=-.125,
          labels=FALSE)
-    mtext(paste("strain", strain), 1, 1, font=2)
+    mtext(paste("strain", strain), 1, 1, font=2, cex=1.3)
     dev.off()
 }
 

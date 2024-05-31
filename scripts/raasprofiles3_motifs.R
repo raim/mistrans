@@ -70,7 +70,7 @@ dotprofile(ovl, value="ratio", vcols=ttcols,
 dev.off()
 
 ## DEFINE CLASSES
-do.all.motifs <- FALSE # for interactive use to get pngs
+do.all.motifs <- TRUE # FALSE # for interactive use to get pngs
 
 aatight <- apply(aam[,as.character(-2:2)], 1, paste, collapse="")
 
@@ -143,7 +143,7 @@ frm <- unique(bdat$from)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("from_",frm)
 for ( i in seq_along(frm) ) 
-    ftcls[,i] <- bdat$from==frm[i]
+    ftcls[,i] <- bdat$from==frm[i])
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 frm <- unique(bdat$to)
@@ -173,6 +173,8 @@ ASN2 <- ASN
 ASN2$cols <- aa.cols[ASN2$chars]
 ASN2$cols["V"] <- "#2eb774"
 
+log.path <- file.path(mfig.path, "logos")
+dir.create(log.path, showWarnings=FALSE)
 tmp.path <- file.path(mfig.path, "selected")
 dir.create(tmp.path, showWarnings=FALSE)
 ##pwm <- getPFM(aam)
@@ -181,7 +183,7 @@ dir.create(tmp.path, showWarnings=FALSE)
 for ( i in 1:ncol(classes) ) {
 
     id <- colnames(classes)[i]
-    lb <- sub(".*_", "", id)
+    lb <- id # sub(".*_", "", id)
     filt <- classes[,id]
     cols <- rngs[[id]]
     axlab <- as.character(cols)
@@ -189,7 +191,7 @@ for ( i in 1:ncol(classes) ) {
  
     if ( sum(filt)<2 ) next
 
-    tmp.path <- mfig.path
+    tmp.path <- log.path
     if ( id %in% selected )
         tmp.path <- file.path(mfig.path, "selected")
     
