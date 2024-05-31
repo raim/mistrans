@@ -282,6 +282,18 @@ for ( i in 1:ncol(classes) ) {
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
         diffLogo_addPvals(dfop, ymin=mx)
         dev.off()
+        ## again w/o lower part
+        plotdev(file.path(tmp.path,paste0("logos_", id, "_S_top")),
+                height=ht/2, width=wd, res=300, type=ftyp)
+        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
+        axis(1, at=1:length(cols), labels=axlab)
+        mtext("JS divergence", 2, 1.3)
+        if ( 0 %in% cols )
+            axis(1, at=which(cols==0), labels="AAS", las=2)
+        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
+        diffLogo_addPvals(dfop, ymin=mx)
+        dev.off()
     }
     
 }
