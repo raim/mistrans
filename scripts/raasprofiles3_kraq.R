@@ -36,8 +36,8 @@ if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
 
-mfig.path <- file.path(fig.path,"kraq")
-dir.create(mfig.path, showWarnings=FALSE)
+kfig.path <- file.path(fig.path,"kraq")
+dir.create(kfig.path, showWarnings=FALSE)
 
 ### POSITION OF AAS IN PEPTIDES
 

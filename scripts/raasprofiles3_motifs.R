@@ -38,6 +38,10 @@ if ( !exists("bdat") )
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
+mp.min <- 1e-6 #p.min
+mp.dot <- 1e-6 #p.dot
+mp.txt <- 1e-3 #p.txt
+
 
 #### GENERAL SEQUENCE LOGOS
 
@@ -52,11 +56,11 @@ aas[,"0"] <- bdat$to
 
 ## HYPERGEO TESTS - tigther context
 ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
-ovl <- sortOverlaps(ovl, p.min=p.txt)
+ovl <- sortOverlaps(ovl, p.min=mp.txt)
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
         height=5, width=5, res=300)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
              xlab="Distance from AAS")
 dev.off()
 
@@ -65,12 +69,20 @@ plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
-           p.dot=p.min, lg2=TRUE, mxr=2,
+           p.dot=mp.dot, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
 dev.off()
 
 ## DEFINE CLASSES
-do.all.motifs <- TRUE # FALSE # for interactive use to get pngs
+## TODO 20240531
+## * to [AG] w/o position filter,
+## * test RAAS for several KRAQ definitions vs. Q->G,
+## * rm *** for obvious positions,
+## * test dotplot w lower p-value cutoff,
+## * use -2 to 2 in M/C/W context, label MxM, etc.,
+## * ->G context.
+
+do.all.motifs <-  FALSE #TRUE # for interactive use to get pngs
 
 aatight <- apply(aam[,as.character(-2:2)], 1, paste, collapse="")
 
@@ -82,16 +94,18 @@ krxq <- rep(FALSE, nrow(bdat))
 krxq[grep("[KR][A-Z]Q",aatight)] <- TRUE
 
 CTXT <- as.character(c(-2,-1,1,2))
-Cyt <- apply(aam[,CTXT], 1, function(x) sum(x%in%c("C"))) > 0
-Met <- apply(aam[,CTXT], 1, function(x) sum(x%in%c("M"))) > 0
-Trp <- apply(aam[,CTXT], 1, function(x) any(x%in%c("W")))
+CCxCC <- apply(aam[,CTXT], 1, function(x) any(x%in%c("C")))
+MMxMM <- apply(aam[,CTXT], 1, function(x) any(x%in%c("M")))
+WWxWW <- apply(aam[,CTXT], 1, function(x) any(x%in%c("W")))
+GGxGG <- apply(aam[,CTXT], 1, function(x) any(x%in%c("G")))
 CTXTT <- as.character(c(-1,1))
-CytT <- apply(aam[,CTXTT], 1, function(x) sum(x%in%c("C"))) > 0
-MetT <- apply(aam[,CTXTT], 1, function(x) sum(x%in%c("M"))) > 0
-TrpT <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("W")))
+CxC <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("C"))) 
+MxM <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("M")))
+WxW <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("W")))
+GxG <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("G")))
 
-Wbranch <- Trp & bdat$from%in%c("I","L","V")
-Mphos <- Met & bdat$from%in%c("S","T")
+Wbranch <- WWxWW & bdat$from%in%c("I","L","V")
+Mphos <- MMxMM & bdat$from%in%c("S","T")
 
 classes <- cbind(
     kr=apply(aam[,as.character(-3:-1)], 1,
@@ -99,12 +113,14 @@ classes <- cbind(
     KRAQ=kraq,
     KRGQ=krgq,
     KRXQ=krxq,
-    Cyt=Cyt,
-    Met=Met,
-    Trp=Trp,
-    CytT=CytT,
-    MetT=MetT,
-    TrpT=TrpT,
+    CCxCC=CCxCC,
+    MMxMM=MMxMM,
+    WWxWW=WWxWW,
+    GGxGG=GGxGG,
+    CxC=CxC,
+    MxM=MxM,
+    WxW=WxW,
+    GxG=GxG,
     Wbranch=Wbranch,
     Mphos=Mphos,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
@@ -117,10 +133,10 @@ classes <- cbind(
     A1= bdat$from=="A"& bdat$site%in%1,
     AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
     P=bdat$from=="P",
-    to_G1=bdat$to%in%c("G","A") & bdat$site%in%1,
-    to_G23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
-    to_G13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
-    to_G=bdat$from%in%c("G","A"),
+    to_AG1=bdat$to%in%c("G","A") & bdat$site%in%1,
+    to_AG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
+    to_AG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
+    to_AG=bdat$to%in%c("G","A"),
     Q=bdat$from=="Q",
     QA=bdat$fromto=="Q:A",
     QG=bdat$fromto=="Q:G",
@@ -162,8 +178,8 @@ rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
 rngs$Acidic <- rngs$Long <- rngs$High <-as.character(-10:10)
-rngs$Met <- rngs$Trp <- rngs$Cyt <-as.character(-2:2)
-rngs$MetT <- rngs$TrpT <- rngs$CytT <-as.character(-1:1)
+rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <-as.character(-2:2)
+rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
 rngs$to_G13 <- as.character(-3:0)
 
 psig <- 10^-c(3,5,10)
@@ -217,6 +233,18 @@ for ( i in 1:ncol(classes) ) {
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
+        axis(1, at=1:length(cols), labels=axlab)
+        mtext("JS divergence", 2, 1.3)
+        if ( 0 %in% cols )
+            axis(1, at=which(cols==0), labels="AAS", las=2)
+        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
+        diffLogo_addPvals(dfop, ymin=mx)
+        dev.off()
+        ## again w/o lower part
+        plotdev(file.path(tmp.path,paste0("logos_", id, "_top")),
+                height=ht/2, width=wd, res=300, type=ftyp)
+        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
@@ -287,7 +315,7 @@ if ( length(ina)>0 ) {
     idx <- idx[-ina]    
 }
 
-table(classes[,"Trp"],classes[,"QG"])
+table(classes[,"WWxWW"],classes[,"QG"])
 
 ### NOTE: top-down filtering emphasizes last!!
 ### TODO: allow overlapping classes here!!
@@ -300,9 +328,14 @@ motclass <- rep("n.a.", nrow(classes))
 ##motclass[classes[,"KRXQ"]] <- "[KR]XQ"
 ##motclass[classes[,"KRGQ"]] <- "[KR]GQ"
 ##motclass[classes[,"KRAQ"]] <- "[KR]AQ"
-motclass[classes[,"CytT"]] <- "C ctxt"
-motclass[classes[,"MetT"]] <- "M ctxt"
-motclass[classes[,"TrpT"]] <- "W ctxt" ## NOTE: overrules more frequent Met
+motclass[classes[,"CCxCC"]] <- "CCxCC"
+motclass[classes[,"MMxMM"]] <- "MMxMM"
+motclass[classes[,"WWxWW"]] <- "WWxWW" ## NOTE: overrules more frequent MMxMM
+##motclass[classes[,"GGxGG"]] <- "GGxGG" 
+motclass[classes[,"CxC"]] <- "CxC"
+motclass[classes[,"MxM"]] <- "MxM"
+motclass[classes[,"WxW"]] <- "WxW" ## NOTE: overrules more frequent MMxMM
+##motclass[classes[,"GxG"]] <- "GxG"
 ##motclass[classes[,"Mphos"]] <- "Mphos"
 ##motclass[classes[,"Wbranch"]] <- "Wbranch"
 ##motclass[classes[,"TV"]] <- "TV"
@@ -310,7 +343,7 @@ motclass[classes[,"TrpT"]] <- "W ctxt" ## NOTE: overrules more frequent Met
 ##motclass[classes[,"A1"]] <- "A1>"
 ##motclass[classes[,"AG1"]] <- "A>G1"
 ##motclass[classes[,"to_G1"]] <- ">G1"
-motclass[classes[,"to_G13"]] <- "KRAQ"
+motclass[classes[,"to_AG13"]] <- "KRAQ"
 
 msrt <- c(
     ##"A1>",
@@ -323,15 +356,49 @@ msrt <- c(
     ##"[KR]GQ",
     ##"QA",
     "KRAQ",
-    "C ctxt",
+    "CCxCC",
+    "CxC",
     ##"Mphos","Wbranch",
-    "M ctxt",
+    "MMxMM",
+    "MxM",
     ##"TV",
-    "W ctxt" )
+    "WWxWW",
+    "WxW" )
+
+
+### separate plots for motifs
+dot.path <- file.path(mfig.path, "dotplots")
+dir.create(dot.path)
+for ( j in 1:ncol(classes) ) {
+
+    mid <- colnames(classes)[j]
+    mclass <- rep("n.a.", nrow(classes))
+    mclass[classes[,j]] <- mid
+
+    tmtm$motifs <- mclass[idx]
+    
+    ovw <- raasProfile(x=tmtm, id="SAAP", 
+                   rows="motifs", cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=mid,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0)
+
+    plotProfiles(ovw,
+                 fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
+                 mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
+                 p.min=mp.min, p.txt=mp.txt,
+                 dot.sze=dot.sze, p.dot=mp.dot,
+                 rlab=LAB,  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam="monospace")
+ 
+}
 
 ## AA/codon/structure mapping
 tmtm$motifs <- motclass[idx]
-
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="motifs", cols="Dataset",
@@ -344,8 +411,8 @@ ovw <- raasProfile(x=tmtm, id="SAAP",
 
 plotProfiles(ovw, fname=file.path(mfig.path,paste0("motifs_",SETID)),
              mai=c(.8,.7,.6,.6), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
@@ -370,17 +437,17 @@ ovw <- raasProfile(x=tmtm, id="SAAP",
 
 plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp1_",SETID)),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at position 1 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols)
-ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+ovwp <- sortOverlaps(ovw, p.min=mp.txt, cut=TRUE)
 plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp1_",SETID,"_cut")),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at pos. 1 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
@@ -403,17 +470,17 @@ ovw <- raasProfile(x=tmtm, id="SAAP",
                    fname=file.path(dpath,paste0("bp2_",SETID,"_")))
 plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp2_",SETID)),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at position 2 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
-ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+ovwp <- sortOverlaps(ovw, p.min=mp.txt, cut=TRUE)
 plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp2_",SETID,"_cut")),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at pos. 2 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
@@ -435,17 +502,17 @@ ovw <- raasProfile(x=tmtm, id="SAAP",
                    fname=file.path(dpath,paste0("bp3_",SETID,"_")))
 plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp3_",SETID)),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at position 3 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
-ovwp <- sortOverlaps(ovw, p.min=p.txt, cut=TRUE)
+ovwp <- sortOverlaps(ovw, p.min=mp.txt, cut=TRUE)
 plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp3_",SETID,"_cut")),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
-             p.min=p.min, p.txt=p.txt,
-             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at pos. 3 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,

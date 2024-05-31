@@ -1250,11 +1250,11 @@ diffLogo_addPvals <- function(dfop, ymin, levels=10^-c(3,5,10)) {
     npos = ncol(dfop$pwm1)
     for (j in (leftOffset + 1):(npos - rightOffset)) {
         if (dfop$pvals[j] < levels[3]) {
-            text(j, ymin, "***")
+            text(j, ymin, "***", xpd=TRUE)
         } else  if (dfop$pvals[j] < levels[2]) {
-            text(j, ymin, "**")
+            text(j, ymin, "**", xpd=TRUE)
         } else  if (dfop$pvals[j] < levels[1]) {
-            text(j, ymin, "*")
+            text(j, ymin, "*", xpd=TRUE)
         }
     }
 }
@@ -1272,7 +1272,7 @@ DiffLogoObject_getOffsets <- function(diffLogoObj) {
     c(leftOffset, rightOffset)
 }
 
-myDiffLogo <- function (diffLogoObj, ymin = 0, ymax = 0, sparse = FALSE,
+myDiffLogo <- function (diffLogoObj, ymin, ymax, sparse = FALSE,
                         diffLogoConfiguration = list()) 
 {
     if (!is(diffLogoObj, "DiffLogo")) {
@@ -1281,10 +1281,10 @@ myDiffLogo <- function (diffLogoObj, ymin = 0, ymax = 0, sparse = FALSE,
             sep = "")
         stop(msg)
     }
-    if (ymin == 0) { ## NOTE: ylims flipped wrt original function
+    if ( missing(ymin) ) { ## NOTE: ylims flipped wrt original function
         ymin = diffLogoObj$ylim.negMax
     }
-    if (ymax == 0) {
+    if ( missing(ymax) ) {
         ymax = diffLogoObj$ylim.posMax
     }
     ylab = diffLogoObj$ylab
