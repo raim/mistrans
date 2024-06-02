@@ -40,9 +40,9 @@ dir.create(mfig.path, showWarnings=FALSE)
 
 ## NOTE: 1e-6 doesn't seem to be worth it, little gain.
 ## but further experience required
-mp.min <- 1e-6 #p.min
-mp.dot <- 1e-6 #p.dot
-mp.txt <- 1e-3 #p.txt
+mp.min <- p.min
+mp.dot <- p.dot
+mp.txt <- p.txt
 
 
 #### GENERAL SEQUENCE LOGOS
@@ -95,6 +95,7 @@ krgq[grep("[KR]GQ",aatight)] <- TRUE
 krxq <- rep(FALSE, nrow(bdat))
 krxq[grep("[KR][A-Z]Q",aatight)] <- TRUE
 
+
 CTXT <- as.character(c(-2,-1,1,2))
 CCxCC <- apply(aam[,CTXT], 1, function(x) any(x%in%c("C")))
 MMxMM <- apply(aam[,CTXT], 1, function(x) any(x%in%c("M")))
@@ -106,47 +107,57 @@ MxM <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("M")))
 WxW <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("W")))
 GxG <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("G")))
 
+## subclasses
+
 Wbranch <- WWxWW & bdat$from%in%c("I","L","V")
 Mphos <- MMxMM & bdat$from%in%c("S","T")
+
+CCxPP <- apply(aam[,c("-1","-2")], 1, function(x) any(x%in%c("C"))) &
+    apply(aam[,c("1","2")], 1, function(x) any(x%in%c("P")))
 
 classes <- cbind(
     kr=apply(aam[,as.character(-3:-1)], 1,
              function(x) any(x%in%c("K","R"))),
+    frQ=bdat$from=="Q",
+    QG=bdat$fromto=="Q:G",
+    QA=bdat$fromto=="Q:A",
     KRAQ=kraq,
     KRGQ=krgq,
-    KRXQ=krxq,
+    KRxQ=krxq,
+    toAG1 =bdat$to%in%c("G","A") & bdat$site%in%1,
+    toAG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
+    toAG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
+    toAG  =bdat$to%in%c("G","A"),
+    N1=bdat$site%in%1,
+    N2=bdat$site%in%2,
+    N3=bdat$site%in%3,
+    N13=bdat$site%in%1:3,
+    frA=bdat$from=="A",
+    frA1= bdat$from=="A"& bdat$site%in%1,
+    AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
+
     CCxCC=CCxCC,
-    MMxMM=MMxMM,
-    WWxWW=WWxWW,
-    GGxGG=GGxGG,
     CxC=CxC,
+    CCxPP=CCxPP,
+    MMxMM=MMxMM,
     MxM=MxM,
+    "MM[ST]MM"=Mphos,
+    WWxWW=WWxWW,
     WxW=WxW,
+    "WW[ILV]WW"=Wbranch,
+    "[ILV]"=bdat$from%in%c("I","L","V"),
+    GGxGG=GGxGG,
     GxG=GxG,
-    Wbranch=Wbranch,
-    Mphos=Mphos,
+    frW=bdat$from=="W",
+    
+    QNrich= apply(aam[,as.character(c(-6:-1,1:6))], 1,
+               function(x) sum(x%in%c("Q","N")))>3,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("E","D")))>3,
-    short=bdat$len <= 1000  & bdat$median > -.5,
-    long=bdat$len > 1000  & bdat$median > -.5,
-    high=bdat$median > -1,
-    low=bdat$median <= -1,
-    A=bdat$from=="A",
-    A1= bdat$from=="A"& bdat$site%in%1,
-    AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
-    P=bdat$from=="P",
-    to_AG1=bdat$to%in%c("G","A") & bdat$site%in%1,
-    to_AG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
-    to_AG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
-    to_AG=bdat$to%in%c("G","A"),
-    Q=bdat$from=="Q",
-    QA=bdat$fromto=="Q:A",
-    QG=bdat$fromto=="Q:G",
-    VQ=bdat$fromto=="V:Q",
-    TV=bdat$fromto=="T:V",
-    branched=bdat$from%in%c("I","L","V"),
-    Nterm1=bdat$site%in%1,
-    Nterm2=bdat$site%in%2)
+    short=bdat$len <= 1000,
+    long=bdat$len > 1000)
+## store manual selection before (otpionally)
+## expanding to full scan of AAS types
 selected <- colnames(classes)
 
 
@@ -180,9 +191,10 @@ rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
 rngs$Acidic <- rngs$Long <- rngs$High <-as.character(-10:10)
-rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <-as.character(-2:2)
+rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
-rngs$to_G13 <- as.character(-3:0)
+rngs$toAG23 <- as.character(-3:3)
+
 
 psig <- 10^-c(3,5,10)
 
@@ -216,14 +228,39 @@ for ( i in 1:ncol(classes) ) {
     if ( interactive() )
         boxplot(bdat$median ~ filt)
 
+    ## PWM ENCODED
     ## position weight matrices and diffLogo
     pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
     pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
+
     n1 <- sum(filt)
     n2 <- sum(!filt)
     dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
     dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
 
+    ## suppress p.vals where ALL AA are equal
+    ## -> obvious selection bias
+    setpo <- apply(pfm1, 2, function(x) all(x%in%c(0.0,1.0)))
+    dfop$pvals[setpo] <- 1
+
+    ## PWM INCORPORATED
+    ## position weight matrices and diffLogo
+    pfm1 <- getPFM(aas[ filt,cols,drop=FALSE])
+    pfm2 <- getPFM(aas[!filt,cols,drop=FALSE])
+    n1 <- sum(filt)
+    n2 <- sum(!filt)
+
+    dfnb <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
+    dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
+
+    ## suppress p.vals where ALL AA are equal
+    ## -> obvious selection bias
+    setpn <- apply(pfm1, 2, function(x) all(x%in%c(0.0,1.0)))
+    dfnp$pvals[setpn] <- 1
+
+    ## PLOT LOGOS
+
+    ## ENCODED
     if ( any(dfop$pvals[cols!=0]<min(psig)) | id %in% selected ) {
 
         mmai <- c(.5,.5,.1,.1)
@@ -235,18 +272,7 @@ for ( i in 1:ncol(classes) ) {
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
-        axis(1, at=1:length(cols), labels=axlab)
-        mtext("JS divergence", 2, 1.3)
-        if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="AAS", las=2)
-        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
-        diffLogo_addPvals(dfop, ymin=mx)
-        dev.off()
-        ## again w/o lower part
-        plotdev(file.path(tmp.path,paste0("logos_", id, "_top")),
-                height=ht/2, width=wd, res=300, type=ftyp)
-        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
+        axis(2)
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
@@ -256,46 +282,82 @@ for ( i in 1:ncol(classes) ) {
         dev.off()
     }
 
-    ## position weight matrices and diffLogo
-    pfm1 <- getPFM(aas[ filt,cols,drop=FALSE])
-    pfm2 <- getPFM(aas[!filt,cols,drop=FALSE])
-    n1 <- sum(filt)
-    n2 <- sum(!filt)
-    dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
-    dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
-
-    if ( any(dfop$pvals[cols!=0]<min(psig))  | id %in% selected ) {
+    ## INCORPORATED
+    if ( any(dfnp$pvals[cols!=0]<min(psig))  | id %in% selected ) {
 
         mmai <- c(.5,.5,.1,.1)
         wd <- .4*length(cols) + .6
         ht <- 3
-        mn <- dfob$ylim.negMax
-        mx <- dfob$ylim.posMax
+        mn <- dfnb$ylim.negMax
+        mx <- dfnb$ylim.posMax
         plotdev(file.path(tmp.path,paste0("logos_", id,"_S")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-        myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
+        myDiffLogo(dfnb, sparse=TRUE, ymin=mn, ymax=mx)
         axis(1, at=1:length(cols), labels=axlab)
+        axis(2)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
-        diffLogo_addPvals(dfop, ymin=mx)
-        dev.off()
-        ## again w/o lower part
-        plotdev(file.path(tmp.path,paste0("logos_", id, "_S_top")),
-                height=ht/2, width=wd, res=300, type=ftyp)
-        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
-        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
-        axis(1, at=1:length(cols), labels=axlab)
-        mtext("JS divergence", 2, 1.3)
-        if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="AAS", las=2)
-        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
-        diffLogo_addPvals(dfop, ymin=mx)
+        diffLogo_addPvals(dfnp, ymin=mx)
         dev.off()
     }
     
+    ## TIGHT LOGO PLOT FOR MAIN
+    if ( (any(dfop$pvals[cols!=0]<min(psig))  |
+          any(dfnp$pvals[cols!=0]<min(psig))) |
+         id %in% selected ) {
+        
+        mno <- dfob$ylim.negMax
+        mxo <- dfob$ylim.posMax
+        mnn <- dfnb$ylim.negMax
+        mxn <- dfnb$ylim.posMax
+        
+        mxo <- mxn <- max(mxo, mxn)
+        
+        ## figure heights
+        ht <- 3
+        omai <- c(.15,.25,.2,.15)
+        nmai <- c(.25,.25,.1,.15)
+
+        ## heights
+        htn <- ht/2 + nmai[1] + nmai[3]
+        hto <- ht/2 + omai[1] + omai[3]
+        
+        ## adaptive width
+        wd <- .4*length(cols) + nmai[2] + nmai[4]
+        
+        dfop$ylab <- "JS divergence"
+        plotdev(file.path(tmp.path,paste0("logos_", id, "_tight")),
+                height=hto+htn , width=wd, res=300, type=ftyp)
+        layout(t(t(1:2)), heights=c(hto, htn))
+
+        ## encoded
+        par(mai=omai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mxo)
+        axis(1, at=1:length(cols), labels=FALSE)
+        axis(2)
+        figlabel(paste0(lb,": ",sum(filt),"  "),
+                 pos="topright", font=2, cex=1.2)
+        diffLogo_addPvals(dfop, ymin=mxo)
+        mtext("encoded", 4,-.25,adj=.05)
+        
+        ## incorporated
+        par(mai=nmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mxn)
+        axis(1, at=1:length(cols), labels=axlab)
+        ##mtext("JS divergence", 2, 1.3)
+        if ( 0 %in% cols )
+            axis(1, at=which(cols==0), labels="AAS", las=1)
+        ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
+        diffLogo_addPvals(dfnp, ymin=mxn)
+        axis(2)
+        mtext("incorporated", 4,-.25,adj=.05)
+        dev.off()
+  
+   
+    }
 }
 
 plotdev(file.path(mfig.path,"protein_location_G"), ftyp,
@@ -331,106 +393,113 @@ if ( length(ina)>0 ) {
 
 table(classes[,"WWxWW"],classes[,"QG"])
 
-### NOTE: top-down filtering emphasizes last!!
-### TODO: allow overlapping classes here!!
-###       * use listProfile? and generate ovw structure
-##          from multiple listProfile matrices?  
-
-motclass <- rep("n.a.", nrow(classes))
-##motclass[classes[,"QG"]] <- "QG"
-##motclass[classes[,"QA"]] <- "QA"
-##motclass[classes[,"KRXQ"]] <- "[KR]XQ"
-##motclass[classes[,"KRGQ"]] <- "[KR]GQ"
-##motclass[classes[,"KRAQ"]] <- "[KR]AQ"
-motclass[classes[,"CCxCC"]] <- "CCxCC"
-motclass[classes[,"MMxMM"]] <- "MMxMM"
-motclass[classes[,"WWxWW"]] <- "WWxWW" ## NOTE: overrules more frequent MMxMM
-##motclass[classes[,"GGxGG"]] <- "GGxGG" 
-motclass[classes[,"CxC"]] <- "CxC"
-motclass[classes[,"MxM"]] <- "MxM"
-motclass[classes[,"WxW"]] <- "WxW" ## NOTE: overrules more frequent MMxMM
-##motclass[classes[,"GxG"]] <- "GxG"
-##motclass[classes[,"Mphos"]] <- "Mphos"
-##motclass[classes[,"Wbranch"]] <- "Wbranch"
-##motclass[classes[,"TV"]] <- "TV"
-##
-##motclass[classes[,"A1"]] <- "A1>"
-##motclass[classes[,"AG1"]] <- "A>G1"
-##motclass[classes[,"to_G1"]] <- ">G1"
-motclass[classes[,"to_AG13"]] <- "KRAQ"
-
-msrt <- c(
-    ##"A1>",
-    ##">G1",
-    ##"A>G1",
-    ##">[GA]123",
-    ##"[KR]XQ",
-    ##"[KR]AQ",
-    ##"QG",
-    ##"[KR]GQ",
-    ##"QA",
-    "KRAQ",
-    "CCxCC",
-    "CxC",
-    ##"Mphos","Wbranch",
-    "MMxMM",
-    "MxM",
-    ##"TV",
-    "WWxWW",
-    "WxW" )
 
 
-### separate plots for motifs
+
+### CALCULATE ALL MOTIF RAAS PROFILES
+## TODO: implement overlapping classes in raasProfile
+plot.all.motifs <- FALSE
 dot.path <- file.path(mfig.path, "dotplots")
 dir.create(dot.path)
-for ( j in 1:ncol(classes) ) {
-
-    mid <- colnames(classes)[j]
+covw <- list()
+for ( j in 1:length(selected) ) {
+    
+    mid <- selected[j]
     mclass <- rep("n.a.", nrow(classes))
     mclass[classes[,j]] <- mid
 
     tmtm$motifs <- mclass[idx]
     
     ovw <- raasProfile(x=tmtm, id="SAAP", 
-                   rows="motifs", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=mid,
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0)
+                       rows="motifs", cols="Dataset",
+                       bg=TRUE, value="RAAS", row.srt=mid,
+                       col.srt=uds,
+                       use.test=use.test, do.plots=FALSE,
+                       xlab=xl.raas,
+                       verb=0)
+    covw[[mid]] <- ovw
 
-    plotProfiles(ovw,
-                 fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
-                 mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
-                 p.min=mp.min, p.txt=mp.txt,
-                 dot.sze=dot.sze, p.dot=mp.dot,
-                 rlab=LAB,  ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam="monospace")
- 
+    if ( plot.all.motifs ) {
+        plotProfiles(ovw,
+                     fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
+                     mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
+                     p.min=mp.min, p.txt=mp.txt,
+                     dot.sze=dot.sze, p.dot=mp.dot,
+                     rlab=LAB,  ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam="monospace")
+    }
 }
 
-## AA/codon/structure mapping
-tmtm$motifs <- motclass[idx]
+### MERGE PROFILES
+ovm <- mergeProfiles(covw)
+## sort
+ovm <- sortOverlaps(ovm, axis=2, srt=selected)
 
-ovw <- raasProfile(x=tmtm, id="SAAP", 
-                   rows="motifs", cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=msrt,
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0, 
-                   fname=file.path(dpath,paste0("motifs_",SETID,"_")))
+amai <- c(0.8,1,0.6,.6)
 
-plotProfiles(ovw, fname=file.path(mfig.path,paste0("motifs_",SETID)),
-             mai=c(.8,.7,.6,.6), ttcols=ttcols, value="median",
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
+             mai=amai, ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval6")),
+             mai=amai, ttcols=ttcols, value="median",
+             p.min=1e-6, p.txt=1e-3,
+             dot.sze=dot.sze, p.dot=1e-6,
+             llab="p6",  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace",plot.all=FALSE)
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval100")),
+             mai=amai, ttcols=ttcols, value="median",
+             p.min=1e-100, p.txt=1e-50,
+             dot.sze=dot.sze, p.dot=1e-100,
+             llab="p100",  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace",plot.all=FALSE)
+
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_vcols")),
+             mai=amai, ttcols=ttcols, value="median",
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
+             llab="vcols",  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=vcols, vbrks=vbrks,
+             gcols=gcols, ffam="monospace")
+## TODO: select for filtered plot
+msrt <- c("toAG23",
+          "CCxCC",
+          "MMxMM",
+          "WWxWW",
+          "QNrich",
+          "Acidic",
+          "long"
+          )
+
+ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
+plotProfiles(ovs,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
+             mai=c(0.8,.9,0.6,.6), ttcols=ttcols, value="median",
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+
+### POSITION WISE RAAS
+
+## TODO: add to motifs?
 
 ## first AA in BP
 bp1 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[1]))

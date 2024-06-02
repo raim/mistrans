@@ -789,6 +789,52 @@ listProfile <- function(x, y, delog=TRUE, use.test=t.test, min=3) {
     as.data.frame(do.call(rbind, stat))
 }
 
+## merge clusterOverlap objectes from raasProfile
+## TODO: generalize and move to segmenTools
+mergeProfiles <- function(ovll) {
+
+    ## result list that will contain all merged
+    ## entries
+    ovl <- list()
+
+    ## content of invididual clusterOverlap structures
+    flags <- c("delog", "p.adjust")
+    mats <- c("p.value", "statistic", "count",
+              "mean", "median", "unique", "sign", "num.query")
+    lsts <- c("ALL")
+
+    ## collect flags and test for concistency
+    for ( flag in flags ) {
+        ovl[[flag]] <- unlist(lapply(ovll, function(y) y[[flag]]))
+        ## check consistency of flags
+        if ( length(unique(ovl[[flag]]))>1 )
+            stop("inconsistent processing flags")
+        ovl[[flag]] <- unique(ovl[[flag]])
+    }
+    
+    ## collect numbers of targets (columns)
+    ## NOTE: only for SAME TARGETS/COLUMNS
+    ## TODO: check whether target or query is consistent and fuse accordingly
+    num.target <- do.call(rbind, lapply(ovll, function(x) x$num.target))
+    if ( any(apply(num.target, 2, sd)>0) )
+        stop("inconsistent number of targets (columns)")
+    ovl$num.target <- t(as.matrix(apply(num.target, 2, unique)))
+
+    ## rbind all matrices
+    for ( mat in mats ) 
+        ovl[[mat]] <- do.call(rbind, lapply(ovll, function(x) x[[mat]]))
+
+    ## append lists
+    for ( lst in lsts ) {
+        tmp <- list()
+        for ( i in 1:length(ovll) )
+            tmp <- append(tmp, ovll[[i]][[lst]])
+        ovl[[lst]] <- tmp
+    }
+    class(ovl) <- "clusterOverlaps"
+    ovl
+}
+
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
 ## but working on lists of unequal lengths instead of a matrix
 raasProfile <- function(x=tmtf, id="SAAP", 
@@ -1292,7 +1338,9 @@ myDiffLogo <- function (diffLogoObj, ymin, ymax, sparse = FALSE,
         plot(NA, xlim = c(0.5, diffLogoObj$npos + 0.5), ylim = c(ymin, 
             ymax), xaxt = "n", ylab = "", mgp = c(0, 0.35, 0), 
             tck = -0.02, cex.axis = 0.8, frame.plot = FALSE, 
-            xlab = "")
+            xlab = "",
+            axes=FALSE) ## NOTE: added axes FALSE to suppress axis settings
+        ##axis(2)
     }
     else {
         plot(NA, xlim = c(0.5, diffLogoObj$npos + 0.5), ylim = c(ymin, 
