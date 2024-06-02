@@ -56,6 +56,8 @@ colnames(aam) <- -nc:nc
 aas <- aam
 aas[,"0"] <- bdat$to
 
+## TODO: AAS_overlap for RAAS BINS
+
 ## HYPERGEO TESTS - tigther context
 ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
 ovl <- sortOverlaps(ovl, p.min=mp.txt)
@@ -84,7 +86,7 @@ dev.off()
 ## * use -2 to 2 in M/C/W context, label MxM, etc.,
 ## * ->G context.
 
-do.all.motifs <-  FALSE #TRUE # for interactive use to get pngs
+do.all.motifs <-  FALSE # TRUE # 
 
 aatight <- apply(aam[,as.character(-2:2)], 1, paste, collapse="")
 
@@ -155,7 +157,9 @@ classes <- cbind(
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("E","D")))>3,
     short=bdat$len <= 1000,
-    long=bdat$len > 1000)
+    long=bdat$len > 1000,
+    high=bdat$median > 0,
+    low=bdat$median < -3)
 ## store manual selection before (otpionally)
 ## expanding to full scan of AAS types
 selected <- colnames(classes)
@@ -190,10 +194,10 @@ names(rngs) <- colnames(classes)
 rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
-rngs$Acidic <- rngs$Long <- rngs$High <-as.character(-10:10)
+rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-as.character(-10:10)
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
-rngs$toAG23 <- as.character(-3:3)
+rngs$toAG13 <- as.character(-3:0)
 
 
 psig <- 10^-c(3,5,10)
@@ -263,15 +267,15 @@ for ( i in 1:ncol(classes) ) {
     ## ENCODED
     if ( any(dfop$pvals[cols!=0]<min(psig)) | id %in% selected ) {
 
-        mmai <- c(.5,.5,.1,.1)
-        wd <- .4*length(cols) + .6
-        ht <- 3
+        mmai <- c(.5,.5,.25,.1)
+        wd <- .4*length(cols) + mmai[2] + mmai[4]
+        ht <- 2.5
         mn <- dfob$ylim.negMax
         mx <- dfob$ylim.posMax
-        plotdev(file.path(tmp.path,paste0("logos_", id)),
+        plotdev(file.path(tmp.path,paste0("logos_", id,"_encoded")),
                 height=ht, width=wd, res=300, type=ftyp)
-        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-        myDiffLogo(dfob, sparse=TRUE, ymin=mn, ymax=mx)
+        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
         axis(2)
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
@@ -279,21 +283,22 @@ for ( i in 1:ncol(classes) ) {
             axis(1, at=which(cols==0), labels="AAS", las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
         diffLogo_addPvals(dfop, ymin=mx)
+        ##mtext("encoded", 4,-.25,adj=.05)
         dev.off()
     }
 
     ## INCORPORATED
     if ( any(dfnp$pvals[cols!=0]<min(psig))  | id %in% selected ) {
 
-        mmai <- c(.5,.5,.1,.1)
-        wd <- .4*length(cols) + .6
-        ht <- 3
+        mmai <- c(.5,.5,.25,.1)
+        wd <- .4*length(cols) + mmai[2] + mmai[4]
+        ht <- 2.5
         mn <- dfnb$ylim.negMax
         mx <- dfnb$ylim.posMax
-        plotdev(file.path(tmp.path,paste0("logos_", id,"_S")),
+        plotdev(file.path(tmp.path,paste0("logos_", id,"_incorporated")),
                 height=ht, width=wd, res=300, type=ftyp)
-        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-        myDiffLogo(dfnb, sparse=TRUE, ymin=mn, ymax=mx)
+        par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
+        myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mx)
         axis(1, at=1:length(cols), labels=axlab)
         axis(2)
         mtext("JS divergence", 2, 1.3)
@@ -301,6 +306,7 @@ for ( i in 1:ncol(classes) ) {
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
         diffLogo_addPvals(dfnp, ymin=mx)
+        ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
     }
     
@@ -314,12 +320,12 @@ for ( i in 1:ncol(classes) ) {
         mnn <- dfnb$ylim.negMax
         mxn <- dfnb$ylim.posMax
         
-        mxo <- mxn <- max(mxo, mxn)
+        ##mxo <- mxn <- max(mxo, mxn)
         
         ## figure heights
         ht <- 3
-        omai <- c(.15,.25,.2,.15)
-        nmai <- c(.25,.25,.1,.15)
+        omai <- c(.15,.25,.25,.15)
+        nmai <- c(.25,.25,.15,.15)
 
         ## heights
         htn <- ht/2 + nmai[1] + nmai[3]
@@ -329,7 +335,7 @@ for ( i in 1:ncol(classes) ) {
         wd <- .4*length(cols) + nmai[2] + nmai[4]
         
         dfop$ylab <- "JS divergence"
-        plotdev(file.path(tmp.path,paste0("logos_", id, "_tight")),
+        plotdev(file.path(tmp.path,paste0("logos_", id, "")),
                 height=hto+htn , width=wd, res=300, type=ftyp)
         layout(t(t(1:2)), heights=c(hto, htn))
 
@@ -476,8 +482,9 @@ plotProfiles(ovm,
              mtxt="", mtxt.line=2.3,
              vcols=vcols, vbrks=vbrks,
              gcols=gcols, ffam="monospace")
-## TODO: select for filtered plot
-msrt <- c("toAG23",
+
+## SELECTED MOTIS FOR MAIN
+msrt <- c("toAG13,
           "CCxCC",
           "MMxMM",
           "WWxWW",
