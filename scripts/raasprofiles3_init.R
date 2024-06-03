@@ -471,6 +471,11 @@ hdat$pfromto <- paste0(hdat$pfrom,":",hdat$pto)
 hdat$frompto <- paste0(hdat$from, ":", hdat$pto)
 
 ## STRUCTURE: add bins for numeric values
+## secondary structure by names
+ssrt <- c(E="sheet", H="helix", C="coil")
+hdat$sstruc <- ssrt[hdat$s4pred]
+hdat$sstruc[hdat$sstruc==""] <- "na"
+
 ## iupred3
 iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
 rsrt <- levels(iupred3.bins)
@@ -481,10 +486,6 @@ anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
 rsrt <- levels(anchor2.bins)
 hdat$anchor2.bins <- as.character(anchor2.bins)
 hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
-## secondary structure by names
-ssrt <- c(E="sheet", H="helix", C="coil")
-hdat$sstruc <- ssrt[hdat$s4pred]
-hdat$sstruc[hdat$sstruc==""] <- "na"
 ## flDPnn - disordered
 flDPnn.bins <- cut(hdat$flDPnn, breaks=seq(0,1,.2))
 rsrt <- levels(flDPnn.bins)
@@ -511,7 +512,26 @@ rsrt <- levels(ASAquick.bins)
 hdat$ASAquick.bins <- as.character(ASAquick.bins)
 hdat$ASAquick.bins[is.na(hdat$ASAquick.bins)] <- "na"
 
-## MAP protein level info to TMT Data
+## by ranks
+rank.vals <- c("iupred3", "anchor2", "ASAquick", "SCRIBER", "MMSeq2",
+               "DisoRDPbind", "flDPnn")
+val <- rank.vals[1]
+rank.mat <- matrix(NA, ncol=length(rank.vals), nrow=nrow(hdat))
+colnames(rank.mat) <- rank.vals
+for ( val in rank.vals ) {
+    ranks <- rank(hdat[,val])
+    rankbins <- cut(ranks/max(ranks,na.rm=TRUE), seq(0,1,.2))
+    rank.mat[,val] <- rankbins
+    plotdev(file.path(fig.path, paste0("rankbins_",val)),
+            width=3, height=2, res=200)
+    par(mai=c(.75,.5,.1,.1), mgp=c(1.5,.3,0), tcl=-.25)
+    boxplot(hdat[,val] ~ rankbins, ylab=val, las=2, xlab="")
+    dev.off()
+}
+colnames(rank.mat) <- paste0(colnames(rank.mat),".rank")
+hdat <- cbind(hdat, rank.mat)
+
+### MAP PROTEIN LEVEL INFO TO TMT Data
 idx.old <- match(tmtf$SAAP, hdat$SAAP)
 idx <- match(paste(tmtf$BP, tmtf$SAAP), paste(hdat$BP, hdat$SAAP))
 
@@ -546,21 +566,33 @@ tmtf$codon <- hdat$codon[idx]
 tmtf$aacodon <- hdat$aacodon[idx]
 tmtf$iupred3 <- hdat$iupred3[idx]
 tmtf$anchor2 <- hdat$anchor2[idx]
-tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
-tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
 tmtf$sstruc <- hdat$sstruc[idx]
 
-## discPROT
+## DescribePROT
 tmtf$flDPnn <- hdat$flDPnn[idx]
-tmtf$flDPnn.bins <- hdat$flDPnn.bins[idx]
 tmtf$DisoRDPbind <- hdat$DisoRDPbind[idx]
-tmtf$DisoRDPbind.bins <- hdat$DisoRDPbind.bins[idx]
 tmtf$MMSeq2 <- hdat$MMSeq2[idx]
-tmtf$MMSeq2.bins <- hdat$MMSeq2.bins[idx]
 tmtf$ASAquick <- hdat$ASAquick[idx]
-tmtf$ASAquick.bins <- hdat$ASAquick.bins[idx]
 tmtf$SCRIBER <- hdat$SCRIBER[idx]
+
+## bins of structural data
+tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
+tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
+tmtf$flDPnn.bins <- hdat$flDPnn.bins[idx]
+tmtf$DisoRDPbind.bins <- hdat$DisoRDPbind.bins[idx]
+tmtf$MMSeq2.bins <- hdat$MMSeq2.bins[idx]
+tmtf$ASAquick.bins <- hdat$ASAquick.bins[idx]
 tmtf$SCRIBER.bins <- hdat$SCRIBER.bins[idx]
+
+## ranks of structural data
+tmtf$iupred3.rank <- hdat$iupred3.rank[idx]
+tmtf$anchor2.rank <- hdat$anchor2.rank[idx]
+tmtf$flDPnn.rank <- hdat$flDPnn.rank[idx]
+tmtf$DisoRDPbind.rank <- hdat$DisoRDPbind.rank[idx]
+tmtf$MMSeq2.rank <- hdat$MMSeq2.rank[idx]
+tmtf$ASAquick.rank <- hdat$ASAquick.rank[idx]
+tmtf$SCRIBER.rank <- hdat$SCRIBER.rank[idx]
+
 
 ## gene mapping
 tmtf$name <- hdat$name[idx]

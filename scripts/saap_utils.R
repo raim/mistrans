@@ -287,39 +287,6 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     dev.off()
     ##return(p)
 
-    if (verb>0) cat(paste("plotting",value,"counts\n"))
-    ## BARPLOT OF COUNTS
-    mai.bar <- mai
-    ##mai.bar[c(2,4)] <- mai.bar[c(2,4)] +.05
-    mai.bar[c(1,3)] <- .075
-    plotdev(paste0(fname,"_ccounts"),
-            height=.75, width=nw, res=300, type=ftyp)
-    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", family=ffam)
-    bp <- barplot(c(ovw$num.target), axes=FALSE, xlab=NA, #beside=TRUE,
-                  ylab="", las=2, xaxt='n', 
-                  width=.5, space=.5)
-    ##mtext(expression(count), 2, 2.5)
-    if ( !missing(col.lines) ) {
-        cdn.cn <- head(col.lines, length(col.lines)-1)
-        abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
-    }
-    for ( ax in c(2,4) ) 
-        axis(ax, las=2)
-    dev.off()
-    mai.bar <- mai
-    mai.bar[c(2,4)] <- .075
-    ##mai.bar[c(1,3)] <- .075
-    plotdev(paste0(fname,"_rcounts"),
-            height=nh, width=.75, res=300, type=ftyp)
-    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i", family=ffam)
-    bp <- barplot(rev(c(ovw$num.query)), axes=FALSE, xlab=NA,
-                  horiz=TRUE,
-                  ylab="", las=2, yaxt='n', 
-                  width=.5, space=.5)
-    ##mtext(expression(count), 2, 2.5)
-    for ( ax in c(1,3) )
-        axis(ax, las=2)
-    dev.off()
 
     ## plot size adjusted legend
     if ( plot.legend ) {
@@ -355,6 +322,40 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     
     if ( !plot.all ) return()
     
+    if (verb>0) cat(paste("plotting",value,"counts\n"))
+    ## BARPLOT OF COUNTS
+    mai.bar <- mai
+    ##mai.bar[c(2,4)] <- mai.bar[c(2,4)] +.05
+    mai.bar[c(1,3)] <- .075
+    plotdev(paste0(fname,"_ccounts"),
+            height=.75, width=nw, res=300, type=ftyp)
+    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i", family=ffam)
+    bp <- barplot(c(ovw$num.target), axes=FALSE, xlab=NA, #beside=TRUE,
+                  ylab="", las=2, xaxt='n', 
+                  width=.5, space=.5)
+    ##mtext(expression(count), 2, 2.5)
+    if ( !missing(col.lines) ) {
+        cdn.cn <- head(col.lines, length(col.lines)-1)
+        abline(v=bp[cdn.cn,]+unique(diff(bp[,1]))/2)
+    }
+    for ( ax in c(2,4) ) 
+        axis(ax, las=2)
+    dev.off()
+    mai.bar <- mai
+    mai.bar[c(2,4)] <- .075
+    ##mai.bar[c(1,3)] <- .075
+    plotdev(paste0(fname,"_rcounts"),
+            height=nh, width=.75, res=300, type=ftyp)
+    par(mai=mai.bar, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i", family=ffam)
+    bp <- barplot(rev(c(ovw$num.query)), axes=FALSE, xlab=NA,
+                  horiz=TRUE,
+                  ylab="", las=2, yaxt='n', 
+                  width=.5, space=.5)
+    ##mtext(expression(count), 2, 2.5)
+    for ( ax in c(1,3) )
+        axis(ax, las=2)
+    dev.off()
+
     ## classical p value profile
     outf <- paste0(fname,"_wtests")
     if (verb>0) cat(paste("plotting test profile",outf,p.min,p.txt,"\n"))

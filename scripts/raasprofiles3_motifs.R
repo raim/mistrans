@@ -34,15 +34,16 @@ source("~/work/mistrans/scripts/saap_utils.R")
 if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
-
+seq.path <- file.path(out.path,"motifs")
+dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
 ## NOTE: 1e-6 doesn't seem to be worth it, little gain.
 ## but further experience required
-mp.min <- p.min
-mp.dot <- p.dot
-mp.txt <- p.txt
+mp.min <- 1e-6 #p.min
+mp.dot <- 1e-6 #p.dot
+mp.txt <- 1e-3 #p.txt
 
 
 #### GENERAL SEQUENCE LOGOS
@@ -51,6 +52,7 @@ mp.txt <- p.txt
 aam <- do.call(rbind, strsplit(bdat$AA,""))
 nc <- (ncol(aam)-1)/2
 colnames(aam) <- -nc:nc
+rownames(aam) <- paste0(bdat$BP,"_", bdat$SAAP)
 
 ## AA MATRIX WITH AAS
 aas <- aam
@@ -58,26 +60,88 @@ aas[,"0"] <- bdat$to
 
 ## TODO: AAS_overlap for RAAS BINS
 
-## HYPERGEO TESTS - tigther context
+### HYPERGEO TESTS - tigther context
+
+omai <- c(.5,.5,.5,.5)
+
+
 ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
-ovl <- sortOverlaps(ovl, p.min=mp.txt)
+ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1)
+
+nw <- ncol(ovl$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
-        height=5, width=5, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
 plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
              xlab="Distance from AAS")
+figlabel("all", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
-        height=5, width=5, res=300)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
            p.dot=mp.dot, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
+figlabel("all", pos="bottomleft")
 dev.off()
 
-## DEFINE CLASSES
+## HIGH RAAS log10(RAAS)>-1
+
+source("~/programs/segmenTools/R/clusterTools.R")
+
+ovl <- aaProfile(aam[bdat$median> -1,as.character(-7:7)], abc=AAT)
+ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1, cut=TRUE)
+
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-1")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
+             xlab="Distance from AAS")
+figlabel("RAAS > 0.1", pos="bottomleft")
+dev.off()
+
+plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-1")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+dotprofile(ovl, value="ratio", vcols=ttcols,
+           xlab="Distance from AAS",
+           p.dot=mp.dot, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
+figlabel("RAAS > 0.1", pos="bottomleft")
+dev.off()
+
+## MAX RAAS  log10(RAAS)>0.5
+ovl <- aaProfile(aam[bdat$median>0,as.character(-7:7)], abc=AAT)
+ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1, cut=TRUE)
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-.5")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
+             xlab="Distance from AAS")
+figlabel("RAAS > 0.32", pos="bottomleft")
+dev.off()
+
+plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-.5")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+dotprofile(ovl, value="ratio", vcols=ttcols,
+           xlab="Distance from AAS",
+           p.dot=mp.dot, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
+figlabel("RAAS > 0.32", pos="bottomleft")
+dev.off()
+
+
+### DEFINE CLASSES
+
 ## TODO 20240531
 ## * to [AG] w/o position filter,
 ## * test RAAS for several KRAQ definitions vs. Q->G,
@@ -130,6 +194,8 @@ classes <- cbind(
     toAG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
     toAG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
     toAG  =bdat$to%in%c("G","A"),
+    iupred3  =bdat$iupred3 > .8,
+    iupred3high  =bdat$iupred3 > .6 & bdat$median > -1,
     N1=bdat$site%in%1,
     N2=bdat$site%in%2,
     N3=bdat$site%in%3,
@@ -153,13 +219,22 @@ classes <- cbind(
     frW=bdat$from=="W",
     
     QNrich= apply(aam[,as.character(c(-6:-1,1:6))], 1,
-               function(x) sum(x%in%c("Q","N")))>3,
+               function(x) sum(x%in%c("Q","N")))>2,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
-               function(x) sum(x%in%c("E","D")))>3,
+               function(x) sum(x%in%c("E","D")))>2,
     short=bdat$len <= 1000,
     long=bdat$len > 1000,
-    high=bdat$median > 0,
+    longlow=bdat$len > 1000 & bdat$median <= -.5,
+    longhigh=bdat$len > 1000 & bdat$median > -.5,
+    longlow1=bdat$len > 1000 & bdat$median <= -1,
+    longhigh1=bdat$len > 1000 & bdat$median > -1,
+    max=bdat$median > 0,
+    high=bdat$median > -1,
     low=bdat$median < -3)
+
+## NA values in filters
+classes[is.na(classes)] <- FALSE
+
 ## store manual selection before (otpionally)
 ## expanding to full scan of AAS types
 selected <- colnames(classes)
@@ -194,7 +269,9 @@ names(rngs) <- colnames(classes)
 rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
-rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-as.character(-10:10)
+rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
+    rngs$longhigh <- rngs$longlow <- rngs$longhigh1 <- rngs$longlow1 <-
+        rngs$iupred3 <-rngs$iupred3high <- as.character(-10:10)
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
 rngs$toAG13 <- as.character(-3:0)
@@ -231,6 +308,21 @@ for ( i in 1:ncol(classes) ) {
     
     if ( interactive() )
         boxplot(bdat$median ~ filt)
+
+    ## write out sequences for more detailed analysis
+    ## TODO: currently not used
+    if ( FALSE ) {
+        motseq <- aam[ filt,]
+        refseq <- aam[!filt,]
+        fname <- file.path(seq.path,paste0(id,".fa")) 
+        if ( file.exists(fname) ) unlink(fname)
+        for ( j in 1:nrow(motseq) ) {
+            osq <- gsub("-","",paste0(motseq[j,], collapse=""))
+            cat(paste0(">", rownames(motseq)[j],"\n", osq, "\n"),
+                file=fname, append=TRUE)
+        }
+    }
+    
 
     ## PWM ENCODED
     ## position weight matrices and diffLogo
@@ -448,16 +540,24 @@ amai <- c(0.8,1,0.6,.6)
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
              mai=amai, ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
+
+
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval10")),
+             mai=amai, ttcols=ttcols, value="median",
+             dot.sze=dot.sze, p.dot=1e-10,
+             llab="p10",  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace",plot.all=FALSE)
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval6")),
              mai=amai, ttcols=ttcols, value="median",
-             p.min=1e-6, p.txt=1e-3,
              dot.sze=dot.sze, p.dot=1e-6,
              llab="p6",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
@@ -469,6 +569,15 @@ plotProfiles(ovm,
              p.min=1e-100, p.txt=1e-50,
              dot.sze=dot.sze, p.dot=1e-100,
              llab="p100",  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace",plot.all=FALSE)
+plotProfiles(ovm,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval30")),
+             mai=amai, ttcols=ttcols, value="median",
+             p.min=1e-30, p.txt=1e-15,
+             dot.sze=dot.sze, p.dot=1e-30,
+             llab="p30",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace",plot.all=FALSE)
@@ -484,7 +593,7 @@ plotProfiles(ovm,
              gcols=gcols, ffam="monospace")
 
 ## SELECTED MOTIS FOR MAIN
-msrt <- c("toAG13,
+msrt <- c("toAG13",
           "CCxCC",
           "MMxMM",
           "WWxWW",

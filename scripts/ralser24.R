@@ -327,7 +327,7 @@ shadowtext(mus, rat[names(mus)], labels=shighlight[names(mus)], pos=4,
            xpd=TRUE, col=1, cex=1)
 dev.off()
 
-## instead use medians of broader classes 
+## BROADER GROWTH / STRESS+NOISE CLASSES 
 rp <- apply(int, 2, function(x) median(x[ygenes$CL_rdx%in%c("A","AB")],
                                        na.rm=TRUE))
 sc <- apply(int, 2, function(x) median(x[ygenes$CL_rdx==c("cd.n","D")],
@@ -351,6 +351,7 @@ plotCor(mus, rat[names(mus)], density=FALSE, xlab=expression(growth~rate/h^-1),
         ylab=expression(log[2](growth/(stress+noise))), legpos="bottomright")
 shadowtext(mus, rat[names(mus)], labels=shighlight[names(mus)], pos=4,
            xpd=TRUE, col=1, cex=1)
+mtext("ratio of cohort mean intensities", 3, 0.15)
 dev.off()
 
 ## correlate median half life
