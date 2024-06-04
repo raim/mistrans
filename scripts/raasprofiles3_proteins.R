@@ -194,6 +194,7 @@ names(mlt) <- therm[,2]
 ## melting point vs. length
 plotdev(file.path(pfig.path,paste0("protein_Tmelt_length")),
         type=ftyp, res=300, width=3.5,height=3.5)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(log10(plen), mlt[match(pnms[names(plen)], names(mlt))],
         xlab="protein length",
         ylab=expression(protein~melting~point~T[m]/"°C"),

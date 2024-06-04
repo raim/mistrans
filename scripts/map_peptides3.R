@@ -59,6 +59,14 @@ uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
 ##  * flDPnn - Prediction of intrinsically disordered residues [PMID:34290238].
 descrp <- file.path(mam.path,"processedData","describePROT")
 
+## pfam hits
+pfam.file <- file.path(mam.path,"processedData",
+                  "Homo_sapiens.GRCh38.pep.large_annotations.csv")
+## pfam download from EBI
+pfdl.file <- file.path(mam.path,"originalData", "9606.tsv.gz")
+## pfam clans
+clans.file <- file.path(mam.path,"originalData", "pfam", "Pfam-A.clans.tsv.gz")
+
 ## figures
 dir.create(fig.path, showWarnings=FALSE)
 
@@ -117,6 +125,44 @@ uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
 uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
 uni2ens <- uni2ens[uni2ens[,2]%in%names(fas),]
 
+## PFAM 37.0 ANNOTATION from EBI
+pfd <- read.delim(pfdl.file, skip=3, header=FALSE)
+colnames(pfd) <- c("seq id", "alignment start",
+                   "alignment end",
+                   "FROM",#"envelope start",
+                   "TO",#"envelope end",
+                   "hmm acc", "hmm name", "type",
+                   "hmm start", "hmm end", "hmm length",
+                   "bit score", "E-value", "clan")
+## add ensembl ID
+pfd$ensembl <- uni2ens[match(pfd[,1], uni2ens[,1]),2]
+
+## OWN PFAM/hmmer predictions - TODO, more likely to be correct!!
+pfm <- read.csv(file=pfam.file, sep=";", fill=FALSE,
+                header=FALSE, comment.char="#")
+pfmh <- c(
+    "target", "tid" , "tlen",            
+    "query"   , "qid" , "qlen",                 
+    "E-value"      , "score"     , "bias",                 
+    "#"            , "of"        , "c-Evalue",             
+    "i-Evalue"     , "score"     , "bias",            
+    "from"         , "to"        , "from",                 
+    "to"           , "FROM"      , "TO",                   
+    "acc")#          , "description")
+colnames(pfm) <- pfmh
+
+## pfam clans: used to collapse domains below!
+pclan <- read.delim(clans.file, row.names=1 , header=FALSE)
+pfm$clan <- pclan[sub("\\..*","", pfm$tid),"V2"]
+## same tag as EBI PFAM for No_clan
+pfm$clan[pfm$clan==""] <- "No_clan"
+
+## pfam w/o version number
+pfm$pfam <- sub("\\..*","", pfm$tid)
+
+## remove version number for access
+pfm$ensembl <- sub("\\..*","", pfm$query)
+
 
 ### READ IN and MERGE unique SAAP/BP pairs and BP blast results
 dat <- read.delim(saapf, header=FALSE)
@@ -129,7 +175,8 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <-
         mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
-            pctx <- nctx <- rep(NA, nrow(dat))
+            pctx <- nctx <- pfam <- clan <- pfam.ebi <- clan.ebi <-
+                rep(NA, nrow(dat))
 
 ## secondary structure frequencies in whole protein
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
@@ -147,7 +194,7 @@ use.regex <- TRUE #FALSE # use TRUE to test blast results vs. direct regex
 errtypes <- c("no protein", "using blast","no BP",
               "wrong s4pred len","wrong iupred3 len",
               "no describePROT",
-              "wrong descPROT len",
+              "wrong descPROT",
               "no transcript", "wrong codon",
               "AAS > CDS len")
 wiup <- character()
@@ -188,7 +235,7 @@ for ( i in 1:nrow(dat) ) {
     target <- fas[[j]]$seq
 
     ## GET POSITION OF MUTATION
-    ## 1: MAP PETPTIDE - TODO: cross-check or replace by blast result
+    ## 1: MAP PETPTIDE and test consistency with blast
     if ( use.regex ) {
         res <- gregexpr(query, target)
         if ( length(res)>1 ) {
@@ -200,7 +247,7 @@ for ( i in 1:nrow(dat) ) {
             errors[i,"using blast"] <- 1
             AAS <- dat[i,"sstart"]
         } else if ( res[[1]][1] != dat[i,"sstart"] ) {
-            ## if this never occurs we can use blast results!
+            ## if this never occurs we could use blast results!
             stop(paste("PROBLEM:", i, oid, 
                        "regex doesn't match blast\n"))
         } else  AAS <- res[[1]][1]
@@ -209,7 +256,7 @@ for ( i in 1:nrow(dat) ) {
     ## 2: AAS within protein
     saap <- unlist(dat[i,"SAAP"])
     mut[i] <- which(strsplit(saap,"")[[1]]!=strsplit(query,"")[[1]])
-    pos[i] <- AAS + mut[i] -1
+    pos[i] <- AAS + mut[i] -1  ## POSITION IN PROTEIN!
     len[i] <- length(unlist(strsplit(target,"")))
 
     ## GET AA SEQUENCE CONTEXT +/-25
@@ -243,7 +290,24 @@ for ( i in 1:nrow(dat) ) {
         }
     }
 
-    ## test consistency with blast
+    ## get PFAM CLANS - EBI download
+    pfams <- pfd[which(pfd$ensembl==gid),,drop=FALSE]
+    if ( nrow(pfams)> 0) {
+        pidx <- which(pfams$FROM <= pos[i] & pfams$TO >= pos[i])
+        if ( length(pidx)>0 ) {
+            clan.ebi[i] <- paste0(unique(pfams[pidx, "clan"]), collapse=";")
+            pfam.ebi[i] <- paste0(unique(pfams[pidx, "hmm acc"]), collapse=";")
+        }
+    }
+    ## get PFAM CLANS - own hmmer prediction
+    pfams <- pfm[which(pfm$ensembl==gid),,drop=FALSE]
+    if ( nrow(pfams)> 0) {
+        pidx <- which(pfams$FROM <= pos[i] & pfams$TO >= pos[i])
+        if ( length(pidx)>0 ) {
+            clan[i] <- paste0(unique(pfams[pidx, "clan"]), collapse=";")
+            pfam[i] <- paste0(unique(pfams[pidx, "tid"]), collapse=";")
+        }
+    }
 
     ## GET s4pred
     s4s <- s4p[[gid]]
@@ -317,7 +381,7 @@ for ( i in 1:nrow(dat) ) {
                           "desribePROT has wrong length for",
                           oid, uid, "desribeP:",nrow(dprt), "vs. protein:",
                           len[i],"\n"))
-                errors[i,"wrong descPROT len"] <- 1
+                errors[i,"wrong descPROT"] <- 1
             }             
             mmseq2[i] <- dprt[pos[i], 2] 
             asaquick[i] <- dprt[pos[i], 3] 
@@ -443,7 +507,11 @@ dat <- cbind(dat,
              SCRIBER=scriber,
              flDPnn=flDPnn,
              AA=pctx,
-             NT=nctx)
+             NT=nctx,
+             pfam=pfam,
+             clan=clan,
+             pfam.ebi=pfam.ebi,
+             clan.ebi=clan.ebi)
 
 ## FILTER DATA
 
