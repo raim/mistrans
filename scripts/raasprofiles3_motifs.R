@@ -1,22 +1,7 @@
 
 ### ANALYZE SEQUENCE CONTEXT around AAS
 
-## 1: all -> just do hypergeo enrichment tests,
-##    as in previous get_aas_context.R
-## 2: analyze position of AAS in peptide.
-
-## Motivated by above analysis, select subsets of BP/sequences,
-## and do a DiffLogo and a RAAS profile.
-
-## 1: M or W in -2/-1/+1/+2
-## 2: higher than threshold E/D
-## 3: AAS in peptide position 1-3.
-
-## ... and finally loop over all of certain type:
-## 1: from AA,
-## 2: to AA,
-## 3: from/to AA,
-## 4: from/to by AA prop.
+## AA ENRICHMENT AROUND AAS SITES
 
 
 library(DiffLogo)

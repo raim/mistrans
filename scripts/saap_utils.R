@@ -1263,7 +1263,6 @@ plotCodonAxis <- function(CODP, aa.cols=aa.cols, cex=1) {
 ## generate frequencies at each position
 getPFM <- function(aa, alphabet=ASN$chars) {
     ## column-wise table of AA
-        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
     ctl <- apply(aa, 2, table)
     ## aaids
     if ( inherits(ctl,"list") ) {

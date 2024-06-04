@@ -153,6 +153,9 @@ cd ~/data/mistrans/processedData/motifs
 ### CALCULATE RAAS PROFILES
 R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R # FIGURE 2
 R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R # FIGURE 3
+R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R # FIGURE 4
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
 
 ## all protein profiles

@@ -1,23 +1,11 @@
 
 ### ANALYZE SEQUENCE CONTEXT around AAS
 
-## 1: all -> just do hypergeo enrichment tests,
-##    as in previous get_aas_context.R
-## 2: analyze position of AAS in peptide.
+## FOCUS ON CLEAVAGE SITE ENRICHMENT (the KRAQ)
+## AA and AAS enrichment along peptides in AAS set and all peptides,
+## as supplied by Shiri Tsour.
 
-## Motivated by above analysis, select subsets of BP/sequences,
-## and do a DiffLogo and a RAAS profile.
-
-## 1: M or W in -2/-1/+1/+2
-## 2: higher than threshold E/D
-## 3: AAS in peptide position 1-3.
-
-## ... and finally loop over all of certain type:
-## 1: from AA,
-## 2: to AA,
-## 3: from/to AA,
-## 4: from/to by AA prop.
-
+## TODO: repeat diAA positional enrichment from get_aas_context.R
 
 library(stringr)
 library(DiffLogo)
@@ -314,8 +302,16 @@ dev.off()
 
 ## ? K|RA, AQ, K|RAQ, compared to other K|R 
 
-library(ape)
+## TODO: find and fix kmer bug - ERROR on exon but not intron
+
+
+unloadNamespace("kmer")
 library(kmer)
+library(ape)
+
+## mini example with error
+aabin <- as.AAbin("ACDFGHKLMNRTY")
+kproteome <- kcount(aabin, k=2) ## ERROR on exon but not intron
 
 ## proteome kmer count
 pfasta <- file.path(out.path,"all_proteins.fa")
@@ -324,7 +320,15 @@ fas <- readFASTA(pfasta, grepID=TRUE)
 fas <- fas[names(fas)%in%MANES]
 seql <- lapply(fas, function(x) x$seq)
 conc <- paste0(unlist(seql), collapse="")
-kproteome <- kcount(as.AAbin(conc), k=2)
+concbin <- as.AAbin(conc) 
+kproteome <- kcount(concbin, k=2) ## ERROR on exon but not intron
+
+## error occurs for any sequence
+for ( i in 1:length(seql) ) {
+    aabin <- as.AAbin(seql[[i]])
+    kcount(aabin, k=2)
+}
+
 kproteome <- apply(kproteome,2,sum)
 
 ## TODO: K|R.x
