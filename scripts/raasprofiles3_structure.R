@@ -20,9 +20,80 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
  
 ### BY STRUCTURAL FEATURES
-## TODO:
-## * separate script
-## * rank-based bins and triangle y-axis
+
+
+## loop over bins
+nms <- rank.vals
+names(nms) <- rank.vals
+nms["iupred3"] <- "disordered"
+nms["DisoRDPbind"] <- "binding"
+nms["MMSeq2"] <- "conserved"
+for ( val in rank.vals ) {
+    rows <- paste0(val,".bins")
+    bsrt <- levels(get(rows))
+
+    ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows=rows, cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=rev(bsrt),
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0)
+
+    mmai <- c(.05,.5,.05,.7)
+    nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
+    nh <- nrow(ovw$p.value)*.2 + mmai[1] + mmai[3]
+    fname <- file.path(sfig.path,paste0(val,"_bin_",SETID))
+    plotdev(paste0(fname,"_dotplot_manual"),
+            height=nh, width=nw, res=300, type=ftyp)
+    par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, family="monospace")
+    dotprofile(x=ovw, value="median", vbrks=abrks,
+               vcols=acols, p.dot=p.dot,
+               dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+    box()
+    mtext(nms[val], 2, 1.3)
+    axis(4, at=nrow(ovw$p.value):1,
+         labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
+         las=2, family="monospace")
+    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
+            x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+    dev.off()
+
+}
+
+
+## loop over ranks
+for ( val in rank.vals ) {
+    rows <- paste0(val,".rank")
+    ovw <- raasProfile(x=tmtf, id="SAAP", 
+                   rows=rows, cols="Dataset",
+                   bg=TRUE, value="RAAS", row.srt=4:1,
+                   col.srt=uds,
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0, 
+                   fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
+
+    
+    mmai <- c(.05,.5,.05,.7)
+    nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
+    nh <- nrow(ovw$p.value)*.2 + mmai[1] + mmai[3]
+    fname <- file.path(sfig.path,paste0(val,"_rank_",SETID))
+    plotdev(paste0(fname,"_dotplot_manual"),
+            height=nh, width=nw, res=300, type=ftyp)
+    par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, family="monospace")
+    dotprofile(x=ovw, value="median", vbrks=abrks,
+               vcols=acols, p.dot=p.dot,
+               dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
+    box()
+    mtext(nms[val], 2, 1.3)
+    axis(4, at=nrow(ovw$p.value):1,
+         labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
+         las=2, family="monospace")
+    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
+            x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+    dev.off()
+}
 
 ## TODO: align this with protein profiles "site" matrix,
 ## use unique site raas instead of unique Dataset/BP/SAAP Raas.
@@ -206,73 +277,6 @@ plotProfiles(ovw, fname=file.path(sfig.path,paste0("iupred3_",SETID)),
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 
-## loop over bins
-for ( val in rank.vals ) {
-    rows <- paste0(val,".bins")
-    bsrt <- levels(get(rows))
-
-    ovw <- raasProfile(x=tmtf, id="SAAP", 
-                   rows=rows, cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=rev(bsrt),
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0)
-
-    mmai <- c(.05,.5,.05,.7)
-    nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
-    nh <- nrow(ovw$p.value)*.2 + mmai[1] + mmai[3]
-    fname <- file.path(sfig.path,paste0(val,"_bin_",SETID))
-    plotdev(paste0(fname,"_dotplot_manual"),
-            height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, family="monospace")
-    dotprofile(x=ovw, value="median", vbrks=abrks,
-               vcols=acols, p.dot=p.dot,
-               dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
-    box()
-    mtext(val, 2, 1.3)
-    axis(4, at=nrow(ovw$p.value):1,
-         labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
-         las=2, family="monospace")
-    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
-            x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
-    dev.off()
-
-}
-
-
-## loop over ranks
-for ( val in rank.vals ) {
-    rows <- paste0(val,".rank")
-    ovw <- raasProfile(x=tmtf, id="SAAP", 
-                   rows=rows, cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=4:1,
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0, 
-                   fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
-
-    
-    mmai <- c(.05,.5,.05,.7)
-    nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
-    nh <- nrow(ovw$p.value)*.2 + mmai[1] + mmai[3]
-    fname <- file.path(sfig.path,paste0(val,"_rank_",SETID))
-    plotdev(paste0(fname,"_dotplot_manual"),
-            height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25)#, family="monospace")
-    dotprofile(x=ovw, value="median", vbrks=abrks,
-               vcols=acols, p.dot=p.dot,
-               dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
-    box()
-    mtext(val, 2, 1.3)
-    axis(4, at=nrow(ovw$p.value):1,
-         labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
-         las=2, family="monospace")
-    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
-            x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
-    dev.off()
-}
 
 ## ANCHOR2
 ansrt <- levels(anchor2.bins)

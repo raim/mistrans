@@ -181,6 +181,14 @@ Mphos <- MMxMM & bdat$from%in%c("S","T")
 CCxPP <- apply(aam[,c("-1","-2")], 1, function(x) any(x%in%c("C"))) &
     apply(aam[,c("1","2")], 1, function(x) any(x%in%c("P")))
 
+## A in position 1 of BP
+bpA1 <- unlist(lapply(strsplit(bdat$AA, ""), function(x) x[1]=="A"))
+bpQ2 <- unlist(lapply(strsplit(bdat$AA, ""), function(x) x[2]=="Q"))
+
+aaall <- apply(aam, 1, paste, collapse="")
+kraqa <- rep(FALSE, nrow(bdat))
+kraqa[grep("[KR]AQ",aaall)] <- TRUE
+
 classes <- cbind(
     kr=apply(aam[,as.character(-3:-1)], 1,
              function(x) any(x%in%c("K","R"))),
@@ -190,12 +198,19 @@ classes <- cbind(
     KRAQ=kraq,
     KRGQ=krgq,
     KRxQ=krxq,
+    KRAQ_all=kraqa,
+    KRAQ_o=kraq & ! bdat$from%in%c("Q"),
+    bpA1=bpA1,
+    bpQ2=bpQ2,
+    bpAQ=bpQ2 & bpA1,
     toAG1 =bdat$to%in%c("G","A") & bdat$site%in%1,
     toAG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
     toAG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
     toAG  =bdat$to%in%c("G","A"),
-    iupred3  =bdat$iupred3 > .8,
-    iupred3high  =bdat$iupred3 > .6 & bdat$median > -1,
+    disord.  =bdat$iupred3 > .6,
+    disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
+    binding  =bdat$DisoRDPbind > .6,
+    non.cons.  =bdat$MMSeq2 < 1,
     N1=bdat$site%in%1,
     N2=bdat$site%in%2,
     N3=bdat$site%in%3,
@@ -271,11 +286,12 @@ rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
 rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
     rngs$longhigh <- rngs$longlow <- rngs$longhigh1 <- rngs$longlow1 <-
-        rngs$iupred3 <-rngs$iupred3high <- as.character(-10:10)
+        rngs$disord. <-rngs$disord._high <-
+            rngs$non.cons. <-  rngs$binding <- as.character(-10:10)
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
 rngs$toAG13 <- as.character(-3:0)
-
+rngs$toAG <- as.character(-3:1)
 
 psig <- 10^-c(3,5,10)
 
@@ -416,8 +432,8 @@ for ( i in 1:ncol(classes) ) {
         
         ## figure heights
         ht <- 3
-        omai <- c(.15,.25,.25,.15)
-        nmai <- c(.25,.25,.15,.15)
+        omai <- c(.15,.25,.25,.05)
+        nmai <- c(.25,.25,.15,.05)
 
         ## heights
         htn <- ht/2 + nmai[1] + nmai[3]
@@ -439,7 +455,7 @@ for ( i in 1:ncol(classes) ) {
         figlabel(paste0(lb,": ",sum(filt),"  "),
                  pos="topright", font=2, cex=1.2)
         diffLogo_addPvals(dfop, ymin=mxo)
-        mtext("encoded", 4,-.25,adj=.05)
+        ##mtext("encoded", 4,-.25,adj=.05)
         
         ## incorporated
         par(mai=nmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
@@ -451,12 +467,32 @@ for ( i in 1:ncol(classes) ) {
         ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
         diffLogo_addPvals(dfnp, ymin=mxn)
         axis(2)
-        mtext("incorporated", 4,-.25,adj=.05)
+        ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
   
    
     }
 }
+
+## y-axis label for tight motif plot
+## figure heights
+ht <- 3
+omai <- c(.15,.25,.25,.15)
+nmai <- c(.25,.25,.15,.15)
+ymai <- c(.25,0,.25,0)
+## heights
+htn <- ht/2 + nmai[1] + nmai[3]
+hto <- ht/2 + omai[1] + omai[3]
+ 
+plotdev(file.path(mfig.path,paste0("logos_ylab")),
+        height=hto+htn , width=.8, res=300, type=ftyp)
+par(mai=ymai)
+plot(1,1, axes=FALSE, col=NA, col.axis=NA)
+text(1.2,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.7)
+text(0.775,1.25,label="encoded", xpd=TRUE,srt=90, cex=1.7)
+text(0.8,.775,label="incorporated", xpd=TRUE,srt=90, cex=1.7)
+dev.off()
+
 
 plotdev(file.path(mfig.path,"protein_location_G"), ftyp,
         width=3, height=3, res=300)
@@ -535,7 +571,7 @@ ovm <- mergeProfiles(covw)
 ## sort
 ovm <- sortOverlaps(ovm, axis=2, srt=selected)
 
-amai <- c(0.8,1,0.6,.6)
+amai <- c(0.8,1.2,0.6,.6)
 
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
@@ -593,18 +629,41 @@ plotProfiles(ovm,
              gcols=gcols, ffam="monospace")
 
 ## SELECTED MOTIS FOR MAIN
-msrt <- c("toAG13",
+msrt <- c("toAG",
+          "toAG13",
           "CCxCC",
           "MMxMM",
           "WWxWW",
-          "QNrich",
-          "Acidic",
+          "disord.",
+          "binding",
+          "non.cons.",
           "long"
           )
 
 ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
+             mai=c(0.8,.9,0.6,.6), ttcols=ttcols, value="median",
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+## SELECTED MOTIFS FOR P-VAL COMPARISON
+msrt <- c("toAG13",
+          "CCxCC",
+          "MMxMM",
+          "WWxWW",
+          "QNrich",
+          "disord.",
+          "Acidic",
+          "long"
+          )
+
+ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
+plotProfiles(ovs,
+             fname=file.path(mfig.path,paste0("motifs_",SETID,"_selected")),
              mai=c(0.8,.9,0.6,.6), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,

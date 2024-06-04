@@ -179,7 +179,7 @@ plotdev(file.path(pfig.path,paste0("protein_lengths_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(plen[rownames(ptstat)]), axes=FALSE,
-        xlab=xl.prots, ylab="protein length")
+        xlab=xl.prota, ylab="protein length")
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
@@ -419,7 +419,7 @@ if ( length(unique(lengths(p2el)))>1 )
 lg2fc <- p20p
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(pbstat)]
-plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_site")),
+plotdev(file.path(pfig.path,paste0("protein_p20_lg2fc_site")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, lg2fc, xlab=xl.prots,
@@ -428,7 +428,7 @@ dev.off()
 lg2fc <- p20p
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(ptstat)]
-plotdev(file.path(pfig.path,paste0("p20_protein_lg2fc_all")),
+plotdev(file.path(pfig.path,paste0("protein_p20_lg2fc_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,
@@ -438,7 +438,7 @@ dev.off()
 lg2fc <- p20pv
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(ptstat)]
-plotdev(file.path(pfig.path,paste0("p20_protein_pval_all")),
+plotdev(file.path(pfig.path,paste0("protein_p20_pval_all")),
         type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,

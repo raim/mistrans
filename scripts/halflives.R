@@ -136,7 +136,7 @@ plotCor(hhlf, yhlf,
 dev.off()
 
 plotdev(file.path(fig.path,"protein_degradation_human_yeast"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hdeg, ydeg,
         xlab=xl.hdeg,
@@ -150,7 +150,7 @@ show <- TRUE
 dev.off()
 
 plotdev(file.path(fig.path,"protein_degradation_human_yeast_zoom"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hdeg, ydeg,
         xlab=xl.hdeg,
@@ -165,7 +165,7 @@ dev.off()
 
 ## log as in multi-species paper 
 plotdev(file.path(fig.path,"protein_degradation_human_yeast_log"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hlgd, ylgd,
         xlab=xl.hlgd,
@@ -266,7 +266,7 @@ hmap <- cbind.data.frame(hmap,
 ## plot half-lives vs lengths
 
 plotdev(file.path(fig.path,"protein_halflive_length_yeast"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(log10(ygenes$p.length), log10(yhlf), round=3,
         ylim=log10(c(.1,2e3)),  xlim=log10(c(50,3e4)),
@@ -280,7 +280,7 @@ figlabel("yeast", pos="bottomleft", cex=1.2, font=2)
 dev.off()
 
 plotdev(file.path(fig.path,"protein_halflive_length_human"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(log10(hmap$len), log10(hmap$hlf), round=3,
         ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
@@ -294,7 +294,7 @@ figlabel("human", pos="bottomleft", cex=1.2, font=2)
 dev.off()
 
 plotdev(file.path(fig.path,"protein_halflive_melting_human"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hmap$mlt, log10(hmap$hlf), round=3,
         ##ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
@@ -309,7 +309,7 @@ figlabel("human", pos="bottomleft", cex=1.2, font=2)
 dev.off()
 
 plotdev(file.path(fig.path,"protein_length_melting_human"),
-        type=ftyp, height=4, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hmap$mlt, log10(hmap$len), round=3,
         ##ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
@@ -322,6 +322,22 @@ for ( ax in 2 ) {
 axis(1)
 figlabel("human", pos="bottomleft", cex=1.2, font=2)
 dev.off()
+
+plotdev(file.path(fig.path,"protein_melting_length_human"),
+        type=ftyp, height=3, width=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(log10(hmap$len), hmap$mlt, round=3,
+        ##ylim=log10(c(1,3e4)), xlim=log10(c(50,3e4)),
+        ylab="melting T/°C", xlab="protein length", axes=FALSE)
+for ( ax in 1 ) {
+    axis(ax, at=0:9, labels=10^(0:9))
+    axis(ax, at=log10(rep(1:10, 6) * 10^rep(-1:4, each=10)),
+         tcl=-.125, labels=FALSE)
+}
+axis(2)
+figlabel("human", pos="bottomleft", cex=1.2, font=2)
+dev.off()
+
 
 ## NOTE: low correlation of melting to predicted
 ## but both correlate well with length
