@@ -575,6 +575,12 @@ tmtf$MMSeq2 <- hdat$MMSeq2[idx]
 tmtf$ASAquick <- hdat$ASAquick[idx]
 tmtf$SCRIBER <- hdat$SCRIBER[idx]
 
+## PFAM/CLAN
+tmtf$pfam <- hdat$pfam[idx]
+tmtf$clan <- hdat$clan[idx]
+tmtf$pfam.ebi <- hdat$pfam.ebi[idx]
+tmtf$clan.ebi <- hdat$clan.ebi[idx]
+
 ## bins of structural data
 tmtf$iupred3.bins <- hdat$iupred3.bins[idx]
 tmtf$anchor2.bins <- hdat$anchor2.bins[idx]
