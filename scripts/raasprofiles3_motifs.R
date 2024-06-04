@@ -41,10 +41,12 @@ dir.create(mfig.path, showWarnings=FALSE)
 
 ## NOTE: 1e-6 doesn't seem to be worth it, little gain.
 ## but further experience required
-mp.min <- 1e-6 #p.min
-mp.dot <- 1e-6 #p.dot
-mp.txt <- 1e-3 #p.txt
+mp.min <- p.min
+mp.dot <- p.dot
+mp.txt <- p.txt
 
+## motif p-value cutoffs *, **, ***
+psig <- 10^-c(3,5,10)
 
 #### GENERAL SEQUENCE LOGOS
 
@@ -210,7 +212,7 @@ classes <- cbind(
     disord.  =bdat$iupred3 > .6,
     disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
     binding  =bdat$DisoRDPbind > .6,
-    non.cons.  =bdat$MMSeq2 < 1,
+    noncons.  =bdat$MMSeq2 < 1,
     N1=bdat$site%in%1,
     N2=bdat$site%in%2,
     N3=bdat$site%in%3,
@@ -277,10 +279,11 @@ for ( i in seq_along(frm) )
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 cols <- as.character(c(-3:3))
+
+## custom ranges
 rngs <- rep(list(cols), ncol(classes))
 names(rngs) <- colnames(classes)
 
-## custom ranges
 rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
@@ -289,11 +292,16 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
         rngs$disord. <-rngs$disord._high <-
             rngs$non.cons. <-  rngs$binding <- as.character(-10:10)
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
-rngs$MxM <- rngs$WxW <- rngs$CxC <-as.character(-1:1)
+rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$toAG13 <- as.character(-3:0)
 rngs$toAG <- as.character(-3:1)
 
-psig <- 10^-c(3,5,10)
+## suppress p-value indicators
+opval <- rep(list(), ncol(classes))
+names(opval) <- colnames(classes)
+opval$MMxMM <- opval$WWxWW <- opval$CCxCC <- opval$CCxPP <-
+    as.character(c(-2,-1,1,2))
+opval$MxM <- opval$WxW <- opval$CxC <- as.character(c(-1,1))
 
 ## use our internal AA colors
 ASN2 <- ASN
@@ -353,6 +361,8 @@ for ( i in 1:ncol(classes) ) {
     ## suppress p.vals where ALL AA are equal
     ## -> obvious selection bias
     setpo <- apply(pfm1, 2, function(x) all(x%in%c(0.0,1.0)))
+    ## manual pval suppression
+    setpo[cols%in%opval[[id]]] <- TRUE
     dfop$pvals[setpo] <- 1
 
     ## PWM INCORPORATED
@@ -368,6 +378,8 @@ for ( i in 1:ncol(classes) ) {
     ## suppress p.vals where ALL AA are equal
     ## -> obvious selection bias
     setpn <- apply(pfm1, 2, function(x) all(x%in%c(0.0,1.0)))
+    ## manual pval suppression
+    setpn[cols%in%npval[[id]]] <- TRUE
     dfnp$pvals[setpn] <- 1
 
     ## PLOT LOGOS
@@ -390,7 +402,7 @@ for ( i in 1:ncol(classes) ) {
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels="AAS", las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
-        diffLogo_addPvals(dfop, ymin=mx)
+        diffLogo_addPvals(dfop, ymin=mx, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         dev.off()
     }
@@ -413,7 +425,7 @@ for ( i in 1:ncol(classes) ) {
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
         figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
-        diffLogo_addPvals(dfnp, ymin=mx)
+        diffLogo_addPvals(dfnp, ymin=mx, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
     }
@@ -451,22 +463,22 @@ for ( i in 1:ncol(classes) ) {
         par(mai=omai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mxo)
         axis(1, at=1:length(cols), labels=FALSE)
-        axis(2)
+        axis(2, cex.axis=1.2)
         figlabel(paste0(lb,": ",sum(filt),"  "),
                  pos="topright", font=2, cex=1.2)
-        diffLogo_addPvals(dfop, ymin=mxo)
+        diffLogo_addPvals(dfop, ymin=mxo, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         
         ## incorporated
         par(mai=nmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mxn)
-        axis(1, at=1:length(cols), labels=axlab)
+        axis(1, at=1:length(cols), labels=axlab, cex.axis=1.2)
+        axis(2, cex.axis=1.2)
         ##mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="AAS", las=1)
+            axis(1, at=which(cols==0), labels="AAS", las=1, cex.axis=1.2)
         ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
-        diffLogo_addPvals(dfnp, ymin=mxn)
-        axis(2)
+        diffLogo_addPvals(dfnp, ymin=mxn, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
   
@@ -485,10 +497,10 @@ htn <- ht/2 + nmai[1] + nmai[3]
 hto <- ht/2 + omai[1] + omai[3]
  
 plotdev(file.path(mfig.path,paste0("logos_ylab")),
-        height=hto+htn , width=.8, res=300, type=ftyp)
+        height=hto+htn , width=.6, res=300, type=ftyp)
 par(mai=ymai)
 plot(1,1, axes=FALSE, col=NA, col.axis=NA)
-text(1.2,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.7)
+text(1.2,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.3)
 text(0.775,1.25,label="encoded", xpd=TRUE,srt=90, cex=1.7)
 text(0.8,.775,label="incorporated", xpd=TRUE,srt=90, cex=1.7)
 dev.off()
@@ -633,23 +645,35 @@ msrt <- c("toAG",
           "toAG13",
           "CCxCC",
           "MMxMM",
-          "WWxWW",
-          "disord.",
-          "binding",
-          "non.cons.",
-          "long"
-          )
+          "WWxWW")
 
 ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
-             mai=c(0.8,.9,0.6,.6), ttcols=ttcols, value="median",
+             mai=c(0.05,.9,0.05,.6), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
+
+ssrt <- c("disord.",
+          "binding",
+          "noncons.",
+          "long")
+ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
+plotProfiles(ovs,
+             fname=file.path(mfig.path,paste0("structure_",SETID,"")),
+             mai=c(0.05,.9,0.05,.6), ttcols=ttcols, value="median",
+             p.min=mp.min, p.txt=mp.txt,
+             dot.sze=dot.sze, p.dot=mp.dot,
+             rlab=LAB,  ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="monospace")
+         
+
 ## SELECTED MOTIFS FOR P-VAL COMPARISON
 msrt <- c("toAG13",
           "CCxCC",

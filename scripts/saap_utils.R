@@ -1297,11 +1297,11 @@ diffLogo_addPvals <- function(dfop, ymin, levels=10^-c(3,5,10)) {
     npos = ncol(dfop$pwm1)
     for (j in (leftOffset + 1):(npos - rightOffset)) {
         if (dfop$pvals[j] < levels[3]) {
-            text(j, ymin, "***", xpd=TRUE)
+            text(j, ymin, "***", xpd=TRUE, cex=1.5)
         } else  if (dfop$pvals[j] < levels[2]) {
-            text(j, ymin, "**", xpd=TRUE)
+            text(j, ymin, "**", xpd=TRUE, cex=1.5)
         } else  if (dfop$pvals[j] < levels[1]) {
-            text(j, ymin, "*", xpd=TRUE)
+            text(j, ymin, "*", xpd=TRUE, cex=1.5)
         }
     }
 }
