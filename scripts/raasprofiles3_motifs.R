@@ -375,7 +375,7 @@ for ( i in 1:ncol(classes) ) {
     ## for genome-wide scan
     fname <- file.path(seq.path,paste0(id,"pwm.tsv")) 
     colnames(pfm1) <- cols
-    write.table(pfm1, file=fname, sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(pfm1, file=fname, sep="\t", quote=FALSE, row.names=TRUE)
         
     ## PLOT LOGOS
 
