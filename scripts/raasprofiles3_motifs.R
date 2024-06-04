@@ -336,19 +336,6 @@ for ( i in 1:ncol(classes) ) {
     if ( interactive() )
         boxplot(bdat$median ~ filt)
 
-    ## write out sequences for more detailed analysis
-    ## TODO: currently not used
-    if ( FALSE ) {
-        motseq <- aam[ filt,]
-        refseq <- aam[!filt,]
-        fname <- file.path(seq.path,paste0(id,".fa")) 
-        if ( file.exists(fname) ) unlink(fname)
-        for ( j in 1:nrow(motseq) ) {
-            osq <- gsub("-","",paste0(motseq[j,], collapse=""))
-            cat(paste0(">", rownames(motseq)[j],"\n", osq, "\n"),
-                file=fname, append=TRUE)
-        }
-    }
     
 
     ## PWM ENCODED
@@ -370,12 +357,12 @@ for ( i in 1:ncol(classes) ) {
 
     ## PWM INCORPORATED
     ## position weight matrices and diffLogo
-    pfm1 <- getPFM(aas[ filt,cols,drop=FALSE])
-    pfm2 <- getPFM(aas[!filt,cols,drop=FALSE])
+    pfn1 <- getPFM(aas[ filt,cols,drop=FALSE])
+    pfn2 <- getPFM(aas[!filt,cols,drop=FALSE])
     n1 <- sum(filt)
     n2 <- sum(!filt)
 
-    dfnb <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
+    dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ASN2)
     dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
 
     ## suppress p.vals where ALL AA are equal
@@ -385,6 +372,26 @@ for ( i in 1:ncol(classes) ) {
     setpn[cols%in%npval[[id]]] <- TRUE
     dfnp$pvals[setpn] <- 1
 
+    ## write out sequences for more detailed analysis
+    ## TODO: currently not used
+    if ( FALSE ) {
+        motseq <- aam[ filt,]
+        refseq <- aam[!filt,]
+        fname <- file.path(seq.path,paste0(id,".fa")) 
+        if ( file.exists(fname) ) unlink(fname)
+        for ( j in 1:nrow(motseq) ) {
+            osq <- gsub("-","",paste0(motseq[j,], collapse=""))
+            cat(paste0(">", rownames(motseq)[j],"\n", osq, "\n"),
+                file=fname, append=TRUE)
+        }
+    }
+
+    ## write out POSITION WEIGHT MATRICES
+    ## for genome-wide scan
+    fname <- file.path(seq.path,paste0(id,"pwm.tsv")) 
+    colnames(pfm1) <- cols
+    write.table(pfm1, file=fname, sep="\t", quote=FALSE, row.names=FALSE)
+        
     ## PLOT LOGOS
 
     ## ENCODED
