@@ -297,11 +297,14 @@ rngs$toAG13 <- as.character(-3:0)
 rngs$toAG <- as.character(-3:1)
 
 ## suppress p-value indicators
-opval <- rep(list(), ncol(classes))
+opval <- rep(list(""), ncol(classes))
 names(opval) <- colnames(classes)
 opval$MMxMM <- opval$WWxWW <- opval$CCxCC <- opval$CCxPP <-
     as.character(c(-2,-1,1,2))
 opval$MxM <- opval$WxW <- opval$CxC <- as.character(c(-1,1))
+## suppress on incorporated side only
+npval <- opval
+npval[grep("toAG",names(npval))] <- "0"
 
 ## use our internal AA colors
 ASN2 <- ASN
