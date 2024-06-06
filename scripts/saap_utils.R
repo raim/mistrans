@@ -154,9 +154,9 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
             axis(3, at = 1:length(x$num.target),
                  labels = format(x$num.target, big.mark=",", trim=TRUE), 
                  las = 2, lwd = 0, lwd.ticks = 1)
-    if (toty | totx) 
-        figlabel("total", region = "figure", pos = "topright", 
-            cex = par("cex"))
+    ##if (toty | totx) 
+    ##    figlabel("total", region = "figure", pos = "topright", 
+    ##        cex = par("cex"))
 }
 
 ## testing to use enrichment of overlap tables

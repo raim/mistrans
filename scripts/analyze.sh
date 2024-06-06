@@ -118,6 +118,22 @@ R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
 ### 5) ANALYSIS
 
 
+### CALCULATE RAAS PROFILES
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R # FIGURE 2
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R # FIGURE 3
+R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R # FIGURE 4
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
+
+## all protein profiles
+R --vanilla <  ${THIS}/scripts/saap_proteins.R
+
+
+
+### OUTDATED OLD CODE:
+
 ## MOTIFS: get and analyze sequences surrounding the ASS
 
 ## export sequence context of AAS
@@ -142,27 +158,6 @@ cd ~/data/mistrans/processedData/motifs
 ~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
 ~/programs/kpLogo/bin/kpLogo seqcontext_methionine_TRUE.fa -alphabet protein -o kplogo/M
 ~/programs/kpLogo/bin/kpLogo seqcontext_tryptophane_TRUE.fa -alphabet protein -o kplogo/W
-
-## TODO: use new columns in saap_mapped4.tsv to extract fasta for
-## meme/momo
-
-
-## GENERATE SUBSETS OF PROTEIN/TRANSCRIPT FASTA, and
-## RETRIEVE GENOME LEVEL DATA FROM BIGWIG FILES
-
-### CALCULATE RAAS PROFILES
-R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R # FIGURE 2
-R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R # FIGURE 3
-R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R # FIGURE 4
-R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R ## TODO: reproduce diAA
-R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
-R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
-
-## all protein profiles
-R --vanilla <  ${THIS}/scripts/saap_proteins.R
-
-## OUTDATED: data selection now occurs in raasprofiles3_init.R
-## called by _codons, _aminoacids, and _proteins
 
 ## TODO: log files
 ## with Albumin

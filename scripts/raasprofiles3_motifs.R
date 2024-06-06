@@ -791,17 +791,22 @@ ovls <- raasProfile(x=tmtm, id="SAAP",
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
-omai <- c(.75,1,.6,.6)
+omai <- c(.5,.5,.6,.6)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
         height=nh, width=nw, res=300)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
-dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=1:2,
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE)
-mtext("conservation",1, 2.75)
-text(0.2,-.25, "disorder", xpd=TRUE, pos=2)
+polygon(y=c(1, nrow(ovls$p.value), nrow(ovls$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("disorder",2, 1.3)
+polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(1, at=1, label="na", las=2)
+mtext("conservation",1, 1.3)
 dev.off()
 
 ovls <- raasProfile(x=tmtt, id="SAAP", 
