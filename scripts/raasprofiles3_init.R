@@ -68,7 +68,7 @@ dot.sze <- c(.3,2)
 use.test <- t.test # w.test # 
 
 ftyp <- "png" # "pdf" # # 
-if ( !interactive() ) ftyp="pdf"
+##if ( !interactive() ) ftyp="pdf"
 
 ## heatmap colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
@@ -422,6 +422,11 @@ tmtf$keep <- keep[tmtf$SAAP]
 cat(paste("removing", sum(!dat$keep, na.rm=TRUE),
           "tagged as false positive on protein level\n"))
 hdat <- dat[which(dat$keep),]
+
+cat(paste("removing", sum(hdat$match!="good"),
+          "tagged as bad blast hit\n"))
+hdat <- hdat[which(hdat$match=="good"),]
+
 
 ## get raw RAAS data TMT level
 ## remove excluded
@@ -1125,8 +1130,6 @@ bpraas <- listProfile(bpraas, y=tmtf$RAAS, use.test=use.test, min=3)
 
 bdat <- hdat##[!duplicated(hdat$BP),]
 rownames(bdat) <- paste(bdat$BP, bdat$SAAP)
-
-## match rows
 
 ## MISSING?
 ## manual inspection shows this BP had infinite RAAS

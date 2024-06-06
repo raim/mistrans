@@ -685,7 +685,8 @@ pdbid <- "6qzp" # ribosome cryoEM
 pdbid <- "1xk4" # EF hand example, S100A8,  AAS hotspot in heterodimer
                 # with S100A9
 
-
+### loop through ALL pdbs and write chimeraX command strings
+### for PDBs containing proteins with AA substitutions.
 for ( pdbid in unique(pdb2ens[,1]) ) {
 
     pdb <- pdb2ens[pdb2ens[,1]==pdbid,]
@@ -728,10 +729,7 @@ for ( pdbid in unique(pdb2ens[,1]) ) {
         file=file.path(pdb.path, paste0(pdbid, "_raas.txt")))
 }
 
-## find specific
-grep("P04075", pdb2ens[,3])
 
-paste(arno(5),collapse=";")
 
 if ( !interactive() ) quit("no")
 
@@ -828,7 +826,7 @@ mycs$optimal.sphere[,8]
 mycp <- SpaceClust(Mutations, Positions$Positions,
                    radii.vector = c(1:10), alpha = .99,
                    method = "Poisson", multcomp="none")
-mycp$result.poisson[,5]
+mycp$result.poisson[,"P.Value"]
 
 
 ### spacepac example

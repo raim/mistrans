@@ -174,6 +174,9 @@ GxG <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("G")))
 Wbranch <- WWxWW & bdat$from%in%c("I","L","V")
 Mphos <- MMxMM & bdat$from%in%c("S","T")
 
+xP <- aam[,"1"] == "P"
+
+
 CCxPP <- apply(aam[,c("-1","-2")], 1, function(x) any(x%in%c("C"))) &
     apply(aam[,c("1","2")], 1, function(x) any(x%in%c("P")))
 
@@ -239,6 +242,7 @@ classes <- cbind(
     CCxCC=CCxCC,
     CxC=CxC,
     CCxPP=CCxPP,
+    xP=xP,
     MMxMM=MMxMM,
     MxM=MxM,
     "MM[ST]MM"=Mphos,
@@ -293,7 +297,7 @@ for ( i in seq_along(frm) )
     ftcls[,i] <- bdat$to==frm[i]
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
-cols <- as.character(c(-5:5))
+cols <- as.character(c(-3:3))
 
 ## custom ranges
 rngs <- rep(list(cols), ncol(classes))
@@ -338,6 +342,8 @@ dir.create(tmp.path, showWarnings=FALSE)
 ##pwm <- getPFM(aam)
 ##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ASN2)
 
+i=which(colnames(classes)=="fromto_I:P")
+
 for ( i in 1:ncol(classes) ) {
 
     id <- colnames(classes)[i]
@@ -360,6 +366,8 @@ for ( i in 1:ncol(classes) ) {
 
     ## PWM ENCODED
     ## position weight matrices and diffLogo
+    tmp <- aam[ filt,cols,drop=FALSE]
+    rownames(tmp) <- NULL
     pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
     pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
 
@@ -387,7 +395,7 @@ for ( i in 1:ncol(classes) ) {
 
     ## suppress p.vals where ALL AA are equal
     ## -> obvious selection bias
-    setpn <- apply(pfm1, 2, function(x) all(x%in%c(0.0,1.0)))
+    setpn <- apply(pfn1, 2, function(x) all(x%in%c(0.0,1.0)))
     ## manual pval suppression
     setpn[cols%in%npval[[id]]] <- TRUE
     dfnp$pvals[setpn] <- 1
@@ -415,7 +423,7 @@ for ( i in 1:ncol(classes) ) {
     ## PLOT LOGOS
 
     ## ENCODED
-    if ( any(dfop$pvals[cols!=0]<min(psig)) | id %in% selected ) {
+    if ( any(dfop$pvals<min(psig)) | id %in% selected ) {
 
         mmai <- c(.5,.5,.25,.1)
         wd <- .4*length(cols) + mmai[2] + mmai[4]
@@ -438,7 +446,7 @@ for ( i in 1:ncol(classes) ) {
     }
 
     ## INCORPORATED
-    if ( any(dfnp$pvals[cols!=0]<min(psig))  | id %in% selected ) {
+    if ( any(dfnp$pvals<min(psig))  | id %in% selected ) {
 
         mmai <- c(.5,.5,.25,.1)
         wd <- .4*length(cols) + mmai[2] + mmai[4]
@@ -461,8 +469,8 @@ for ( i in 1:ncol(classes) ) {
     }
     
     ## TIGHT LOGO PLOT FOR MAIN
-    if ( (any(dfop$pvals[cols!=0]<min(psig))  |
-          any(dfnp$pvals[cols!=0]<min(psig))) |
+    if ( (any(dfop$pvals<min(psig))  |
+          any(dfnp$pvals<min(psig))) |
          id %in% selected ) {
         
         mno <- dfob$ylim.negMax
@@ -809,7 +817,7 @@ axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
 dev.off()
 
-ovls <- raasProfile(x=tmtt, id="SAAP", 
+ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,c(msrt,ssrt)], cols="MMSeq2.bins",
                     col.srt=c("na", levels(MMSeq2.bins)),
                     bg=FALSE, value="RAAS", 
@@ -830,7 +838,7 @@ polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
 axis(1, at=1, label="na", las=2)
 dev.off()
 
-ovls <- raasProfile(x=tmtt, id="SAAP", 
+ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,c(msrt,ssrt)], cols="iupred3.bins",
                     col.srt=levels(iupred3.bins),
                     bg=FALSE, value="RAAS", 

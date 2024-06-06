@@ -330,6 +330,7 @@ library(ape)
 aabin <- as.AAbin("ACDFGHKLMNRTY")
 kproteome <- kcount(aabin, k=2) ## ERROR on exon but not intron
 
+
 ## proteome kmer count
 pfasta <- file.path(out.path,"all_proteins.fa")
 
