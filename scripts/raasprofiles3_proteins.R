@@ -176,10 +176,11 @@ table(lengths(plen)) # check: all should be the same
 plen <- unlist(lapply(plen, function(x) x[1]))
 
 plotdev(file.path(pfig.path,paste0("protein_lengths_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(plen[rownames(ptstat)]), axes=FALSE,
-        xlab=xl.prota, ylab="protein length")
+        xlab=xl.prota, ylab="protein length", legpos="bottomright",
+        legbg="#ffffff77")
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
@@ -193,7 +194,7 @@ names(mlt) <- therm[,2]
 
 ## melting point vs. length
 plotdev(file.path(pfig.path,paste0("protein_Tmelt_length")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(log10(plen), mlt[match(pnms[names(plen)], names(mlt))],
         xlab="protein length",
@@ -207,7 +208,7 @@ dev.off()
 
 ## melting point all
 plotdev(file.path(pfig.path,paste0("protein_Tmelt_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(pnms[rownames(ptstat)], names(mlt))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, mlt[idx],
@@ -225,7 +226,7 @@ names(mlt) <- therm[,2]
 
 ## melting point difference with ATP
 plotdev(file.path(pfig.path,paste0("protein_TmeltDelta_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(pnms[rownames(ptstat)], names(mlt))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, mlt[idx],
@@ -253,7 +254,7 @@ protstab$ensembl <- ps2ens[match(rownames(protstab),ps2ens[,2]),1]
 
 ## predicted stability 
 plotdev(file.path(pfig.path,paste0("protein_protstab2_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(rownames(ptstat), protstab$ensembl)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, protstab$Human_predict_Tm[idx],
@@ -285,7 +286,7 @@ xl.hlf <- expression(protein~"half-life"/h)
 
 ## halflives site
 plotdev(file.path(pfig.path,paste0("protein_halflives_site")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(pnms[rownames(pbstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, log10(hlv[idx]),
@@ -298,7 +299,7 @@ dev.off()
 
 ## halflives all
 plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(pnms[rownames(ptstat)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
@@ -312,7 +313,7 @@ dev.off()
 ## TODO: do this for all proteins and not just those
 ## in the RAAS set.
 plotdev(file.path(pfig.path,paste0("protein_halflives_lengths")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 idx <- match(pnms[names(plen)], names(hlv))
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(log10(plen), log10(hlv[idx]),
@@ -340,7 +341,7 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons",
     
     plotdev(file.path(pfig.path,paste0("protein_halflives_sites_",
                                        sub(" ","_",ctype))),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     idx <- match(pnms[rownames(pbstat)], names(hlv))
     plotCor(pbstat$median, log10(hlv[idx]),
@@ -351,7 +352,7 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons",
     dev.off()
     
     plotdev(file.path(pfig.path,paste0("protein_halflives_all_",ctype)),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     idx <- match(pnms[rownames(ptstat)], names(hlv))
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     plotCor(ptstat$median, log10(hlv[idx]), signif = 1,
@@ -362,7 +363,7 @@ for ( ctype in c("Bcells", "NK", "hepatocytes", "monocytes", "neurons",
     dev.off()
 ## halflives site
     plotdev(file.path(pfig.path,paste0("protein_halflives_lengths_",ctype)),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     idx <- match(pnms[names(plen)], names(hlv))
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     plotCor(log10(plen), log10(hlv[idx]),
@@ -421,7 +422,7 @@ lg2fc <- p20p
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(pbstat)]
 plotdev(file.path(pfig.path,paste0("protein_p20_lg2fc_site")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(pbstat$median, lg2fc, xlab=xl.prots,
         ylab=xl.20s, signif=2, round=2)
@@ -430,7 +431,7 @@ lg2fc <- p20p
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(ptstat)]
 plotdev(file.path(pfig.path,paste0("protein_p20_lg2fc_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,
         ylab=xl.20s, signif=2, round=2, legpos="bottomright")
@@ -440,7 +441,7 @@ lg2fc <- p20pv
 names(lg2fc) <- p2el[names(lg2fc)]
 lg2fc <- lg2fc[rownames(ptstat)]
 plotdev(file.path(pfig.path,paste0("protein_p20_pval_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
 plotCor(ptstat$median, lg2fc, xlab=xl.prota,
         ylab=xl.20p, signif=2, round=2)
@@ -463,20 +464,20 @@ if ( FALSE ) {
     logp <- -log10(p20$adj.pvalue[match(rownames(pbstat), p20$ensembl)])
     slogp <- logp*sign(log2fc)
     plotdev(file.path(pfig.path,paste0("p20_peptide_volcano")),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     dense2d(log2fc, logp, xlab=xl.20s, ylab="-log10(p)")
     dev.off()
     
     plotdev(file.path(pfig.path,paste0("p20_peptide_protein_raas_pval_all")),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     plotCor(pbstat$median, slogp, xlab=xl.prots,
             ylab="p20/tryptic: sign(lg2fc)*-log10(p)")
     dev.off()
     
     plotdev(file.path(pfig.path,paste0("p20_peptide_protein_raas_lg2fc_all")),
-            type=ftyp, res=300, width=3.5,height=3.5)
+            type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.25,0), tcl=-.25)
     plotCor(pbstat$median, log2fc, xlab=xl.prots,
             ylab=xl.20s)

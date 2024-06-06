@@ -49,30 +49,39 @@ aas[,"0"] <- bdat$to
 
 ### HYPERGEO TESTS - tigther context
 
-omai <- c(.5,.5,.5,.5)
-
+omai <- c(.5,.5,.6,.6)
 
 ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
-ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1)
+ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1)
 
-nw <- ncol(ovl$p.value)*.2 + omai[2] + omai[4]
+nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
-             xlab="Distance from AAS")
-figlabel("all", pos="bottomleft")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+             xlab="Distance from AAS", ylab="Encoded AA")
+##figlabel("all", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
 dotprofile(ovl, value="ratio", vcols=ttcols,
-           xlab="Distance from AAS",
-           p.dot=mp.dot, lg2=TRUE, mxr=2,
-           dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
+           xlab="Distance from AAS", ylab="Encoded AA",
+           p.dot=p.dot, lg2=TRUE, mxr=2,
+           dot.sze=c(.3,2), axis=1:2, show.total=TRUE)
+figlabel("all", pos="bottomleft")
+dev.off()
+
+ovc <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
+nh <- nrow(ovc$p.value)*.5 + omai[1] + omai[3]
+plotdev(file.path(mfig.path,paste0("AAS_overlap_cut")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+             xlab="Distance from AAS", ylab="Encoded AA")
 figlabel("all", pos="bottomleft")
 dev.off()
 
@@ -81,47 +90,47 @@ dev.off()
 source("~/programs/segmenTools/R/clusterTools.R")
 
 ovl <- aaProfile(aam[bdat$median> -1,as.character(-7:7)], abc=AAT)
-ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1, cut=TRUE)
+ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-1")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
 figlabel("RAAS > 0.1", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-1")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
-           p.dot=mp.dot, lg2=TRUE, mxr=2,
+           p.dot=p.dot, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
 figlabel("RAAS > 0.1", pos="bottomleft")
 dev.off()
 
 ## MAX RAAS  log10(RAAS)>0.5
 ovl <- aaProfile(aam[bdat$median>0,as.character(-7:7)], abc=AAT)
-ovl <- sortOverlaps(ovl, p.min=mp.txt, sign=1, cut=TRUE)
+ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-.5")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
-plotOverlaps(ovl, p.min=mp.min, p.txt=mp.txt, show.total=TRUE,
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
 figlabel("RAAS > 0.32", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-.5")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
-           p.dot=mp.dot, lg2=TRUE, mxr=2,
+           p.dot=p.dot, lg2=TRUE, mxr=2,
            dot.sze=c(.3,2), ylab="amino acid", axis=1:2, show.total=TRUE)
 figlabel("RAAS > 0.32", pos="bottomleft")
 dev.off()
@@ -176,6 +185,21 @@ aaall <- apply(aam, 1, paste, collapse="")
 kraqa <- rep(FALSE, nrow(bdat))
 kraqa[grep("[KR]AQ",aaall)] <- TRUE
 
+## Mid-Peptide (non N/C-terminal)
+## TODO: CHECK THIS SELECTION
+
+MIDPEP <- 3
+nt <- bdat$site
+ct <- nchar(bdat$BP)-bdat$site +1
+## fuse central AAS
+nt[nt>MIDPEP] <- ct[ct>MIDPEP] <- MIDPEP+1
+at <- paste0("N",nt)
+at[ct<nt] <- paste0("C",ct[ct<nt])
+
+enmpc <- c("E","N","M","P","C")
+ENM <- bdat$from%in%enmpc | bdat$to%in%enmpc 
+
+
 classes <- cbind(
     kr=apply(aam[,as.character(-3:-1)], 1,
              function(x) any(x%in%c("K","R"))),
@@ -197,7 +221,9 @@ classes <- cbind(
     disord.  =bdat$iupred3 > .6,
     disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
     binding  =bdat$DisoRDPbind > .6,
+    binding_high  =bdat$DisoRDPbind > .6 & bdat$median > -1,
     noncons.  =bdat$MMSeq2 < 1,
+    noncons._high  =bdat$MMSeq2 < 1 & bdat$median > -1,
     N1=bdat$site%in%1,
     N2=bdat$site%in%2,
     N3=bdat$site%in%3,
@@ -205,6 +231,10 @@ classes <- cbind(
     frA=bdat$from=="A",
     frA1= bdat$from=="A"& bdat$site%in%1,
     AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
+
+    center= at==paste0("N",MIDPEP),
+    ENM= ENM, 
+    ENM.center= at==paste0("N",MIDPEP) & ENM, 
 
     CCxCC=CCxCC,
     CxC=CxC,
@@ -263,7 +293,7 @@ for ( i in seq_along(frm) )
     ftcls[,i] <- bdat$to==frm[i]
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
-cols <- as.character(c(-3:3))
+cols <- as.character(c(-5:5))
 
 ## custom ranges
 rngs <- rep(list(cols), ncol(classes))
@@ -272,10 +302,15 @@ names(rngs) <- colnames(classes)
 rngs$QG <- as.character(-4:1)
 rngs$QA <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
+
+### LONG RANGE
+
 rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
     rngs$longhigh <- rngs$longlow <- rngs$longhigh1 <- rngs$longlow1 <-
         rngs$disord. <-rngs$disord._high <-
-            rngs$non.cons. <-  rngs$binding <- as.character(-10:10)
+            rngs$noncons. <-  rngs$binding <-
+                rngs$noncons._high <-  rngs$binding_high <- as.character(-10:10)
+
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$toAG13 <- as.character(-3:0)
@@ -495,7 +530,7 @@ plotdev(file.path(mfig.path,paste0("logos_ylab")),
         height=hto+htn , width=.6, res=300, type=ftyp)
 par(mai=ymai)
 plot(1,1, axes=FALSE, col=NA, col.axis=NA)
-text(1.2,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.3)
+text(1.28,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.3)
 text(0.775,1.25,label="encoded", xpd=TRUE,srt=90, cex=1.7)
 text(0.8,.775,label="incorporated", xpd=TRUE,srt=90, cex=1.7)
 dev.off()
@@ -524,12 +559,13 @@ dev.off()
 
 tmtm <- tmtf
 
-idx <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
-ina <- which(is.na(idx))
+## TODO: is this filtering necessary??
+TIDX <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
+ina <- which(is.na(TIDX))
 if ( length(ina)>0 ) {
     cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
     tmtm <- tmtm[-ina,]
-    idx <- idx[-ina]    
+    TIDX <- TIDX[-ina]    
 }
 
 table(classes[,"WWxWW"],classes[,"QG"])
@@ -549,7 +585,7 @@ for ( j in 1:length(selected) ) {
     mclass <- rep("n.a.", nrow(classes))
     mclass[classes[,j]] <- mid
 
-    tmtm$motifs <- mclass[idx]
+    tmtm$motifs <- mclass[TIDX]
     
     ovw <- raasProfile(x=tmtm, id="SAAP", 
                        rows="motifs", cols="Dataset",
@@ -575,6 +611,24 @@ for ( j in 1:length(selected) ) {
 
 ### MERGE PROFILES
 ovm <- mergeProfiles(covw)
+
+source("~/work/mistrans/scripts/saap_utils.R")
+
+## use RAAS profile with matrix input (new 20240604)
+tcls <- classes[TIDX,]
+ovm2 <- raasProfile(x=tmtm, id="SAAP", 
+                    rows=tcls, cols="Dataset",
+                    bg=TRUE, value="RAAS", 
+                    col.srt=uds,
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=0)
+## TODO: test new RAAS profiler with matrix input
+## and remove above loop if all is good.
+if ( all(ovm$p.value==ovm2$.p.value))
+    warning("new profile ok, rm old code")
+
+
 ## sort
 ovm <- sortOverlaps(ovm, axis=2, srt=selected)
 
@@ -636,7 +690,7 @@ plotProfiles(ovm,
              gcols=gcols, ffam="monospace")
 
 ## SELECTED MOTIS FOR MAIN
-msrt <- c("toAG",
+msrt <- c("QG",
           "toAG13",
           "CCxCC",
           "MMxMM",
@@ -645,7 +699,7 @@ msrt <- c("toAG",
 ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
-             mai=c(0.05,.9,0.05,.6), ttcols=ttcols, value="median",
+             mai=c(0.05,CMAIL,0.05,.6), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
@@ -660,14 +714,136 @@ ssrt <- c("disord.",
 ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("structure_",SETID,"")),
-             mai=c(0.05,.9,0.05,.6), ttcols=ttcols, value="median",
+             mai=c(0.05,CMAIL,0.05,.6), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
-         
+
+
+### ANALYZE OVERLAP MOTIFS vs STRUCTURE
+
+
+CLS <- classes[,c(ssrt, msrt)]
+
+## CORRELATION OF MEASURES
+image_matrix(cor(classes), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
+             axis=1:2)
+
+
+ovl <- clusterCluster(CLS[,"disord."], CLS[,"noncons."])
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
+
+rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3))
+rsrt <- levels(rbins)
+rbins <- as.character(rbins)
+names(rbins) <- rownames(CLS)
+rbins[is.na(rbins)] <- "na."
+##
+ovl <- clusterAnnotation(cls=rbins, data=CLS, cls.srt=rsrt)
+omai <- c(.75,1,.6,.6)
+nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_raas")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
+             show.total=TRUE)
+figlabel("median RAAS",pos="bottomright")
+dev.off()
+
+
+## for all non-conserved bins
+csrt <- as.character(CLS[,"noncons."])
+csrt[is.na(csrt)] <- "na."
+
+rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3))
+rsrt <- levels(rbins)
+rbins <- as.character(rbins)
+names(rbins) <- rownames(CLS)
+rbins[is.na(rbins)] <- "na."
+
+ovl <- clusterAnnotation(cls=bdat$MMSeq2.bins, data=CLS,
+                         cls.srt=levels(MMSeq2.bins))
+omai <- c(.75,1,.6,.6)
+nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_conservation")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
+             show.total=TRUE)
+mtext("conservation",1, 2.5)
+dev.off()
+
+
+
+## ALTERNATIVE RAAS PROFILES
+ovls <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="iupred3.bins", cols="MMSeq2.bins",
+                    row.srt=rev(levels(iupred3.bins)),
+                    col.srt=c("na", levels(MMSeq2.bins)),
+                    bg=FALSE, value="RAAS", 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.75,1,.6,.6)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=1:2,
+           xlab=NA, ylab=NA, show.total=TRUE)
+mtext("conservation",1, 2.75)
+text(0.2,-.25, "disorder", xpd=TRUE, pos=2)
+dev.off()
+
+ovls <- raasProfile(x=tmtt, id="SAAP", 
+                    rows=tcls[,c(msrt,ssrt)], cols="MMSeq2.bins",
+                    col.srt=c("na", levels(MMSeq2.bins)),
+                    bg=FALSE, value="RAAS", 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.5,1,.6,.6)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_raas")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=2,
+           xlab=NA, ylab=NA, show.total=TRUE)
+mtext("conservation",1, 1.3)
+polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(1, at=1, label="na", las=2)
+dev.off()
+
+ovls <- raasProfile(x=tmtt, id="SAAP", 
+                    rows=tcls[,c(msrt,ssrt)], cols="iupred3.bins",
+                    col.srt=levels(iupred3.bins),
+                    bg=FALSE, value="RAAS", 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.5,1,.6,.6)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+plotdev(file.path(mfig.path,paste0("classes_disorder_motifs_raas")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=2,
+           xlab=NA, ylab=NA, show.total=TRUE)
+polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
+            y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("disorder",1, 1.3)
+dev.off()
 
 ## SELECTED MOTIFS FOR P-VAL COMPARISON
 msrt <- c("toAG13",
@@ -691,6 +867,9 @@ plotProfiles(ovs,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam="monospace")
 
+##
+
+
 ### POSITION WISE RAAS
 
 ## TODO: add to motifs?
@@ -701,7 +880,7 @@ bp1[bp1==bdat$from & bdat$site==1] <- "AAS"
 ##bp1[bdat$fromto=="Q:G"] <- "QG" ##- NOTE: this makes A at 1st insign.
 ##bp1[bdat$fromto=="Q:A"] <- "QA" ##- NOTE: this makes A at 1st insign.
 ## AA/codon/structure mapping
-tmtm$bp1 <- bp1[idx]
+tmtm$bp1 <- bp1[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp1", cols="Dataset",
@@ -735,7 +914,7 @@ bp2 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[2]))
 bp2[bp2==bdat$from & bdat$site==2] <- "AAS"
 
 ## AA/codon/structure mapping
-tmtm$bp2 <- bp2[idx]
+tmtm$bp2 <- bp2[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp2", cols="Dataset",
@@ -767,7 +946,7 @@ bp3 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[3]))
 bp3[bp3==bdat$from & bdat$site==3] <- "AAS"
 
 ## AA/codon/structure mapping
-tmtm$bp3 <- bp3[idx]
+tmtm$bp3 <- bp3[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp3", cols="Dataset",

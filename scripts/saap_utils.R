@@ -223,6 +223,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          axis1.col,
                          axis2.col,
                          axis1.las=2,
+                         bg=NA,
                          col.lines, # column classes - vertical lines
                          plot.all=FALSE, plot.legend=FALSE, verb=0) {
     
@@ -254,7 +255,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     ## combined effect size and p-value plot
     if ( verb ) cat(paste("plotting dotplot\n"))
     plotdev(paste0(fname,"_dotplot"),
-            height=nh, width=nw, res=300, type=ftyp)
+            height=nh, width=nw, res=300, type=ftyp, bg=bg)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
     dotprofile(x=ovw, value=value, vbrks=vbrks,
                vcols=vcols, p.dot=p.dot,
@@ -307,7 +308,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
         lw <- ncol(ovlg$p.value) *fw + lmai[2] + lmai[4]
         
         plotdev(paste0(fname,"_dotplot_legend"),
-                height=lh, width=lw, res=300, type=ftyp)
+                height=lh, width=lw, res=300, type=ftyp, bg=bg)
         par(mai=lmai, mgp=c(1.3,.3,0), tcl=-.25)
         dotprofile(ovlg, value="median",
                    vbrks=vbrks,
@@ -836,9 +837,35 @@ mergeProfiles <- function(ovll) {
     ovl
 }
 
+raasProfile <- function(x, rows, ...) {
+    
+    ## catch traditional case for nonoverlapping class in
+    ## a single row.
+    if ( inherits(rows, "character") )
+        return(raasProfile.row(x=x, rows=rows, ...))
+
+    cat(paste("NOTE: using loop over matrix of classes\n"))
+
+    ## loop through rows matrix
+    covw <- list()
+    for ( j in 1:ncol(rows) ) {
+                
+        mid <- colnames(rows)[j]
+        mclass <- rep("n.a.", nrow(rows))
+        mclass[rows[,j]] <- mid
+        
+        x$TEST <- mclass
+
+        ovw <- raasProfile(x=x, 
+                           rows="TEST", row.srt=mid, ...)
+        covw[[mid]] <- ovw
+    }
+    mergeProfiles(covw)
+}
+
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
 ## but working on lists of unequal lengths instead of a matrix
-raasProfile <- function(x=tmtf, id="SAAP", 
+raasProfile.row <- function(x=tmtf, id="SAAP", 
                         value="RAAS", delog=TRUE, replace=TRUE,
                         bg=FALSE, bg.dir="col", na.rm=FALSE,
                         rows="to", cols="aacodon",
@@ -848,11 +875,13 @@ raasProfile <- function(x=tmtf, id="SAAP",
                         xlab="value", fname="profile_",
                         verb=FALSE) {
 
+
     ## check presence
     if ( any(!c(value, rows, cols)%in%colnames(x)) )
-        stop("on of the requested values ",
-             paste(value, rows, cols, collapse=";"),
-             " is not present in the data")
+        stop("one of the requested values ",
+             paste(value, rows, cols, sep=";"),
+             " is not present in the data",
+             paste(colnames(x), collapse=";"))
     
     ## sorting of row and column classes
     if ( !missing(row.srt) ) aas <- row.srt

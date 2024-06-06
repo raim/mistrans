@@ -116,22 +116,39 @@ axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
 mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
-## sort by only enriched: TODO: implement in sortOverlaps
-tmp <- cls
-tmp$p.value[tmp$sign<0] <- 1
-tmp <- sortOverlaps(tmp, p.min=1e-3, cut=TRUE)
-cls <- sortOverlaps(cls, srt=rownames(tmp$p.value))
+
+## sort by only enriched
+clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_cut")),
-        height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300)
+        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300)
 par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
-plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
 par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(cls$p.value), labels=colnames(cls$p.value), las=2)
-axis(2, at=nrow(cls$p.value):1, labels=rownames(cls$p.value), las=2)
+axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=2)
+axis(2, at=nrow(clc$p.value):1, labels=rownames(clc$p.value), las=2)
 mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
+## tigher cut-off
+clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+
+omai <- c(.6,.7,.5,.5)
+nw <- ncol(clc$p.value)*.3 + omai[2] + omai[4]
+nh <- nrow(clc$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
+        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300)
+par(mai=omai, mgp=c(2.1,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=2)
+axis(2, at=nrow(clc$p.value):1, labels=rownames(clc$p.value), las=2)
+mtext("Position of AAS in peptide", 1, 1.8)
+##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
 ## * GENERAL PEPTIDE ANALYSIS

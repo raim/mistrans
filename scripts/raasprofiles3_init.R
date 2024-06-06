@@ -1137,3 +1137,12 @@ if ( length(missing) )
 ## keep only bdat for which we have RAAS values
 bdat <- cbind(bdat[rownames(bpraas),], bpraas)
 
+### NOTE: check use of bdat vs. hdat, where bdat has one less
+## row, due to missing RAAS values.
+
+
+### PLOT ALIGNMENT
+
+CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 
+              ## in domain script via nchar to fit the y-axis labels
+

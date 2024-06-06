@@ -18,4 +18,7 @@ dir.create(vfig.path, showWarnings=FALSE)
 
 ## TODO: raas profiles for alternative row/classes
 ## * motifs vs. disordered,
-## * 
+## * motifs vs. pfam,
+
+## TODO: collect all classes (motifs, pfam, structure, from:to),
+## and compare mutually simply by clusterCluster
