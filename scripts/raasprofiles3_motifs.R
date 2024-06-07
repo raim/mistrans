@@ -204,11 +204,9 @@ ENM <- bdat$from%in%enmpc | bdat$to%in%enmpc
 
 
 classes <- cbind(
-    kr=apply(aam[,as.character(-3:-1)], 1,
-             function(x) any(x%in%c("K","R"))),
-    frQ=bdat$from=="Q",
-    QG=bdat$fromto=="Q:G",
-    QA=bdat$fromto=="Q:A",
+    "Q:x"=bdat$from=="Q",
+    "Q:G"=bdat$fromto=="Q:G",
+    "Q:A"=bdat$fromto=="Q:A",
     KRAQ=kraq,
     KRGQ=krgq,
     KRxQ=krxq,
@@ -217,23 +215,20 @@ classes <- cbind(
     bpA1=bpA1,
     bpQ2=bpQ2,
     bpAQ=bpQ2 & bpA1,
-    toAG1 =bdat$to%in%c("G","A") & bdat$site%in%1,
-    toAG23=bdat$to%in%c("G","A") & bdat$site%in%2:3,
-    toAG13=bdat$to%in%c("G","A") & bdat$site%in%1:3,
-    toAG  =bdat$to%in%c("G","A"),
-    disord.  =bdat$iupred3 > .6,
-    disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
-    binding  =bdat$DisoRDPbind > .6,
-    binding_high  =bdat$DisoRDPbind > .6 & bdat$median > -1,
-    noncons.  =bdat$MMSeq2 < 1,
-    noncons._high  =bdat$MMSeq2 < 1 & bdat$median > -1,
-    N1=bdat$site%in%1,
-    N2=bdat$site%in%2,
-    N3=bdat$site%in%3,
-    N13=bdat$site%in%1:3,
-    frA=bdat$from=="A",
-    frA1= bdat$from=="A"& bdat$site%in%1,
-    AG1= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
+    "[KR]n-3"=apply(aam[,as.character(-3:-1)], 1,
+             function(x) any(x%in%c("K","R"))),
+    n1=bdat$site%in%1,
+    n2=bdat$site%in%2,
+    n3=bdat$site%in%3,
+    n13=bdat$site%in%1:3,
+    "A:x"=bdat$from=="A",
+    "x:Gn1"= bdat$to=="G"& bdat$site%in%1,
+    "A:xn1"= bdat$from=="A"& bdat$site%in%1,
+    "[AG]:[AG]n1"= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
+    "x:[AG]n1"=bdat$to%in%c("G","A") & bdat$site%in%1,
+    "x:[AG]n2"=bdat$to%in%c("G","A") & bdat$site%in%2:3,
+    "x:[AG]n3"=bdat$to%in%c("G","A") & bdat$site%in%1:3,
+    "x:[AG]"  =bdat$to%in%c("G","A"),
 
     center= at==paste0("N",MIDPEP),
     ENM= ENM, 
@@ -249,16 +244,25 @@ classes <- cbind(
     WWxWW=WWxWW,
     WxW=WxW,
     "WW[ILV]WW"=Wbranch,
-    "[ILV]"=bdat$from%in%c("I","L","V"),
+    "[ILV]:x"=bdat$from%in%c("I","L","V"),
     GGxGG=GGxGG,
     GxG=GxG,
-    frW=bdat$from=="W",
+    "W:x"=bdat$from=="W",
     
     QNrich= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("Q","N")))>2,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("E","D")))>2,
+
+    disord.  =bdat$iupred3 > .6,
+    disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
+    binding  =bdat$DisoRDPbind > .6,
+    binding_high  =bdat$DisoRDPbind > .6 & bdat$median > -1,
+    noncons.  =bdat$MMSeq2 < 1,
+    noncons._high  =bdat$MMSeq2 < 1 & bdat$median > -1,
+
     short=bdat$len <= 1000,
+    short_high=bdat$len <= 1000 & bdat$median > -1,
     long=bdat$len > 1000,
     longlow=bdat$len > 1000 & bdat$median <= -.5,
     longhigh=bdat$len > 1000 & bdat$median > -.5,
@@ -303,8 +307,8 @@ cols <- as.character(c(-3:3))
 rngs <- rep(list(cols), ncol(classes))
 names(rngs) <- colnames(classes)
 
-rngs$QG <- as.character(-4:1)
-rngs$QA <- as.character(-3:1)
+rngs$"Q:G" <- as.character(-4:1)
+rngs$"Q:A" <- as.character(-3:1)
 rngs$KRAQ <- as.character(-4:4)
 
 ### LONG RANGE
@@ -317,8 +321,8 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
 
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
-rngs$toAG13 <- as.character(-3:0)
-rngs$toAG <- as.character(-3:1)
+rngs$"x:[AG]n3" <- as.character(-3:0)
+rngs$"x:[AG]" <- as.character(-3:1)
 
 ## suppress p-value indicators
 opval <- rep(list(""), ncol(classes))
@@ -326,9 +330,10 @@ names(opval) <- colnames(classes)
 opval$MMxMM <- opval$WWxWW <- opval$CCxCC <- opval$CCxPP <-
     as.character(c(-2,-1,1,2))
 opval$MxM <- opval$WxW <- opval$CxC <- as.character(c(-1,1))
+
 ## suppress on incorporated side only
 npval <- opval
-npval[grep("toAG",names(npval))] <- "0"
+npval[grep("x:\\[AG\\]",names(npval))] <- "0"
 
 ## use our internal AA colors
 ASN2 <- ASN
@@ -422,6 +427,13 @@ for ( i in 1:ncol(classes) ) {
         
     ## PLOT LOGOS
 
+    if ( length(grep(":",lb)) ) {
+        ft <- unlist(strsplit(lb,":"))
+        ft[ft=="x"] <- ""
+           lb <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
+    } else lb <- as.expression(bquote(.(lb)))
+   
+
     ## ENCODED
     if ( any(dfop$pvals<min(psig)) | id %in% selected ) {
 
@@ -439,7 +451,8 @@ for ( i in 1:ncol(classes) ) {
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels="AAS", las=2)
-        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
+        figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
+        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
         diffLogo_addPvals(dfop, ymin=mx, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         dev.off()
@@ -462,7 +475,8 @@ for ( i in 1:ncol(classes) ) {
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
-        figlabel(paste0(lb,": ",sum(filt)), pos="topright", font=2)
+        figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
+        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
         diffLogo_addPvals(dfnp, ymin=mx, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
@@ -502,8 +516,9 @@ for ( i in 1:ncol(classes) ) {
         myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mxo)
         axis(1, at=1:length(cols), labels=FALSE)
         axis(2, cex.axis=1.2)
-        figlabel(paste0(lb,": ",sum(filt),"  "),
-                 pos="topright", font=2, cex=1.2)
+        figlabel(paste0("n=",sum(filt),"  "),
+                 pos="topright", font=2, cex=1.1)
+        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
         diffLogo_addPvals(dfop, ymin=mxo, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         
@@ -519,8 +534,6 @@ for ( i in 1:ncol(classes) ) {
         diffLogo_addPvals(dfnp, ymin=mxn, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
-  
-   
     }
 }
 
@@ -576,7 +589,7 @@ if ( length(ina)>0 ) {
     TIDX <- TIDX[-ina]    
 }
 
-table(classes[,"WWxWW"],classes[,"QG"])
+table(classes[,"WWxWW"],classes[,"Q:G"])
 
 
 
@@ -640,7 +653,7 @@ if ( all(ovm$p.value==ovm2$.p.value))
 ## sort
 ovm <- sortOverlaps(ovm, axis=2, srt=selected)
 
-amai <- c(0.8,1.2,0.6,.6)
+amai <- c(0.8,1.4,0.6,.6)
 
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
@@ -698,8 +711,8 @@ plotProfiles(ovm,
              gcols=gcols, ffam="monospace")
 
 ## SELECTED MOTIS FOR MAIN
-msrt <- c("QG",
-          "toAG13",
+msrt <- c("Q:G",
+          "x:[AG]N3",
           "CCxCC",
           "MMxMM",
           "WWxWW")
@@ -707,12 +720,13 @@ msrt <- c("QG",
 ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
-             mai=c(0.05,CMAIL,0.05,.6), ttcols=ttcols, value="median",
+             mai=c(0.05,CMAIL,0.05,.5), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
+             bg=NA, 
              gcols=gcols, ffam="monospace")
 
 ssrt <- c("disord.",
@@ -722,12 +736,13 @@ ssrt <- c("disord.",
 ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("structure_",SETID,"")),
-             mai=c(0.05,CMAIL,0.05,.6), ttcols=ttcols, value="median",
+             mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
+             bg=NA, 
              gcols=gcols, ffam="monospace")
 
 
@@ -790,7 +805,19 @@ dev.off()
 
 
 
-## ALTERNATIVE RAAS PROFILES
+### ALTERNATIVE RAAS PROFILES
+
+rows <- c(msrt,ssrt)
+axex <- rep("",length(rows))
+names(axex) <- rows
+for ( i in seq_along(rows) ) {
+    if ( length(grep(":",rows[i])) ) {
+        ft <- unlist(strsplit(rows[i],":"))
+        ft[ft=="x"] <- ""
+        axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
+    } else axex[i] <- as.expression(bquote(.(rows[i])))
+}
+
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows="iupred3.bins", cols="MMSeq2.bins",
                     row.srt=rev(levels(iupred3.bins)),
@@ -799,15 +826,15 @@ ovls <- raasProfile(x=tmtm, id="SAAP",
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
-omai <- c(.5,.5,.6,.6)
+omai <- c(.5,CMAIL,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
-           xlab=NA, ylab=NA, show.total=TRUE)
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
 polygon(y=c(1, nrow(ovls$p.value), nrow(ovls$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",2, 1.3)
@@ -818,69 +845,50 @@ mtext("conservation",1, 1.3)
 dev.off()
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
-                    rows=tcls[,c(msrt,ssrt)], cols="MMSeq2.bins",
+                    rows=tcls[,rows], cols="MMSeq2.bins",
                     col.srt=c("na", levels(MMSeq2.bins)),
                     bg=FALSE, value="RAAS", 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
-omai <- c(.5,1,.6,.6)
+omai <- c(.5,1.1,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_raas")),
         height=nh, width=nw, res=300)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
-dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=2,
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
 mtext("conservation",1, 1.3)
 polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
         y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
+axis(2, length(axex):1, labels=axex, las=2, family="monospace",
+     font=2, cex.axis=1.2)
 dev.off()
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
-                    rows=tcls[,c(msrt,ssrt)], cols="iupred3.bins",
+                    rows=tcls[,rows], cols="iupred3.bins",
                     col.srt=levels(iupred3.bins),
                     bg=FALSE, value="RAAS", 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
-omai <- c(.5,1,.6,.6)
+omai <- c(.5,1.1,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_disorder_motifs_raas")),
         height=nh, width=nw, res=300)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
-dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=2,
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
 polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
             y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",1, 1.3)
+axis(2, length(axex):1, labels=axex, las=2, family="monospace",
+     font=2, cex.axis=1.2)
 dev.off()
 
-## SELECTED MOTIFS FOR P-VAL COMPARISON
-msrt <- c("toAG13",
-          "CCxCC",
-          "MMxMM",
-          "WWxWW",
-          "QNrich",
-          "disord.",
-          "Acidic",
-          "long"
-          )
-
-ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
-plotProfiles(ovs,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_selected")),
-             mai=c(0.8,.9,0.6,.6), ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
-             dot.sze=dot.sze, p.dot=mp.dot,
-             rlab=LAB,  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace")
-
-##
 
 
 ### POSITION WISE RAAS

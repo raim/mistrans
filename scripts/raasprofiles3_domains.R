@@ -43,20 +43,20 @@ tmtf$pfam[tmtf$pfam==""] <- "No_pfam"
 ## PFAM CLANS, EBI
 
 plst <- strsplit(tmtf$clan.ebi,";")
-pnms <- unique(unlist(plst))
+dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(pnms), nrow=nrow(tmtf))
-colnames(pmat) <- pnms
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
 
 ## replace column by name
-pnms <- clans[sub("\\..*","",colnames(pmat)),2]
-pnms[is.na(pnms)] <- colnames(pmat)[is.na(pnms)]
-colnames(pmat) <- pnms
+dnms <- clans[sub("\\..*","",colnames(pmat)),2]
+dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
+colnames(pmat) <- dnms
 
-ovm <- raasProfile(x=tmtf, id="BP.SAAP", 
+ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
@@ -64,7 +64,7 @@ ovm <- raasProfile(x=tmtf, id="BP.SAAP",
                    xlab=xl.raas, verb=0)
 
 ## cut significant
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE)
+ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -82,27 +82,27 @@ plotProfiles(ovc,
 ## PFAMS, EBI
 
 plst <- strsplit(tmtf$pfam.ebi,";")
-pnms <- unique(unlist(plst))
+dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(pnms), nrow=nrow(tmtf))
-colnames(pmat) <- pnms
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
 
 ## replace column by name
-pnms <- pfams[sub("\\..*","",colnames(pmat)),3]
-pnms[is.na(pnms)] <- colnames(pmat)[is.na(pnms)]
-colnames(pmat) <- pnms
+dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
+dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
+colnames(pmat) <- dnms
 
-ovm <- raasProfile(x=tmtf, id="BP.SAAP", 
+ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE)
+ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -122,27 +122,27 @@ plotProfiles(ovc,
 ## PFAM CLANS, own
 
 plst <- strsplit(tmtf$clan,";")
-pnms <- unique(unlist(plst))
+dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(pnms), nrow=nrow(tmtf))
-colnames(pmat) <- pnms
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
 
 ## replace column by name
-pnms <- clans[sub("\\..*","",colnames(pmat)),2]
-pnms[is.na(pnms)] <- colnames(pmat)[is.na(pnms)]
-colnames(pmat) <- pnms
+dnms <- clans[sub("\\..*","",colnames(pmat)),2]
+dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
+colnames(pmat) <- dnms
 
-ovm <- raasProfile(x=tmtf, id="BP.SAAP", 
+ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE) #, sign=1)
+ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE) #, sign=1)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -157,7 +157,7 @@ plotProfiles(ovc,
              gcols=gcols)#, plot.all=TRUE)
 
 ## only high RAAS
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE, sign=1)
+ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE, sign=1)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -171,14 +171,15 @@ plotProfiles(ovc,
              vcols=acols, vbrks=abrks,
              gcols=gcols, plot.all=FALSE)
 
-## filter rate
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE, sign=1)
-
+## filter and sort
+ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE, sign=1)
 frequent <- names(which(ovc$num.query[,1]>10))
 ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
-omai <- c(.05,1.5,.05,.6)
-CMAIL <- 1.54 ## commonly used between motif and domain figures, defined hered
-              ## to fit x-axis label
+ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE, sign=1)
+
+omai <- c(.05,1.5,.5,.5)
+##CMAIL <- 1.54 ## commonly used between motif and domain figures, defined hered
+##              ## to fit x-axis label
 omai[2] <- CMAIL # .11*max(nchar(rownames(ovc$p.value)))
 
 plotProfiles(ovc,
@@ -190,32 +191,33 @@ plotProfiles(ovc,
              ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
+             bg=NA, tot.cex=.8,
              gcols=gcols, plot.all=TRUE, ffam="monospace")
 
 ## PFAMS, own
 
 plst <- strsplit(tmtf$pfam,";")
-pnms <- unique(unlist(plst))
+dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(pnms), nrow=nrow(tmtf))
-colnames(pmat) <- pnms
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
 
 ## replace column by name
-pnms <- pfams[sub("\\..*","",colnames(pmat)),3]
-pnms[is.na(pnms)] <- colnames(pmat)[is.na(pnms)]
-colnames(pmat) <- pnms
+dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
+dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
+colnames(pmat) <- dnms
 
-ovm <- raasProfile(x=tmtf, id="BP.SAAP", 
+ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovm, p.min=p.dot, cut=TRUE)
+ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 

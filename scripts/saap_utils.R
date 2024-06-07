@@ -89,7 +89,7 @@ w.test <- function(x,y) {
 dotprofile <- function(x, value, vcols=viridis::viridis(100),
                        vbrks, p.dot=1e-10, dot.sze=c(.3,2), xpd=FALSE,
                        lg2=FALSE, mxr,
-                       show.total=FALSE,
+                       show.total=FALSE, tot.cex=.8,
                        test=FALSE, ...) {
 
     ## values for coloring
@@ -148,12 +148,12 @@ dotprofile <- function(x, value, vcols=viridis::viridis(100),
         if ("num.query" %in% names(x)) 
             axis(4, at = length(x$num.query):1,
                  labels = format(x$num.query, big.mark=",", trim=TRUE), 
-                las = 2, lwd = 0, lwd.ticks = 1)
+                las = 2, lwd = 0, lwd.ticks = 1, cex.axis=tot.cex)
     if (totx) 
         if ("num.target" %in% names(x)) 
             axis(3, at = 1:length(x$num.target),
                  labels = format(x$num.target, big.mark=",", trim=TRUE), 
-                 las = 2, lwd = 0, lwd.ticks = 1)
+                 las = 2, lwd = 0, lwd.ticks = 1, cex.axis=tot.cex)
     ##if (toty | totx) 
     ##    figlabel("total", region = "figure", pos = "topright", 
     ##        cex = par("cex"))
@@ -223,7 +223,8 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
                          axis1.col,
                          axis2.col,
                          axis1.las=2,
-                         bg=NA,
+                         bg="white",
+                         tot.cex=.8,
                          col.lines, # column classes - vertical lines
                          plot.all=FALSE, plot.legend=FALSE, verb=0) {
     
@@ -235,6 +236,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     for ( i in seq_along(rows) ) {
         if ( length(grep(":",rows[i])) ) {
             ft <- unlist(strsplit(rows[i],":"))
+            ft[ft=="x"] <- ""
             axex[i] <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
         } else axex[i] <- as.expression(bquote(.(rows[i])))
     }
@@ -275,9 +277,9 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
      }
     else
         axis(2, length(axex):1, labels=axex, las=2, family=ffam)
-    axis(3, at=1:ncol(ovw$num.target),
+    axis(3, at=1:ncol(ovw$num.target), cex.axis=tot.cex,
          labels=format(ovw$num.target[1,], big.mark=",", trim=TRUE),las=2)
-    axis(4, at=nrow(ovw$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+    axis(4, at=nrow(ovw$num.query):1, cex.axis=tot.cex,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
     if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
@@ -866,14 +868,15 @@ raasProfile <- function(x, rows, ...) {
 ## calculate statistical profiles, similar to segmenTools::clusterProfiler,
 ## but working on lists of unequal lengths instead of a matrix
 raasProfile.row <- function(x=tmtf, id="SAAP", 
-                        value="RAAS", delog=TRUE, replace=TRUE,
-                        bg=FALSE, bg.dir="col", na.rm=FALSE,
-                        rows="to", cols="aacodon",
-                        row.srt, col.srt, filter=TRUE,
-                        use.test=use.test, p.adjust="none",
-                        do.plots=FALSE,
-                        xlab="value", fname="profile_",
-                        verb=FALSE) {
+                            value="RAAS", delog=TRUE, replace=TRUE,
+                            bg=FALSE, bg.dir="col", na.rm=FALSE,
+                            rows="to", cols="aacodon",
+                            row.srt, col.srt, filter=TRUE,
+                            use.test=use.test, p.adjust="none",
+                            min.obs=2,
+                            do.plots=FALSE,
+                            xlab="value", fname="profile_",
+                            verb=FALSE) {
 
 
     ## check presence
@@ -914,7 +917,6 @@ raasProfile.row <- function(x=tmtf, id="SAAP",
     tp[] <- 1
     tm[] <- td[] <- NA
 
-    min.obs=2
     allvals <- list()
     for ( i in seq_along(aas) ) {
 
