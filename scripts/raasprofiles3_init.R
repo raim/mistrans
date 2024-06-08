@@ -1148,4 +1148,5 @@ bdat <- cbind(bdat[rownames(bpraas),], bpraas)
 
 CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 
               ## in domain script via nchar to fit the y-axis labels
+FONT <- "monospace" # font used for aligned figures in motifs and domains
 

@@ -30,6 +30,7 @@ mp.min <- p.min
 mp.dot <- p.dot
 mp.txt <- p.txt
 
+
 ## motif p-value cutoffs *, **, ***
 psig <- 10^-c(3,5,10)
 
@@ -59,7 +60,7 @@ nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS", ylab="Encoded AA")
 ##figlabel("all", pos="bottomleft")
@@ -67,7 +68,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS", ylab="Encoded AA",
            p.dot=p.dot, lg2=TRUE, mxr=2,
@@ -79,7 +80,7 @@ ovc <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovc$p.value)*.5 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("AAS_overlap_cut")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS", ylab="Encoded AA")
 figlabel("all", pos="bottomleft")
@@ -96,7 +97,7 @@ nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-1")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
 figlabel("RAAS > 0.1", pos="bottomleft")
@@ -104,7 +105,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-1")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
            p.dot=p.dot, lg2=TRUE, mxr=2,
@@ -119,7 +120,7 @@ nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-.5")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
 figlabel("RAAS > 0.32", pos="bottomleft")
@@ -127,7 +128,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-.5")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
            p.dot=p.dot, lg2=TRUE, mxr=2,
@@ -452,7 +453,7 @@ for ( i in 1:ncol(classes) ) {
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels="AAS", las=2)
         figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
-        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
+        figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfop, ymin=mx, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         dev.off()
@@ -476,7 +477,7 @@ for ( i in 1:ncol(classes) ) {
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
         figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
-        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
+        figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfnp, ymin=mx, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
@@ -518,7 +519,7 @@ for ( i in 1:ncol(classes) ) {
         axis(2, cex.axis=1.2)
         figlabel(paste0("n=",sum(filt),"  "),
                  pos="topright", font=2, cex=1.1)
-        figlabel(lb, pos="topleft", cex=1.3, family="monospace")
+        figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfop, ymin=mxo, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         
@@ -626,7 +627,7 @@ for ( j in 1:length(selected) ) {
                      rlab=LAB,  ftyp=ftyp,
                      mtxt="", mtxt.line=2.3,
                      vcols=acols, vbrks=abrks,
-                     gcols=gcols, ffam="monospace")
+                     gcols=gcols, ffam=FONT)
     }
 }
 
@@ -662,7 +663,7 @@ plotProfiles(ovm,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 
 
 plotProfiles(ovm,
@@ -672,7 +673,7 @@ plotProfiles(ovm,
              llab="p10",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace",plot.all=FALSE)
+             gcols=gcols, ffam=FONT,plot.all=FALSE)
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval6")),
              mai=amai, ttcols=ttcols, value="median",
@@ -680,7 +681,7 @@ plotProfiles(ovm,
              llab="p6",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace",plot.all=FALSE)
+             gcols=gcols, ffam=FONT,plot.all=FALSE)
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval100")),
              mai=amai, ttcols=ttcols, value="median",
@@ -689,7 +690,7 @@ plotProfiles(ovm,
              llab="p100",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace",plot.all=FALSE)
+             gcols=gcols, ffam=FONT,plot.all=FALSE)
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval30")),
              mai=amai, ttcols=ttcols, value="median",
@@ -698,7 +699,7 @@ plotProfiles(ovm,
              llab="p30",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace",plot.all=FALSE)
+             gcols=gcols, ffam=FONT,plot.all=FALSE)
 
 plotProfiles(ovm,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_vcols")),
@@ -708,11 +709,11 @@ plotProfiles(ovm,
              llab="vcols",  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=vcols, vbrks=vbrks,
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 
 ## SELECTED MOTIS FOR MAIN
 msrt <- c("Q:G",
-          "x:[AG]N3",
+          "x:[AG]n3",
           "CCxCC",
           "MMxMM",
           "WWxWW")
@@ -720,14 +721,14 @@ msrt <- c("Q:G",
 ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
-             mai=c(0.05,CMAIL,0.05,.5), ttcols=ttcols, value="median",
+             mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              bg=NA, 
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 
 ssrt <- c("disord.",
           "binding",
@@ -736,14 +737,14 @@ ssrt <- c("disord.",
 ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("structure_",SETID,"")),
-             mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
+             mai=c(0.05,CMAIL,0.05,.5), ttcols=ttcols, value="median",
              p.min=mp.min, p.txt=mp.txt,
              dot.sze=dot.sze, p.dot=mp.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              bg=NA, 
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 
 
 ### ANALYZE OVERLAP MOTIFS vs STRUCTURE
@@ -772,7 +773,7 @@ nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_raas")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
 figlabel("median RAAS",pos="bottomright")
@@ -797,7 +798,7 @@ nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
 mtext("conservation",1, 2.5)
@@ -832,7 +833,7 @@ nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
         height=nh, width=nw, res=300, bg=NA)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
 polygon(y=c(1, nrow(ovls$p.value), nrow(ovls$p.value)),
@@ -856,14 +857,14 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_raas")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
 mtext("conservation",1, 1.3)
 polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
         y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
-axis(2, length(axex):1, labels=axex, las=2, family="monospace",
+axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
 dev.off()
 
@@ -879,13 +880,13 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_disorder_motifs_raas")),
         height=nh, width=nw, res=300)
-par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
 polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
             y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",1, 1.3)
-axis(2, length(axex):1, labels=axex, las=2, family="monospace",
+axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
 dev.off()
 
@@ -952,7 +953,7 @@ plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp2_",SETID)),
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at position 2 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 ovwp <- sortOverlaps(ovw, p.min=mp.txt, cut=TRUE)
 plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp2_",SETID,"_cut")),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",
@@ -984,7 +985,7 @@ plotProfiles(ovw, fname=file.path(mfig.path,paste0("bp3_",SETID)),
              rlab=LAB,  ftyp=ftyp,
              mtxt="AA at position 3 in BP", mtxt.line=1.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam="monospace")
+             gcols=gcols, ffam=FONT)
 ovwp <- sortOverlaps(ovw, p.min=mp.txt, cut=TRUE)
 plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp3_",SETID,"_cut")),
              mai=c(.8,.5,.5,.5), ttcols=ttcols, value="median",

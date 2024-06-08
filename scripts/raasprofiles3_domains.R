@@ -172,10 +172,10 @@ plotProfiles(ovc,
              gcols=gcols, plot.all=FALSE)
 
 ## filter and sort
-ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE, sign=1)
+ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE)#, sign=1)
 frequent <- names(which(ovc$num.query[,1]>10))
 ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
-ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE, sign=1)
+ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
 
 omai <- c(.05,1.5,.5,.5)
 ##CMAIL <- 1.54 ## commonly used between motif and domain figures, defined hered
@@ -192,7 +192,7 @@ plotProfiles(ovc,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
              bg=NA, tot.cex=.8,
-             gcols=gcols, plot.all=TRUE, ffam="monospace")
+             gcols=gcols, plot.all=TRUE, ffam=FONT)
 
 ## PFAMS, own
 
