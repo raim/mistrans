@@ -46,41 +46,56 @@ cls.srt.major <- grep("NA",grep("[A-Z]",cls.srt,value=TRUE),
 CLM <- factor(ygenes$CL_rdx, levels=cls.srt.major)
 
 ## TRANSCRIPTOME, blindly using log2 fold change on sheet 7
-## Caudal et al. 2024, Table S6
+## Caudal et al. 2024, Table S6, sheet 7
 c24 <- as.data.frame(read_xlsx(c24.file, sheet=7))
 
-plotdev(file.path(fig.path,"transcriptome_clusters"),
-        type=ftyp, height=3, width=3, res=200)
-par(mai=c(.5,.5,.3,.05), mgp=c(1.3,.3,0), tcl=-.25)
-idx <- match(ygenes$ID, c24$ORF)
-bp <- boxplot(c24$log2FoldChange[idx] ~ CLM,
-        col=cls.col[cls.srt.major], las=2, xlab=NA,
-        ylab="log2FoldChange", axes=FALSE)
-mtext("yeast co-expression cohorts", 1, 1.6)
-axis(2)
-Map(axis, 1, at=1:length(bp$n), labels=bp$names, las=2,
-    col.axis=cls.col[bp$names])
-Map(axis, 3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
-box()
-legend("bottomleft", "Caudal et al. 2024", bty="n", seg.len=0)
-dev.off()
+## plot by CLADE
+c24l <- split(c24, c24$CLADES)
+for ( i in 1:length(c24l) ) {
+    clade <- sub("[0-9]+\\. ","",names(c24l)[i])
+    cname <- fs::path_sanitize(gsub(" ","_",clade))
+    idx <- match(ygenes$ID, c24l[[i]]$ORF)
+    if ( sum(!is.na(idx))<5 ) next
+    plotdev(file.path(fig.path,paste0("transcriptome_clusters_",cname)),
+            type=ftyp, height=3, width=3, res=200)
+    par(mai=c(.5,.5,.3,.05), mgp=c(1.3,.3,0), tcl=-.25)
+    bp <- boxplot(c24l[[i]]$log2FoldChange[idx] ~ CLM,
+                  col=cls.col[cls.srt.major], las=2, xlab=NA,
+                  ylab="log2FoldChange", axes=FALSE)
+    mtext("co-expression cohorts", 1, 1.6)
+    figlabel(clade, pos="bottomleft", region="plot")
+    axis(2)
+    Map(axis, 1, at=1:length(bp$n), labels=bp$names, las=2,
+        col.axis=cls.col[bp$names])
+    Map(axis, 3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
+    box()
+    ##legend("bottomleft", "Caudal et al. 2024", bty="n", seg.len=0)
+    dev.off()
+}
 
-plotdev(file.path(fig.path,"transcriptome_clusters_arrow"),
+plotdev(file.path(fig.path,"transcriptome_clusters_Ecuadorean_arrow"),
         type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.3,.05), mgp=c(1.3,.3,0), tcl=-.25)
-idx <- match(ygenes$ID, c24$ORF)
-bp <- boxplot(c24$log2FoldChange[idx] ~ CLM,
+idx <- match(ygenes$ID, c24l[["21. Ecuadorean"]]$ORF)
+bp <- boxplot(c24l[["21. Ecuadorean"]]$log2FoldChange[idx] ~ CLM,
         col=cls.col[cls.srt.major], las=2, xlab=NA,
         ylab="log2FoldChange", axes=FALSE)
 axis(3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
 axis(2, las=2)
 ##mtext("yeast co-expression cohorts", 1, 1.6)
-arrows(x0=1.5, x1=length(bp$n)-1, y0=-9, xpd=TRUE, length=.05, lwd=3)
-text(length(bp$n)/2, -9.5, labels="time", xpd=TRUE, font=2)
+arrows(x0=1.5, x1=length(bp$n)-.5, y0=-6, xpd=TRUE, length=.05, lwd=3)
+text(length(bp$n)/2, -6.5, labels="time", xpd=TRUE, font=2)
 box()
-legend("bottomleft", "Caudal et al. 2024", bty="n", seg.len=0)
+figlabel("clade: 21. Ecuadorean", pos="bottomleft", font=1, cex=1.2)#, region="plot")
 dev.off()
 
+## @Muenzner2024 SI Table 14: Trans expression of genes in aneuploid
+## natural isolates.  Median relative expression levels of genes
+## encoded on euploid chromosomes in aneuploid natural isolates are
+## shown as log2 FC (estimated mean). P-values from t-test, adjusted
+## p-values corrected using the Benjamini-Hochberg method. Components
+## of the ubiquitin-proteasome system are indicated.
+m24t <- as.data.frame(read_xlsx(m24.file, sheet=14,skip=3))
 
 ## @Muenzner2024: SI Tables 17 (Dynamic SILAC) and 16 (growth rate) 
 ## strain wise half-lives
@@ -159,6 +174,32 @@ m24trnsl <- m24int * log(2)/m24hlfw
 
 ### PLOT
 
+## log2fc - from supp. table 14
+
+## volcano
+idx <- match(ygenes$name, m24t$gene_name)
+dense2d(m24t[idx,"log2 FC (mean)"], -log10(m24t[idx,"p-value"]))
+
+plot(m24t[idx,"log2 FC (mean)"], -log10(m24t[idx,"adj. p-value"]),
+     col=cls.col[CLM])
+
+## cluster boxplot
+plotdev(file.path(fig.path,"muenzer24_stable14"),
+        type=ftyp, height=3, width=3, res=200)
+par(mai=c(.5,.5,.3,.05), mgp=c(1.3,.3,0), tcl=-.25)
+idx <- match(ygenes$name, m24t$gene_name)
+bp <- boxplot(m24t[idx,"log2 FC (mean)"] ~ CLM,
+        col=cls.col[cls.srt.major], las=2, xlab=NA,
+        ylab="log2 FC (mean)", axes=FALSE)
+axis(3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
+axis(2)
+##mtext("yeast co-expression cohorts", 1, 1.6)
+arrows(x0=1.5, x1=length(bp$n)-.5, y0=-.8, xpd=TRUE, length=.05, lwd=3)
+text(length(bp$n)/2, -.85, labels="time", xpd=TRUE, font=2)
+box()
+figlabel("Table 14", pos="bottomleft", font=1, cex=1.2)#, region="plot")
+dev.off()
+
 ## map to our main gene set
 idx <- match(ygenes$ID, m24genes)
 for ( i in 1:nrow(m24mu) ) {
@@ -166,13 +207,14 @@ for ( i in 1:nrow(m24mu) ) {
     int <- m24int[,strain]
     plotdev(file.path(fig.path,paste0("proteome_clusters_",strain)),
             type=ftyp, height=3, width=3, res=200)
-    par(mai=c(.5,.5,.3,.05), mgp=c(1.1,.3,0), tcl=-.25)
+    par(mai=c(.5,.5,.3,.1), mgp=c(1.1,.3,0), tcl=-.25)
     bp <- boxplot(log10(int[idx]) ~ CLM,
                   ylim=c(-6, -1),
                   col=cls.col[cls.srt.major], las=2, xlab=NA,
                   ylab=expression(log[10](intensity/total)), axes=FALSE)
     axis(3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
     axis(2)
+    axis(4, labels=FALSE)
     mtext(paste("strain", strain), 1, 1, font=2, cex=1.3)
     dev.off()
 }
@@ -183,16 +225,18 @@ for ( i in 1:nrow(m24mu) ) {
     hlf <- m24hlfw[,strain]
     plotdev(file.path(fig.path,paste0("halflives_clusters_",strain)),
             type=ftyp, height=3, width=3, res=200)
-    par(mai=c(.5,.5,.3,.05), mgp=c(1,.3,0), tcl=-.25)
+    par(mai=c(.5,.5,.3,.1), mgp=c(1,.3,0), tcl=-.25)
     bp <- boxplot(log10(hlf[idx]) ~ factor(ygenes$CL_rdx, levels=cls.srt.major),
                   col=cls.col[cls.srt.major],
                   ylim=log10(c(1,10)),
                   xlab=NA,
                   ylab=hl.lab, axes=FALSE)
     axis(3, at=1:length(bp$n), labels=bp$n, las=2, cex.axis=.7)
-    axis(2, at=-1:10, labels=10^(-1:10))
-    axis(2, at=log10(rep(1:10, 5) * 10^rep(-1:3, each=10)), tcl=-.125,
-         labels=FALSE)
+    for ( ax in c(2,4) ) {
+        axis(ax, at=-1:10, labels=10^(-1:10))
+        axis(ax, at=log10(rep(1:10, 5) * 10^rep(-1:3, each=10)), tcl=-.125,
+             labels=FALSE)
+    }
     mtext(paste("strain", strain), 1, 1, font=2, cex=1.3)
     dev.off()
 }

@@ -118,12 +118,13 @@ ylgd <- log(log(2)/(yhlf/24))
 
 
 plotdev(file.path(fig.path,"protein_halflives_human_yeast_zoom"),
-        type=ftyp, height=3, width=4, res=200)
+        type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(hhlf, yhlf, xlim=c(0,200), ylim=c(0,20),
         xlab=xl.hhlf,
         ylab=xl.yhlf)#, legpos="topright")
 ##abline(v=48)
+figlabel("zoom", pos="bottomleft", font=2, cex=1.2)
 dev.off()
 
 plotdev(file.path(fig.path,"protein_halflives_human_yeast"),
