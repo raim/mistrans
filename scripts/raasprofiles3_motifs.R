@@ -712,7 +712,7 @@ plotProfiles(ovm,
              gcols=gcols, ffam=FONT)
 
 ## SELECTED MOTIS FOR MAIN
-msrt <- c("Q:G",
+msrt <- c(##"Q:G",
           "x:[AG]n3",
           "CCxCC",
           "MMxMM",
@@ -755,6 +755,10 @@ CLS <- classes[,c(ssrt, msrt)]
 ## CORRELATION OF MEASURES
 image_matrix(cor(classes), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
              axis=1:2)
+
+
+
+                      
 
 
 ovl <- clusterCluster(CLS[,"disord."], CLS[,"noncons."])
@@ -819,6 +823,7 @@ for ( i in seq_along(rows) ) {
     } else axex[i] <- as.expression(bquote(.(rows[i])))
 }
 
+
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows="iupred3.bins", cols="MMSeq2.bins",
                     row.srt=rev(levels(iupred3.bins)),
@@ -844,6 +849,32 @@ polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
 axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
 dev.off()
+
+## hypergeo overlap in BP/SAAP/Dataset
+ovl <- clusterCluster(hdat$iupred3.bins, hdat$MMSeq2.bins,
+                      cl1.srt=c(rev(levels(iupred3.bins)), "na"),
+                      cl2.srt=c("na", levels(MMSeq2.bins)),
+                      alternative="two.sided")
+omai <- c(.5,.5,.5,.5)
+nw <- ncol(ovl$p.value)*.3 + omai[2] + omai[4]
+nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+plotdev(file.path(mfig.path,paste0("classes_conservation_disordered_overlap")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, axis=NA,
+             show.total=TRUE, text.cex=.7)
+polygon(y=c(2, nrow(ovl$p.value), nrow(ovl$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("disorder",2, 1.5)
+polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+axis(1, at=1, label="na", las=2)
+mtext("conservation",1, 1.3)
+dev.off()
+
+## motifs vs cons
+
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,rows], cols="MMSeq2.bins",

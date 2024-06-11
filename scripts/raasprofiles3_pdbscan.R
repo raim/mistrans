@@ -12,8 +12,8 @@ source("~/work/mistrans/scripts/saap_utils.R")
 ## ID mappings, etc.
 source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
-pfig.path <- file.path(fig.path,"proteins")
-dir.create(pfig.path, showWarnings=FALSE)
+hfig.path <- file.path(fig.path,"hotspots")
+dir.create(hfig.path, showWarnings=FALSE)
 
 corW <- corH <- 2.5
 
@@ -114,7 +114,7 @@ winstat$mane <- sub("\\..*","",rownames(winstat))
 ids <- pnms[winstat$mane]
 names(ids) <- rownames(winstat)
 
-plotdev(file.path(pfig.path,paste0("windows_volcano_all")),
+plotdev(file.path(hfig.path,paste0("windows_volcano_all")),
         type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 volcano(winstat, cut=50, v.txt=c(-2,0), p.txt=10,
@@ -142,7 +142,7 @@ ids <- strsplit(rownames(winstat),"-")
 ids <- unlist(lapply(ids, function(x) pnms[x[1]]))
 names(ids) <- rownames(winstat)
 
-plotdev(file.path(pfig.path,paste0("windows_volcano_sites")),
+plotdev(file.path(hfig.path,paste0("windows_volcano_sites")),
         type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 volcano(winstat, value="median", cut=20, v.txt=c(-2,-2),
@@ -200,7 +200,7 @@ huraas <- lapply(huens, function(x) c(na.omit(pbstat[x,"median"])))
 ## RAAS statistics
 hustat <- listProfile(huraas, y=tmtf$RAAS, min=3)
 
-plotdev(file.path(pfig.path,paste0("complex_volcano_sites")),
+plotdev(file.path(hfig.path,paste0("complex_volcano_sites")),
         type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(hustat, value="median",
@@ -217,7 +217,7 @@ huraas <- lapply(huens, function(x) tmtf$RAAS[tmtf$mane%in%x])
 ## RAAS statistics
 hustat <- listProfile(huraas, y=tmtf$RAAS, min=3)
 
-plotdev(file.path(pfig.path,paste0("complex_volcano_all")),
+plotdev(file.path(hfig.path,paste0("complex_volcano_all")),
         type=ftyp, res=300, width=4.4,height=4)
 par(mai=c(.5,.5,.25,.5), mgp=c(1.3,.25,0), tcl=-.25)
 res <- volcano(hustat, value="median",
@@ -244,6 +244,9 @@ head(tmtf$unique.site)
 tmtl <- split(tmtf$RAAS, tmtf$unique.site)
 tmtl <- listProfile(tmtl, y=tmtf$RAAS, use.test=use.test, min=3)
 tmts <- tmtf[!duplicated(tmtf$unique.site),]
+
+## TODO: calculate a moving average of RAAS in sliding window with 1 bp
+## 
 
 
 ### 3D STRUCTURE - WRITE CHIMERAX ATTRIBUTE FILES

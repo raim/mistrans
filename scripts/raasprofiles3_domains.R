@@ -231,5 +231,50 @@ plotProfiles(ovc,
              vcols=acols, vbrks=abrks,
              gcols=gcols)#, plot.all=TRUE)
 
+ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE)#, sign=1)
+frequent <- names(which(ovc$num.query[,1]>10))
+ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
+ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+
+omai <- c(.05,1.5,.5,.5)
+##CMAIL <- 1.54 ## commonly used between motif and domain figures, defined hered
+##              ## to fit x-axis label
+omai[2] <- CMAIL # .11*max(nchar(rownames(ovc$p.value)))
+
+plotProfiles(ovc,
+             fname=file.path(dfig.path,paste0("pfams_",SETID,"_frequent")),
+             mai=omai, ttcols=ttcols, value="median",
+             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=p.min, p.txt=p.txt,
+             ##llab="hmmer", rlab="CLAN",
+             ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             bg=NA, tot.cex=.8,
+             gcols=gcols, plot.all=TRUE, ffam=FONT)
+
+
+### PROTEIN RAAS PROFILE
+
+ovm <- raasProfile(x=tmtf, id="SAAP", 
+                   rows="name", cols="Dataset",
+                   col.srt=uds,
+                    bg=TRUE, value="RAAS", 
+                   use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=0)
+ovc <- sortOverlaps(ovm, axis=2, p.min=p.min, cut=TRUE)
+omai <- c(.8,1,.6,.6)
+
+plotProfiles(ovc,
+             fname=file.path(pfig.path,paste0("proteins_",SETID,"")),
+             mai=omai, ttcols=ttcols, value="median",
+             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=p.min, p.txt=p.txt,
+             ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols)#, plot.all=TRUE)
 
 ## TODO: repeat for unique SAAP/BP!
+## TODO: GO profiles

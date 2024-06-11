@@ -275,33 +275,6 @@ tmt.file <- file.path(proj.path,"originalData",
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
 
-## protein half-lives - @Mathieson2018
-math18.file <- file.path(mam.path,"originalData",
-                         "41467_2018_3106_MOESM5_ESM.xlsx")
-
-## 20S targets - @Pepelnjak2024
-pepe24.file <- file.path(mam.path,"originalData",
-                         "44320_2024_15_moesm1_esm.xlsx")
-
-##  @Watson2023 - T/osmo
-## NOTE/TODO: unused since this is data from mouse cells;
-## perhaps useful when mapped to human orthologs.
-w23prot.file <- file.path(mam.path,"originalData",
-                          "41586_2023_6626_MOESM4_ESM.xlsx")
-w23pprot.file <- file.path(mam.path,"originalData",
-                           "41586_2023_6626_MOESM5_ESM.xlsx")
-
-## @Yang2022: thermal stability prediction
-## https://structure-next.med.lu.se/ProTstab2/
-protstab.file <- file.path(mam.path,"originalData",
-                           "ProTstab2_human.csv")
-
-## @Savitski2014: Tracking cancer drugs in living cells by thermal
-## profiling of the proteome
-thermo.file <- file.path(mam.path, "originalData",
-                         "savitski14_tableS11.xlsx")
-thatp.file <- file.path(mam.path, "originalData",
-                         "savitski14_tableS3.xlsx")
 
 ## PROTEIN ID MAPPINGS
 
@@ -536,6 +509,11 @@ for ( val in rank.vals ) {
 colnames(rank.mat) <- paste0(colnames(rank.mat),".rank")
 hdat <- cbind(hdat, rank.mat)
 
+## protein length bins
+if ( interactive() ) hist(log10(hdat$len))
+loglen.bins <- cut(log10(hdat$len), breaks=seq(1,4,1))
+hdat$loglen.bins <- as.character(loglen.bins)
+
 ### MAP PROTEIN LEVEL INFO TO TMT Data
 idx.old <- match(tmtf$SAAP, hdat$SAAP)
 idx <- match(paste(tmtf$BP, tmtf$SAAP), paste(hdat$BP, hdat$SAAP))
@@ -594,6 +572,7 @@ tmtf$DisoRDPbind.bins <- hdat$DisoRDPbind.bins[idx]
 tmtf$MMSeq2.bins <- hdat$MMSeq2.bins[idx]
 tmtf$ASAquick.bins <- hdat$ASAquick.bins[idx]
 tmtf$SCRIBER.bins <- hdat$SCRIBER.bins[idx]
+tmtf$loglen.bins <- hdat$loglen.bins[idx]
 
 ## ranks of structural data
 tmtf$iupred3.rank <- hdat$iupred3.rank[idx]
