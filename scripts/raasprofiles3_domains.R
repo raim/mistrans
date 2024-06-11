@@ -13,6 +13,10 @@ source("~/work/mistrans/scripts/saap_utils.R")
 if ( !exists("tmtf") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
+## additional data
+goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
+
+
 dfig.path <- file.path(fig.path,"domains")
 dir.create(dfig.path, showWarnings=FALSE)
 
@@ -28,9 +32,10 @@ clans <- clans[clans[,1]!="",]
 rownames(clans) <- clans[,1]
 
 
-## tag unique - TODO: in init?
-tmtf$BP.SAAP <- paste0(tmtf$BP,".",tmtf$SAAP)
+## TODO: do this in and merge with raasprofiles3_init.R
 
+## tag unique 
+tmtf$BP.SAAP <- paste0(tmtf$BP,".",tmtf$SAAP)
 ## add "none" class for AAS outside pfam/clans
 tmtf$clan.ebi[tmtf$clan.ebi==""] <- "No_pfam" 
 tmtf$pfam.ebi[tmtf$pfam.ebi==""] <- "No_pfam" 
@@ -56,7 +61,7 @@ dnms <- clans[sub("\\..*","",colnames(pmat)),2]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
+cle.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
@@ -64,7 +69,7 @@ ovd <- raasProfile(x=tmtf, id="BP.SAAP",
                    xlab=xl.raas, verb=0)
 
 ## cut significant
-ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
+ovc <- sortOverlaps(cle.ovl, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -95,14 +100,14 @@ dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
+pfe.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
+ovc <- sortOverlaps(pfe.ovl, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -135,14 +140,14 @@ dnms <- clans[sub("\\..*","",colnames(pmat)),2]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
+cl.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE) #, sign=1)
+ovc <- sortOverlaps(cl.ovl, p.min=p.txt, cut=TRUE) #, sign=1)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -157,7 +162,7 @@ plotProfiles(ovc,
              gcols=gcols)#, plot.all=TRUE)
 
 ## only high RAAS
-ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE, sign=1)
+ovc <- sortOverlaps(cl.ovl, p.min=p.txt, cut=TRUE, sign=1)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -172,7 +177,7 @@ plotProfiles(ovc,
              gcols=gcols, plot.all=FALSE)
 
 ## filter and sort
-ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE)#, sign=1)
+ovc <- sortOverlaps(cl.ovl, p.min=p.dot, cut=TRUE)#, sign=1)
 frequent <- names(which(ovc$num.query[,1]>10))
 ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
 ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
@@ -210,14 +215,14 @@ dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-ovd <- raasProfile(x=tmtf, id="BP.SAAP", 
+pf.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
                    bg=TRUE, value="RAAS", 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
 
-ovc <- sortOverlaps(ovd, p.min=p.txt, cut=TRUE)
+ovc <- sortOverlaps(pf.ovl, p.min=p.txt, cut=TRUE)
 omai <- c(.8,1.5,.6,.6)
 omai[2] <- .1*max(nchar(rownames(ovc$p.value)))
 
@@ -231,7 +236,7 @@ plotProfiles(ovc,
              vcols=acols, vbrks=abrks,
              gcols=gcols)#, plot.all=TRUE)
 
-ovc <- sortOverlaps(ovd, p.min=p.dot, cut=TRUE)#, sign=1)
+ovc <- sortOverlaps(pf.ovl, p.min=p.dot, cut=TRUE)#, sign=1)
 frequent <- names(which(ovc$num.query[,1]>10))
 ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
 ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
@@ -256,25 +261,228 @@ plotProfiles(ovc,
 
 ### PROTEIN RAAS PROFILE
 
-ovm <- raasProfile(x=tmtf, id="SAAP", 
+pr.ovl <- raasProfile(x=tmtf, id="SAAP", 
                    rows="name", cols="Dataset",
                    col.srt=uds,
                     bg=TRUE, value="RAAS", 
                    use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
-                    verb=0)
-ovc <- sortOverlaps(ovm, axis=2, p.min=p.min, cut=TRUE)
-omai <- c(.8,1,.6,.6)
+                   verb=0)
 
+ovc <- sortOverlaps(pr.ovl, axis=2, p.min=p.min, cut=TRUE)
+omai <- c(.8,1,.6,.6)
 plotProfiles(ovc,
-             fname=file.path(pfig.path,paste0("proteins_",SETID,"")),
+             fname=file.path(dfig.path,paste0("proteins_",SETID,"")),
              mai=omai, ttcols=ttcols, value="median",
              dot.sze=dot.sze, p.dot=p.dot,
              p.min=p.min, p.txt=p.txt,
              ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
-             gcols=gcols)#, plot.all=TRUE)
+             gcols=gcols, ffam=FONT)#, plot.all=TRUE)
 
 ## TODO: repeat for unique SAAP/BP!
-## TODO: GO profiles
+
+
+### GO RAAS Profiles
+
+## get GOslim table for use with clusterAnnotation
+got <- parseAnnotationList(genes[,c("ID","GOslim")]) 
+## replace GO IDs by terms
+terms <- read.delim(goslim.file)
+trms <- terms[,2]
+names(trms) <- terms[,1]
+colnames(got) <- trms[colnames(got)]
+
+## shorten names
+colnames(got) <- sub("plasma membrane", "PM",
+                     sub("binding", "bnd.",
+                         sub("templated", "templ.",
+                             sub("regulation", "reg.",
+                                 sub("transcription", "transcr.",
+                                     sub("localization","local.",
+                                         colnames(got)))))))
+
+## REDUCE AGAIN to use only available proteins with RAAS
+## TODO: define proper background set!
+local <- FALSE
+if ( local ) {
+    ##gen.cls <- gen.cls[gidx,]
+    ##got <- got[gidx,]
+}
+
+go.ovl <- raasProfile(x=tmtf, id="SAAP", 
+                    rows=got[tmtf$gene,], cols="Dataset",
+                    bg=TRUE, value="RAAS", 
+                    col.srt=uds,
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=0)
+
+ovc <- sortOverlaps(go.ovl, axis=2, p.min=p.min, sign=1, cut=TRUE)
+omai <- c(.8,3.5,.6,.6)
+plotProfiles(ovc,
+             fname=file.path(dfig.path,paste0("go_",SETID,"")),
+             mai=omai, ttcols=ttcols, value="median",
+             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=p.min, p.txt=p.txt,
+             ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam="sans")#, plot.all=TRUE)
+
+
+## collect all, and do common plot
+## pf.ovl, cl.ovl, pr.ovl, go.ovl.
+
+## cut at minimal p-value
+cids <- c("pfe","cle","pf","cl","pr","go")
+p.tgt <- 1e-15
+fmin <- 20
+omai <- c(.8,CMAIL,.5,.5)
+for ( cid in cids ) {
+
+    ovf <- get(paste0(cid, ".ovl"))
+    did <- paste0("type_", cid, "_")
+
+    ## p.txt, both 
+    ovc <- sortOverlaps(ovf, p.min=p.txt, cut=TRUE)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_ptxt"))
+
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+
+    
+    ## p.min, both & frequent
+    ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_pmin_frequent"))
+    ## .. and FREQUENTLY MEASURED
+    frequent <- names(which(ovc$num.query[,1]> fmin))
+    ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
+      
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+
+    ## p.min, both 
+    ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_pmin"))
+    
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+
+    ## p.min, high RAAS
+    ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE, sign=1)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_pmin_high"))
+    
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+
+    ## p.tgt, both 
+    ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt"))
+    
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+
+    ## p.tgt, high RAAS
+    ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE, sign=1)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt_high"))
+    
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    
+  
+    
+    ## MOST RESTRICTIVE
+
+    ## ptgt, high RAAS
+    ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE, sign=1)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_frequent"))
+    ## .. and FREQUENTLY MEASURED
+    frequent <- names(which(ovc$num.query[,1]> fmin))
+    ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
+    ## and present in all data sets
+    ## sort rest by lower cutoff p-value
+    ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+        
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT)#, plot.all=TRUE)
+
+    ## ptgt, high RAAS
+    ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE, sign=1)
+    fname <- file.path(dfig.path,paste0(did,SETID,"_all"))
+    ## .. and FREQUENTLY MEASURED
+    all <- rownames(ovc$count)[apply(ovc$count, 1, function(x) all(x>0))]
+    ovc <- sortOverlaps(ovc, srt=all, cut=TRUE)
+    ## and present in all data sets
+    ## sort rest by lower cutoff p-value
+    ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+        
+    lmai <- omai
+    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+    plotProfiles(ovc, fname=fname,
+                 mai=lmai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=p.dot,
+                 p.min=p.min, p.txt=p.txt,
+                 ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT)#, plot.all=TRUE)
+    
+}

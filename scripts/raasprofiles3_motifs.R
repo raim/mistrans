@@ -826,7 +826,7 @@ for ( i in seq_along(rows) ) {
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows="iupred3.bins", cols="MMSeq2.bins",
-                    row.srt=rev(levels(iupred3.bins)),
+                    row.srt=c(rev(levels(iupred3.bins)),"na"),
                     col.srt=c("na", levels(MMSeq2.bins)),
                     bg=FALSE, value="RAAS", 
                     use.test=use.test, do.plots=FALSE,
@@ -841,8 +841,9 @@ plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
-polygon(y=c(1, nrow(ovls$p.value), nrow(ovls$p.value)),
+polygon(y=c(2, nrow(ovls$p.value), nrow(ovls$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
 mtext("disorder",2, 1.3)
 polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
         y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
@@ -856,13 +857,13 @@ ovl <- clusterCluster(hdat$iupred3.bins, hdat$MMSeq2.bins,
                       cl2.srt=c("na", levels(MMSeq2.bins)),
                       alternative="two.sided")
 omai <- c(.5,.5,.5,.5)
-nw <- ncol(ovl$p.value)*.3 + omai[2] + omai[4]
+nw <- ncol(ovl$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
-plotdev(file.path(mfig.path,paste0("classes_conservation_disordered_overlap")),
+plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_overlap")),
         height=nh, width=nw, res=300)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, axis=NA,
-             show.total=TRUE, text.cex=.7)
+             show.total=TRUE, text.cex=.5)
 polygon(y=c(2, nrow(ovl$p.value), nrow(ovl$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",2, 1.5)
@@ -901,7 +902,7 @@ dev.off()
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,rows], cols="iupred3.bins",
-                    col.srt=levels(iupred3.bins),
+                    col.srt=c("na",levels(iupred3.bins)),
                     bg=FALSE, value="RAAS", 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,

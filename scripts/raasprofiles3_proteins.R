@@ -122,9 +122,10 @@ site$n <- nsites
 
 ### COLLECT PROTEIN DATA
 
-## PROTEIN ABUNDANCES
-pabund <- sub("\\[","", sub("\\]","", tmtf$Razor.protein.precursor.intensity))
-pabund <- as.numeric(pabund)
+#### TODO: why do we have n=747 at exon but n=713 for
+#### the log intensity plot on exon/intron?
+
+## PROTEIN ABUNDANCES via Razor.protein.precursor.intensity
 
 ## remove brackets
 alst <- sub("\\[","", sub("\\]","", tmtf$Razor.protein.precursor.intensity))
@@ -575,7 +576,7 @@ dev.off()
 plotdev(file.path(pfig.path,paste0("protein_iupred3_all")),
         type=ftyp, res=300, width=corW, height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
-plotCor(ptstat$iupred3, ptstat$median, ylim=range(pbstat$median),
+plotCor(ptstat$iupred3, ptstat$median, ylim=range(ptstat$median),
         ylab=xl.prota, xlab="disordered score, IUPred3",
         axes=FALSE, title=TRUE, cor.legend=FALSE)
 axis(1)
