@@ -598,7 +598,12 @@ dev.off()
 ## TODO: define motifs in bdat and map to tmtf
 ## MAP protein level info to TMT Data
 
+do.unique <- TRUE
+
 tmtm <- tmtf
+
+if ( do.unique )
+    tmtm <- tmtf[!duplicated(tmtf$unique), ]
 
 ## TODO: is this filtering necessary??
 TIDX <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
@@ -772,8 +777,8 @@ plotProfiles(ovs,
 CLS <- classes[,c(ssrt, msrt)]
 
 ## CORRELATION OF MEASURES
-image_matrix(cor(classes), col=ttcols, breaks=seq(-1,1,length=length(ttcols)+1),
-             axis=1:2)
+image_matrix(cor(classes), col=ttcols,
+             breaks=seq(-1,1,length=length(ttcols)+1), axis=1:2)
 
 
 
