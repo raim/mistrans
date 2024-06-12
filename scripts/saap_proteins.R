@@ -408,6 +408,8 @@ pid=names(which(pnms=="KRAS")) # several adjacent T:S from different BP
 pid=names(which(pnms=="S100A8"))
 pids=names(pnms)[grep("S100",pnms)]
 
+## TODO: track PSMB5 - why missing from tmtf in RAAS profile scripts?
+pid=names(which(pnms=="PSMB5"))
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #

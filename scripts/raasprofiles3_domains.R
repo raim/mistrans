@@ -20,7 +20,21 @@ goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 dfig.path <- file.path(fig.path,"domains")
 dir.create(dfig.path, showWarnings=FALSE)
 
-p.show <- p.txt #1e-3
+## only use unique BP/SAAP per Dataset
+do.unique <- TRUE # FALSE
+
+tmtu <- tmtf
+value <- "RAAS"
+
+## unique BP/SAAP/Dataset
+if ( do.unique ) {
+    ## REDUCE TMT SET TO UNIQUE BP/SAAP/Dataset
+    ## calculated in _init.R
+    tmtu <- tmtf[!duplicated(tmtf$unique),]
+    dfig.path <- file.path(dfig.path,"unique")
+    dir.create(dfig.path, showWarnings=FALSE)
+    value <- "RAAS.median"
+} else 
 
 ## TIGHT PLOT FOR MAIN
 p.tgt <- 1e-15 # tighter cutoff for GO analysis
@@ -41,23 +55,24 @@ rownames(clans) <- clans[,1]
 ## TODO: do this in and merge with raasprofiles3_init.R
 
 ## tag unique 
-tmtf$BP.SAAP <- paste0(tmtf$BP,".",tmtf$SAAP)
+tmtu$BP.SAAP <- paste0(tmtu$BP,".",tmtu$SAAP)
 ## add "none" class for AAS outside pfam/clans
-tmtf$clan.ebi[tmtf$clan.ebi==""] <- "No_pfam" 
-tmtf$pfam.ebi[tmtf$pfam.ebi==""] <- "No_pfam" 
-tmtf$clan[tmtf$clan==""] <- "No_pfam" 
-tmtf$pfam[tmtf$pfam==""] <- "No_pfam" 
+tmtu$clan.ebi[tmtu$clan.ebi==""] <- "No_pfam" 
+tmtu$pfam.ebi[tmtu$pfam.ebi==""] <- "No_pfam" 
+tmtu$clan[tmtu$clan==""] <- "No_pfam" 
+tmtu$pfam[tmtu$pfam==""] <- "No_pfam" 
+
+### GENERATE MEDIAN RAAS TABLES
 
 
-## TODO: replace by clan/pfam names
 
 ## PFAM CLANS, EBI
 
-plst <- strsplit(tmtf$clan.ebi,";")
+plst <- strsplit(tmtu$clan.ebi,";")
 dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtu))
 colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
@@ -67,9 +82,9 @@ dnms <- clans[sub("\\..*","",colnames(pmat)),2]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-cle.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
+cle.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
-                   bg=TRUE, value="RAAS", 
+                   bg=TRUE, value=value, 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
@@ -92,11 +107,11 @@ plotProfiles(ovc,
 
 ## PFAMS, EBI
 
-plst <- strsplit(tmtf$pfam.ebi,";")
+plst <- strsplit(tmtu$pfam.ebi,";")
 dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtu))
 colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
@@ -106,9 +121,9 @@ dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-pfe.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
+pfe.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
-                   bg=TRUE, value="RAAS", 
+                   bg=TRUE, value=value, 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
@@ -132,11 +147,11 @@ plotProfiles(ovc,
 
 ## PFAM CLANS, own
 
-plst <- strsplit(tmtf$clan,";")
+plst <- strsplit(tmtu$clan,";")
 dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtu))
 colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
@@ -146,9 +161,9 @@ dnms <- clans[sub("\\..*","",colnames(pmat)),2]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-cl.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
+cl.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
-                   bg=TRUE, value="RAAS", 
+                   bg=TRUE, value=value, 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
@@ -207,11 +222,11 @@ plotProfiles(ovc,
 
 ## PFAMS, own
 
-plst <- strsplit(tmtf$pfam,";")
+plst <- strsplit(tmtu$pfam,";")
 dnms <- unique(unlist(plst))
 
 ## generate boolean matrix of pfam associations
-pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtf))
+pmat <- matrix(FALSE, ncol=length(dnms), nrow=nrow(tmtu))
 colnames(pmat) <- dnms
 for ( i in 1:length(plst) ) 
     pmat[i,plst[[i]]] <- TRUE
@@ -221,9 +236,9 @@ dnms <- pfams[sub("\\..*","",colnames(pmat)),3]
 dnms[is.na(dnms)] <- colnames(pmat)[is.na(dnms)]
 colnames(pmat) <- dnms
 
-pf.ovl <- raasProfile(x=tmtf, id="BP.SAAP", 
+pf.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
                    rows=pmat, cols="Dataset",
-                   bg=TRUE, value="RAAS", 
+                   bg=TRUE, value=value, 
                    col.srt=uds,
                    use.test=use.test, 
                    xlab=xl.raas, verb=0)
@@ -267,10 +282,10 @@ plotProfiles(ovc,
 
 ### PROTEIN RAAS PROFILE
 
-pr.ovl <- raasProfile(x=tmtf, id="SAAP", 
+pr.ovl <- raasProfile(x=tmtu, id="SAAP", 
                    rows="name", cols="Dataset",
                    col.srt=uds,
-                    bg=TRUE, value="RAAS", 
+                    bg=TRUE, value=value, 
                    use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                    verb=0)
@@ -317,9 +332,9 @@ if ( local ) {
     ##got <- got[gidx,]
 }
 
-go.ovl <- raasProfile(x=tmtf, id="SAAP", 
-                    rows=got[tmtf$gene,], cols="Dataset",
-                    bg=TRUE, value="RAAS", 
+go.ovl <- raasProfile(x=tmtu, id="SAAP", 
+                    rows=got[tmtu$gene,], cols="Dataset",
+                    bg=TRUE, value=value, 
                     col.srt=uds,
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
@@ -365,98 +380,110 @@ for ( cid in cids ) {
 
     ## p.txt, both 
     ovc <- sortOverlaps(ovf, p.min=p.txt, cut=TRUE)
-    fname <- file.path(dfig.path,paste0(did,SETID,"_ptxt"))
-
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
-
+    if ( nrow(ovc$p.value)>0 ) {        
+        fname <- file.path(dfig.path,paste0(did,SETID,"_ptxt"))
+        
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
+    
     
     ## p.min, both & frequent
     ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE)
     fname <- file.path(dfig.path,paste0(did,SETID,"_pmin_frequent"))
     ## .. and FREQUENTLY MEASURED
     frequent <- names(which(ovc$num.query[,1]> fmin))
-    ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
-      
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    if ( nrow(ovc$p.value)>0 ) {        
+        ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
+        
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
 
     ## p.min, both 
     ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE)
-    fname <- file.path(dfig.path,paste0(did,SETID,"_pmin"))
+    if ( nrow(ovc$p.value)>0 ) {        
+        fname <- file.path(dfig.path,paste0(did,SETID,"_pmin"))
+        
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
     
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
-
     ## p.min, high RAAS
     ovc <- sortOverlaps(ovf, p.min=p.min, cut=TRUE, sign=1)
-    fname <- file.path(dfig.path,paste0(did,SETID,"_pmin_high"))
+    if ( nrow(ovc$p.value)>0 ) {        
+
+        fname <- file.path(dfig.path,paste0(did,SETID,"_pmin_high"))
     
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
 
     ## p.tgt, both 
     ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE)
-    fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt"))
+    if ( nrow(ovc$p.value)>0 ) {        
+        fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt"))
     
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
-
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
+    
     ## p.tgt, high RAAS
     ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE, sign=1)
-    fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt_high"))
-    
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
-    
+    if ( nrow(ovc$p.value)>0 ) {        
+        fname <- file.path(dfig.path,paste0(did,SETID,"_ptgt_high"))
+        
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
+    }
   
     
     ## MOST RESTRICTIVE
@@ -467,21 +494,22 @@ for ( cid in cids ) {
     ## .. and FREQUENTLY MEASURED
     frequent <- names(which(ovc$num.query[,1]> fmin))
     ovc <- sortOverlaps(ovc, srt=frequent, cut=TRUE)
-    ## and present in all data sets
-    ## sort rest by lower cutoff p-value
-    ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+    if ( nrow(ovc$p.value)>0 ) {        
+        ## and present in all data sets
+        ## sort rest by lower cutoff p-value
+        ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
         
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT)#, plot.all=TRUE)
-
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT)#, plot.all=TRUE)
+    }
     ## TIGHTEST FOR MAIN: ptgt, high RAAS
 
     p.tight <- p.min
@@ -495,17 +523,18 @@ for ( cid in cids ) {
     ovc <- sortOverlaps(ovc, srt=all, cut=TRUE)
     ## and present in all data sets
     ## sort rest by lower cutoff p-value
-    ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+    if ( nrow(ovc$p.value)>0 ) {
+        ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
         
-    lmai <- omai
-    lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
-    plotProfiles(ovc, fname=fname,
-                 mai=lmai, ttcols=ttcols, value="median",
-                 dot.sze=dot.sze, p.dot=p.dot,
-                 p.min=p.min, p.txt=p.txt,
-                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
-                 mtxt="", mtxt.line=2.3,
-                 vcols=acols, vbrks=abrks,
-                 gcols=gcols, ffam=FONT)#, plot.all=TRUE)
-    
+        lmai <- omai
+        lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+        plotProfiles(ovc, fname=fname,
+                     mai=lmai, ttcols=ttcols, value="median",
+                     dot.sze=dot.sze, p.dot=p.dot,
+                     p.min=p.min, p.txt=p.txt,
+                     rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
+                     mtxt="", mtxt.line=2.3,
+                     vcols=acols, vbrks=abrks,
+                     gcols=gcols, ffam=FONT)#, plot.all=TRUE)
+     }
 }

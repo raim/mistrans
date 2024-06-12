@@ -349,6 +349,10 @@ dir.create(dpath, showWarnings=FALSE)
 dat <- read.delim(in.file)
 tmtf <- read.delim(tmt.file)
 
+## investigating some loss
+##tmtf[which(dat$BP=="GMGLSMGTMICGWDK"),]
+##dat[which(dat$BP=="GMGLSMGTMICGWDK"),]
+
 ## convert to logical
 tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 
@@ -405,6 +409,7 @@ hdat <- hdat[which(hdat$match=="good"),]
 ## remove excluded
 cat(paste("removing", sum(!tmtf$keep, na.rm=TRUE),
           "tagged as false positive on TMT level\n"))
+
 tmtf <- tmtf[tmtf$keep,]
 ## exclude NA or Inf
 rm <- is.na(tmtf$RAAS) | is.infinite(tmtf$RAAS)
@@ -643,7 +648,6 @@ if ( healthy ) {
 if ( FALSE ) {
     ovl <- clusterCluster(cl1=tmtf$extracellular, cl2=tmtf$albumin)
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
-    dev.off()
 }
 
 ### FILTER

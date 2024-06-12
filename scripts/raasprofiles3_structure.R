@@ -30,15 +30,15 @@ nms["DisoRDPbind"] <- "binding"
 nms["MMSeq2"] <- "conserved"
 for ( val in rank.vals ) {
     rows <- paste0(val,".bins")
-    bsrt <- levels(get(rows))
+    bsrt <- c("na",levels(get(rows)))
 
     ovw <- raasProfile(x=tmtf, id="SAAP", 
-                   rows=rows, cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=rev(bsrt),
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0)
+                       rows=rows, cols="Dataset",
+                       bg=TRUE, value="RAAS", row.srt=rev(bsrt),
+                       col.srt=uds,
+                       use.test=use.test, do.plots=FALSE,
+                       xlab=xl.raas,
+                       verb=0)
 
     mmai <- c(.05,.5,.05,.7)
     nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
@@ -55,8 +55,9 @@ for ( val in rank.vals ) {
     axis(4, at=nrow(ovw$p.value):1,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
          las=2, family="monospace")
-    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
+    polygon(y=c(2, nrow(ovw$p.value), nrow(ovw$p.value)),
             x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+    axis(2, at=1, label="na", las=2)
     dev.off()
 
 }
@@ -66,14 +67,14 @@ for ( val in rank.vals ) {
 for ( val in rank.vals ) {
     rows <- paste0(val,".rank")
     ovw <- raasProfile(x=tmtf, id="SAAP", 
-                   rows=rows, cols="Dataset",
-                   bg=TRUE, value="RAAS", row.srt=4:1,
-                   col.srt=uds,
-                   use.test=use.test, do.plots=FALSE,
-                   xlab=xl.raas,
-                   verb=0, 
-                   fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
-
+                       rows=rows, cols="Dataset",
+                       bg=TRUE, value="RAAS", row.srt=c(4:1,"na"),
+                       col.srt=uds,
+                       use.test=use.test, do.plots=FALSE,
+                       xlab=xl.raas,
+                       verb=0, 
+                       fname=file.path(dpath,paste0("iupred3_",SETID,"_")))
+    
     
     mmai <- c(.05,.5,.05,.7)
     nw <- ncol(ovw$p.value)*.2 + mmai[2] + mmai[4]
@@ -90,8 +91,9 @@ for ( val in rank.vals ) {
     axis(4, at=nrow(ovw$p.value):1,
          labels=format(ovw$num.query[,1], big.mark=",", trim=TRUE),
          las=2, family="monospace")
-    polygon(y=c(1, nrow(ovw$p.value), nrow(ovw$p.value)),
+    polygon(y=c(2, nrow(ovw$p.value), nrow(ovw$p.value)),
             x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+    axis(2, at=1, label="na", las=2)
     dev.off()
 }
 
@@ -219,7 +221,7 @@ plotProfiles(ovw,
              gcols=gcols)
 
 ## MMSeq2
-iusrt <- levels(MMSeq2.bins)
+iusrt <- c("na",levels(MMSeq2.bins))
 ovw <- raasProfile(x=tmtf, id="SAAP", 
                    rows="MMSeq2.bins", cols="Dataset",
                    bg=TRUE, value="RAAS", row.srt=rev(iusrt),

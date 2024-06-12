@@ -208,7 +208,7 @@ classes <- cbind(
     "Q:x"=bdat$from=="Q",
     "Q:G"=bdat$fromto=="Q:G",
     "Q:A"=bdat$fromto=="Q:A",
-    KRAQ=kraq,
+    KRAQ_d=kraq,
     KRGQ=krgq,
     KRxQ=krxq,
     KRAQ_all=kraqa,
@@ -228,7 +228,7 @@ classes <- cbind(
     "[AG]:[AG]n1"= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
     "x:[AG]n1"=bdat$to%in%c("G","A") & bdat$site%in%1,
     "x:[AG]n2"=bdat$to%in%c("G","A") & bdat$site%in%2:3,
-    "x:[AG]n3"=bdat$to%in%c("G","A") & bdat$site%in%1:3,
+    "KRAQ"=bdat$to%in%c("G","A") & bdat$site%in%1:3,
     "x:[AG]"  =bdat$to%in%c("G","A"),
 
     center= at==paste0("N",MIDPEP),
@@ -310,7 +310,7 @@ names(rngs) <- colnames(classes)
 
 rngs$"Q:G" <- as.character(-4:1)
 rngs$"Q:A" <- as.character(-3:1)
-rngs$KRAQ <- as.character(-4:4)
+rngs$KRAQ_d <- as.character(-4:4)
 
 ### LONG RANGE
 
@@ -322,7 +322,7 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
 
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
-rngs$"x:[AG]n3" <- as.character(-3:0)
+rngs$"KRAQ" <- as.character(-3:0)
 rngs$"x:[AG]" <- as.character(-3:1)
 
 ## suppress p-value indicators
@@ -335,6 +335,7 @@ opval$MxM <- opval$WxW <- opval$CxC <- as.character(c(-1,1))
 ## suppress on incorporated side only
 npval <- opval
 npval[grep("x:\\[AG\\]",names(npval))] <- "0"
+npval["KRAQ"] <- "0"
 
 ## use our internal AA colors
 ASN2 <- ASN
@@ -497,8 +498,8 @@ for ( i in 1:ncol(classes) ) {
         
         ## figure heights
         ht <- 3
-        omai <- c(.15,.25,.25,.05)
-        nmai <- c(.25,.25,.15,.05)
+        omai <- c(.15,.3,.25,.05)
+        nmai <- c(.25,.3,.15,.05)
 
         ## heights
         htn <- ht/2 + nmai[1] + nmai[3]
@@ -508,6 +509,7 @@ for ( i in 1:ncol(classes) ) {
         wd <- .4*length(cols) + nmai[2] + nmai[4]
         
         dfop$ylab <- "JS divergence"
+
         plotdev(file.path(tmp.path,paste0("logos_", id, "")),
                 height=hto+htn , width=wd, res=300, type=ftyp)
         layout(t(t(1:2)), heights=c(hto, htn))
@@ -515,26 +517,36 @@ for ( i in 1:ncol(classes) ) {
         ## encoded
         par(mai=omai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mxo)
+        ## TODO: custom axis
+        xat <- pretty(par("usr")[3:4])
+        xlb <- c("0",xat[length(xat)-2])
+        xat <- c(0,xat[length(xat)-2])
+        axis(2, cex.axis=1.2, at=xat, labels=xlb)
+        axis(2, at=pretty(par("usr")[3:4]), labels=FALSE)
         axis(1, at=1:length(cols), labels=FALSE)
-        axis(2, cex.axis=1.2)
         figlabel(paste0("n=",sum(filt),"  "),
-                 pos="topright", font=2, cex=1.1)
-        figlabel(lb, pos="topleft", cex=1.3, family=FONT)
+                 pos="topright", font=1, cex=1.3)
+        figlabel(lb, pos="topleft", cex=1.3, family=FONT, font=2)
         diffLogo_addPvals(dfop, ymin=mxo, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
         
         ## incorporated
         par(mai=nmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mxn)
-        axis(1, at=1:length(cols), labels=axlab, cex.axis=1.2)
-        axis(2, cex.axis=1.2)
+        xat <- pretty(par("usr")[3:4])
+        xlb <- c("0",xat[length(xat)-1])
+        xat <- c(0,xat[length(xat)-1])
+        axis(2, cex.axis=1.2, at=xat, labels=xlb)
+        axis(2, at=pretty(par("usr")[3:4]), labels=FALSE)
         ##mtext("JS divergence", 2, 1.3)
+        axis(1, at=1:length(cols), labels=axlab, cex.axis=1.2)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels="AAS", las=1, cex.axis=1.2)
         ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
         diffLogo_addPvals(dfnp, ymin=mxn, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
         dev.off()
+
     }
 }
 
@@ -549,13 +561,20 @@ htn <- ht/2 + nmai[1] + nmai[3]
 hto <- ht/2 + omai[1] + omai[3]
  
 plotdev(file.path(mfig.path,paste0("logos_ylab")),
-        height=hto+htn , width=.6, res=300, type=ftyp)
+        height=hto+htn , width=.7, res=300, type=ftyp)
 par(mai=ymai)
 plot(1,1, axes=FALSE, col=NA, col.axis=NA)
-text(1.28,1,label="JS divergence", xpd=TRUE,srt=90, cex=1.3)
-text(0.775,1.25,label="encoded", xpd=TRUE,srt=90, cex=1.7)
-text(0.8,.775,label="incorporated", xpd=TRUE,srt=90, cex=1.7)
+text(1.25,1,label="JS divergence", xpd=TRUE, srt=90, cex=1.5)
+rect(xleft=.6, ybottom=1.02, xright=1.05, ytop=par("usr")[2],
+     xpd=TRUE, col="darkgray")
+text(0.8,1.22,label="encoded", xpd=TRUE,srt=90, cex=1.6,
+     col="white", font=2)
+rect(xleft=.6, ybottom=par("usr")[3],
+     xright=1.05, ytop=1.02, xpd=TRUE, col="darkgray")
+text(0.82,.79,label="incorporated", xpd=TRUE,srt=90, cex=1.6, 
+     col="white", font=2)
 dev.off()
+
 
 
 plotdev(file.path(mfig.path,"protein_location_G"), ftyp,
@@ -713,7 +732,7 @@ plotProfiles(ovm,
 
 ## SELECTED MOTIS FOR MAIN
 msrt <- c(##"Q:G",
-          "x:[AG]n3",
+          "KRAQ",
           "CCxCC",
           "MMxMM",
           "WWxWW")
@@ -874,6 +893,28 @@ polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
 axis(2, at=1, label="na", las=2)
 axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
+dev.off()
+
+## full distributions for conserved and disordred
+library(vioplot)
+plotdev(file.path(mfig.path,
+                  paste0("classes_conservation_disorder_raas_violin")),
+        height=4, width=3, res=300)
+par(mfrow=c(2,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
+vioplot(tmtf$RAAS ~ factor(tmtf$MMSeq2.bins,levels=c("na",levels(MMSeq2.bins))),
+        ylab=xl.raas, xlab="conservation", axes=FALSE, 
+        col.axis="#ffffff", col.ticks="#ffffff")
+axis(2)
+axis(1, at=1, label="na", las=2)
+polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
+        y=c(-7.4,-7.8,-7), xpd=TRUE, col="#aaaaaa", border=1)
+vioplot(tmtf$RAAS ~ factor(tmtf$iupred3.bins,
+                           levels=c("na",levels(iupred3.bins))),
+        ylab=xl.raas, xlab="disorder", axes=FALSE, col.axis="#ffffff")
+polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
+        y=c(-7.4,-7.8,-7), xpd=TRUE, col="#aaaaaa", border=1)
+axis(1, at=1, label="na", las=2)
+axis(2)
 dev.off()
 
 ## motifs vs cons
