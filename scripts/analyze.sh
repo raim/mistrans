@@ -127,6 +127,8 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
 
+R --vanilla < ${THIS}/scripts/halflives.R
+
 ## all protein profiles
 R --vanilla <  ${THIS}/scripts/saap_proteins.R
 

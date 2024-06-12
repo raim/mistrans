@@ -141,9 +141,7 @@ alst <- unlist(lapply(alst, mean))
 alst <- split(alst, tmtf$ensembl)
 alst <- lapply(alst, function(x) x[!is.na(x)])
 
-alst <- lapply(alst, function(x) x[x!=""])
-alst <- lapply(alst, function(x) sub("\\[","", sub("\\]","",x)))
-alst <- unlist(lapply(alst, as.numeric))
+alst <- lapply(alst, as.numeric)
 
 barplot(table(lengths(alst)))
 

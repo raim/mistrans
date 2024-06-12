@@ -22,6 +22,12 @@ dir.create(dfig.path, showWarnings=FALSE)
 
 p.show <- p.txt #1e-3
 
+## TIGHT PLOT FOR MAIN
+p.tgt <- 1e-15 # tighter cutoff for GO analysis
+p.go <- 1e-15 # tighter cutoff for GO analysis
+
+fmin <- 20 # minimal number of available RAAS measurements
+
 ## load additional data
 ## pfam clans and readable names
 clans.file <- file.path(mam.path,"originalData", "pfam", "Pfam-A.clans.tsv.gz")
@@ -337,8 +343,20 @@ plotProfiles(ovc,
 
 ## cut at minimal p-value
 cids <- c("pfe","cle","pf","cl","pr","go")
-p.tgt <- 1e-15
-fmin <- 20
+names(cids) <- cids
+cnms <- cids
+cnms["cle"] <- "CLAN/EBI"
+cnms["pfe"] <- "PFAM/EBI"
+cnms["cl"] <- "CLAN"
+cnms["pf"] <- "PFAM"
+cnms["pr"] <- "protein"
+cnms["go"] <- "GOslim"
+
+## TODO: why 102 in PSMA1 and in Proteasome PFAM,
+## although there are others PSMA4/5/6/... with the same fold,
+## by accident with the Q:G outside this domain?
+
+source("~/programs/segmenTools/R/clusterTools.R")
 omai <- c(.8,CMAIL,.5,.5)
 for ( cid in cids ) {
 
@@ -355,7 +373,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -374,7 +392,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -389,7 +407,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -404,7 +422,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -419,7 +437,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -434,7 +452,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT, bg=NA)#, plot.all=TRUE)
@@ -459,13 +477,18 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT)#, plot.all=TRUE)
 
-    ## ptgt, high RAAS
-    ovc <- sortOverlaps(ovf, p.min=p.tgt, cut=TRUE, sign=1)
+    ## TIGHTEST FOR MAIN: ptgt, high RAAS
+
+    p.tight <- p.min
+    if ( cid=="go" )
+        p.tight <- p.go
+    
+    ovc <- sortOverlaps(ovf, p.min=p.tight, cut=TRUE, sign=1)
     fname <- file.path(dfig.path,paste0(did,SETID,"_all"))
     ## .. and FREQUENTLY MEASURED
     all <- rownames(ovc$count)[apply(ovc$count, 1, function(x) all(x>0))]
@@ -480,7 +503,7 @@ for ( cid in cids ) {
                  mai=lmai, ttcols=ttcols, value="median",
                  dot.sze=dot.sze, p.dot=p.dot,
                  p.min=p.min, p.txt=p.txt,
-                 ftyp=ftyp,
+                 rlab=ovc$p.min, llab=cnms[cid], ftyp=ftyp,
                  mtxt="", mtxt.line=2.3,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, ffam=FONT)#, plot.all=TRUE)

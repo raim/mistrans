@@ -851,7 +851,9 @@ axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
 dev.off()
 
-## hypergeo overlap in BP/SAAP/Dataset
+## hypergeo overlap in unique BP/SAAP
+if ( sum(duplicated(paste(hdat$BP,hdat$SAAP)))>0 )
+    stop("non-unique BP/SAAP tuple at critical point")
 ovl <- clusterCluster(hdat$iupred3.bins, hdat$MMSeq2.bins,
                       cl1.srt=c(rev(levels(iupred3.bins)), "na"),
                       cl2.srt=c("na", levels(MMSeq2.bins)),
