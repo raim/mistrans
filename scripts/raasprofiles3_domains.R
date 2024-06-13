@@ -332,7 +332,7 @@ if ( local ) {
     ##got <- got[gidx,]
 }
 
-go.ovl <- raasProfile(x=tmtu, id="SAAP", 
+go.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
                     rows=got[tmtu$gene,], cols="Dataset",
                     bg=TRUE, value=value, 
                     col.srt=uds,
@@ -544,30 +544,87 @@ for ( cid in cids ) {
 ## do flowCharts?
 
 ovc <- sortOverlaps(go.ovl, p.min=p.tight, cut=TRUE, sign=1)
-fname <- file.path(dfig.path,paste0(did,SETID,"_all"))
 ## .. and FREQUENTLY MEASURED
 all <- rownames(ovc$count)[apply(ovc$count, 1, function(x) all(x>0))]
 ovc <- sortOverlaps(ovc, srt=all, cut=TRUE)
- 
-## collect genes for enriched GO
+ovc <- sortOverlaps(ovc, p.min=p.txt, cut=FALSE)#, sign=1)
+
+## count unique proteins for each enriched GO
 gol <- list()
 for ( i in 1:nrow(ovc$p.value) ) 
     gol[[i]] <- rownames(got)[which(got[,rownames(ovc$p.value)[i]])]
-gol <- lapply(gol, function(x) unique(x[x%in%tmtf$gene]))
+## filter those in TMT set
+gol <- lapply(gol, function(x) unique(x[x%in%tmtu$gene]))
 names(gol) <- rownames(ovc$p.value)
-lengths(gol)
+## protein names
+gon <- lapply(gol, function(x) tmtu$name[tmtu$gene%in%x])
+## BP
+gob <- lapply(gol, function(x) unique(tmtu$BP.SAAP[tmtu$gene%in%x]))
 
-barplot(lengths(gol), las=2)
+## PLOT GO WITH ADDITIONAL BP and protein count columns
+lmai <- omai
+lmai[2] <- .1 + .1*max(nchar(rownames(ovc$p.value)))
+lmai[4] <- 1.5
+nw <- ncol(ovc$p.value)*.2 + lmai[2] + lmai[4]
+nh <- nrow(ovc$p.value)*.2 + lmai[1] + lmai[3]
+fname <- file.path(dfig.path,paste0("type_go_",SETID,"_all_manual_dotplot"))
 
-unique(tmtf$name[tmtf$gene%in%gol[["protein catabolic process"]]])
+plotdev(fname,  height=nh, width=nw, res=300, type=ftyp)
+par(mai=lmai, mgp=c(1.3,.3,0), tcl=-.05, family="monospace")
+dotprofile(ovc, value="median", xlab=NA, ylab=NA,
+           dot.sze=dot.sze, p.dot=p.dot,
+           vcols=acols, vbrks=abrks, axis=1:2, show.total=TRUE)
+axis(4, at=length(gol):1, labels=format(lengths(gol), big.mark=",", trim=TRUE),
+     line=5, las=2, cex.axis=.8, col=1)
+axis(4, at=length(gob):1, labels=format(lengths(gob), big.mark=",", trim=TRUE),
+     line=2.5, las=2, cex.axis=.8, col=1)
+text(x=c(9.5,11.5, 14), y=0.25, srt=90,
+     labels=c("#RAAS","#BP/SAAP","#proteins"), xpd=TRUE, pos=2, cex=.8)
+#text(x=11, length(gol):1, labels=lengths(gol),xpd=TRUE, cex=.8, pos=4)
+dev.off()
 
+
+
+## PLOT GENES FROM GO ENRICHMENT CATEGORIES 
+prc.ovl <- pr.ovl #sortOverlaps(pr.ovl, axis=1, srt=uds[uds!="Healthy"])
+for ( i in 1:length(gon) ) {
+
+    goid <- names(gon)[i]
+
+    ## get list of proteins that contribute to GO class
+    gopr <- sortOverlaps(prc.ovl, axis=2, srt=unique(unlist(gon[[i]])))
+    ## filter with a very mild p-value cutoff, at high RAAS
+    gopr <- sortOverlaps(gopr, p.min=1e-1, sign=1, cut=TRUE)
+    ## sort and cut by number of RAAS values,
+    nsrt <- names(sort(gopr$num.query[gopr$num.query[,1]>1,1]))
+    gopr <- sortOverlaps(pr.ovl, axis=2, srt=nsrt)
+    
+    fname <- file.path(dfig.path,paste0("goslim_",SETID,"_",
+                                        gsub(" ","_",goid)))
+    omai <- c(.8,1.1,.5,.5)
+    nw <- ncol(gopr$p.value)*.2 + omai[2] + omai[4]
+    nh <- nrow(gopr$p.value)*.2 + omai[1] + omai[3]
+
+    plotdev(fname,  height=nh, width=nw, res=300, type=ftyp)
+    par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="sans")
+    dotprofile(gopr, value="median", vcols=acols, vbrks=abrks, p.dot=p.dot,
+               axis=1:2,  show.total=TRUE, xlab=NA, ylab=NA)
+    figlabel(goid, pos="bottomleft", font=2, cex=1)
+    dev.off()
+}
+
+if ( interative() ) {
+    clusterFlow(hdat[,c("iupred3.bins","MMSeq2.bins")],
+                srt=list(levels(iupred3.bins),
+                         rev(levels(MMSeq2.bins))))
+
+
+
+    cr <- plotCor(lengths(gol), ovc$num.query[names(gol),1], density=FALSE)#,
+    ##              xlim=c(1e2,8e3), ylim=c(1e2,8e3), legpos="bottomright")
+    abline(a=0, b=1)
+    legend("right", paste0("slope=", round(cr$tls$beta,1)))
+    unique(tmtf$name[tmtf$gene%in%gol[["protein catabolic process"]]])
+}
 ## TODO: flow chart from ovc$p.value <-> genes
 ## TODO: dissect high RAAS go to high RAAS proteins
-
-gon <- lapply(gol, function(x) tmtf$name[tmtf$gene%in%x])
-
-gopr <- sortOverlaps(pr.ovl, axis=2, srt=unique(unlist(gon)))
-gopr <- sortOverlaps(gopr, p.min=p.txt, sign=1, cut=TRUE)
-dotprofile(gopr, value="median", vcols=acols, vbrks=abrks, p.dot=p.dot,
-           axis=1:2)
-

@@ -516,7 +516,7 @@ hdat <- cbind(hdat, rank.mat)
 
 ## protein length bins
 if ( interactive() ) hist(log10(hdat$len))
-loglen.bins <- cut(log10(hdat$len), breaks=seq(1,4,1))
+loglen.bins <- cut(log10(hdat$len), breaks=seq(1,4,.5))
 hdat$loglen.bins <- as.character(loglen.bins)
 
 ### MAP PROTEIN LEVEL INFO TO TMT Data

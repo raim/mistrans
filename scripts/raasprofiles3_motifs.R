@@ -598,16 +598,18 @@ dev.off()
 ## TODO: define motifs in bdat and map to tmtf
 ## MAP protein level info to TMT Data
 
-do.unique <- TRUE
+do.unique <- FALSE ## ONLY FOR TESTING
 
 tmtm <- tmtf
 value <- "RAAS"
+
 if ( do.unique ) {
     tmtm <- tmtf[!duplicated(tmtf$unique), ]
     value <- "RAAS.median"
 
-    tmtm <- bdat
-    value <- "median"
+    ## NOTE: no Dataset - only works for non Dataset profiles
+    ##tmtm <- bdat
+    ##value <- "median"
 }
     
 ## TODO: is this filtering necessary??
@@ -846,6 +848,7 @@ dev.off()
 
 ### ALTERNATIVE RAAS PROFILES
 
+## SELECTED MOTIFS
 rows <- c(msrt,ssrt)
 axex <- rep("",length(rows))
 names(axex) <- rows
@@ -857,6 +860,80 @@ for ( i in seq_along(rows) ) {
     } else axex[i] <- as.expression(bquote(.(rows[i])))
 }
 
+
+ovls <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="loglen.bins", cols="Dataset",
+                    row.srt=c(rev(levels(loglen.bins)),"na"),
+                    col.srt=uds,
+                    bg=TRUE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.8,CMAIL,.5,.5)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_loglen_raas")),
+        height=nh, width=nw, res=300, bg=NA)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8, axis=1)
+polygon(y=c(1, nrow(ovls$p.value), nrow(ovls$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("protein length",2, 1.3)
+dev.off()
+
+ovls <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="iupred3.bins", cols="loglen.bins",
+                    row.srt=c(rev(levels(iupred3.bins)),"na"),
+                    col.srt=c(levels(loglen.bins)),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.5,CMAIL,.5,.5)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_loglen_disorder_raas")),
+        height=nh, width=nw, res=300, bg=NA)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
+polygon(y=c(2, nrow(ovls$p.value), nrow(ovls$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+mtext("disorder",2, 1.3)
+polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("protein length",1, 1.3)
+dev.off()
+
+ovls <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="MMSeq2.bins", cols="loglen.bins",
+                    row.srt=c(rev(levels(MMSeq2.bins)),"na"),
+                    col.srt=c(levels(loglen.bins)),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.5,CMAIL,.5,.5)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_loglen_conservation_raas")),
+        height=nh, width=nw, res=300, bg=NA)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
+polygon(y=c(2, nrow(ovls$p.value), nrow(ovls$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+mtext("conservation",2, 1.3)
+polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("protein length",1, 1.3)
+dev.off()
 
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows="iupred3.bins", cols="MMSeq2.bins",
@@ -932,9 +1009,18 @@ axis(1, at=1, label="na", las=2)
 axis(2)
 dev.off()
 
-## motifs vs cons
+## TODO: test "marginal distribution" thingy, cons. vs. disordered
+if ( interactive() ) {
+    plotCor(tmtm$RAAS, tmtm$iupred3)
+    plotCor(tmtm$RAAS, tmtm$MMSeq2)
+    plotCor(tmtm$RAAS, -tmtm$MMSeq2*tmtm$iupred3)
 
+    plotCor(tmtm$RAAS*tmtm$iupred3, tmtm$RAAS*tmtm$MMSeq2,
+            xlab=expression(log[10](RAAS)~x~disorder),
+            ylab=expression(log[10](RAAS)~x~conservation))
+}
 
+## MOTIFS VS CONS
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,rows], cols="MMSeq2.bins",
                     col.srt=c("na", levels(MMSeq2.bins)),

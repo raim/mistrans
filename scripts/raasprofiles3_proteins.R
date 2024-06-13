@@ -120,6 +120,25 @@ nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$mane)))
 nsites[is.na(nsites)] <- 1
 site$n <- nsites
 
+### COMPARE dataset sizes
+
+fmat <- matrix(NA, ncol=2, nrow=nrow(tmtf))
+##fmat[,3] <- tmtf$Dataset
+fmat[,2] <- tmtf$Dataset
+fmat[,1] <- tmtf$Dataset
+##fmat[duplicated(tmtf$unique),2] <- "na"
+fmat[duplicated(paste(tmtf$BP,tmtf$SAAP)),1] <- "na"
+
+cnts <- apply(fmat, 2, table)
+cnts <- do.call(rbind,lapply(cnts, function(x) x[uds]))
+rownames(cnts) <- c("BP/SAAP", "#RAAS")
+if ( interactive() ) {
+    barplot(cnts, beside=TRUE, legend=TRUE)
+    
+    hist(bdat$n, breaks=100)
+}
+
+
 ### COLLECT PROTEIN DATA
 
 #### TODO: why do we have n=747 at exon but n=713 for
@@ -152,7 +171,7 @@ alst <- unlist(alst)
 ptstat$intensity <- alst[rownames(ptstat)]
 
 
-
+## RELATIVE POSITON
 
 ## PROTEIN LENGTH from saap_mapped4.tcv
 plen <- split(hdat$len, hdat$ensembl)
@@ -428,7 +447,7 @@ axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 dev.off()
 
-### PROTEIN LENGTHS and AAS along proteins
+### PROTEIN LENGTH
 
 plotdev(file.path(pfig.path,paste0("protein_lengths_all")),
         type=ftyp, res=300, width=corW,height=corH)
@@ -442,6 +461,44 @@ axis(1, at=1:10, labels=10^(1:10))
 axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 ##box()
 dev.off()
+
+### AAS Density
+
+plotdev(file.path(pfig.path,paste0("protein_nsites_all")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(log10(ptstat$n), ptstat$median, ylim=range(ptstat$median),
+        ylab=xl.prota, xlab=expression("AAS per protein"),
+        axes=FALSE, title=TRUE, cor.legend=FALSE)
+axis(2)
+axis(1, at=1:10, labels=10^(1:10))
+axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("protein_nsites_density_all")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(log10(ptstat$n/ptstat$length), ptstat$median, ylim=range(ptstat$median),
+        ylab=xl.prota, xlab=expression(log[10](AAS/AA)),
+        axes=FALSE, title=TRUE, cor.legend=FALSE)
+axis(2)
+axis(1, at=-10:10, labels=10^(-10:10))
+axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
+dev.off()
+
+### POSITION ON PROTEIN
+
+plotdev(file.path(pfig.path,paste0("protein_rposition_all")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(ptstat$rpos, ptstat$median, ylim=range(ptstat$median),
+        ylab=xl.prota, xlab=expression(log[10](AAS/AA)),
+        axes=FALSE, title=TRUE, cor.legend=FALSE)
+axis(2)
+axis(1, at=-10:10, labels=10^(-10:10))
+axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
+dev.off()
+
 
 ## PROTEIN MELTING TEMPERATURE
 
