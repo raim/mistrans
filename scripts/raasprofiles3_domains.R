@@ -17,11 +17,11 @@ if ( !exists("tmtf") )
 goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
 
-dfig.path <- file.path(fig.path,"domains")
-dir.create(dfig.path, showWarnings=FALSE)
 
 ## only use unique BP/SAAP per Dataset
-do.unique <- TRUE # FALSE
+do.unique <- FALSE # TRUE # 
+dfig.path <- file.path(fig.path,"domains")
+dir.create(dfig.path, showWarnings=FALSE)
 
 tmtu <- tmtf
 value <- "RAAS"
@@ -34,7 +34,7 @@ if ( do.unique ) {
     dfig.path <- file.path(dfig.path,"unique")
     dir.create(dfig.path, showWarnings=FALSE)
     value <- "RAAS.median"
-} else 
+} 
 
 ## TIGHT PLOT FOR MAIN
 p.tgt <- 1e-15 # tighter cutoff for GO analysis
@@ -538,3 +538,36 @@ for ( cid in cids ) {
                      gcols=gcols, ffam=FONT)#, plot.all=TRUE)
      }
 }
+
+
+## TODO: use tightest GOslim result and dissect into proteins,
+## do flowCharts?
+
+ovc <- sortOverlaps(go.ovl, p.min=p.tight, cut=TRUE, sign=1)
+fname <- file.path(dfig.path,paste0(did,SETID,"_all"))
+## .. and FREQUENTLY MEASURED
+all <- rownames(ovc$count)[apply(ovc$count, 1, function(x) all(x>0))]
+ovc <- sortOverlaps(ovc, srt=all, cut=TRUE)
+ 
+## collect genes for enriched GO
+gol <- list()
+for ( i in 1:nrow(ovc$p.value) ) 
+    gol[[i]] <- rownames(got)[which(got[,rownames(ovc$p.value)[i]])]
+gol <- lapply(gol, function(x) unique(x[x%in%tmtf$gene]))
+names(gol) <- rownames(ovc$p.value)
+lengths(gol)
+
+barplot(lengths(gol), las=2)
+
+unique(tmtf$name[tmtf$gene%in%gol[["protein catabolic process"]]])
+
+## TODO: flow chart from ovc$p.value <-> genes
+## TODO: dissect high RAAS go to high RAAS proteins
+
+gon <- lapply(gol, function(x) tmtf$name[tmtf$gene%in%x])
+
+gopr <- sortOverlaps(pr.ovl, axis=2, srt=unique(unlist(gon)))
+gopr <- sortOverlaps(gopr, p.min=p.txt, sign=1, cut=TRUE)
+dotprofile(gopr, value="median", vcols=acols, vbrks=abrks, p.dot=p.dot,
+           axis=1:2)
+

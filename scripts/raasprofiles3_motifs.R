@@ -601,10 +601,15 @@ dev.off()
 do.unique <- TRUE
 
 tmtm <- tmtf
-
-if ( do.unique )
+value <- "RAAS"
+if ( do.unique ) {
     tmtm <- tmtf[!duplicated(tmtf$unique), ]
+    value <- "RAAS.median"
 
+    tmtm <- bdat
+    value <- "median"
+}
+    
 ## TODO: is this filtering necessary??
 TIDX <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
 ina <- which(is.na(TIDX))
@@ -635,7 +640,7 @@ for ( j in 1:length(selected) ) {
     
     ovw <- raasProfile(x=tmtm, id="SAAP", 
                        rows="motifs", cols="Dataset",
-                       bg=TRUE, value="RAAS", row.srt=mid,
+                       bg=TRUE, value=value, row.srt=mid,
                        col.srt=uds,
                        use.test=use.test, do.plots=FALSE,
                        xlab=xl.raas,
@@ -661,114 +666,119 @@ ovm <- mergeProfiles(covw)
 source("~/work/mistrans/scripts/saap_utils.R")
 
 ## use RAAS profile with matrix input (new 20240604)
-tcls <- classes[TIDX,]
-ovm2 <- raasProfile(x=tmtm, id="SAAP", 
-                    rows=tcls, cols="Dataset",
-                    bg=TRUE, value="RAAS", 
-                    col.srt=uds,
-                    use.test=use.test, do.plots=FALSE,
-                    xlab=xl.raas,
-                    verb=0)
-## TODO: test new RAAS profiler with matrix input
-## and remove above loop if all is good.
-if ( all(ovm$p.value==ovm2$.p.value))
-    warning("new profile ok, rm old code")
+if ( "Dataset"%in%colnames(tmtm) ) {
+    
+    tcls <- classes[TIDX,]
+    ovm2 <- raasProfile(x=tmtm, id="SAAP", 
+                        rows=tcls, cols="Dataset",
+                        bg=TRUE, value=value, 
+                        col.srt=uds,
+                        use.test=use.test, do.plots=FALSE,
+                        xlab=xl.raas,
+                        verb=0)
+    
+    ## TODO: test new RAAS profiler with matrix input
+    ## and remove above loop if all is good.
+    if ( all(ovm$p.value==ovm2$.p.value))
+        warning("new profile ok, rm old code")
+    
+    
+    ## sort
+    ovm <- sortOverlaps(ovm, axis=2, srt=selected)
+    
+    amai <- c(0.8,1.4,0.6,.6)
+    
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=mp.dot,
+                 rlab=LAB,  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT)
+    
+    
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval10")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=1e-10,
+                 llab="p10",  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT,plot.all=FALSE)
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval6")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 dot.sze=dot.sze, p.dot=1e-6,
+                 llab="p6",  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT,plot.all=FALSE)
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval100")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 p.min=1e-100, p.txt=1e-50,
+                 dot.sze=dot.sze, p.dot=1e-100,
+                 llab="p100",  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT,plot.all=FALSE)
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval30")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 p.min=1e-30, p.txt=1e-15,
+                 dot.sze=dot.sze, p.dot=1e-30,
+                 llab="p30",  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 gcols=gcols, ffam=FONT,plot.all=FALSE)
+    
+    plotProfiles(ovm,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_vcols")),
+                 mai=amai, ttcols=ttcols, value="median",
+                 p.min=mp.min, p.txt=mp.txt,
+                 dot.sze=dot.sze, p.dot=mp.dot,
+                 llab="vcols",  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=vcols, vbrks=vbrks,
+                 gcols=gcols, ffam=FONT)
 
 
-## sort
-ovm <- sortOverlaps(ovm, axis=2, srt=selected)
-
-amai <- c(0.8,1.4,0.6,.6)
-
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all")),
-             mai=amai, ttcols=ttcols, value="median",
-             dot.sze=dot.sze, p.dot=mp.dot,
-             rlab=LAB,  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam=FONT)
-
-
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval10")),
-             mai=amai, ttcols=ttcols, value="median",
-             dot.sze=dot.sze, p.dot=1e-10,
-             llab="p10",  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam=FONT,plot.all=FALSE)
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval6")),
-             mai=amai, ttcols=ttcols, value="median",
-             dot.sze=dot.sze, p.dot=1e-6,
-             llab="p6",  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam=FONT,plot.all=FALSE)
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval100")),
-             mai=amai, ttcols=ttcols, value="median",
-             p.min=1e-100, p.txt=1e-50,
-             dot.sze=dot.sze, p.dot=1e-100,
-             llab="p100",  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam=FONT,plot.all=FALSE)
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_pval30")),
-             mai=amai, ttcols=ttcols, value="median",
-             p.min=1e-30, p.txt=1e-15,
-             dot.sze=dot.sze, p.dot=1e-30,
-             llab="p30",  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             gcols=gcols, ffam=FONT,plot.all=FALSE)
-
-plotProfiles(ovm,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"_all_vcols")),
-             mai=amai, ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
-             dot.sze=dot.sze, p.dot=mp.dot,
-             llab="vcols",  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=vcols, vbrks=vbrks,
-             gcols=gcols, ffam=FONT)
-
-## SELECTED MOTIS FOR MAIN
-msrt <- c(##"Q:G",
-          "KRAQ",
-          "CCxCC",
-          "MMxMM",
-          "WWxWW")
-
-ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
-plotProfiles(ovs,
-             fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
-             mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
-             dot.sze=dot.sze, p.dot=mp.dot,
-             rlab=LAB,  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             bg=NA, 
-             gcols=gcols, ffam=FONT)
-
-ssrt <- c("disord.",
-          "binding",
-          "noncons.",
-          "long")
-ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
-plotProfiles(ovs,
-             fname=file.path(mfig.path,paste0("structure_",SETID,"")),
-             mai=c(0.05,CMAIL,0.05,.5), ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
-             dot.sze=dot.sze, p.dot=mp.dot,
-             rlab=LAB,  ftyp=ftyp,
-             mtxt="", mtxt.line=2.3,
-             vcols=acols, vbrks=abrks,
-             bg=NA, 
-             gcols=gcols, ffam=FONT)
+    ## SELECTED MOTIS FOR MAIN
+    msrt <- c(##"Q:G",
+        "KRAQ",
+        "CCxCC",
+        "MMxMM",
+        "WWxWW")
+    
+    ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
+    plotProfiles(ovs,
+                 fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
+                 mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
+                 p.min=mp.min, p.txt=mp.txt,
+                 dot.sze=dot.sze, p.dot=mp.dot,
+                 rlab=LAB,  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 bg=NA, 
+                 gcols=gcols, ffam=FONT)
+    
+    ssrt <- c("disord.",
+              "binding",
+              "noncons.",
+              "long")
+    ovs <- sortOverlaps(ovm, axis=2, srt=ssrt)
+    plotProfiles(ovs,
+                 fname=file.path(mfig.path,paste0("structure_",SETID,"")),
+                 mai=c(0.05,CMAIL,0.05,.5), ttcols=ttcols, value="median",
+                 p.min=mp.min, p.txt=mp.txt,
+                 dot.sze=dot.sze, p.dot=mp.dot,
+                 rlab=LAB,  ftyp=ftyp,
+                 mtxt="", mtxt.line=2.3,
+                 vcols=acols, vbrks=abrks,
+                 bg=NA, 
+                 gcols=gcols, ffam=FONT)
+}
 
 
 ### ANALYZE OVERLAP MOTIFS vs STRUCTURE
@@ -852,7 +862,7 @@ ovls <- raasProfile(x=tmtm, id="SAAP",
                     rows="iupred3.bins", cols="MMSeq2.bins",
                     row.srt=c(rev(levels(iupred3.bins)),"na"),
                     col.srt=c("na", levels(MMSeq2.bins)),
-                    bg=FALSE, value="RAAS", 
+                    bg=FALSE, value=value, 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
@@ -928,7 +938,7 @@ dev.off()
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,rows], cols="MMSeq2.bins",
                     col.srt=c("na", levels(MMSeq2.bins)),
-                    bg=FALSE, value="RAAS", 
+                    bg=FALSE, value=value, 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
@@ -951,7 +961,7 @@ dev.off()
 ovls <- raasProfile(x=tmtm, id="SAAP", 
                     rows=tcls[,rows], cols="iupred3.bins",
                     col.srt=c("na",levels(iupred3.bins)),
-                    bg=FALSE, value="RAAS", 
+                    bg=FALSE, value=value, 
                     use.test=use.test, do.plots=FALSE,
                     xlab=xl.raas,
                     verb=1)
@@ -986,7 +996,7 @@ tmtm$bp1 <- bp1[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp1", cols="Dataset",
-                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   bg=TRUE, value=value, ##row.srt=motsrt,
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
@@ -1020,7 +1030,7 @@ tmtm$bp2 <- bp2[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp2", cols="Dataset",
-                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   bg=TRUE, value=value, ##row.srt=motsrt,
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
@@ -1052,7 +1062,7 @@ tmtm$bp3 <- bp3[TIDX]
 
 ovw <- raasProfile(x=tmtm, id="SAAP", 
                    rows="bp3", cols="Dataset",
-                   bg=TRUE, value="RAAS", ##row.srt=motsrt,
+                   bg=TRUE, value=value, ##row.srt=motsrt,
                    col.srt=uds,
                    use.test=use.test, do.plots=FALSE,
                    xlab=xl.raas,
