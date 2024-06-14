@@ -1013,8 +1013,12 @@ dev.off()
 if ( interactive() ) {
     plotCor(tmtm$RAAS, tmtm$iupred3)
     plotCor(tmtm$RAAS, tmtm$MMSeq2)
-    plotCor(tmtm$RAAS, -tmtm$MMSeq2*tmtm$iupred3)
-
+    plotdev(file.path(mfig.path,paste0("classes_conservation+disorder_raas")),
+            height=3, width=3, res=300)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+    plotCor(tmtm$RAAS, -tmtm$MMSeq2+tmtm$iupred3, xlab=xl.raas,
+            ylab="disorder + -conservation")
+    dev.off()
     plotCor(tmtm$RAAS*tmtm$iupred3, tmtm$RAAS*tmtm$MMSeq2,
             xlab=expression(log[10](RAAS)~x~disorder),
             ylab=expression(log[10](RAAS)~x~conservation))

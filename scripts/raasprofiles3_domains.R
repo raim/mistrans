@@ -613,7 +613,9 @@ for ( i in 1:length(gon) ) {
     dev.off()
 }
 
-if ( interative() ) {
+## TODO: for each dot, calculate % of signal that comes from a single BP
+
+if ( interactive() ) {
     clusterFlow(hdat[,c("iupred3.bins","MMSeq2.bins")],
                 srt=list(levels(iupred3.bins),
                          rev(levels(MMSeq2.bins))))
