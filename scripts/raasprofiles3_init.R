@@ -1123,6 +1123,10 @@ if ( length(missing) )
 ## keep only bdat for which we have RAAS values
 bdat <- cbind(bdat[rownames(bpraas),], bpraas)
 
+## use median as RAAS
+bdat$RAAS <- bdat$median
+
+
 ### NOTE: check use of bdat vs. hdat, where bdat has one less
 ## row, due to missing RAAS values.
 

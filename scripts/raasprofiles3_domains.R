@@ -594,7 +594,7 @@ for ( i in 1:length(gon) ) {
     ## get list of proteins that contribute to GO class
     gopr <- sortOverlaps(prc.ovl, axis=2, srt=unique(unlist(gon[[i]])))
     ## filter with a very mild p-value cutoff, at high RAAS
-    gopr <- sortOverlaps(gopr, p.min=1e-1, sign=1, cut=TRUE)
+    gopr <- sortOverlaps(gopr, p.min=1e-3, sign=1, cut=TRUE)
     ## sort and cut by number of RAAS values,
     nsrt <- names(sort(gopr$num.query[gopr$num.query[,1]>1,1]))
     gopr <- sortOverlaps(pr.ovl, axis=2, srt=nsrt)

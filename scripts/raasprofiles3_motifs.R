@@ -963,9 +963,9 @@ mtext("conservation",1, 1.3)
 dev.off()
 
 ## hypergeo overlap in unique BP/SAAP
-if ( sum(duplicated(paste(hdat$BP,hdat$SAAP)))>0 )
+if ( sum(duplicated(paste(bdat$BP,bdat$SAAP)))>0 )
     stop("non-unique BP/SAAP tuple at critical point")
-ovl <- clusterCluster(hdat$iupred3.bins, hdat$MMSeq2.bins,
+ovl <- clusterCluster(bdat$iupred3.bins, bdat$MMSeq2.bins,
                       cl1.srt=c(rev(levels(iupred3.bins)), "na"),
                       cl2.srt=c("na", levels(MMSeq2.bins)),
                       alternative="two.sided")
@@ -987,39 +987,82 @@ axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
 dev.off()
 
+## TODO: move this to structure and only do on unique sites and median RAAAS
 ## full distributions for conserved and disordred
+
+
 library(vioplot)
+
 plotdev(file.path(mfig.path,
                   paste0("classes_conservation_disorder_raas_violin")),
         height=4, width=3, res=300)
 par(mfrow=c(2,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
-vioplot(tmtf$RAAS ~ factor(tmtf$MMSeq2.bins,levels=c("na",levels(MMSeq2.bins))),
+vioplot(bdat$RAAS ~ factor(bdat$MMSeq2.bins,levels=c("na",levels(MMSeq2.bins))),
         ylab=xl.raas, xlab="conservation", axes=FALSE, 
         col.axis="#ffffff", col.ticks="#ffffff")
+
+yds <- diff(par("usr")[3:4])/10
+ydf <- par("usr")[3] - abs(yds)
+ypos <- c(ydf, ydf-(yds/2), ydf+(yds/2))
+
+
 axis(2)
 axis(1, at=1, label="na", las=2)
 polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
-        y=c(-7.4,-7.8,-7), xpd=TRUE, col="#aaaaaa", border=1)
-vioplot(tmtf$RAAS ~ factor(tmtf$iupred3.bins,
-                           levels=c("na",levels(iupred3.bins))),
+        y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
+vp <- vioplot(bdat$RAAS ~ factor(bdat$iupred3.bins,
+                                 levels=c("na",levels(iupred3.bins))),
         ylab=xl.raas, xlab="disorder", axes=FALSE, col.axis="#ffffff")
 polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
-        y=c(-7.4,-7.8,-7), xpd=TRUE, col="#aaaaaa", border=1)
+        y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
 axis(2)
 dev.off()
 
+
+## TODO: move this to structure?
+
+stnd <- function(x,na.rm=TRUE) {
+    (x-min(x, na.rm=na.rm))/(max(x, na.rm=na.rm) - min(x, na.rm=na.rm)) 
+}
+
+plotdev(file.path(mfig.path,paste0("peptides_conservation+disorder_raas")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)+stnd(bdat$iupred3), xlab=xl.raas,
+        ylab="disorder + -conservation", legpos="topright")
+dev.off()
+
+plotdev(file.path(mfig.path,paste0("peptides_conservationXdisorder_raas")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)*stnd(bdat$iupred3), xlab=xl.raas,
+        ylab="disorder x -conservation", legpos="topright")
+dev.off()
+plotdev(file.path(mfig.path,paste0("peptides_conservation_raas")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotCor(bdat$RAAS, stnd(-bdat$MMSeq2), xlab=xl.raas,
+        ylab="-conservation", legpos="topright")
+dev.off()
+plotdev(file.path(mfig.path,paste0("peptides_disorder_raas")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotCor(bdat$RAAS, stnd(bdat$iupred3), xlab=xl.raas,
+        ylab="disorder", legpos="topright")
+dev.off()
+plotdev(file.path(mfig.path,paste0("peptides_conservation_disorder")),
+        height=3, width=3, res=300)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+plotCor(stnd(-bdat$MMSeq2), stnd(bdat$iupred3), xlab="conservation",
+        ylab="disorder")
+dev.off()
+
 ## TODO: test "marginal distribution" thingy, cons. vs. disordered
 if ( interactive() ) {
-    plotCor(tmtm$RAAS, tmtm$iupred3)
-    plotCor(tmtm$RAAS, tmtm$MMSeq2)
-    plotdev(file.path(mfig.path,paste0("classes_conservation+disorder_raas")),
-            height=3, width=3, res=300)
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-    plotCor(tmtm$RAAS, -tmtm$MMSeq2+tmtm$iupred3, xlab=xl.raas,
-            ylab="disorder + -conservation")
-    dev.off()
-    plotCor(tmtm$RAAS*tmtm$iupred3, tmtm$RAAS*tmtm$MMSeq2,
+    plotCor(bdat$RAAS, bdat$iupred3)
+    plotCor(bdat$RAAS, bdat$MMSeq2)
+    plotCor(bdat$RAAS*bdat$iupred3, bdat$RAAS*bdat$MMSeq2,
             xlab=expression(log[10](RAAS)~x~disorder),
             ylab=expression(log[10](RAAS)~x~conservation))
 }
@@ -1063,8 +1106,9 @@ plotdev(file.path(mfig.path,paste0("classes_disorder_motifs_raas")),
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
-polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
+polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
             y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(1, at=1, label="na", las=2)
 mtext("disorder",1, 1.3)
 axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
