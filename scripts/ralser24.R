@@ -369,6 +369,21 @@ plotCor(mus, rat[names(mus)], density=FALSE, xlab=gr.lab,
         legpos="bottomright")
 shadowtext(mus, rat[names(mus)], labels=shighlight[names(mus)], pos=4,
            xpd=TRUE, col=1, cex=1)
+mtext("ratio of cohort mean intensities", 3, 0.15)
+dev.off()
+
+rat <- log2(states$A/states$D)
+names(rat) <- rownames(states)
+
+plotdev(file.path(fig.path,"cohort_growth_AD"),
+        type=ftyp, height=3, width=3, res=200)
+par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(mus, rat[names(mus)], density=FALSE, xlab=gr.lab,
+        ylab=expression(log[2](A/D)),
+        legpos="bottomright")
+shadowtext(mus, rat[names(mus)], labels=shighlight[names(mus)], pos=4,
+           xpd=TRUE, col=1, cex=1)
+mtext("ratio of cohort mean intensities", 3, 0.15)
 dev.off()
 
 ## BROADER GROWTH / STRESS+NOISE CLASSES 
