@@ -317,6 +317,10 @@ shighlight <- snames
 names(shighlight) <- snames
 shighlight[!snames%in%c("BBV","CNL")] <- ""
 
+## NOTE: growth rate extremes: ,"AHS","AVL"
+
+### TODO: test strain AHS
+
 plotdev(file.path(fig.path,"cohort_intensities_AD"),
         type=ftyp, height=3, width=3, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
