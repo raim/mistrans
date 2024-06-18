@@ -327,6 +327,13 @@ dev.off()
 
 ## TODO: full AAS distance matrix where AAS on distinct proteins are Inf
 
+## BP HOTSPOTS
+ubp <- split(bdat, bdat$BP)
+upbn <- unlist(lapply(ubp, nrow))
+
+hist(upbn, breaks=100, log="x")
+
+
 
 if ( interactive() )
     plot(log(ptstat$n), log(ptstat$length))

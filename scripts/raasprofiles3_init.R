@@ -495,15 +495,22 @@ rsrt <- levels(ASAquick.bins)
 hdat$ASAquick.bins <- as.character(ASAquick.bins)
 hdat$ASAquick.bins[is.na(hdat$ASAquick.bins)] <- "na"
 
+## protein length bins
+if ( interactive() ) hist(log10(hdat$len))
+hdat$loglen <- log10(hdat$len)
+loglen.bins <- cut(log10(hdat$len), breaks=seq(1.5,4,.5))
+hdat$loglen.bins <- as.character(loglen.bins)
+
 ## by ranks
 rank.vals <- c("iupred3", "anchor2", "ASAquick", "SCRIBER", "MMSeq2",
-               "DisoRDPbind", "flDPnn")
+               "DisoRDPbind", "flDPnn", "loglen")
 val <- rank.vals[1]
 rank.mat <- matrix(NA, ncol=length(rank.vals), nrow=nrow(hdat))
 colnames(rank.mat) <- rank.vals
 for ( val in rank.vals ) {
-    ranks <- rank(hdat[,val])
-    rankbins <- cut(ranks/max(ranks,na.rm=TRUE), seq(0,1,.2))
+    ranks <- rank(hdat[,val], na.last="keep")
+    rankbins <- as.character(cut(ranks/max(ranks,na.rm=TRUE), seq(0,1,.2)))
+    rankbins[is.na(rankbins)] <- "na"
     rank.mat[,val] <- rankbins
     plotdev(file.path(fig.path, paste0("rankbins_",val)),
             width=3, height=2, res=200)
@@ -511,13 +518,10 @@ for ( val in rank.vals ) {
     boxplot(hdat[,val] ~ rankbins, ylab=val, las=2, xlab="")
     dev.off()
 }
+ranksrt <- c("na",levels(cut(1:10/10, seq(0,1,.2))))
 colnames(rank.mat) <- paste0(colnames(rank.mat),".rank")
 hdat <- cbind(hdat, rank.mat)
 
-## protein length bins
-if ( interactive() ) hist(log10(hdat$len))
-loglen.bins <- cut(log10(hdat$len), breaks=seq(1,4,.5))
-hdat$loglen.bins <- as.character(loglen.bins)
 
 ### MAP PROTEIN LEVEL INFO TO TMT Data
 idx.old <- match(tmtf$SAAP, hdat$SAAP)
@@ -587,6 +591,7 @@ tmtf$DisoRDPbind.rank <- hdat$DisoRDPbind.rank[idx]
 tmtf$MMSeq2.rank <- hdat$MMSeq2.rank[idx]
 tmtf$ASAquick.rank <- hdat$ASAquick.rank[idx]
 tmtf$SCRIBER.rank <- hdat$SCRIBER.rank[idx]
+tmtf$loglen.rank <- hdat$loglen.rank[idx]
 
 
 ## gene mapping

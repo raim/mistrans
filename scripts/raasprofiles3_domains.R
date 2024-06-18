@@ -594,21 +594,21 @@ for ( i in 1:length(gon) ) {
     ## get list of proteins that contribute to GO class
     gopr <- sortOverlaps(prc.ovl, axis=2, srt=unique(unlist(gon[[i]])))
     ## filter with a very mild p-value cutoff, at high RAAS
-    gopr <- sortOverlaps(gopr, p.min=1e-3, sign=1, cut=TRUE)
+    gopr <- sortOverlaps(gopr, p.min=p.txt, sign=1, cut=TRUE)
     ## sort and cut by number of RAAS values,
     nsrt <- names(sort(gopr$num.query[gopr$num.query[,1]>1,1]))
     gopr <- sortOverlaps(pr.ovl, axis=2, srt=nsrt)
     
     fname <- file.path(dfig.path,paste0("goslim_",SETID,"_",
                                         gsub(" ","_",goid)))
-    omai <- c(.8,1.1,.5,.5)
+    omai <- c(.2,1.1,.05,.5)
     nw <- ncol(gopr$p.value)*.2 + omai[2] + omai[4]
     nh <- nrow(gopr$p.value)*.2 + omai[1] + omai[3]
 
     plotdev(fname,  height=nh, width=nw, res=300, type=ftyp)
     par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="sans")
     dotprofile(gopr, value="median", vcols=acols, vbrks=abrks, p.dot=p.dot,
-               axis=1:2,  show.total=TRUE, xlab=NA, ylab=NA)
+               axis=2,  show.total=TRUE, xlab=NA, ylab=NA)
     figlabel(goid, pos="bottomleft", font=2, cex=1)
     dev.off()
 }

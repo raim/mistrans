@@ -994,31 +994,53 @@ dev.off()
 library(vioplot)
 
 plotdev(file.path(mfig.path,
-                  paste0("classes_conservation_disorder_raas_violin")),
-        height=4, width=3, res=300)
-par(mfrow=c(2,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
-vioplot(bdat$RAAS ~ factor(bdat$MMSeq2.bins,levels=c("na",levels(MMSeq2.bins))),
+                  paste0("classes_conservation_raas_violin")),
+        height=2, width=3, res=300)
+par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
+levs <- c("na",levels(MMSeq2.bins))
+vioplot(bdat$RAAS ~ factor(bdat$MMSeq2.bins, levels=levs),
         ylab=xl.raas, xlab="conservation", axes=FALSE, 
         col.axis="#ffffff", col.ticks="#ffffff")
 
+## determine position of axis triangle
+## reused below for all violin plots
 yds <- diff(par("usr")[3:4])/10
 ydf <- par("usr")[3] - abs(yds)
 ypos <- c(ydf, ydf-(yds/2), ydf+(yds/2))
 
-
 axis(2)
 axis(1, at=1, label="na", las=2)
-polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
+polygon(x=c(2, length(levs), length(levs)),
         y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
-vp <- vioplot(bdat$RAAS ~ factor(bdat$iupred3.bins,
-                                 levels=c("na",levels(iupred3.bins))),
+dev.off()
+
+plotdev(file.path(mfig.path,
+                  paste0("classes_disorder_raas_violin")),
+        height=2, width=3, res=300)
+par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
+levs <- c("na",levels(iupred3.bins))
+vp <- vioplot(bdat$RAAS ~ factor(bdat$iupred3.bins, levels=levs),
         ylab=xl.raas, xlab="disorder", axes=FALSE, col.axis="#ffffff")
-polygon(x=c(2, ncol(ovl$p.value), ncol(ovl$p.value)),
+polygon(x=c(2, length(levs), length(levs)),
         y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
 axis(2)
 dev.off()
 
+plotdev(file.path(mfig.path,
+                  paste0("classes_loglen_raas_violin")),
+        height=2, width=3, res=300)
+par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
+fct <- factor(bdat$loglen.bins)
+levs <- c(levels(fct))
+vp <- vioplot(bdat$RAAS ~ fct,
+              ylab=xl.raas, xlab=expression(log[10](length)),
+              axes=FALSE, col.axis="#ffffff")
+polygon(x=c(1, length(levs), length(levs)),
+        y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
+##axis(1, at=1, label="na", las=2)
+axis(2)
+dev.off()
 
 ## TODO: move this to structure?
 
@@ -1110,6 +1132,30 @@ polygon(x=c(2, ncol(ovls$p.value), ncol(ovls$p.value)),
             y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
 mtext("disorder",1, 1.3)
+axis(2, length(axex):1, labels=axex, las=2, family=FONT,
+     font=2, cex.axis=1.2)
+dev.off()
+
+
+ovls <- raasProfile(x=tmtm, id="SAAP", 
+                    rows=tcls[,rows], cols="loglen.bins",
+                    col.srt=c(levels(loglen.bins)),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+omai <- c(.5,1.1,.5,.5)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+plotdev(file.path(mfig.path,paste0("classes_loglen_motifs_raas")),
+        height=nh, width=nw, res=300)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
+           xlab=NA, ylab=NA, show.total=TRUE)
+polygon(x=c(1, ncol(ovls$p.value), ncol(ovls$p.value)),
+            y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+##axis(1, at=1, label="na", las=2)
+mtext(expression(log[10](length)),1, 1.3)
 axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
 dev.off()
