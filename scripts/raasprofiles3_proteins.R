@@ -288,7 +288,7 @@ write.table(cbind(protein=rownames(ptstat), ptstat),
 ## * RAAS profiles by sliding window
 
 pns <- ptstat$n
-pns[pns>40] <- ">15"
+pns[pns>15] <- ">15"
 paas <- table(pns)[c(as.character(1:15),">15")]
 
 plotdev(file.path(pfig.path,"hotspots_AAS_per_protein"), type=ftyp,
@@ -336,12 +336,13 @@ dev.off()
 ## * RAAS distribution of frequently substituted BP,
 
 ubp <- split(bdat, bdat$BP)
-upbn <- unlist(lapply(ubp, nrow))
+ubpn <- unlist(lapply(ubp, nrow))
 
-hist(upbn, breaks=100)
+hist(ubpn, breaks=100)
 
-upbn[upbn>40] <- ">15"
-paas <- table(upbn)[c(as.character(1:15),">15")]
+ubpc <- ubpn
+ubpc[ubpc>15] <- ">15"
+paas <- table(ubpc)[c(as.character(1:15),">15")]
 
 plotdev(file.path(pfig.path,"hotspots_AAS_per_peptide"), type=ftyp,
         width=3, height=3, res=200)
@@ -352,7 +353,7 @@ axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of peptides", 2, 1.6)
 legend("topright",
-       paste(sum(upbn!="1"), "peptides with >1 AAS"), bty="n")
+       paste(sum(ubpn>1), "peptides with >1 AAS"), bty="n")
 dev.off()
 
 
@@ -371,12 +372,18 @@ sites <- site[site$mane%in%multip,]
 
 cpos <- cumsum(sites$pos) ## TODO: fix this!!!
 
+### TODO: get correct cumulative position
 ## get cumulative position of each AAS for nice plot
 sites$plen <- plen[sites$mane]
-sites$clan[!duplicated(sites$mane)] <-
+sites$clen[!duplicated(sites$mane)] <-
     cumsum(sites$plen[!duplicated(sites$mane)])
 ## fill up
-
+nl <- NA
+for ( i in 1:nrow(sites) ) {
+    if ( !is.na(sites$clen[i]))
+        nl <- sites$clen[i]
+    else sites$clen[i] <- nl
+}
 
 ## AAS and RAAS along all concatenated proteins
 
