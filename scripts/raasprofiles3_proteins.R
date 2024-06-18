@@ -285,7 +285,7 @@ write.table(cbind(protein=rownames(ptstat), ptstat),
 ### HOTSPOTS
 
 ## TODO:
-## * RAAS profilesby sliding window
+## * RAAS profiles by sliding window
 
 pns <- ptstat$n
 pns[pns>40] <- ">15"
@@ -293,7 +293,7 @@ paas <- table(pns)[c(as.character(1:15),">15")]
 
 plotdev(file.path(pfig.path,"hotspots_AAS_per_protein"), type=ftyp,
         width=3, height=3, res=200)
-par(mai=c(0.5,.5,.1,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
 bp <- barplot(paas, xlab="AAS per protein",
               ylab=NA, axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
@@ -328,10 +328,32 @@ dev.off()
 ## TODO: full AAS distance matrix where AAS on distinct proteins are Inf
 
 ## BP HOTSPOTS
+## TODO:
+## * distance distributions for each protein,
+## * get main peptides for AHNAK/ENSP00000367263
+## * aligned plots of AAS per protein and AAS per BP,
+## * #RAAS values per protein/BP,
+## * RAAS distribution of frequently substituted BP,
+
 ubp <- split(bdat, bdat$BP)
 upbn <- unlist(lapply(ubp, nrow))
 
-hist(upbn, breaks=100, log="x")
+hist(upbn, breaks=100)
+
+upbn[upbn>40] <- ">15"
+paas <- table(upbn)[c(as.character(1:15),">15")]
+
+plotdev(file.path(pfig.path,"hotspots_AAS_per_peptide"), type=ftyp,
+        width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+bp <- barplot(paas, xlab="AAS per base peptide",
+              ylab=NA, axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+axis(2)
+mtext("# of peptides", 2, 1.6)
+legend("topright",
+       paste(sum(upbn!="1"), "peptides with >1 AAS"), bty="n")
+dev.off()
 
 
 
@@ -346,7 +368,15 @@ if ( interactive() )
 multip <- split(site$pos, site$mane)
 multip <- names(lengths(multip)[lengths(multip)> 0 ])
 sites <- site[site$mane%in%multip,]
-cpos <- cumsum(sites$pos)
+
+cpos <- cumsum(sites$pos) ## TODO: fix this!!!
+
+## get cumulative position of each AAS for nice plot
+sites$plen <- plen[sites$mane]
+sites$clan[!duplicated(sites$mane)] <-
+    cumsum(sites$plen[!duplicated(sites$mane)])
+## fill up
+
 
 ## AAS and RAAS along all concatenated proteins
 
@@ -375,6 +405,13 @@ plot(cpos, sites$RAAS.median, type="h", col=raas.col, xpd=TRUE,
 points(cpos, sites$RAAS.median, col=raas.col, pch=19, cex=.2, xpd=TRUE)
 ## TODO: protein lines
 axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.5)
+pois <- c("AHNAK")
+for ( poi in pois ) {
+    gidx<- which(pnms[sites$mane]==poi)[1]
+    text(cpos[gidx], 2, labels=poi, pos=4)
+    arrows(x0=cpos[gidx], y0=2, y1=1, length=.05)
+}
+
 dev.off()
 
 

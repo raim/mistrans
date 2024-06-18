@@ -80,13 +80,18 @@ $blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids
 ## and at least 75% identity with awk.
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv
 
-## 3.A) blast SP against ensembl+mutations
+## 3.B) blast SP against ensembl+mutations
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv
 
 ## some statistics on blast
 ## TODO: expand this QC analysis a bit,
 ## do SAAP have the expected mismatches?
 R --vanilla < ${THIS}/scripts/saap_blast_stats.R
+
+## 3.C) blast all main peptides against 20k core proteins
+cat ${MISDATA}/originalData/All_main_tryptic_peptide_list.txt | sort |uniq | awk '{print ">" $0 ORS $0}' > ${MISDATA}/processedData/main_peptides.fas
+## call blast, only report full length hits with 100% identity
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/main_peptides.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3==100) print}'  |grep -v "^#" > ${MISDATA}/processedData/main_peptides_blast.tsv
 
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
