@@ -86,12 +86,30 @@ site$uniprot <- unlist(lapply(ens2u[site$mane], paste, collapse=";"))
 site$RAAS.color <- num2col(site$RAAS.median,
                            limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
 
-## 
+### BP/SAAP/PROTEIN RAAS TABLES
+## TODO: handle proteins/BP/SAAP missing from current tmt file!
 
+## bp median raas
+bpl <- split(tmtf$RAAS, tmtf$BP)
+bpstat <- listProfile(bpl, y=tmtf$RAAS, use.test=use.test, min=3)
+## add data
+bpstat$bplen <- nchar(rownames(bpstat))
+## count distinct SAAP per BP
+bps <- unlist(lengths(lapply(split(bdat$SAAP, bdat$BP), unique)))
+bpstat$nsaap <- bps[rownames(bpstat)]
 
 ## protein median raas per protein w/o site-specific median first
 ptl <- split(tmtf$RAAS, tmtf$mane)
 ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## count distinct BP per  protein
+pts <- unlist(lengths(lapply(split(bdat$BP, bdat$MANE.protein), unique)))
+ptstat$nbp <- pts[rownames(ptstat)]
+## count distinct SAAP per protein
+pts <- unlist(lengths(lapply(split(bdat$SAAP, bdat$MANE.protein), unique)))
+ptstat$nsaap <- pts[rownames(ptstat)]
+
+
 
 if ( interactive() ) {
     ## test alternative measures of consistent RAAS
@@ -290,38 +308,57 @@ write.table(cbind(protein=rownames(ptstat), ptstat),
 pns <- ptstat$n
 pns[pns>15] <- ">15"
 paas <- table(pns)[c(as.character(1:15),">15")]
-
-plotdev(file.path(pfig.path,"hotspots_AAS_per_protein"), type=ftyp,
+plotdev(file.path(pfig.path,"hotspots_RAAS_per_protein"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- barplot(paas, xlab="AAS per protein",
+bp <- barplot(paas, xlab="RAAS per protein",
               ylab=NA, axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of proteins", 2, 1.6)
 legend("topright",
-       paste(sum(ptstat$n>1), "proteins with >1 AAS"), bty="n")
+       paste(sum(ptstat$n>1), "proteins with >1 RAAS"), bty="n")
 dev.off()
-plotdev(file.path(pfig.path,"hotspots_AAS_per_protein_log"), type=ftyp,
+
+pns <- ptstat$nbp
+pns[pns>15] <- ">15"
+paas <- table(pns)[c(as.character(1:15),">15")]
+plotdev(file.path(pfig.path,"hotspots_BP_per_protein"), type=ftyp,
         width=3, height=3, res=200)
-par(mai=c(0.5,.5,.1,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- hist(log10(ptstat$n), xlab="log10(AAS per protein)",
-           ylab=NA, main=NA)#, axes=FALSE, axisnames = FALSE)
-axis(1)#, at=bp, labels=names(paas), las=2, cex=.8)
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+bp <- barplot(paas, xlab="BP per protein",
+              ylab=NA, axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of proteins", 2, 1.6)
 legend("topright",
-       paste(sum(ptstat$n>1), "proteins with >1 AAS"), bty="n")
+       paste(sum(ptstat$nbp>1,na.rm=TRUE), "proteins with >1 BP"), bty="n")
 dev.off()
 
-plotdev(file.path(pfig.path,"hotspots_AAS_length"), type=ftyp,
+pns <- ptstat$nsaap
+pns[pns>15] <- ">15"
+paas <- table(pns)[c(as.character(1:15),">15")]
+plotdev(file.path(pfig.path,"hotspots_SAAP_per_protein"), type=ftyp,
         width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+bp <- barplot(paas, xlab="SAAP per protein",
+              ylab=NA, axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+axis(2)
+mtext("# of proteins", 2, 1.6)
+legend("topright",
+       paste(sum(ptstat$nsaap>1,na.rm=TRUE), "proteins with >1 SAAP"), bty="n")
+dev.off()
+
+plotdev(file.path(pfig.path,"hotspots_RAAS_per_protein_length"), type=ftyp,
+        width=corW, height=corH, res=200)
 par(mai=c(.5,.5,.1,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
 plotCor(log10(ptstat$length), log10(ptstat$n), axes=FALSE,
-        ylab="AAS per protein",  xlab="protein length")
+        ylab="RAAS per protein",  xlab="protein length")
 for ( ax in 1:2 ) {
     axis(ax, at=1:10, labels=10^(1:10))
-    axis(ax, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+    axis(ax, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125,
+         labels=FALSE)
 }
 dev.off()
 
@@ -335,27 +372,64 @@ dev.off()
 ## * #RAAS values per protein/BP,
 ## * RAAS distribution of frequently substituted BP,
 
-ubp <- split(bdat, bdat$BP)
-ubpn <- unlist(lapply(ubp, nrow))
 
-hist(ubpn, breaks=100)
 
-ubpc <- ubpn
-ubpc[ubpc>15] <- ">15"
-paas <- table(ubpc)[c(as.character(1:15),">15")]
+pns <- bpstat$nsaap
+pns[pns>15] <- ">15"
+paas <- table(pns)[c(as.character(1:15),">15")]
 
-plotdev(file.path(pfig.path,"hotspots_AAS_per_peptide"), type=ftyp,
+bid <- rownames(bpstat)[which(bpstat$nsaap>80)]
+plotdev(file.path(pfig.path,"hotspots_example_RAAS"), type=ftyp,
+        width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+hist(tmtf$RAAS[tmtf$BP==bid],
+     xlab=xl.raas, main=NA)
+mtext(bid, 3,0, cex=.7)
+dev.off()
+
+plotdev(file.path(pfig.path,"hotspots_SAAP_per_peptide"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- barplot(paas, xlab="AAS per base peptide",
+bp <- barplot(paas, xlab="SAAP per base peptide",
               ylab=NA, axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of peptides", 2, 1.6)
 legend("topright",
-       paste(sum(ubpn>1), "peptides with >1 AAS"), bty="n")
+       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
 dev.off()
 
+
+pns <- bpstat$n
+pns[pns>15] <- ">15"
+paas <- table(pns)[c(as.character(1:15),">15")]
+
+plotdev(file.path(pfig.path,"hotspots_RAAS_per_peptide"), type=ftyp,
+        width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+bp <- barplot(paas, xlab="RAAS per base peptide",
+              ylab=NA, axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+axis(2)
+mtext("# of peptides", 2, 1.6)
+legend("topright",
+       paste(sum(bpstat$n>1,na.rm=TRUE), "peptides with >1 RAAS"), bty="n")
+dev.off()
+
+## TODO: fix
+##plotdev(file.path(pfig.path,"hotspots_RAAS_per_peptide_length"), type=ftyp,
+##        width=3, height=3, res=200)
+##par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+##bp <- barplot(paas, xlab="RAAS per base peptide",
+##              ylab=NA, axes=FALSE, axisnames = FALSE)
+##axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+##axis(2)
+##mtext("# of peptides", 2, 1.6)
+##legend("topright",
+##       paste(sum(ubpn>1), "peptides with >1 AAS"), bty="n")
+##dev.off()
+
+## TODO: BP dotprofile
 
 
 if ( interactive() )
@@ -490,7 +564,7 @@ plotdev(file.path(pfig.path,paste0("protein_intensities_nsites")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(ptstat$intensity), log10(ptstat$n),
-        ylab="AAS per protein",
+        ylab="RAAS per protein",
         xlab=expression(log[10](intensity)), title=TRUE, cor.legend=FALSE,
         axes=FALSE)
 axis(1)

@@ -537,8 +537,9 @@ if ( interactive() ) {
 }
 
 ina <- which(is.na(idx))
+## TODO: why so many missing? not in new tmt level file?
 if ( length(ina)>0 ) {
-    cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
+    cat(paste("TODO:", length(ina), "BP/SAAP missing from BP/SAAP file.\n"))
     tmtf <- tmtf[-ina,]
     idx <- idx[-ina]    
 }

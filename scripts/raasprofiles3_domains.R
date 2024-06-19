@@ -19,7 +19,7 @@ goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
 
 ## only use unique BP/SAAP per Dataset
-do.unique <- FALSE # TRUE # 
+do.unique <- TRUE # FALSE # 
 dfig.path <- file.path(fig.path,"domains")
 dir.create(dfig.path, showWarnings=FALSE)
 
@@ -302,7 +302,31 @@ plotProfiles(ovc,
              vcols=acols, vbrks=abrks,
              gcols=gcols, ffam=FONT)#, plot.all=TRUE)
 
-## TODO: repeat for unique SAAP/BP!
+## UNIQUE BP
+## TODO:
+## * median of same AAS types : handled via do.unique?
+## * replabe BP name by "protein/BPn"
+## * plot number of unique SAAP in right y-axis
+bp.ovl <- raasProfile(x=tmtu, id="SAAP", 
+                   rows="BP", cols="Dataset",
+                   col.srt=uds,
+                   bg=TRUE, value=value, 
+                   use.test=use.test, do.plots=FALSE,
+                   xlab=xl.raas,
+                   verb=0)
+
+ovc <- sortOverlaps(bp.ovl, axis=2, p.min=ifelse(do.unique,1e-3,p.min),
+                    sign=1, cut=TRUE)
+omai <- c(.8,5,.6,.6)
+plotProfiles(ovc,
+             fname=file.path(dfig.path,paste0("peptide_",SETID,"")),
+             mai=omai, ttcols=ttcols, value="median",
+             dot.sze=dot.sze, p.dot=p.dot,
+             p.min=p.min, p.txt=p.txt,
+             ftyp=ftyp,
+             mtxt="", mtxt.line=2.3,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, ffam=FONT)#, plot.all=TRUE)
 
 
 ### GO RAAS Profiles
@@ -612,6 +636,9 @@ for ( i in 1:length(gon) ) {
     figlabel(goid, pos="bottomleft", font=2, cex=1)
     dev.off()
 }
+
+
+### SCAN BP
 
 ## TODO: for each dot, calculate % of signal that comes from a single BP
 
