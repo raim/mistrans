@@ -836,7 +836,7 @@ omai <- c(.75,1,.6,.6)
 nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
-plotdev(file.path(mfig.path,paste0("classes_conservation")),
+plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_overlap")),
         height=nh, width=nw, res=300)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
@@ -1160,6 +1160,76 @@ axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
 dev.off()
 
+### JOINT DISTRIBUTION PROBABILITY: conservation v disorder
+source("~/work/mistrans/scripts/saap_utils.R")
+diso <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="iupred3.bins", #cols="MMSeq2.bins",
+                    row.srt=c(rev(levels(iupred3.bins)),"na"),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+plotdev(file.path(mfig.path,paste0("classes_disorder")),
+        height=1.4, width=.8, res=300, bg="white")
+par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(diso, vcols=acols, vbrks=abrks, value="median",
+           axis=NA, xlab=NA, ylab=NA)
+polygon(y=c(2, nrow(jpv), nrow(jpv)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("disorder",2, 1.5)
+axis(2, at=1, label="na", las=2)
+dev.off()
+
+cons <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="MMSeq2.bins",
+                    row.srt=c(rev(levels(MMSeq2.bins)),"na"),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+plotdev(file.path(mfig.path,paste0("classes_conservation")),
+        height=1.4, width=.8, res=300, bg="white")
+par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(cons, vcols=acols, vbrks=abrks, value="median",
+           axis=NA, xlab=NA, ylab=NA)
+polygon(y=c(2, nrow(jpv), nrow(jpv)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("conservation",2, 1.5)
+axis(2, at=1, label="na", las=2)
+dev.off()
+
+## joint distribution, only one-sided p.value for high RAAS
+disop <- diso$p.value[,1]
+consp <- cons$p.value[,1]
+disop[diso$sign<0] <- 1
+consp[cons$sign<0] <- 1
+jpv <- t(t(disop)) %*% t(consp)
+jpv <- jpv[c(rev(levels(iupred3.bins)),"na"),]
+jpv <- jpv[,c("na",levels(MMSeq2.bins))]
+
+pj.min <- 1e-100
+jpv[jpv<pj.min] <- pj.min
+cols <- grDevices::gray(seq(1,0,length.out=100))
+brks <- seq(0,-log10(pj.min),length.out=101)
+
+omai <- c(.5,.5,.1,.1)
+nw <- ncol(jpv)*.2 + omai[2] + omai[4]
+nh <- nrow(jpv)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint")),
+        height=nh, width=nw, res=300, bg=NA)
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+image_matrix(-log10(jpv), col=cols, breaks=brks, axis=NA,
+             xlab="", ylab="")
+polygon(y=c(2, nrow(jpv), nrow(jpv)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+mtext("disorder",2, 1.5)
+polygon(x=c(2, ncol(jpv), ncol(jpv)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+axis(1, at=1, label="na", las=2)
+mtext("conservation",1, 1.3)
+dev.off()
 
 
 ### POSITION WISE RAAS
