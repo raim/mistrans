@@ -1203,30 +1203,102 @@ disop <- diso$p.value[,1]
 consp <- cons$p.value[,1]
 disop[diso$sign<0] <- 1
 consp[cons$sign<0] <- 1
+
 jpv <- t(t(disop)) %*% t(consp)
 jpv <- jpv[c(rev(levels(iupred3.bins)),"na"),]
 jpv <- jpv[,c("na",levels(MMSeq2.bins))]
 
+dison <- diso$p.value[,1]
+consn <- cons$p.value[,1]
+dison[diso$sign>0] <- 1
+consn[cons$sign>0] <- 1
+
+jpn <- t(t(dison)) %*% t(consn)
+jpn <- jpn[c(rev(levels(iupred3.bins)),"na"),]
+jpn <- jpn[,c("na",levels(MMSeq2.bins))]
+
+
 pj.min <- 1e-100
-jpv[jpv<pj.min] <- pj.min
+
+## manual plot
+jps <- jpv 
+jps[jps<pj.min] <- pj.min
 cols <- grDevices::gray(seq(1,0,length.out=100))
 brks <- seq(0,-log10(pj.min),length.out=101)
 
 omai <- c(.5,.5,.1,.1)
-nw <- ncol(jpv)*.2 + omai[2] + omai[4]
-nh <- nrow(jpv)*.2 + omai[1] + omai[3]
+nw <- ncol(jps)*.2 + omai[2] + omai[4]
+nh <- nrow(jps)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint")),
         height=nh, width=nw, res=300, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-image_matrix(-log10(jpv), col=cols, breaks=brks, axis=NA,
+image_matrix(-log10(jps), col=cols, breaks=brks, axis=NA,
              xlab="", ylab="")
-polygon(y=c(2, nrow(jpv), nrow(jpv)),
+polygon(y=c(2, nrow(jps), nrow(jps)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",2, 1.5)
-polygon(x=c(2, ncol(jpv), ncol(jpv)),
+polygon(x=c(2, ncol(jps), ncol(jps)),
         y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 axis(2, at=1, label="na", las=2)
+axis(1, at=1, label="na", las=2)
+mtext("conservation",1, 1.3)
+dev.off()
+
+## as dotplot
+
+disocons <- raasProfile(x=tmtm, id="SAAP", 
+                    rows="iupred3.bins", cols="MMSeq2.bins",
+                    row.srt=c(rev(levels(iupred3.bins)),"na"),
+                    col.srt=c("na", levels(MMSeq2.bins)),
+                    bg=FALSE, value=value, 
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+
+omai <- c(.5,CMAIL,.5,.5)
+nw <- ncol(disocons$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(disocons$p.value)*.2 + omai[1] + omai[3]
+
+
+## high RAAS
+tmp <- disocons$p.value
+disocons$p.value <- jpv[rownames(tmp),colnames(tmp)]
+
+
+plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint_raas")),
+        height=nh, width=nw, res=300, bg="white")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(disocons, value="median",vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8,
+           p.dot=pj.min)
+polygon(y=c(2, nrow(disocons$p.value), nrow(disocons$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+mtext("disorder",2, 1.3)
+polygon(x=c(2, ncol(disocons$p.value), ncol(disocons$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(1, at=1, label="na", las=2)
+mtext("conservation",1, 1.3)
+dev.off()
+
+## low RAAS
+tmp <- disocons$p.value
+disocons$p.value <- jpn[rownames(tmp),colnames(tmp)]
+
+
+plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint_raas_low")),
+        height=nh, width=nw, res=300, bg="white")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(disocons, value="median",vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8,
+           p.dot=pj.min)
+polygon(y=c(2, nrow(disocons$p.value), nrow(disocons$p.value)),
+        x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
+axis(2, at=1, label="na", las=2)
+mtext("disorder",2, 1.3)
+polygon(x=c(2, ncol(disocons$p.value), ncol(disocons$p.value)),
+        y=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 axis(1, at=1, label="na", las=2)
 mtext("conservation",1, 1.3)
 dev.off()
