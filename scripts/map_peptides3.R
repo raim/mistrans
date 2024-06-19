@@ -13,7 +13,7 @@ mam.path <- "/home/raim/data/mammary"
 proj.path <- "/home/raim/data/mistrans"
 
 dat.path <- file.path(proj.path,"originalData")
-fig.path <- file.path(proj.path,"figures","saap_mapping4")
+fig.path <- file.path(proj.path,"figures","saap_mapping5")
 out.path <- file.path(proj.path,"processedData")
 
 ##if ( !interactive() )
@@ -21,9 +21,9 @@ out.path <- file.path(proj.path,"processedData")
 
 ### MAIN INPUTS:
 ## SAAP/BP pairs
-saapf <- file.path(out.path,"unique_saap.tsv")
+saapf <- file.path(out.path,"unique_saap_2.tsv")
 ## BP:protein blast results
-bpmap <- file.path(out.path,"bp_mapped2.tsv")
+bpmap <- file.path(out.path,"bp_mapped_3.tsv")
 
 
 ## protein fasta
@@ -168,6 +168,7 @@ pfm$ensembl <- sub("\\..*","", pfm$query)
 dat <- read.delim(saapf, header=FALSE)
 colnames(dat) <- c("SAAP","BP")
 bmap <- read.delim(bpmap)
+
 dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
@@ -600,7 +601,7 @@ table(dat[,"extracellular"], dat[,"IG"])
 
 ### WRITE OUT TABLE with positions for downstream analysis
 if ( !interactive() ) {
-    write.table(dat, file=file.path(out.path,"saap_mapped4.tsv"),
+    write.table(dat, file=file.path(out.path,"saap_mapped_5.tsv"),
                 sep="\t", quote=FALSE, na="", row.names=FALSE)
 }
 

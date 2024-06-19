@@ -46,27 +46,34 @@ R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt
 ## BP as fasta for blast - TODO: remove header!
 cut -f 5 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
 cut -f 5 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
-cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |uniq | awk '{print ">" $0 ORS $0}' - > ${MISDATA}/processedData/unique_bp.fas
+cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |uniq | awk '{print ">" $0 ORS $0}' - > ${MISDATA}/processedData/unique_bp_2.fas
 
 ## how many? 7991 unique BP
 grep -n ">"  ${MISDATA}/processedData/unique_bp.fas |wc -l
+## with tonsil in TMT dataset
+grep -n ">"  ${MISDATA}/processedData/unique_bp_2.fas |wc -l
 
 ## SAAP as fasta for blast - TODO: remove header!
 cut -f 4 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
 cut -f 4 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
-cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |uniq | awk '{print ">" $0 ORS $0}' - > ${MISDATA}/processedData/unique_saap.fas
+cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort |uniq | awk '{print ">" $0 ORS $0}' - > ${MISDATA}/processedData/unique_saap_2.fas
 
 ## how many? 15061 unique SAAP
 grep -n ">"  ${MISDATA}/processedData/unique_saap.fas |wc -l
+## with tonsil in TMT dataset
+grep -n ">"  ${MISDATA}/processedData/unique_saap_2.fas |wc -l
 
 ## BP/SAAP as simple table, basis for search in proteins
 cut -f 4,5 ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp.tsv
 cut -f 4,5 ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt | sort | uniq > ${MISDATA}/processedData/tmp2.tsv
-cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort | uniq > ${MISDATA}/processedData/unique_saap.tsv
+cat ${MISDATA}/processedData/tmp.tsv ${MISDATA}/processedData/tmp2.tsv | sort | uniq > ${MISDATA}/processedData/unique_saap_2.tsv
 
 ## how many? 15669 unique SAAP/BP, 15061 unique SAAP
 wc -l  ${MISDATA}/processedData/unique_saap.tsv
 cut -f 1  ${MISDATA}/processedData/unique_saap.tsv |sort|uniq|wc -l
+## with tonsil in TMT dataset
+wc -l  ${MISDATA}/processedData/unique_saap_2.tsv
+cut -f 1  ${MISDATA}/processedData/unique_saap_2.tsv |sort|uniq|wc -l
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 
@@ -78,10 +85,13 @@ blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 $blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot
 ## blast - filter full length hit alignment length=query length,
 ## and at least 75% identity with awk.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp_2.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast_2.tsv
 
 ## 3.B) blast SP against ensembl+mutations
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv
+## NOTE: using BP as fasta title: gives warning of >50 valid AA in title
+## this should not be a problem, but TODO: check whether these are correctly
+## reflected (ini full length) in blast output, or cut at 50.
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap_2.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast_2.tsv
 
 ## some statistics on blast
 ## TODO: expand this QC analysis a bit,
@@ -96,13 +106,13 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
 ## 4.A) find best matching protein
-##    GENERATES ${MISDATA}/processedData/bp_mapped2.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt
+##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match_3.txt
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
     cd ~/data/mammary/processedData
-    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped2.tsv |sort|uniq|grep ENSP|grep -v "_")
+    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped_3.tsv |sort|uniq|grep ENSP|grep -v "_")
     for i in $all
     do
 	echo "$i"
@@ -110,15 +120,16 @@ if [ false ]; then
 	find iupred3/ -name "${i}*.tsv.gz" -exec cp -a {} iupred3_selected \;
     done
     zip -r iupred3_selected iupred3_selected
+    cd -
 fi  
 
 
 ## 4.B) map each peptide to it's positions in proteins and transcripts, and
 ## add a variety of collected information on protein structure, e.g.
 ## iupred3, anchor2, s4pred, codon, ...
-##    GENERATES ${MISDATA}/processedData/saap_mapped4.tsv, and
-##    QC figures in ${MISDATA}/figures/saap_mapping4/
-R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map3.txt
+##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
+##    QC figures in ${MISDATA}/figures/saap_mapping5/
+R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_5.txt
 
 ### 5) ANALYSIS
 
@@ -132,7 +143,9 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
 
+### TODO: move those two scripts to genomeBrowser
 R --vanilla < ${THIS}/scripts/halflives.R
+R --vanilla < ${THIS}/scripts/ralser24.R
 
 ## all protein profiles
 R --vanilla <  ${THIS}/scripts/saap_proteins.R

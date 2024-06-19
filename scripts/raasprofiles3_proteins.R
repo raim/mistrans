@@ -388,7 +388,7 @@ mtext(bid, 3,0, cex=.7)
 legend("topright",  unique(bdat$name[bdat$BP==bid]), bty="n")
 dev.off()
 
-for ( i in 1:10 ) {
+for ( i in 1:30 ) {
     bid <- rownames(bpstat)[order(bpstat$nsaap,decreasing=TRUE)[i]]
     plotdev(file.path(pfig.path,paste0("hotspots_example_RAAS_",i)), type=ftyp,
         width=3, height=3, res=200)
@@ -397,8 +397,9 @@ for ( i in 1:10 ) {
          xlab=xl.raas, main=NA)
     mtext(bid, 3,0, cex=.7)
     legend("topright",  unique(bdat$name[bdat$BP==bid]), bty="n")
-    legend("topleft",  c(paste0("#SAAP=",bpstat$nsaap),
-                         paste0("#RAAS=",sum(tmtf$BP==bid)), bty="n")
+    legend("topleft",  c(paste0("#SAAP=",bpstat[bid,"nsaap"]),
+                         paste0("#RAAS=",bpstat[bid,"n"])), bty="n",
+           seg.len=0, x.intersp=0)
     dev.off()
 }
 
@@ -628,17 +629,20 @@ dev.off()
 
 ### POSITION ON PROTEIN
 
-plotdev(file.path(pfig.path,paste0("protein_rposition_all")),
-        type=ftyp, res=300, width=corW,height=corH)
-par(mai=pmai, mgp=pmpg, tcl=-.25)
-plotCor(ptstat$rpos, ptstat$median, ylim=range(ptstat$median),
+if ( FALSE ) {
+    ## TODO: where was rpos added? makes no sense, since proteins can have
+    ## multiple rpos
+    plotdev(file.path(pfig.path,paste0("protein_rposition_all")),
+            type=ftyp, res=300, width=corW,height=corH)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    plotCor(ptstat$rpos, ptstat$median, ylim=range(ptstat$median),
         ylab=xl.prota, xlab=expression(log[10](AAS/AA)),
         axes=FALSE, title=TRUE, cor.legend=FALSE)
-axis(2)
-axis(1, at=-10:10, labels=10^(-10:10))
-axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
-dev.off()
-
+    axis(2)
+    axis(1, at=-10:10, labels=10^(-10:10))
+    axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
+    dev.off()
+}
 
 ## PROTEIN MELTING TEMPERATURE
 

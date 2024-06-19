@@ -878,6 +878,14 @@ raasProfile.row <- function(x=tmtf, id="SAAP",
                             xlab="value", fname="profile_",
                             verb=FALSE) {
 
+    if ( missing(cols) ) {
+        x$call <- "all"
+        cols <- "call"        
+    }
+    if ( missing(cols) ) {
+        x$rall <- "all"
+        cols <- "rall"        
+    }
 
     ## check presence
     if ( any(!c(value, rows, cols)%in%colnames(x)) )

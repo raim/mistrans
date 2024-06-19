@@ -267,7 +267,7 @@ dana14.file <- file.path(dat.path,"dana14_codons.csv")
 wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
 gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
 
-in.file <- file.path(out.path,"saap_mapped4.tsv")
+in.file <- file.path(out.path,"saap_mapped_5.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
 
@@ -539,6 +539,17 @@ if ( interactive() ) {
 ina <- which(is.na(idx))
 ## TODO: why so many missing? not in new tmt level file?
 if ( length(ina)>0 ) {
+    sum(!paste(tmtf$BP, tmtf$SAAP) %in% paste(hdat$BP, hdat$SAAP))
+    sum(!paste(tmtf$BP) %in% paste(hdat$BP))
+    sum(!paste(tmtf$SAAP) %in% paste(hdat$SAAP))
+    table(tmtf$TMT.Tissue[which(!paste(tmtf$BP) %in% paste(hdat$BP))])
+
+    paste(tmtf$BP, tmtf$SAAP)[ina]
+    
+    ## TODO: where are missing BP lost?
+    ## LLGPNASPDGLIPWTRFCK, QAFDDAIAELDTLNEDSYK,
+    ## AQHEDQVEQYK -> AGHEDQVEQYK
+    
     cat(paste("TODO:", length(ina), "BP/SAAP missing from BP/SAAP file.\n"))
     tmtf <- tmtf[-ina,]
     idx <- idx[-ina]    

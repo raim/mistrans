@@ -1174,7 +1174,7 @@ plotdev(file.path(mfig.path,paste0("classes_disorder")),
 par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(diso, vcols=acols, vbrks=abrks, value="median",
            axis=NA, xlab=NA, ylab=NA)
-polygon(y=c(2, nrow(jpv), nrow(jpv)),
+polygon(y=c(2, nrow(diso$p.value), nrow(diso$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("disorder",2, 1.5)
 axis(2, at=1, label="na", las=2)
@@ -1192,7 +1192,7 @@ plotdev(file.path(mfig.path,paste0("classes_conservation")),
 par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(cons, vcols=acols, vbrks=abrks, value="median",
            axis=NA, xlab=NA, ylab=NA)
-polygon(y=c(2, nrow(jpv), nrow(jpv)),
+polygon(y=c(2, nrow(cons$p.value), nrow(cons$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
 mtext("conservation",2, 1.5)
 axis(2, at=1, label="na", las=2)
