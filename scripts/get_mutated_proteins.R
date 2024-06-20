@@ -6,7 +6,9 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 
 fasta <- file.path(mam.path,"originalData","Homo_sapiens.GRCh38.pep.all.fa.gz")
-saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df.txt")
+saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withoutTonsil.txt")
+## TODO: include proteins from tonsil data!
+saap2.file <- file.path(dat.path, "All_filtered_SAAP_protein_filter_df_withTonsil.xlsx")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
