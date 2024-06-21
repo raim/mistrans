@@ -16,6 +16,7 @@
 source("~/work/mistrans/scripts/saap_utils.R")
 source("~/programs/genomeBrowser/src/genomeBrowser_utils.R")
 
+library(readxl)
 library(viridis)
 library(segmenTools)
 library(seqinr)
@@ -70,6 +71,9 @@ iupred <- file.path(mam.path,"processedData","iupred3")
 ## phastcons data (retrieved by Andrew Leduc)
 phastcons.file <- file.path(mam.path,"processedData","first3k_proteins.RData")
 
+## describe prot
+descrp <- file.path(mam.path,"processedData","describePROT")
+
 ## pfam hits
 pfam <- file.path(mam.path,"processedData",
                   "Homo_sapiens.GRCh38.pep.large_annotations.csv")
@@ -80,6 +84,12 @@ clans <- file.path(mam.path,"originalData", "pfam", "Pfam-A.clans.tsv.gz")
 
 ## genome feature file
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+## PROTEOMIC PEPTIDES
+mainp.file <- file.path(out.path,"main_peptides_blast.tsv")
+maini.file <- file.path(dat.path,"tonsil_main_peptide_quant_df.xlsx") # tonsil
+maina.file <- file.path(dat.path,"main_peptide_quant_df.xlsx") # other tissues
+
 
 ## PARAMETERS
 
@@ -153,7 +163,7 @@ dat$Keep.SAAP <- !dat$IG
 ##bp="LVVVGAGGVGK"
 
 ## OVERRULE TMT LEVEL KEEP SAAP COLUMN
-tmtf$Keep.SAAP <- TRUE
+##tmtf$Keep.SAAP <- TRUE
 
 alls <- rbind(dat[,c("Keep.SAAP","SAAP")],
               tmtf[,c("Keep.SAAP","SAAP")])
@@ -247,8 +257,14 @@ iufiles <- list.files(pattern=paste0(".*iupred3.tsv.gz"), path=iupred)
 names(iufiles) <- sub("\\..*","", iufiles)
 
 ## phastcons : list with protein IDs
+## NOTE: not complete and not used below
 phastcons <- readRDS(phastcons.file)
 names(phastcons) <- sub("\\..*", "", names(phastcons))
+
+## describeProt
+## NOTE: only MMSeq2 result in second column is used
+dpfiles <- list.files(pattern=paste0(".*.tsv.gz"), path=descrp)
+names(dpfiles) <- sub("\\.tsv.gz","",dpfiles)
 
 ## load transcript and protein fasta
 ## GET ENSEMBL PROTEINS - from project mammary
@@ -355,6 +371,39 @@ pfd <- pfd[!is.na(pfd$ensembl),]
 ## split to list per ensembl ID
 pfdl <- split(pfd, pfd$ensembl)
 
+### PROTEOMICS
+## main peptides detected in tonsil data
+mainp <- read.delim(mainp.file, header=FALSE)
+colnames(mainp) <-  c("MP","protein","identity", "mismatches",
+                      "alen", "qlen", "slen", "sstart", "send", "e", "bitscore")
+## intensities in tissues w/o tonsil
+maina <- as.data.frame(read_xlsx(maina.file))
+rownames(maina) <- maina[,1]
+maina <- maina[,2:ncol(maina)]
+
+mc <- apply(maina, 1, function(x) sum(x>0))
+
+## TODO: plot to file
+hist(mc, xlab="# tissues", ylab="# peptides")
+
+## intensities in tonsil
+maini <- as.data.frame(read_xlsx(maini.file))
+rownames(maini) <- maini[,1]
+maini <- maini[,2:ncol(maini)]
+
+## TODO: plot to file
+mcc <- log10(maini$Trypsin)
+mcc[mcc==-Inf] <- 0
+mcc <- selectColors(mcc, mn=6, mx=10, reverse=TRUE)
+
+mc <- mcc$x.col
+mc[maini$Trypsin==0] <- NA
+names(mc) <- rownames(maini)
+
+## add color to blast results
+mainp$color <- mc[mainp$MP]
+
+## ma
 
 ## TODO: global analyses as previously
 
@@ -411,6 +460,9 @@ pids=names(pnms)[grep("S100",pnms)]
 ## TODO: track PSMB5 - why missing from tmtf in RAAS profile scripts?
 pid=names(which(pnms=="PSMB5"))
 
+## AHNAK: righ RAAS protein
+pid=names(which(pnms=="AHNAK"))
+
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
 
@@ -430,12 +482,17 @@ for ( pid in pids ) {
     iu <- NULL
     if ( pid %in% names(iufiles) )
         iu <- read.delim(file.path(iupred,iufiles[pid]), header=FALSE)
+    dp <- NULL
+    if ( puni[pid] %in% names(dpfiles) ) 
+        dp <- read.delim(file.path(descrp,dpfiles[puni[pid]]), header=FALSE)
+    
+    
     psq <- pfas[[pid]]$seq
     tsq <- tfas[[pid]]$seq
     phc <- NULL
     if ( pid %in% names(phastcons) )
         phc <- phastcons[[pid]]
-   # else next
+
     ## check lengths
     tlen <- nchar(tsq)/3 -1
     plen <- nchar(psq)
@@ -449,8 +506,11 @@ for ( pid in pids ) {
                         collapse=";"), "\n"))
     ## check sequence via translate
     if ( !is.null(iu) )
-        if ( paste0(iu[,2],collapse="")!=psq)
+        if ( paste0(iu[,2],collapse="")!=psq )
             cat(paste("WARNING:", pid, "wrong iupred3 seq\n"))
+    if ( !is.null(dp) )
+        if ( paste0(dp[,1],collapse="")!=psq )
+            cat(paste("WARNING:", pid, "wrong describePROT seq\n"))
     if ( is.null(tsq) ) {
         cat(paste("WARNING:", pid, "no transcript\n"))
     } else {
@@ -494,7 +554,7 @@ for ( pid in pids ) {
         pf$color <- "#000000"
     }
     
-    ## ADD DOWNLOADED
+    ## ADD DOWNLOADED PFAM/CLAN
     if ( pid%in%names(pfdl) ) {
         npf <- cbind(chr=1,
                      start=pfdl[[pid]]$FROM,
@@ -505,6 +565,15 @@ for ( pid in pids ) {
                      color="#ff0000")
         pf <- rbind(pf, npf)                    
     }
+
+    ## ADD all "Main peptides"
+    mps  <- mainp[mainp$protein==pid,]
+    mpd <- data.frame(type="peptide",
+                      start=mps$sstart,
+                      end=mps$send,
+                      chr=1, strand=".",
+                      color=mps$color)
+    
 
     ## PREPARE AAS PLOT
     ## order by RAAS such that higher RAAS will be on top of overlapping
@@ -534,10 +603,21 @@ for ( pid in pids ) {
     if ( plen>2000 ) wscale <- 1/100
     mmai <- c(.05,1,.05,.1)
     
+    heights <- c(.1,  # title
+                 .5,  # PFAM/CLAN
+                 .150,# iupred/anchor2
+                 .075,# conservation
+                 .1,  # main peptides
+                 .15, # secondary structure and cleavage
+                 .25, # AAS type
+                 .1,  # AAS context
+                 .075,# AA
+                 .075,# codon
+                 .075 # CDS structure
+                 )
     plotdev(ffile, width=min(c(100,plen*wscale)),
-            height=3.1, type=ftyp, res=200)
-    layout(mat=t(t(1:10)), heights=c(.1,.5,.175,.075,.15,.25,
-                                     .1,.075,0.075,.075))
+            height=2*sum(heights), type=ftyp, res=200)
+    layout(mat=t(t(1:11)), heights=heights)
     par(mai=mmai, xaxs="i", xpd=TRUE)
 
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -570,16 +650,32 @@ for ( pid in pids ) {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     }
     ## phastcons data as heatmap
-    if ( !is.null(phc) ) {
-        ##
-        phc$Score[is.na(phc$Score)] <- 0
-        phd <- cbind(chr=1,coor=1:nrow(phc),
-                     phastcons=phc[,c("Score")])
-        brks <- 1:100/100
+    #if ( !is.null(phc) ) {
+    #    ##
+    #    phc$Score[is.na(phc$Score)] <- 0
+    #    phd <- cbind(chr=1,coor=1:nrow(phc),
+    #                 phastcons=phc[,c("Score")])
+    #    brks <- 1:100/100
+    #    plotHeat(phd, coors=coors, breaks=brks,
+    #             colors=c(viridis(length(brks)-1)))
+    #    axis(2, at=c(1), labels=c("phastcons"), las=2, cex.axis=1.2)
+    #} else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    ## MMSeq2 conservation as heatmap
+    if ( !is.null(dp) ) {
+        phd <- cbind(chr=1,coor=1:nrow(dp),
+                     MMSeq2=dp[,2])
+        brks <- seq(2.5,4.5, .1)
+        ## TODO: saver y-axis labelling in plotHeat!
         plotHeat(phd, coors=coors, breaks=brks,
                  colors=c(viridis(length(brks)-1)))
-        axis(2, at=c(1), labels=c("phastcons"), las=2, cex.axis=1.2)
-    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        axis(2, at=c(1), labels=c("MMSeq2"), las=2, cex.axis=1.2)
+    } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    }
+    
+    ## main peptides
+    plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+                 typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
 
     ## secondary structure, K|R and AAS
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -618,6 +714,7 @@ for ( pid in pids ) {
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
     ##       xpd=TRUE)
+
 
     ## AA context
     ## add AA sequences around AAS

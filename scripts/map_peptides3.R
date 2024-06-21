@@ -22,7 +22,7 @@ out.path <- file.path(proj.path,"processedData")
 ### MAIN INPUTS:
 ## SAAP/BP pairs
 saapf <- file.path(out.path,"unique_saap_2.tsv")
-## BP:protein blast results
+## BP:protein blast results, processed by
 bpmap <- file.path(out.path,"bp_mapped_3.tsv")
 
 
