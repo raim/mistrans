@@ -244,6 +244,14 @@ intv[intv==0] <- 1
 intv[intv>length(lraas.col$col)] <- length(lraas.col$col)
 dat$color <- lraas.col$col[intv]
 
+## RAAS bins for order in plots
+raas <- dat$median
+raas[raas< -4] <- -3.99999999
+raas[raas> 1] <- 1
+raas.bins <- cut(raas, seq(-4,1,.1))
+dat$RAAS.bins <- as.character(raas.bins)
+raas.srt <- levels(raas.bins)
+
 ## LIST OF AAS BY PROTEIN
 aasl <- split(dat, dat$ensembl) 
 
@@ -340,7 +348,7 @@ pfm$clan[pfm$clan==""] <- pfm$target[pfm$clan==""]
 use.pclan <- TRUE# FALSE
 if ( !use.pclan )
     pfm$clan <- pfm$target
-
+## split by protein
 pfl <- split(pfm, pfm$query)
 names(pfl) <- sub("\\.[0-9]+", "", names(pfl))
 
@@ -439,6 +447,47 @@ POI <- c(pamrt[genes[genes$name=="KRAS","canonical"],],
          pamrt[genes[genes$name=="ACTB","canonical"],],
          pamrt[genes[genes$name=="ACTC1","canonical"],])
 
+shiri.selection <- c("IFI30",
+                     "PSMC5",
+                     "TST",
+                     "UGDH",
+                     "POTEF",
+                     "ENSP00000478289",
+                     "EPHX1",
+                     "RPSA",
+                     "EEF1G",
+                     "ARHGDIB",
+                     "MYL12A",
+                     "CKM",
+                     "CORO1B",
+                     "PTMA",
+                     "ALDH6A1",
+                     "GFAP",
+                     "CLIC4",
+                     "CTRB1",
+                     "GPD1",
+                     "AMY2A",
+                     "EEF1A1",
+                     "RBP2",
+                     "RPL8",
+                     "GSTA1",
+                     "NARS1",
+                     "MZB1",
+                     "ASS1",
+                     "DCXR",
+                     "ENSP00000252485",
+                     "TGFBI",
+                     "ENSP00000438588",
+                     "PGM1",
+                     "PALLD",
+                     "MYL9",
+                     "ENSP00000446637",
+                     "CKB",
+                     "FBLN1",
+                     "HLA-C")
+
+pids <- names(pnms)[pnms%in%shiri.selection]
+
 ## map gene names and uniprot
 gidx <-  match(trmap[names(aasl),1], genes$MANE)
 pnms <- genes$name[gidx]
@@ -462,6 +511,8 @@ pid=names(which(pnms=="PSMB5"))
 
 ## AHNAK: righ RAAS protein
 pid=names(which(pnms=="AHNAK"))
+## ACTG2: many AAS protein
+pid=names(which(pnms=="ACTG2"))
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -583,7 +634,8 @@ for ( pid in pids ) {
     aatp <- as.numeric(duplicated(round(aas$pos/10)))
     tagp <- tagDuplicates(aas$pos)
     aatp[aatp>0] <- tagp[aatp>0]
-    aad <- data.frame(type=aatp, #aaco,#
+    ## NOTE: cex ~ n of measurements
+    aad <- data.frame(type=aas$RAAS.bins, #aaco,#
                       name=aaco, #aas$to, #
                       start=aas$pos,
                       end=aas$pos,
@@ -591,10 +643,12 @@ for ( pid in pids ) {
                       cex=log10(aas$n)+1,
                       color=aas$color,
                       codon=aas$codon)
+    aad <- aad[order(aas$median),,drop=FALSE]
     ##aad <- aad[aas$median >= min.raas, ]
 
     ## skip plot if no RAAS is higher than minimum
-    if ( sum(aas$median >= min.raas)==0 & !pid%in%POI ) next
+    doit <- pid%in%POI | pnms[pid]%in%shiri.selection
+    if ( sum(aas$median >= min.raas)==0 & !doit ) next
 
     cat(paste("PLOTTING", pnms[pid], pid, "\n"))
 
@@ -605,8 +659,8 @@ for ( pid in pids ) {
     
     heights <- c(.1,  # title
                  .5,  # PFAM/CLAN
-                 .150,# iupred/anchor2
-                 .075,# conservation
+                 .200,# iupred/anchor2
+                 #.075,# conservation
                  .1,  # main peptides
                  .15, # secondary structure and cleavage
                  .25, # AAS type
@@ -617,7 +671,7 @@ for ( pid in pids ) {
                  )
     plotdev(ffile, width=min(c(100,plen*wscale)),
             height=2*sum(heights), type=ftyp, res=200)
-    layout(mat=t(t(1:11)), heights=heights)
+    layout(mat=t(t(1:length(heights))), heights=heights)
     par(mai=mmai, xaxs="i", xpd=TRUE)
 
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
@@ -638,14 +692,18 @@ for ( pid in pids ) {
 
     ## iupred3/anchor2 as heatmap
     if ( !is.null(iu) ) {
+        
+        ## standardize MMSeq2
+        cons <- dp[,2]
+        cons <- (cons - 0)/(4.5-0)
         iud <- cbind(chr=1,coor=iu[,"V1"],
+                     MMSeq2=cons,
                      iupred3=iu[,c("V3")],
                      anchor2=iu[,c("V4")])
-        brks <- 50:100/100
+        brks <- 0:100/100
         ## TODO: saver y-axis labelling in plotHeat!
         plotHeat(iud, coors=coors, breaks=brks,
-                 colors=c(viridis(length(brks)-1)))
-        axis(2, at=c(1,2), labels=c("iupred3","anchor2"), las=2, cex.axis=1.2)
+                 colors=c(viridis(length(brks)-1)), axis2=TRUE)
     } else {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     }
@@ -661,22 +719,30 @@ for ( pid in pids ) {
     #    axis(2, at=c(1), labels=c("phastcons"), las=2, cex.axis=1.2)
     #} else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     ## MMSeq2 conservation as heatmap
-    if ( !is.null(dp) ) {
-        phd <- cbind(chr=1,coor=1:nrow(dp),
-                     MMSeq2=dp[,2])
-        brks <- seq(2.5,4.5, .1)
-        ## TODO: saver y-axis labelling in plotHeat!
-        plotHeat(phd, coors=coors, breaks=brks,
+    if ( FALSE ) { # now plotted together with iupred3 above
+        if ( !is.null(dp) ) {
+            phd <- cbind(chr=1,coor=1:nrow(dp),
+                         MMSeq2=dp[,2])
+            brks <- seq(2.5,4.5, .1)
+            ## TODO: saver y-axis labelling in plotHeat!
+            plotHeat(phd, coors=coors, breaks=brks,
                  colors=c(viridis(length(brks)-1)))
-        axis(2, at=c(1), labels=c("MMSeq2"), las=2, cex.axis=1.2)
-    } else {
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+            axis(2, at=c(1), labels=c("MMSeq2"), las=2, cex.axis=1.2)
+        } else {
+            plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        }
     }
     
     ## main peptides
+    mmaiaa <- mmai
+    mmaiaa[1] <- 0.01
+    par(mai=mmaiaa)
     plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
                  typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
-
+    mmaiaa <- mmai
+    mmaiaa[3] <- 0.01
+    par(mai=mmaiaa)
+   
     ## secondary structure, K|R and AAS
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
@@ -695,6 +761,7 @@ for ( pid in pids ) {
     arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
     axis(2, at=.6, labels="AAS", las=2)
 
+    par(mai=mmai, xpd=TRUE)
 
     ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
     ## DETAILS for high RAAS AAS
@@ -708,7 +775,8 @@ for ( pid in pids ) {
                        col=aad$color[aad$type==tp])
     }
     plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-                 typord=TRUE, axis2=FALSE)
+                 plotorder=rev(order(aad$type)), cuttypes=TRUE,
+                 types=rev(raas.srt), typord=TRUE, axis2=FALSE)
     mtext("AAS\ntype", 2, 2)
     ## indicate ALL AAS
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
@@ -763,7 +831,7 @@ for ( pid in pids ) {
 
     dev.off()
 
-    if ( pid%in%POI | file.exists(paste0(sfile,".",ftyp)) )
+    if ( doit | file.exists(paste0(sfile,".",ftyp)) )
         file.copy(paste0(ffile,".",ftyp),
                   paste0(sfile,".",ftyp), overwrite = TRUE)
 
