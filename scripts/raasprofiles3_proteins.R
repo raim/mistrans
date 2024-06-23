@@ -393,8 +393,11 @@ for ( i in 1:30 ) {
     plotdev(file.path(pfig.path,paste0("hotspots_example_RAAS_",i)), type=ftyp,
         width=3, height=3, res=200)
     par(mai=c(0.5,.5,.15,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-    hist(tmtf$RAAS[tmtf$BP==bid],
-         xlab=xl.raas, main=NA)
+    y <- tmtf$RAAS[tmtf$BP==bid]
+    y[y>  0] <- .5
+    y[y< -4] <- -4.5
+    hist(y,
+         xlab=xl.raas, main=NA, breaks=seq(-10,10,.5), xlim=c(-4.5,.5))
     mtext(bid, 3,0, cex=.7)
     legend("topright",  unique(bdat$name[bdat$BP==bid]), bty="n")
     legend("topleft",  c(paste0("#SAAP=",bpstat[bid,"nsaap"]),

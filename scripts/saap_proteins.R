@@ -25,6 +25,11 @@ library(Biostrings) # genetic code
 options(stringsAsFactors=FALSE)
 
 
+docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
+upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
+ttcols <- unique(c(rev(docols), upcols))
+ttcolf <- colorRampPalette(ttcols)
+
 #### PATHS AND FILES
 
 proj.path <- "/home/raim/data/mistrans"
@@ -33,6 +38,7 @@ out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures","proteins")
 dir.create(fig.path)
 dir.create(file.path(fig.path, "selected"))
+dir.create(file.path(fig.path, "tight"))
 
 mam.path <- "~/data/mammary/"
 
@@ -384,15 +390,20 @@ pfdl <- split(pfd, pfd$ensembl)
 mainp <- read.delim(mainp.file, header=FALSE)
 colnames(mainp) <-  c("MP","protein","identity", "mismatches",
                       "alen", "qlen", "slen", "sstart", "send", "e", "bitscore")
-## intensities in tissues w/o tonsil
-maina <- as.data.frame(read_xlsx(maina.file))
-rownames(maina) <- maina[,1]
-maina <- maina[,2:ncol(maina)]
 
-mc <- apply(maina, 1, function(x) sum(x>0))
-
-## TODO: plot to file
-hist(mc, xlab="# tissues", ylab="# peptides")
+## INSPECT PEPTIDE INTENSITIES
+## TODO: do this elsewhere and generate plots
+if ( Sys.info() ["nodename"]=="exon" & interactive() ) {
+    ## intensities in tissues w/o tonsil
+    maina <- as.data.frame(read_xlsx(maina.file))
+    rownames(maina) <- maina[,1]
+    maina <- maina[,2:ncol(maina)]
+    
+    mc <- apply(maina, 1, function(x) sum(x>0))
+    
+    ## TODO: plot to file
+    hist(mc, xlab="# tissues", ylab="# peptides")
+}
 
 ## intensities in tonsil
 maini <- as.data.frame(read_xlsx(maini.file))
@@ -520,6 +531,7 @@ pids <- names(aasl)#POI #
 for ( pid in pids ) {
 
     ffile <- file.path(fig.path, pnms[pid])
+    tfile <- file.path(fig.path, "tight", paste0(pnms[pid], "_tight"))
     sfile <- file.path(fig.path, "selected", pnms[pid])
 
     cat(paste("getting data for", pnms[pid], pid, "\n"))
@@ -635,14 +647,15 @@ for ( pid in pids ) {
     tagp <- tagDuplicates(aas$pos)
     aatp[aatp>0] <- tagp[aatp>0]
     ## NOTE: cex ~ n of measurements
-    aad <- data.frame(type=aas$RAAS.bins, #aaco,#
+    aad <- data.frame(type=round(aas$median,1), #aas$RAAS.bins, #aaco,#
                       name=aaco, #aas$to, #
                       start=aas$pos,
                       end=aas$pos,
                       chr=1, strand=".",
                       cex=log10(aas$n)+1,
                       color=aas$color,
-                      codon=aas$codon)
+                      codon=aas$codon,
+                      raas=aas$median)
     aad <- aad[order(aas$median),,drop=FALSE]
     ##aad <- aad[aas$median >= min.raas, ]
 
@@ -658,12 +671,12 @@ for ( pid in pids ) {
     mmai <- c(.05,1,.05,.1)
     
     heights <- c(.1,  # title
-                 .5,  # PFAM/CLAN
+                 .25,  # PFAM/CLAN
                  .200,# iupred/anchor2
                  #.075,# conservation
                  .1,  # main peptides
                  .15, # secondary structure and cleavage
-                 .25, # AAS type
+                 .5, # AAS type
                  .1,  # AAS context
                  .075,# AA
                  .075,# codon
@@ -696,14 +709,18 @@ for ( pid in pids ) {
         ## standardize MMSeq2
         cons <- dp[,2]
         cons <- (cons - 0)/(4.5-0)
-        iud <- cbind(chr=1,coor=iu[,"V1"],
+        ## QC: mmseq2 must have samelength as iupred3
+        if ( length(cons) != nrow(iu) )
+            cons <- rep(NA, nrow(iu))
+        iud <- cbind(chr=1,
+                     coor=iu[,"V1"],
                      MMSeq2=cons,
                      iupred3=iu[,c("V3")],
                      anchor2=iu[,c("V4")])
         brks <- 0:100/100
         ## TODO: saver y-axis labelling in plotHeat!
-        plotHeat(iud, coors=coors, breaks=brks,
-                 colors=c(viridis(length(brks)-1)), axis2=TRUE)
+        tm <- plotHeat(iud, coors=coors, breaks=brks,
+                 colors=c(ttcolf(length(brks)-1)), axis2=TRUE)
     } else {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     }
@@ -775,8 +792,9 @@ for ( pid in pids ) {
                        col=aad$color[aad$type==tp])
     }
     plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-                 plotorder=rev(order(aad$type)), cuttypes=TRUE,
-                 types=rev(raas.srt), typord=TRUE, axis2=FALSE)
+                 plotorder=order(aad$type), 
+                 types=rev(seq(-10,10,.1)), cuttypes=TRUE,
+                 typord=TRUE, axis2=FALSE)
     mtext("AAS\ntype", 2, 2)
     ## indicate ALL AAS
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
@@ -791,11 +809,12 @@ for ( pid in pids ) {
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     if ( nrow(aad)>0 )
         for ( j in 1:nrow(aad) ) {
+            if ( aad$raas < .1 ) next
             x <- aad$start[j]
             prng <- (x-1):(x+1)
             prng <- prng[prng>0 & prng <= plen]
             text(x=x, y=1, labels=paste(pseq[prng], collapse=""),
-             family="monospace")
+                 family="monospace")
         }
     mtext("context", 2, las=2, cex=.8)
 
@@ -834,6 +853,86 @@ for ( pid in pids ) {
     if ( doit | file.exists(paste0(sfile,".",ftyp)) )
         file.copy(paste0(ffile,".",ftyp),
                   paste0(sfile,".",ftyp), overwrite = TRUE)
+
+    ### TIGHT PLOT
+    cat(paste("TIGHT PLOT", pnms[pid], pid, "\n"))
+
+    wscale <- 1/30
+    if ( plen<90 ) wscale <- 1/10
+    if ( plen>2000 ) wscale <- 1/100
+    mmai <- c(.05,1,.05,.1)
+    
+    heights <- c(.1,  # title
+                 .15,  # PFAM/CLAN
+                 .1,  # main peptides
+                 .15, # secondary structure and cleavage
+                 .5, # AAS type
+                 .075 # CDS structure
+                 )
+    plotdev(tfile, width=min(c(100,plen*wscale)),
+            height=2*sum(heights), type=ftyp, res=200)
+    layout(mat=t(t(1:length(heights))), heights=heights)
+    par(mai=mmai, xaxs="i", xpd=TRUE)
+
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(x=plen/2, y=1,
+         labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
+    
+    ## domains as arrows
+    if ( !is.null(pf) ) {
+        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
+                     typord=TRUE, axis2=FALSE)
+    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    mtext("Pfam\nclan", 2, 2)
+    
+    
+    ## main peptides
+    mmaiaa <- mmai
+    mmaiaa[1] <- 0.01
+    par(mai=mmaiaa)
+    plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+                 typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+    mmaiaa <- mmai
+    mmaiaa[3] <- 0.01
+    par(mai=mmaiaa)
+   
+    ## secondary structure, K|R and AAS
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
+    axis(2, at=1, labels="PSSP", las=2)
+    ## indicate K|R cleavage sites - TODO: omit Keil rules
+    arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
+    if ( length(arg) )
+        arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
+    axis(2, at=1.4, labels="K|R", las=2)
+    lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
+    if ( length(lys) )
+        arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
+
+    ## indicate ALL AAS
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
+    axis(2, at=.6, labels="AAS", las=2)
+
+    par(mai=mmai, xpd=TRUE)
+
+    plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
+                 plotorder=order(aad$type), 
+                 types=rev(seq(-10,10,.1)), cuttypes=TRUE,
+                 typord=TRUE, axis2=FALSE)
+    ##plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
+    ##             plotorder=rev(order(aad$type)), cuttypes=TRUE,
+    ##             types=rev(raas.srt), typord=TRUE, axis2=FALSE)
+    mtext("AAS\ntype", 2, 2)
+
+    ## EXONS
+    par(mai=mmai)
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+    axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+    mtext("CDS", 2, las=2)
+
+    dev.off()
 
 }
 
