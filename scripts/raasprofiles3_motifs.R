@@ -1256,7 +1256,7 @@ disocons <- raasProfile(x=tmtm, id="SAAP",
                     xlab=xl.raas,
                     verb=1)
 
-omai <- c(.5,CMAIL,.5,.5)
+omai <- c(.5,.5,.5,.5)
 nw <- ncol(disocons$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(disocons$p.value)*.2 + omai[1] + omai[3]
 

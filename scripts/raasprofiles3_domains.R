@@ -19,7 +19,7 @@ goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
 
 ## only use unique BP/SAAP per Dataset
-do.unique <-  TRUE # FALSE #
+do.unique <-  FALSE #TRUE # 
 dfig.path <- file.path(fig.path,"domains")
 dir.create(dfig.path, showWarnings=FALSE)
 
