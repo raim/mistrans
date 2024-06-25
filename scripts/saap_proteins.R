@@ -257,6 +257,7 @@ raas[raas> 1] <- 1
 raas.bins <- cut(raas, seq(-4,1,.1))
 dat$RAAS.bins <- as.character(raas.bins)
 raas.srt <- levels(raas.bins)
+dat$raas <- raas
 
 ## LIST OF AAS BY PROTEIN
 aasl <- split(dat, dat$ensembl) 
@@ -497,7 +498,6 @@ shiri.selection <- c("IFI30",
                      "FBLN1",
                      "HLA-C")
 
-pids <- names(pnms)[pnms%in%shiri.selection]
 
 ## map gene names and uniprot
 gidx <-  match(trmap[names(aasl),1], genes$MANE)
@@ -524,6 +524,12 @@ pid=names(which(pnms=="PSMB5"))
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
 pid=names(which(pnms=="ACTG2"))
+## ACTG2: many AAS protein
+pid=names(which(pnms=="ACTC1"))
+
+## just shiri's collection
+pids <- names(pnms)[pnms%in%shiri.selection]
+
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -793,8 +799,8 @@ for ( pid in pids ) {
     }
     plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
                  plotorder=order(aad$type), 
-                 types=rev(seq(-10,10,.1)), cuttypes=TRUE,
-                 typord=TRUE, axis2=FALSE)
+                 types=as.character(rev(seq(-10,10,.1))), cuttypes=TRUE,
+                 typord=TRUE, axis2=TRUE)
     mtext("AAS\ntype", 2, 2)
     ## indicate ALL AAS
     ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
@@ -809,7 +815,7 @@ for ( pid in pids ) {
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     if ( nrow(aad)>0 )
         for ( j in 1:nrow(aad) ) {
-            if ( aad$raas < .1 ) next
+            if ( aad$raas[j] < .1 ) next
             x <- aad$start[j]
             prng <- (x-1):(x+1)
             prng <- prng[prng>0 & prng <= plen]
