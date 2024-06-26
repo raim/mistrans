@@ -136,6 +136,9 @@ shapely.cols[c("A")]     <- "#909090"    # minimal residue
 ## proteins
 genes <- read.delim(feature.file)
 
+### TODO: move raasprofiles3_init.R here as well to
+### align with other analyses
+
 ## AAS
 dat <- read.delim(in.file)
 
@@ -195,7 +198,12 @@ cat(paste("removing", sum(!tmtf$keep),
           "tagged as false positive on TMT level\n"))
 tmtf <- tmtf[tmtf$keep,]
 
+## CROSS-INDEX BP/SAAP PAIRS
+dat$ID <- paste(dat$BP, dat$SAAP)
+tmtf$ID <- paste(tmtf$BP, tmtf$SAAP)
 
+tmtf$IDX <- match(tmtf$ID, dat$ID)
+dat$IDX <- 1:nrow(dat)
 
 ### ADD RAAS STATS to protein mapping table
 
@@ -260,7 +268,9 @@ raas.srt <- levels(raas.bins)
 dat$raas <- raas
 
 ## LIST OF AAS BY PROTEIN
-aasl <- split(dat, dat$ensembl) 
+aasl <- split(dat, dat$ensembl)
+
+
 
 ## s4pred
 s4p <- segmenTools::readFASTA(s4pred, grepID=TRUE)
@@ -457,7 +467,9 @@ POI <- c(pamrt[genes[genes$name=="KRAS","canonical"],],
          ## actins
          pamrt[genes[genes$name=="ACTA1","canonical"],],
          pamrt[genes[genes$name=="ACTB","canonical"],],
-         pamrt[genes[genes$name=="ACTC1","canonical"],])
+         pamrt[genes[genes$name=="ACTC1","canonical"],],
+         pamrt[genes[genes$name=="ACTG1","canonical"],],
+         pamrt[genes[genes$name=="ACTG2","canonical"],])
 
 shiri.selection <- c("IFI30",
                      "PSMC5",
@@ -524,11 +536,9 @@ pid=names(which(pnms=="PSMB5"))
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
 pid=names(which(pnms=="ACTG2"))
-## ACTG2: many AAS protein
-pid=names(which(pnms=="ACTC1"))
 
-## just shiri's collection
-pids <- names(pnms)[pnms%in%shiri.selection]
+## just shiri's and my collection
+pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
 
 
 ## plot all proteins INCL. QC
@@ -544,6 +554,11 @@ for ( pid in pids ) {
 
     ##if ( file.exists(ffile)l) next
 
+    if ( !pid%in%names(aasl) ) {
+        cat(paste("NOT FOUND\n"))
+        next
+    }
+    
     ## collect all data for protein
     aas <- aasl[[pid]]
     pf <- pfl[[pid]]
@@ -646,7 +661,7 @@ for ( pid in pids ) {
 
     ## PREPARE AAS PLOT
     ## order by RAAS such that higher RAAS will be on top of overlapping
-    aas <- aas[order(aas$median),]
+    ##aas <- aas[order(aas$median),]
     aaco <- paste0(aas$from,":",aas$to)
     ## TODO: type 0,1,2,3 for closeby, not just identical
     aatp <- as.numeric(duplicated(round(aas$pos/10)))
@@ -662,8 +677,37 @@ for ( pid in pids ) {
                       color=aas$color,
                       codon=aas$codon,
                       raas=aas$median)
-    aad <- aad[order(aas$median),,drop=FALSE]
+    ##aad <- aad[order(aas$median),,drop=FALSE]
     ##aad <- aad[aas$median >= min.raas, ]
+
+    ## MOVING AVERAGE
+    ## * 1: num of observations
+    ## * 2: mean RAAS
+    
+    ## sort AAS by position
+    aas <- aas[order(aas$pos),]
+
+    mar <- man <- map <- mas <- rep(NA, plen)
+    window <- 15
+    use.test <- t.test
+    for ( j in 1:plen ) {
+        rng <- (j-floor(window/2)):(j+floor(window/2))
+        rng <- rng[rng>0 & rng<= plen]
+        ## get all BP/SAAP whose AAS is in this range
+        idx <- which(aas$pos %in% rng)
+        ## get all TMT LEVEL RAAS
+        tidx <- which(tmtf$IDX%in% aas$IDX[idx])
+        ## number, median RAAS and t-test p.value
+        man[j] <- length(tidx)
+        mar[j] <- log10(median(10^tmtf$RAAS[tidx]))
+        if ( length(tidx)>2 ) {
+            rt <- use.test(tmtf$RAAS[tidx], tmtf$RAAS)
+            map[j] <- rt$p.value
+            mas[j] <- sign(rt$statistic)
+        }
+    }
+
+
 
     ## skip plot if no RAAS is higher than minimum
     doit <- pid%in%POI | pnms[pid]%in%shiri.selection
@@ -870,8 +914,9 @@ for ( pid in pids ) {
     
     heights <- c(.1,  # title
                  .15,  # PFAM/CLAN
+                 .2,  # RAAS CURVES
                  .1,  # main peptides
-                 .15, # secondary structure and cleavage
+                 .1, # secondary structure and cleavage
                  .5, # AAS type
                  .075 # CDS structure
                  )
@@ -890,7 +935,14 @@ for ( pid in pids ) {
                      typord=TRUE, axis2=FALSE)
     } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     mtext("Pfam\nclan", 2, 2)
-    
+
+    ## MOVING AVERAGE
+    ## TODO: cex proportional to p-value
+    ## 
+    plot(1:plen, log(man), type="l",
+         xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+    axis(2)
+    mtext("log # RAAS", 2, 2.2, cex=.8, las=2)
     
     ## main peptides
     mmaiaa <- mmai
@@ -916,21 +968,27 @@ for ( pid in pids ) {
         arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
 
     ## indicate ALL AAS
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1.5)
+    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1, col=aas$color)
     axis(2, at=.6, labels="AAS", las=2)
 
     par(mai=mmai, xpd=TRUE)
 
-    plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-                 plotorder=order(aad$type), 
-                 types=rev(seq(-10,10,.1)), cuttypes=TRUE,
-                 typord=TRUE, axis2=FALSE)
-    ##plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-    ##             plotorder=rev(order(aad$type)), cuttypes=TRUE,
-    ##             types=rev(raas.srt), typord=TRUE, axis2=FALSE)
-    mtext("AAS\ntype", 2, 2)
+    plot(aad$start, aad$raas, pch=19, col=NA,
+         xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+    axis(2)
+    lines(1:plen, mar, lwd=2)
+    points(aad$start, aad$raas, pch=19, col=aad$color, cex=aad$cex)
+    mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
+    if ( FALSE ) {
+        plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
+                     plotorder=order(aad$type), 
+                     types=rev(seq(-10,10,.1)), cuttypes=TRUE,
+                     typord=TRUE, axis2=FALSE)
+        mtext("AAS\ntype", 2, 2)
+    }
 
+    
     ## EXONS
     par(mai=mmai)
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)

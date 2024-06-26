@@ -1160,7 +1160,10 @@ axis(2, length(axex):1, labels=axex, las=2, family=FONT,
      font=2, cex.axis=1.2)
 dev.off()
 
-### JOINT DISTRIBUTION PROBABILITY: conservation v disorder
+### MUTUAL INFORMATION: conservation v disorder
+## JOINT DISTRIBUTION PROBABILITY
+
+
 source("~/work/mistrans/scripts/saap_utils.R")
 diso <- raasProfile(x=tmtm, id="SAAP", 
                     rows="iupred3.bins", #cols="MMSeq2.bins",
