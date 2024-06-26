@@ -126,7 +126,11 @@ all <- rbind(cbind(best, match="good"),
              cbind(rest, match="bad"))
 
 ## tag really bad hits
-all$match[all$mismatch>=3 | is.na(all$gene)] <- "wrong"
+all$match[all$mismatch>=3] <- "wrong"
+
+## tag no gene
+all$nogene <- FALSE
+all$nogene[is.na(all$gene)] <- TRUE
 
 
 ## replace tagged proteins with their original long name

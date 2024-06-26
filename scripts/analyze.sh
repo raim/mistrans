@@ -10,7 +10,7 @@ THIS=${HOME}/work/mistrans
 ## events, derived by Shiri Tsour from the slavovlab.
 
 ## INPUT GENOME DATA IS GENERATED
-## by from genomeBrowser/mammary/setup.sh
+## by genomeBrowser/mammary/setup.sh in $MAMDATA
 
 ### ADDITIONAL DATA
 
@@ -34,6 +34,16 @@ wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcv
 
 
 ### SAAP/RAAS ANALYSIS
+
+
+### TODO:
+## * move all old data and scripts to a backup folder,
+## * consider which parts of genomeBrowser/data/mammary should/could be
+##   moved here,
+## * rename file versions (scripts and output data) to avoid confusion,
+## * freshly download and record Shiri's data,
+## * generate .txt files from xlsx, and rerun the whole pipeline.
+
 
 ## analyze data structure, different number of replicates per unique SAAP
 R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt
@@ -77,7 +87,7 @@ cut -f 1  ${MISDATA}/processedData/unique_saap_2.tsv |sort|uniq|wc -l
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 
-R --vanilla < ${THIS}/scripts/get_mutated_proteins.R
+R --vanilla < ${THIS}/scripts/get_mutated_proteins.R  > ${THIS}/log/mutated_proteins.txt 2>&1
 
 ## 3) blast all BP against ensembl proteins + mutations
 blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
@@ -107,7 +117,7 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 
 ## 4.A) find best matching protein
 ##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match_3.txt
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match_3.txt 2>&1
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
@@ -129,7 +139,7 @@ fi
 ## iupred3, anchor2, s4pred, codon, ...
 ##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
-R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_5.txt
+R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_5.txt 2>&1
 
 ### 5) ANALYSIS
 

@@ -551,16 +551,27 @@ if ( length(rm)>0 ) {
 
 ### ERROR AND RECOVERY STATS
 
+## NOTE:
+## * "no BP" and "using blast" are the same, and all are "bad" or "wrong"
+##   blast matches,
+## * TCHVEHPSLQNPITVEW:TCHVEHPSLQSPITVEW:ENSP00000382018
+##   is classified as "wrong" in blast, because it is associated with
+##   a scaffold gene (is.na(all$gene)) and not with the official genome gff3.
+
 errs <- errors#[,apply(errors,2,sum)>0]
-er <- c(SAAP=nrow(dat),
+er <- c("unique BP/SAAP"=nrow(dat),
+        "unique SAAP"=sum(!duplicated(dat$SAAP)),
+        "unique BP"=sum(!duplicated(dat$BP)),
         table(dat$match)[c("good","bad","wrong")],
+        "no gene"=sum(dat$nogene, na.rm=TRUE),
         "with mutation"=sum(dat[,"protein"]!=dat[,"ensembl"],na.rm=TRUE),
         apply(errs,2,sum))
 png(file.path(fig.path,"mapping_errors.png"),
     res=300, width=3.5, height=3.5, units="in")
-par(mai=c(1.5,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
+par(mai=c(1.5,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(er,las=2)
-text(bp, er, er, pos=3, xpd=TRUE, cex=.8)
+text(bp+.25, er+.05*diff(par("usr")[3:4]),
+     labels=er, pos=3, xpd=TRUE, cex=.8, srt=90)
 dev.off()
 
 ## TODO: better characterize matches to mutated proteins

@@ -68,7 +68,7 @@ dot.sze <- c(.3,2)
 use.test <- t.test # w.test # 
 
 ftyp <- "png" # "pdf" # # 
-##if ( !interactive() ) ftyp="pdf"
+if ( !interactive() ) ftyp="pdf"
 
 ## heatmap colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)

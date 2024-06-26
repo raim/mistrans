@@ -6,14 +6,18 @@ proj.path <- "/home/raim/data/mistrans"
 dat.path <- file.path(proj.path,"originalData")
 
 fasta <- file.path(mam.path,"originalData","Homo_sapiens.GRCh38.pep.all.fa.gz")
-saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withoutTonsil.txt")
-## TODO: include proteins from tonsil data!
-saap2.file <- file.path(dat.path, "All_filtered_SAAP_protein_filter_df_withTonsil.xlsx")
+##saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withoutTonsil.txt")
+## 20240626: proteins INCLUDING tonsil data!
+saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withTonsil.xlsx")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
 
-dat <- read.delim(saap.file) #data.frame(read_xlsx(saap.file))
+## dat <- read.delim(saap.file) #
+dat <- as.data.frame(readxl::read_xlsx(saap.file))
+
+
+
 fas <- readFASTA(fasta, grepID=TRUE)
 ## remove version tags
 names(fas) <- sub("\\.[0-9]*", "", names(fas))
@@ -21,7 +25,9 @@ names(fas) <- sub("\\.[0-9]*", "", names(fas))
 ## EXTRACT leading razor proteins with mutation tags
 
 ## first split by ;
-PMATCH <- "Leading.razor.proteins..all.TMT." # column with protein matches
+## column with protein matches
+PMATCH <- "Leading.razor.proteins..all.TMT." # for txt input
+PMATCH <- "Leading razor proteins (all TMT)" # for xlsx inpunt
 plst <- strsplit(dat[,PMATCH],  ";")
 ## clean up strings
 plst <- lapply(plst, function(x) gsub("\\['","",gsub("\\']","",x)))
@@ -48,23 +54,28 @@ muts <- strsplit(muts, ",")
 
 
 nseq <- list()
-errors <- matrix(FALSE, nrow=length(muts), ncol=2)
-colnames(errors) <- c("mform","merr")
+errors <- matrix(FALSE, nrow=length(muts), ncol=3)
+colnames(errors) <- c("nprotein","mform","merr")
 for ( i in seq_along(muts) ) {
     
     sid <- sub("_.*","", names(muts)[i])
     seq <- fas[[sid]]$seq
 
-    ft <- do.call(cbind,strsplit(muts[[i]], "[0-9]+"))
+    ft <- do.call(cbind, strsplit(muts[[i]], "[0-9]+"))
     mseq <- NULL
-    if ( nrow(ft)==1 ) {
-        cat(paste("PROBLEM:", i ,"wrong mutation format:",muts[[i]],"\n"))
+    if ( is.null(seq) ) {
+        cat(paste("PROBLEM:", i ,"no sequence found:",sid,"\n"))
+        errors[i,"nprotein"] <- TRUE
+    } else if ( nrow(ft)==1 ) {
+        cat(paste("PROBLEM:", i ,"wrong mutation format:",muts[[i]],
+                  "\t", sid,"\n"))
         errors[i,"mform"] <- TRUE
     } else {
         ntar <- try(mutatePositions(seq, muts[[i]]))
         if ( class(ntar)=="try-error" ) {
             cat(paste("PROBLEM:", i ,"introducing mutations failed:",
-                      paste(muts[[i]], collapse=";"),"\n"))
+                      paste(muts[[i]], collapse=";"),
+                      "\t",ntar[1], "\t", sid, "\n"))
             errors[i,"merr"] <- TRUE
         } else nseq[[names(muts)[i]]] <- list(desc=names(muts)[i],
                                               details=NULL,
@@ -74,9 +85,10 @@ for ( i in seq_along(muts) ) {
 
 
 cat(paste0("MUTATION REPLACEMENT SUMMARY:\n",
-           "\twrong mutation format:", sum(errors[,1]),"\n",
-           "\tmutation failure:", sum(errors[,2]),"\n",
-           "\tsuccessful replacements:", length(nseq),"\n"))
+           "\tno sequence found: ", sum(errors[,"nprotein"]),"\n",
+           "\twrong mutation format: ", sum(errors[,"mform"]),"\n",
+           "\tmutation failure: ", sum(errors[,"merr"]),"\n",
+           "\tsuccessful replacements: ", length(nseq),"\n"))
 
 ## fix names for blast
 onames <- names(nseq)

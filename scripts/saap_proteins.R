@@ -96,6 +96,9 @@ mainp.file <- file.path(out.path,"main_peptides_blast.tsv")
 maini.file <- file.path(dat.path,"tonsil_main_peptide_quant_df.xlsx") # tonsil
 maina.file <- file.path(dat.path,"main_peptide_quant_df.xlsx") # other tissues
 
+## ALL BP
+
+
 
 ## PARAMETERS
 
@@ -421,10 +424,15 @@ maini <- as.data.frame(read_xlsx(maini.file))
 rownames(maini) <- maini[,1]
 maini <- maini[,2:ncol(maini)]
 
+## filter ONLY trypsin peptides
+maini <- maini[maini$Trypsin>0,]
+
 ## TODO: plot to file
 mcc <- log10(maini$Trypsin)
 mcc[mcc==-Inf] <- 0
-mcc <- selectColors(mcc, mn=6, mx=10, reverse=TRUE)
+mcc <- selectColors(mcc, mn=6, mx=11, reverse=TRUE)
+
+hist(log10(maini$Trypsin))
 
 mc <- mcc$x.col
 mc[maini$Trypsin==0] <- NA
@@ -549,6 +557,7 @@ for ( pid in pids ) {
     ffile <- file.path(fig.path, pnms[pid])
     tfile <- file.path(fig.path, "tight", paste0(pnms[pid], "_tight"))
     sfile <- file.path(fig.path, "selected", pnms[pid])
+    stfile <- file.path(fig.path, "selected", paste0(pnms[pid], "_tight"))
 
     cat(paste("getting data for", pnms[pid], pid, "\n"))
 
@@ -942,6 +951,7 @@ for ( pid in pids ) {
     plot(1:plen, man, type="l",
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
+    abline(h=0, col="gray", xpd=FALSE)
     mtext("# RAAS", 2, 2.2, cex=.8, las=2)
     
     ## main peptides
@@ -951,7 +961,7 @@ for ( pid in pids ) {
     plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
                  typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
     mmaiaa <- mmai
-    mmaiaa[3] <- 0.01
+    mmaiaa[3] <- mmaiaa[1] <- 0.01
     par(mai=mmaiaa)
    
     ## secondary structure, K|R and AAS
@@ -968,11 +978,13 @@ for ( pid in pids ) {
         arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
 
     ## indicate ALL AAS
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1.5)
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1, col=aas$color)
-    axis(2, at=.6, labels="AAS", las=2)
+    ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1.5)
+    ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1, col=aas$color)
+    ##axis(2, at=.6, labels="AAS", las=2)
 
-    par(mai=mmai, xpd=TRUE)
+    mmaiaa <- mmai
+    mmaiaa[3] <- mmaiaa[1] <- 0.01
+    par(mai=mmaiaa, xpd=TRUE)
 
     plot(aad$start, aad$raas, pch=19, col=NA,
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
@@ -998,6 +1010,12 @@ for ( pid in pids ) {
     mtext("CDS", 2, las=2)
 
     dev.off()
+
+    ## note that the file.exists part allows to update interesting proteins
+    ## that were manually copied to the selected folder
+    if ( doit | file.exists(paste0(stfile,".",ftyp)) )
+        file.copy(paste0(tfile,".",ftyp),
+                  paste0(stfile,".",ftyp), overwrite = TRUE)
 
 }
 
