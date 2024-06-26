@@ -535,7 +535,7 @@ pid=names(which(pnms=="PSMB5"))
 ## AHNAK: righ RAAS protein
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
-pid=names(which(pnms=="ACTG2"))
+pid=names(which(pnms=="ACTG1"))
 
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
@@ -688,7 +688,7 @@ for ( pid in pids ) {
     aas <- aas[order(aas$pos),]
 
     mar <- man <- map <- mas <- rep(NA, plen)
-    window <- 15
+    window <- 11
     use.test <- t.test
     for ( j in 1:plen ) {
         rng <- (j-floor(window/2)):(j+floor(window/2))
@@ -939,10 +939,10 @@ for ( pid in pids ) {
     ## MOVING AVERAGE
     ## TODO: cex proportional to p-value
     ## 
-    plot(1:plen, log(man), type="l",
+    plot(1:plen, man, type="l",
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
-    mtext("log # RAAS", 2, 2.2, cex=.8, las=2)
+    mtext("# RAAS", 2, 2.2, cex=.8, las=2)
     
     ## main peptides
     mmaiaa <- mmai
@@ -978,7 +978,8 @@ for ( pid in pids ) {
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
     lines(1:plen, mar, lwd=2)
-    points(aad$start, aad$raas, pch=19, col=aad$color, cex=aad$cex)
+    points(aad$start, aad$raas, pch=19, col=aad$color, cex=1)#, cex=aad$cex)
+    points(aad$start, aad$raas, pch=1, col="white", cex=1)#, cex=aad$cex)
     mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
     if ( FALSE ) {
         plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
