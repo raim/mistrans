@@ -11,6 +11,7 @@ saap.file <- file.path(proj.path,"processedData","unique_saap_blast.tsv")
 bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
 fig.path <- file.path(proj.path,"figures","saap_mapping")
+dir.create(fig.path)
 
 ## READ SAAP BLAST RESULTS
 saap <- read.delim(saap.file, header=FALSE)

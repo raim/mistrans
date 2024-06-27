@@ -35,10 +35,6 @@ wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/
 ## with codon usage (Figure 1—figure supplement 1C).
 wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D -P $MISDATA/originalData/ -O elife-45396-fig1-data2-v2.csv
 
-## Shiri Tsour: main input files from google drive
-## downloaded from shared google drive on 20240627
-## * All_SAAP_patient_level_quant_df.xlsx
-## * All_SAAP_TMTlevel_quant_df.xlsx.
 
 ### SAAP/RAAS ANALYSIS
 
@@ -51,12 +47,27 @@ wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcv
 ## * freshly download and record Shiri's data,
 ## * generate .txt files from xlsx, and rerun the whole pipeline.
 
+## Shiri Tsour: main input files from google drive
+## downloaded from shared google drive on 20240627
+## * All_SAAP_patient_level_quant_df.xlsx
+## * All_SAAP_TMTlevel_quant_df.xlsx
+## * All_SAAP_protein_filter_df.xlsx
+
+## Sent by Shiri Tsour via slack:
+## * main_peptide_quant_df.xlsx
+## * tonsil_main_peptide_quant_df.xlsx
+## * All_main_nontryptic_peptide_list.txt
+## * All_main_tryptic_peptide_list.txt
+## * All_main_nontryptic_noKR_peptide_list.txt
+## * All_main_ArgC_LysC_peptide_list.txt
+
 ## convert xlsx files to text
 ## NOTE: when copy-pasting this line to bash you need to manually
 ## add the tab charcter by pressing ctrl-v <TAB>
 ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_TMTlevel_quant_df.xlsx $MISDATA/originalData/All_SAAP_TMTlevel_quant_df.txt 
 ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_patient_level_quant_df.xlsx $MISDATA/originalData/All_SAAP_patient_level_quant_df.txt 
-ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_protein_filter_df.xlsx $MISDATA/originalData/All_SAAP_protein_filter_df.txt 
+ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_protein_filter_df.xlsx $MISDATA/originalData/All_SAAP_protein_filter_df.txt
+
 
 
 ## ANALYZE DATA STRUCTURE:
