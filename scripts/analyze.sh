@@ -140,7 +140,7 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 
 ## 4.A) find best matching protein
 ##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match_3.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt 2>&1
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
