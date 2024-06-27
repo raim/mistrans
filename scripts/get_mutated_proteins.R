@@ -8,13 +8,12 @@ dat.path <- file.path(proj.path,"originalData")
 fasta <- file.path(mam.path,"originalData","Homo_sapiens.GRCh38.pep.all.fa.gz")
 ##saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withoutTonsil.txt")
 ## 20240626: proteins INCLUDING tonsil data!
-saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df_withTonsil.xlsx")
+saap.file <- file.path(dat.path, "All_SAAP_protein_filter_df.txt")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
 
-## dat <- read.delim(saap.file) #
-dat <- as.data.frame(readxl::read_xlsx(saap.file))
+dat <- read.delim(saap.file) 
 
 
 
@@ -27,7 +26,6 @@ names(fas) <- sub("\\.[0-9]*", "", names(fas))
 ## first split by ;
 ## column with protein matches
 PMATCH <- "Leading.razor.proteins..all.TMT." # for txt input
-PMATCH <- "Leading razor proteins (all TMT)" # for xlsx inpunt
 plst <- strsplit(dat[,PMATCH],  ";")
 ## clean up strings
 plst <- lapply(plst, function(x) gsub("\\['","",gsub("\\']","",x)))

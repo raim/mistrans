@@ -10,7 +10,7 @@ tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 saap.file <- file.path(proj.path,"processedData","unique_saap_blast.tsv")
 bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 
-fig.path <- file.path(proj.path,"figures","saap_mapping3")
+fig.path <- file.path(proj.path,"figures","saap_mapping")
 
 ## READ SAAP BLAST RESULTS
 saap <- read.delim(saap.file, header=FALSE)
