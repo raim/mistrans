@@ -140,12 +140,12 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 
 ## 4.A) find best matching protein
 ##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/match.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/protein_match.txt 2>&1
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
     cd ~/data/mammary/processedData
-    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped_3.tsv |sort|uniq|grep ENSP|grep -v "_")
+    all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped.tsv |sort|uniq|grep ENSP|grep -v "_")
     for i in $all
     do
 	echo "$i"
@@ -162,7 +162,7 @@ fi
 ## iupred3, anchor2, s4pred, codon, ...
 ##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
-R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_5.txt 2>&1
+R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_peptides.txt 2>&1
 
 ### 5) ANALYSIS
 
