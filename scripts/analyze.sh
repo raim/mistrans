@@ -162,26 +162,27 @@ fi
 ## iupred3, anchor2, s4pred, codon, ...
 ##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
-R --vanilla < ${THIS}/scripts/map_peptides3.R > ${THIS}/log/map_peptides.txt 2>&1
+R --vanilla < ${THIS}/scripts/map_peptides.R > ${THIS}/log/map_peptides.txt 2>&1
 
 ### 5) ANALYSIS
 
 
 ### CALCULATE RAAS PROFILES
-R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R # FIGURE 2
-R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R # FIGURE 3
-R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R # FIGURE 4
-R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R ## TODO: reproduce diAA
-R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R
-R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R
-R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R > ${THIS}/log/codons.txt 2>&1 # FIGURE 2
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R > ${THIS}/log/aminoacids.txt 2>&1 # FIGURE 3
+R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R > ${THIS}/log/motifs.txt 2>&1 # FIGURE 4
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R > ${THIS}/log/kraq.txt 2>&1 ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R > ${THIS}/log/structure.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R > ${THIS}/log/function.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${THIS}/log/proteins.txt 2>&1
+
+## all protein profiles
+R --vanilla <  ${THIS}/scripts/saap_proteins.R
 
 ### TODO: move those two scripts to genomeBrowser
 R --vanilla < ${THIS}/scripts/halflives.R
 R --vanilla < ${THIS}/scripts/ralser24.R
 
-## all protein profiles
-R --vanilla <  ${THIS}/scripts/saap_proteins.R
 
 
 
