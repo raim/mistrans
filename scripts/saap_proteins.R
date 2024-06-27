@@ -661,7 +661,7 @@ for ( pid in pids ) {
 
     ## ADD all "Main peptides"
     mps  <- mainp[mainp$protein==pid,]
-    mpd <- data.frame(type="peptide",
+    mpd <- data.frame(type="tonsil, tryptic",
                       start=mps$sstart,
                       end=mps$send,
                       chr=1, strand=".",

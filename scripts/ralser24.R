@@ -11,6 +11,7 @@ yeast.path <- file.path(data.path, "yeast")
 fig.path <- file.path(mam.path,"figures","ralser")
 dir.create(fig.path)
 ftyp <- "png"
+corW <- corH <- 2.5
 
 ## heatmap colors
 ttcols <- colorRampPalette(c("#0000FF", "#FFFFFF","#FF0000"))(100)
@@ -246,7 +247,7 @@ for ( i in 1:nrow(m24mu) ) {
     strain <- m24mu$strain[i]
     hlf <- m24hlfw[,strain]
     plotdev(file.path(fig.path,paste0("degradation_cor_",strain)),
-            type=ftyp, height=3, width=3, res=200)
+            type=ftyp, height=corH, width=corW, res=200)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(log10(log(2)/hlf[idx]), log10(log(2)/yhlf),
             xlab="log10 deg. rate, Muenzner 2024",
@@ -264,7 +265,7 @@ for ( i in 1:nrow(m24mu) ) {
     trnsl <- m24trnsl[,strain]
 
     plotdev(file.path(fig.path,paste0("halflife_cor_",strain)),
-            type=ftyp, height=3, width=3, res=200)
+            type=ftyp, height=corH, width=corW, res=200)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(log10(hlf[idx]), log10(yhlf),
             xlab="half-lives, Muenzner 2024/h",
@@ -322,7 +323,7 @@ shighlight[!snames%in%c("BBV","CNL")] <- ""
 ### TODO: test strain AHS
 
 plotdev(file.path(fig.path,"cohort_intensities_AD"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(states$A, states$D, density=FALSE, xlab=NA, ylab=NA)
 mtext("cohort A",1,1.3, col=cls.col["A"], font=2)
@@ -332,7 +333,7 @@ mtext("cohort mean intensities", 3, 0.15)
 dev.off()
 
 plotdev(file.path(fig.path,"cohort_intensities_DC"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(states$D, states$C, density=FALSE, xlab=NA, ylab=NA)
 mtext("cohort D",1,1.3, col=cls.col["D"], font=2)
@@ -342,7 +343,7 @@ mtext("cohort mean intensities", 3, 0.15)
 dev.off()
 
 plotdev(file.path(fig.path,"cohort_intensities_ABC"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(states$AB, states$C, density=FALSE, xlab=NA, ylab=NA)
 mtext("cohort AB",1,1.3, col=cls.col["AB"], font=2)
@@ -352,7 +353,7 @@ mtext("cohort mean intensities", 3, 0.15)
 dev.off()
 
 plotdev(file.path(fig.path,"cohort_intensities_ABD"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(states$AB, states$D, density=FALSE, xlab=NA, ylab=NA)
 mtext("cohort AB",1,1.3, col=cls.col["AB"], font=2)
@@ -366,7 +367,7 @@ rat <- log2(states$AB/states$D)
 names(rat) <- rownames(states)
 
 plotdev(file.path(fig.path,"cohort_growth_ABD"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(mus, rat[names(mus)], density=FALSE, xlab=gr.lab,
         ylab=expression(log[2](AB/D)),
@@ -380,7 +381,7 @@ rat <- log2(states$A/states$D)
 names(rat) <- rownames(states)
 
 plotdev(file.path(fig.path,"cohort_growth_AD"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(mus, rat[names(mus)], density=FALSE, xlab=gr.lab,
         ylab=expression(log[2](A/D)),
@@ -396,7 +397,7 @@ rp <- apply(int, 2, function(x) median(x[ygenes$CL_rdx%in%c("A","AB")],
 sc <- apply(int, 2, function(x) median(x[ygenes$CL_rdx==c("cd.n","D")],
                                        na.rm=TRUE))
 plotdev(file.path(fig.path,"cohort_intensities_growth_stress"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(rp, sc, density=FALSE, xlab=gr.lab, ylab="stress/catabolism")
 shadowtext(rp, sc, labels=shighlight, pos=4, xpd=TRUE, col=1,cex=1)
@@ -408,7 +409,7 @@ rat <- log2(rp/sc)
 names(rat) <- rownames(states)
 
 plotdev(file.path(fig.path,"cohort_growth_growth_stress"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(mus, rat[names(mus)], density=FALSE, xlab=expression(growth~rate/h^-1),
         ylab=expression(log[2](growth/(stress+noise))), legpos="bottomright")
@@ -422,7 +423,7 @@ mhlf <- apply(m24hlfw,2,median,na.rm=TRUE)
 mdeg <- apply(m24degw,2,median,na.rm=TRUE)
 
 plotdev(file.path(fig.path,"halflives_growthrate"),
-        type=ftyp, height=3, width=3, res=200)
+        type=ftyp, height=corH, width=corW, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(mus, mdeg[names(mus)], density=FALSE,
         xlab=gr.lab, ylab=mdg.lab, legpos="bottomright")
