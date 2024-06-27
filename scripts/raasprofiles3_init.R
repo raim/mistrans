@@ -41,6 +41,102 @@ source("~/work/mistrans/scripts/saap_utils.R")
 ## * re-blast saap, re-annotate,
 ## * Healthy: untangle tissues and collapse cancer.
 
+
+#### PATHS AND FILES
+
+proj.path <- "/home/raim/data/mistrans"
+dat.path <- file.path(proj.path,"originalData")
+out.path <- file.path(proj.path,"processedData")
+
+mam.path <- "~/data/mammary/"
+codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
+trna.file <- file.path(mam.path, "codons_GRCh38.tsv")
+
+## external codon usage measures
+## @Dana2014, Dana and Tuller 2014: decoding time
+dana14.file <- file.path(dat.path,"dana14_codons.csv")
+## @Wu2019: codon stability coefficient (CSC)
+wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
+gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
+
+
+## MAIN INPUT
+in.file <- file.path(out.path,"saap_mapped.tsv")
+tmt.file <- file.path(proj.path,"originalData",
+                      "All_SAAP_TMTlevel_quant_df.txt")
+
+## protein complexes
+humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
+corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
+
+
+## PROTEIN ID MAPPINGS
+
+## uniprot/refseq/ensembl/name mappings
+uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
+uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
+
+refseq.file <- file.path(mam.path,"originalData",
+                         "ensembl_refseq_20240528.tsv.gz")
+
+## genome feature file
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+
+
+
+## DATA FILTERS
+
+## CANCERS OR HEALTHY TISSUES
+healthy <- FALSE # TRUE #  
+
+## TODO: extracellular is mostly album/globin - analyze
+exclude.nterm <- FALSE # TRUE # 
+exclude.extracellular <- FALSE # TRUE # 
+exclude.albumin <- FALSE # TRUE # 
+only.unique <- FALSE # TRUE # 
+include.kr <- FALSE # TRUE # 
+
+exclude.frequent <- FALSE # TRUE # 
+frequent <- c("Q","W","T","S")
+
+LAB <- "" # "all"
+fig.path <- file.path(proj.path,"figures","raasprofiles3")
+if (  exclude.albumin ) {
+    fig.path <- paste0(fig.path,"_noalb")
+    LAB <- "-Alb./Hemog."
+}
+if ( exclude.frequent ) {
+    tmp <- paste(frequent,collapse=",")
+    fig.path <- paste0(fig.path,"_", gsub(",","",tmp))
+    LAB <- paste0("-", tmp)
+}
+if ( only.unique ) {
+    fig.path <- paste0(fig.path,"_unique")
+    LAB <- paste0(LAB, ", unique SAAP")
+}
+if ( exclude.extracellular ) {
+    fig.path <- paste0(fig.path,"_no_extracellular")
+    LAB <- paste0(LAB, " -extracell.")
+}
+if ( include.kr ) {
+    fig.path <- paste0(fig.path,"_wKR")
+    LAB <- paste0(LAB, "+K/R")
+}
+if (  exclude.nterm ) {
+    fig.path <- paste0(fig.path,"_nterm")
+    LAB <- paste0(LAB, "-N3")
+}
+
+SETID <- ifelse(healthy,"tissues","cancer")
+
+
+## figure output paths
+dir.create(fig.path, showWarnings=FALSE)
+## folder for detailed distributions
+dpath <- file.path(fig.path,"dists")
+dir.create(dpath, showWarnings=FALSE)
+
 ### PARAMETERS
 
 ## TODO: use p.adjust for raasProfile and aaProfile calls
@@ -249,99 +345,6 @@ aap.cols <- aap.cols[aap.srt]
 
 
 
-
-#### PATHS AND FILES
-
-proj.path <- "/home/raim/data/mistrans"
-dat.path <- file.path(proj.path,"originalData")
-out.path <- file.path(proj.path,"processedData")
-
-mam.path <- "~/data/mammary/"
-codon.file <- file.path(mam.path,"processedData","coding_codons.tsv")
-trna.file <- file.path(mam.path, "codons_GRCh38.tsv")
-
-## external codon usage measures
-## @Dana2014, Dana and Tuller 2014: decoding time
-dana14.file <- file.path(dat.path,"dana14_codons.csv")
-## @Wu2019: codon stability coefficient (CSC)
-wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
-gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
-
-in.file <- file.path(out.path,"saap_mapped_5.tsv")
-tmt.file <- file.path(proj.path,"originalData",
-                      "All_SAAP_TMTlevel_quant_df.txt")
-
-## protein complexes
-humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
-corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
-
-
-## PROTEIN ID MAPPINGS
-
-## uniprot/refseq/ensembl/name mappings
-uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
-uni2nam.file <- file.path(mam.path,"originalData","uniprot_name.dat")
-
-refseq.file <- file.path(mam.path,"originalData",
-                         "ensembl_refseq_20240528.tsv.gz")
-
-## genome feature file
-feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
-
-
-
-
-## DATA FILTERS
-
-## CANCERS OR HEALTHY TISSUES
-healthy <- FALSE # TRUE #  
-
-## TODO: extracellular is mostly album/globin - analyze
-exclude.nterm <- FALSE # TRUE # 
-exclude.extracellular <- FALSE # TRUE # 
-exclude.albumin <- FALSE # TRUE # 
-only.unique <- FALSE # TRUE # 
-include.kr <- FALSE # TRUE # 
-
-exclude.frequent <- FALSE # TRUE # 
-frequent <- c("Q","W","T","S")
-
-LAB <- "" # "all"
-fig.path <- file.path(proj.path,"figures","raasprofiles3")
-if (  exclude.albumin ) {
-    fig.path <- paste0(fig.path,"_noalb")
-    LAB <- "-Alb./Hemog."
-}
-if ( exclude.frequent ) {
-    tmp <- paste(frequent,collapse=",")
-    fig.path <- paste0(fig.path,"_", gsub(",","",tmp))
-    LAB <- paste0("-", tmp)
-}
-if ( only.unique ) {
-    fig.path <- paste0(fig.path,"_unique")
-    LAB <- paste0(LAB, ", unique SAAP")
-}
-if ( exclude.extracellular ) {
-    fig.path <- paste0(fig.path,"_no_extracellular")
-    LAB <- paste0(LAB, " -extracell.")
-}
-if ( include.kr ) {
-    fig.path <- paste0(fig.path,"_wKR")
-    LAB <- paste0(LAB, "+K/R")
-}
-if (  exclude.nterm ) {
-    fig.path <- paste0(fig.path,"_nterm")
-    LAB <- paste0(LAB, "-N3")
-}
-
-SETID <- ifelse(healthy,"tissues","cancer")
-
-
-## figure output paths
-dir.create(fig.path, showWarnings=FALSE)
-## folder for detailed distributions
-dpath <- file.path(fig.path,"dists")
-dir.create(dpath, showWarnings=FALSE)
 
 ### START
 

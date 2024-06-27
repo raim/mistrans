@@ -19,8 +19,6 @@ xl.raaa <- expression(log[10](RAAS))
 xl.raau <- expression(log[10]*bar(RAAS[unique]))
  
 
-taua <- "ST[Phospho (STY)]PTAEAEEAGIGDTPSLEDEAAGHVTQAR"
-taub <- "AEEAGIGDTPS[Phospho (STY)]LEDEAAGHVTQAR"
 
 
 ## RAAS profiles by relative position of AAS in peptide
