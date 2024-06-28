@@ -184,7 +184,10 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R > ${MISDATA}/log/functio
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${MISDATA}/log/proteins.txt 2>&1
 
 ## all protein profiles
-R --vanilla <  ${THIS}/scripts/saap_proteins.R
+R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.txt 
+
+## all protein chimeraX codes for pdb
+R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R > ${MISDATA}/log/protein_plots.txt 2>&1
 
 ### TODO: move those two scripts to genomeBrowser
 R --vanilla < ${THIS}/scripts/halflives.R

@@ -43,7 +43,7 @@ dir.create(file.path(fig.path, "tight"))
 mam.path <- "~/data/mammary/"
 
 ## AAS 
-in.file <- file.path(out.path,"saap_mapped_5.tsv")
+in.file <- file.path(out.path,"saap_mapped.tsv")
 ## RAAS values
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
