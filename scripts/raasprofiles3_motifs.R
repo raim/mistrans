@@ -59,7 +59,7 @@ nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS", ylab="Encoded AA")
@@ -67,7 +67,7 @@ plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS", ylab="Encoded AA",
@@ -79,7 +79,7 @@ dev.off()
 ovc <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovc$p.value)*.5 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("AAS_overlap_cut")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS", ylab="Encoded AA")
@@ -96,7 +96,7 @@ ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-1")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
@@ -104,7 +104,7 @@ figlabel("RAAS > 0.1", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-1")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
@@ -119,7 +119,7 @@ ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap_lRAAS-.5")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
              xlab="Distance from AAS")
@@ -127,7 +127,7 @@ figlabel("RAAS > 0.32", pos="bottomleft")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("AAS_dotplot_lRAAS-.5")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovl, value="ratio", vcols=ttcols,
            xlab="Distance from AAS",
@@ -577,8 +577,8 @@ dev.off()
 
 
 
-plotdev(file.path(mfig.path,"protein_location_G"), ftyp,
-        width=3, height=3, res=300)
+plotdev(file.path(mfig.path,"protein_location_G"), 
+        width=3, height=3, res=300, type=ftyp)
 hist(bdat$rpos[bdat$to=="G"])
 dev.off()
 
@@ -812,7 +812,7 @@ nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_raas")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300,  ftyp=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
@@ -837,7 +837,7 @@ nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_overlap")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300,  ftyp=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
@@ -874,7 +874,7 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_loglen_raas")),
-        height=nh, width=nw, res=300, bg=NA)
+        height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8, axis=1)
@@ -896,7 +896,7 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_loglen_disorder_raas")),
-        height=nh, width=nw, res=300, bg=NA)
+        height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
@@ -922,7 +922,7 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_loglen_conservation_raas")),
-        height=nh, width=nw, res=300, bg=NA)
+        height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
@@ -948,7 +948,7 @@ nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
-        height=nh, width=nw, res=300, bg=NA)
+        height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
@@ -973,7 +973,7 @@ omai <- c(.5,.5,.5,.5)
 nw <- ncol(ovl$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_overlap")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, axis=NA,
              show.total=TRUE, text.cex=.5)
@@ -995,7 +995,7 @@ library(vioplot)
 
 plotdev(file.path(mfig.path,
                   paste0("classes_conservation_raas_violin")),
-        height=2, width=3, res=300)
+        height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
 levs <- c("na",levels(MMSeq2.bins))
 vioplot(bdat$RAAS ~ factor(bdat$MMSeq2.bins, levels=levs),
@@ -1016,7 +1016,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,
                   paste0("classes_disorder_raas_violin")),
-        height=2, width=3, res=300)
+        height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
 levs <- c("na",levels(iupred3.bins))
 vp <- vioplot(bdat$RAAS ~ factor(bdat$iupred3.bins, levels=levs),
@@ -1029,7 +1029,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,
                   paste0("classes_loglen_raas_violin")),
-        height=2, width=3, res=300)
+        height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
 fct <- factor(bdat$loglen.bins)
 levs <- c(levels(fct))
@@ -1049,32 +1049,32 @@ stnd <- function(x,na.rm=TRUE) {
 }
 
 plotdev(file.path(mfig.path,paste0("peptides_conservation+disorder_raas")),
-        height=3, width=3, res=300)
+        height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)+stnd(bdat$iupred3), xlab=xl.raas,
         ylab="disorder + -conservation", legpos="topright")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("peptides_conservationXdisorder_raas")),
-        height=3, width=3, res=300)
+        height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)*stnd(bdat$iupred3), xlab=xl.raas,
         ylab="disorder x -conservation", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_conservation_raas")),
-        height=3, width=3, res=300)
+        height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(bdat$RAAS, stnd(-bdat$MMSeq2), xlab=xl.raas,
         ylab="-conservation", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_disorder_raas")),
-        height=3, width=3, res=300)
+        height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(bdat$RAAS, stnd(bdat$iupred3), xlab=xl.raas,
         ylab="disorder", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_conservation_disorder")),
-        height=3, width=3, res=300)
+        height=3, width=3, res=300, type=ftypx)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(stnd(-bdat$MMSeq2), stnd(bdat$iupred3), xlab="conservation",
         ylab="disorder")
@@ -1101,7 +1101,7 @@ omai <- c(.5,1.1,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_raas")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
@@ -1124,7 +1124,7 @@ omai <- c(.5,1.1,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_disorder_motifs_raas")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
@@ -1148,7 +1148,7 @@ omai <- c(.5,1.1,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_loglen_motifs_raas")),
-        height=nh, width=nw, res=300)
+        height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, axis=NA,
            xlab=NA, ylab=NA, show.total=TRUE)
@@ -1173,7 +1173,7 @@ diso <- raasProfile(x=tmtm, id="SAAP",
                     xlab=xl.raas,
                     verb=1)
 plotdev(file.path(mfig.path,paste0("classes_disorder")),
-        height=1.4, width=.8, res=300, bg="white")
+        height=1.4, width=.8, res=300, type=ftyp, bg="white")
 par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(diso, vcols=acols, vbrks=abrks, value="median",
            axis=NA, xlab=NA, ylab=NA)
@@ -1191,7 +1191,7 @@ cons <- raasProfile(x=tmtm, id="SAAP",
                     xlab=xl.raas,
                     verb=1)
 plotdev(file.path(mfig.path,paste0("classes_conservation")),
-        height=1.4, width=.8, res=300, bg="white")
+        height=1.4, width=.8, res=300, type=ftyp, bg="white")
 par(mai=c(.1,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(cons, vcols=acols, vbrks=abrks, value="median",
            axis=NA, xlab=NA, ylab=NA)
@@ -1234,7 +1234,7 @@ nw <- ncol(jps)*.2 + omai[2] + omai[4]
 nh <- nrow(jps)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint")),
-        height=nh, width=nw, res=300, bg=NA)
+        height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 image_matrix(-log10(jps), col=cols, breaks=brks, axis=NA,
              xlab="", ylab="")
@@ -1270,7 +1270,7 @@ disocons$p.value <- jpv[rownames(tmp),colnames(tmp)]
 
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint_raas")),
-        height=nh, width=nw, res=300, bg="white")
+        height=nh, width=nw, res=300, type=ftyp, bg="white")
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(disocons, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8,
@@ -1291,7 +1291,7 @@ disocons$p.value <- jpn[rownames(tmp),colnames(tmp)]
 
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_joint_raas_low")),
-        height=nh, width=nw, res=300, bg="white")
+        height=nh, width=nw, res=300, type=ftyp, bg="white")
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(disocons, value="median",vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8,
