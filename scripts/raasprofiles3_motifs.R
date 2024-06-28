@@ -1074,7 +1074,7 @@ plotCor(bdat$RAAS, stnd(bdat$iupred3), xlab=xl.raas,
         ylab="disorder", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_conservation_disorder")),
-        height=3, width=3, res=300, type=ftypx)
+        height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotCor(stnd(-bdat$MMSeq2), stnd(bdat$iupred3), xlab="conservation",
         ylab="disorder")
