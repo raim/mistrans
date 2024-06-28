@@ -789,16 +789,13 @@ if ( "Dataset"%in%colnames(tmtm) ) {
 CLS <- classes[,c(ssrt, msrt)]
 
 ## CORRELATION OF MEASURES
-image_matrix(cor(classes), col=ttcols,
-             breaks=seq(-1,1,length=length(ttcols)+1), axis=1:2)
+if ( interactive() ) {
+    image_matrix(cor(classes), col=ttcols,
+                 breaks=seq(-1,1,length=length(ttcols)+1), axis=1:2)
 
-
-
-                      
-
-
-ovl <- clusterCluster(CLS[,"disord."], CLS[,"noncons."])
-plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
+    ovl <- clusterCluster(CLS[,"disord."], CLS[,"noncons."])
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
+}
 
 rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3))
 rsrt <- levels(rbins)

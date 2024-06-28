@@ -13,20 +13,25 @@ mkdir $MISDATA/processedData
 ## SCRIPTS to analyze location and function of mistranslation
 ## events, derived by Shiri Tsour from the slavovlab.
 
-## INPUT GENOME DATA IS GENERATED
-## by genomeBrowser/mammary/setup.sh in $MAMDATA
+### NOTE : INPUT GENOME DATA IS GENERATED
+### by genomeBrowser/mammary/setup.sh in $MAMDATA
 
 ### ADDITIONAL DATA
 
 ## DEGRONS
-wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
+## NOT USED
+##wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
 
 ## CODON DATA
-## TODO: add source and download url for dana14_codons.ods/csv
 
 ## @HernandezAlias2023: Using protein-per-mRNA differences among human
 ## tissues in codon optimization
-wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/MediaObjects/13059_2023_2868_MOESM3_ESM.xlsx -P $MISDATA/originalData/ -O hernandez-alias23_file3.xlsx
+## NOT USED
+##wget https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02868-2/MediaObjects/13059_2023_2868_MOESM3_ESM.xlsx -P $MISDATA/originalData/ -O hernandez-alias23_file3.xlsx
+
+## @Dana2014
+## TODO: add source and download url for dana14_codons.ods/csv,
+## optionally (if present) used in raasprofiles3_codons.R
 
 ## @Wu2019
 ## We calculated the codon stability coefficient (CSC) as the Pearson
@@ -72,7 +77,7 @@ ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic
 
 ## ANALYZE DATA STRUCTURE:
 ## different number of measurements per unique SAAP
-R --vanilla < ${THIS}/scripts/saap_means.R > log/means.txt
+R --vanilla < ${THIS}/scripts/saap_means.R > log/saap_means.txt
 
 
 ## ANNOTATE ALL BP/SAAP
@@ -115,21 +120,21 @@ grep -n ">"  ${MISDATA}/processedData/all_proteins.fa|wc -l
 ## 3) blast all BP against ensembl proteins + mutations
 blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 ## generate local blastdb 
-$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot
+$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot > ${THIS}/log/blast_database.txt 2>&1
 ## blast - filter full length hit alignment length=query length,
 ## and at least 75% identity with awk.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore" 2> ${THIS}/log/unique_bp_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv 
 
 ## 3.B) blast SP against ensembl+mutations
 ## NOTE: using BP as fasta title: gives warning of >50 valid AA in title
 ## this should not be a problem, but TODO: check whether these are correctly
 ## reflected (ini full length) in blast output, or cut at 50.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${THIS}/log/unique_saap_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv 
 
 ## some statistics on blast
 ## TODO: expand this QC analysis a bit,
 ## do SAAP have the expected mismatches?
-R --vanilla < ${THIS}/scripts/saap_blast_stats.R
+R --vanilla < ${THIS}/scripts/saap_blast_stats.R > ${THIS}/log/saap_blast_stats.txt 2>&1
 
 ## 3.C) blast all main peptides against 20k core proteins
 cat ${MISDATA}/originalData/All_main_tryptic_peptide_list.txt | sort |uniq | awk '{print ">" $0 ORS $0}' > ${MISDATA}/processedData/main_peptides.fas
