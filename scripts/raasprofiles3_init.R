@@ -720,8 +720,8 @@ axex <- ftlabels(srt) # axis labels with arrows
 
 
 ## RAAS COLORS
-png(file.path(fig.path,paste0("legend_raas_vcols.png")),
-    res=300, width=4, height=3, units="in")
+plotdev(file.path(fig.path,paste0("legend_raas_vcols")),
+        res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(tmtf$RAAS,
                           mn=RAAS.MIN, mx=RAAS.MAX,colf=COLF,
@@ -737,8 +737,8 @@ dev.off()
 vcols <- lraas.col$col
 vbrks <- lraas.col$breaks
 
-png(file.path(fig.path,paste0("legend_raas_tcols.png")),
-    res=300, width=4, height=3, units="in")
+plotdev(file.path(fig.path,paste0("legend_raas_tcols")),
+        res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 traas.col <- selectColors(tmtf$RAAS,
                           mn=RAAS.MINT, mx=RAAS.MAXT,colf=COLF,
@@ -758,8 +758,8 @@ tbrks <- traas.col$breaks
 
 ## legend for dot plot
 ## RAAS COLORS
-png(file.path(fig.path,paste0("legend_raas_acols.png")),
-    res=300, width=4, height=3, units="in")
+plotdev(file.path(fig.path,paste0("legend_raas_acols")),
+        res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 aaprop.raas.col <- selectColors(tmtf$RAAS,
                           mn=RAAS.MINA, mx=RAAS.MAXA,colf=COLF,
@@ -780,8 +780,8 @@ abrks <- aaprop.raas.col$breaks
 
 
 ## legend for all two-sided statistics
-png(file.path(fig.path,paste0("legend_wtests.png")),
-    res=300, width=2, height=2, units="in")
+plotdev(file.path(fig.path,paste0("legend_wtests")),
+        res=300, type=ftyp, width=2, height=2)
 par(mai=c(.6,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotOverlapsLegend(p.min=p.min, p.txt=p.txt, type=2, col=ttcols)
 dev.off()
