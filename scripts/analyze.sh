@@ -22,7 +22,7 @@ mkdir $MISDATA/processedData
 wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
 
 ## CODON DATA
-## TODO: add download url for dana14_codons.ods/csv
+## TODO: add source and download url for dana14_codons.ods/csv
 
 ## @HernandezAlias2023: Using protein-per-mRNA differences among human
 ## tissues in codon optimization
@@ -63,7 +63,7 @@ wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcv
 
 ## convert xlsx files to text
 ## NOTE: when copy-pasting this line to bash you need to manually
-## add the tab charcter by pressing ctrl-v <TAB>
+## add the tab charcter in `separator='<tab>' by typing ctrl-v <TAB>
 ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_TMTlevel_quant_df.xlsx $MISDATA/originalData/All_SAAP_TMTlevel_quant_df.txt 
 ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_patient_level_quant_df.xlsx $MISDATA/originalData/All_SAAP_patient_level_quant_df.txt 
 ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $MISDATA/originalData/All_SAAP_protein_filter_df.xlsx $MISDATA/originalData/All_SAAP_protein_filter_df.txt
@@ -173,7 +173,7 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R > ${THIS}/log/aminoaci
 R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R > ${THIS}/log/motifs.txt 2>&1 # FIGURE 4
 R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R > ${THIS}/log/kraq.txt 2>&1 ## TODO: reproduce diAA
 R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R > ${THIS}/log/structure.txt 2>&1
-R --vanilla <  ${THIS}/scripts/raasprofiles3_domains.R > ${THIS}/log/function.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R > ${THIS}/log/function.txt 2>&1
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${THIS}/log/proteins.txt 2>&1
 
 ## all protein profiles

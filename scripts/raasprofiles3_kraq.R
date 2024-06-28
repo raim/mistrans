@@ -56,14 +56,14 @@ asite.srt <- at.srt
 ## RAAS vs. POSITION
 ## TODO: dotprofile per cancer type and site bins
 plotdev(file.path(kfig.path,paste0("peptides_sites_RAAS_cor")),
-        height=3.5, width=3.5, res=300)
+        height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05)
 plotCor(bdat$site, bdat$median, xlab="AAS position in peptide",
         ylab=xl.raas, legpos="topright")
 dev.off()
 
 plotdev(file.path(kfig.path,paste0("peptides_sites_RAAS")),
-        height=3.5, width=7, res=300)
+        height=3.5, width=7, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, xaxs="i")
 boxplot(bdat$median ~ factor(asite.bins, levels=at.srt),
         ylab=expression(log[10](RAAS)), xlab="Position in peptide", las=2)
@@ -75,7 +75,7 @@ cls <- clusterCluster(bdat$from, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 cls <- sortOverlaps2(cls, p.min=p.txt)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_encoded")),
-        height=5, width=mx/2+1, res=300)
+        height=5, width=mx/2+1, res=300, type=ftyp)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
 plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="Encoded AA at AAS", xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
@@ -90,7 +90,7 @@ cls <- clusterCluster(bdat$to, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 cls <- sortOverlaps2(cls, p.min=p.txt)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_incorporated")),
-        height=5, width=mx/2+1, res=300)
+        height=5, width=mx/2+1, res=300, type=ftyp)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.05)
 plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="Incorporated AA at AAS",
              xlab=NA,
@@ -106,7 +106,7 @@ cls <- clusterCluster(bdat$fromto, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 cls <- sortOverlaps(cls, p.min=1e-3)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype")),
-        height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300)
+        height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300, type=ftyp)
 par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
 plotOverlaps(cls, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
@@ -121,7 +121,7 @@ dev.off()
 clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_cut")),
-        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300)
+        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300, type=ftyp)
 par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
 plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
@@ -140,7 +140,7 @@ nw <- ncol(clc$p.value)*.3 + omai[2] + omai[4]
 nh <- nrow(clc$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
-        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300)
+        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300, type=ftyp)
 par(mai=omai, mgp=c(2.1,.3,0), tcl=-.05, family="monospace")
 plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
              show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
