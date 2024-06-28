@@ -6,6 +6,7 @@ export MAMDATA=${MYDATA}/mammary
 SRC=$GENBRO/data/mammary
 THIS=${HOME}/work/mistrans
 
+mkdir $MISDATA/log
 mkdir $MISDATA/figures
 mkdir $MISDATA/originalData
 mkdir $MISDATA/processedData
@@ -38,8 +39,9 @@ mkdir $MISDATA/processedData
 ## correlation coefficient between mRNA stability and codon
 ## occurrence. [...] The CSC scores do not present strong correlation
 ## with codon usage (Figure 1—figure supplement 1C).
-wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D -P $MISDATA/originalData/ -O elife-45396-fig1-data2-v2.csv
-
+cd $MISDATA/originalData/
+wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D  -O elife-45396-fig1-data2-v2.csv
+cd -
 
 ### SAAP/RAAS ANALYSIS
 
@@ -112,7 +114,7 @@ cut -f 1  ${MISDATA}/processedData/unique_saap.tsv |sort|uniq|wc -l
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 
-R --vanilla < ${THIS}/scripts/get_mutated_proteins.R  > ${THIS}/log/mutated_proteins.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_mutated_proteins.R  > ${MISDATA}/log/mutated_proteins.txt 2>&1
 
 ## how many? 131328 proteins!
 grep -n ">"  ${MISDATA}/processedData/all_proteins.fa|wc -l
@@ -120,32 +122,32 @@ grep -n ">"  ${MISDATA}/processedData/all_proteins.fa|wc -l
 ## 3) blast all BP against ensembl proteins + mutations
 blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 ## generate local blastdb 
-$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot > ${THIS}/log/blast_database.txt 2>&1
+$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot > ${MISDATA}/log/blast_database.txt 2>&1
 ## blast - filter full length hit alignment length=query length,
 ## and at least 75% identity with awk.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore" 2> ${THIS}/log/unique_bp_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv 
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore" 2> ${MISDATA}/log/unique_bp_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv 
 
 ## 3.B) blast SP against ensembl+mutations
 ## NOTE: using BP as fasta title: gives warning of >50 valid AA in title
 ## this should not be a problem, but TODO: check whether these are correctly
 ## reflected (ini full length) in blast output, or cut at 50.
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${THIS}/log/unique_saap_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv 
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${MISDATA}/log/unique_saap_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv 
 
 ## some statistics on blast
 ## TODO: expand this QC analysis a bit,
 ## do SAAP have the expected mismatches?
-R --vanilla < ${THIS}/scripts/saap_blast_stats.R > ${THIS}/log/saap_blast_stats.txt 2>&1
+R --vanilla < ${THIS}/scripts/saap_blast_stats.R > ${MISDATA}/log/saap_blast_stats.txt 2>&1
 
 ## 3.C) blast all main peptides against 20k core proteins
 cat ${MISDATA}/originalData/All_main_tryptic_peptide_list.txt | sort |uniq | awk '{print ">" $0 ORS $0}' > ${MISDATA}/processedData/main_peptides.fas
 ## call blast, only report full length hits with 100% identity
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/main_peptides.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  | awk '{if($5==$6 && $3==100) print}'  |grep -v "^#" > ${MISDATA}/processedData/main_peptides_blast.tsv
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/main_peptides.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${MISDATA}/log/main_peptides_blast.txt | awk '{if($5==$6 && $3==100) print}'  |grep -v "^#" > ${MISDATA}/processedData/main_peptides_blast.tsv
 
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
 ## 4.A) find best matching protein
 ##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${THIS}/log/protein_match.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_protein_match.R > ${MISDATA}/log/protein_match.txt 2>&1
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
@@ -167,19 +169,19 @@ fi
 ## iupred3, anchor2, s4pred, codon, ...
 ##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
-R --vanilla < ${THIS}/scripts/map_peptides.R > ${THIS}/log/map_peptides.txt 2>&1
+R --vanilla < ${THIS}/scripts/map_peptides.R > ${MISDATA}/log/map_peptides.txt 2>&1
 
 ### 5) ANALYSIS
 
 
 ### CALCULATE RAAS PROFILES
-R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R > ${THIS}/log/codons.txt 2>&1 # FIGURE 2
-R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R > ${THIS}/log/aminoacids.txt 2>&1 # FIGURE 3
-R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R > ${THIS}/log/motifs.txt 2>&1 # FIGURE 4
-R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R > ${THIS}/log/kraq.txt 2>&1 ## TODO: reproduce diAA
-R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R > ${THIS}/log/structure.txt 2>&1
-R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R > ${THIS}/log/function.txt 2>&1
-R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${THIS}/log/proteins.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R > ${MISDATA}/log/codons.txt 2>&1 # FIGURE 2
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R > ${MISDATA}/log/aminoacids.txt 2>&1 # FIGURE 3
+R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R > ${MISDATA}/log/motifs.txt 2>&1 # FIGURE 4
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R > ${MISDATA}/log/kraq.txt 2>&1 ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R > ${MISDATA}/log/structure.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R > ${MISDATA}/log/function.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${MISDATA}/log/proteins.txt 2>&1
 
 ## all protein profiles
 R --vanilla <  ${THIS}/scripts/saap_proteins.R
@@ -190,68 +192,3 @@ R --vanilla < ${THIS}/scripts/ralser24.R
 
 ## TODO: collect publication figures here!
 
-
-
-### OUTDATED OLD CODE:
-
-## MOTIFS: get and analyze sequences surrounding the ASS
-
-## export sequence context of AAS
-## generates file ${MISDATA}/processedData/saap_context.tsv
-R --vanilla < ${THIS}/scripts/export_aas_context.R > ${THIS}/log/context_export.txt
-
-## extract sequence sets from saap_context.tsv for motif analysis
-
-## binomial distribution (hypergeo) tests of AA around AAS
-## including miscleavage etc.
-R --vanilla < ${THIS}/scripts/get_aas_context.R > ${THIS}/log/context_analysis.txt
-
-## TODO: fuse two context scripts; and move randomization etc. to deep learning
-## python script; run kplogo; select motifs and sequences for RAAS analysis.
-
-## kplogo
-## TODO: run over all from:to classes and find a way to collect and plot
-## results by RAAS!
-cd ~/data/mistrans/processedData/motifs
-~/programs/kpLogo/bin/kpLogo seqcontext_all_.fa  -alphabet protein -o kplogo/all
-~/programs/kpLogo/bin/kpLogo seqcontext_fromto_Q:G.fa -alphabet protein -o kplogo/QG
-~/programs/kpLogo/bin/kpLogo seqcontext_fromto_T:V.fa -alphabet protein -o kplogo/TV
-~/programs/kpLogo/bin/kpLogo seqcontext_methionine_TRUE.fa -alphabet protein -o kplogo/M
-~/programs/kpLogo/bin/kpLogo seqcontext_tryptophane_TRUE.fa -alphabet protein -o kplogo/W
-
-## TODO: log files
-## with Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## without Albumin
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=FALSE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-
-## same for healthy tissues
-## with Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## without Albumin
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=FALSE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## unique SAAP without Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=TRUE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla &
-## unique SAAP with Albumin 
-sed 's/^healthy.*/healthy=TRUE/;s/^exclude.albumin.*/exclude.albumin=FALSE/;s/^only.unique.*/only.unique=TRUE/' ${THIS}/scripts/raasprofiles3_codons.R | R --vanilla
-
-
-## OLD and OBSOLETE - TODO: redo functional analysis
-R --vanilla < ${THIS}/scripts/saap_analysis.R  > log/analysis.txt
-## functional enrichment of SAAP-harboring proteins
-R --vanilla < ${THIS}/scripts/saap_function.R
-
-
-### GENERATE RESULTS SLIDES AND PAPER FIGURES
-
-
-cp -a ~/Documents/sejour23_fig1.jpg .
-
-pandoc -t beamer tsour23pre.md --filter pandoc-citeproc -o tsour23pre.pdf
-
-## TODO: instead, generate a blastdb of all transcripts and proteins,
-## blast base peptides within those proteins and record locations
