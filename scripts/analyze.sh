@@ -199,9 +199,6 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.txt 
 
 
-### TODO: move those two scripts to genomeBrowser
-R --vanilla < ${THIS}/scripts/halflives.R
-R --vanilla < ${THIS}/scripts/ralser24.R
 
 ## TODO: collect publication figures here!
 
