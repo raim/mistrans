@@ -13,6 +13,9 @@ bp.ids <- file.path(proj.path,"processedData","all_proteins.tsv")
 fig.path <- file.path(proj.path,"figures","saap_mapping")
 dir.create(fig.path)
 
+ftyp <- "png"
+if ( !interactive() ) ftyp <- "pdf"
+
 ## READ SAAP BLAST RESULTS
 saap <- read.delim(saap.file, header=FALSE)
 colnames(saap) <- c("SAAP","protein","identity", "mismatches",
@@ -33,8 +36,8 @@ saap <- saap[order(saap$identity,
 ## remove duplicated, which should appear below better hits!
 saap <- saap[!duplicated(paste0(saap$SAAP,saap$gene)),]
 
-png(file.path(fig.path,"saap_blast.png"),
-    res=300, width=7, height=3.5, units="in")
+plotdev(file.path(fig.path,"saap_blast"),
+        res=300, width=7, height=3.5, type=ftyp)
 par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(saap$identity)
 barplot(table(saap$mismatches), xlab="number of mismatches")
