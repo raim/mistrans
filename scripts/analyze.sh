@@ -3,6 +3,28 @@
 ## SCRIPTS to analyze location and function of mistranslation
 ## events, as provided by Shiri Tsour and Nikolai Slavov.
 
+
+### TODO:
+## * consider which parts of genomeBrowser/data/mammary should/could be
+##   moved here,
+
+### MAIN INPUT DATA
+
+## Shiri Tsour: main input files from google drive
+## downloaded from shared google drive on 20240627
+## * All_SAAP_patient_level_quant_df.xlsx
+## * All_SAAP_TMTlevel_quant_df.xlsx
+## * All_SAAP_protein_filter_df.xlsx
+
+## Sent by Shiri Tsour via slack:
+## * main_peptide_quant_df.xlsx
+## * tonsil_main_peptide_quant_df.xlsx
+## * All_main_nontryptic_peptide_list.txt
+## * All_main_tryptic_peptide_list.txt
+## * All_main_nontryptic_noKR_peptide_list.txt
+## * All_main_ArgC_LysC_peptide_list.txt
+
+
 ## program paths
 blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 
@@ -21,6 +43,7 @@ mkdir $MISDATA/processedData
 
 ### NOTE : INPUT GENOME DATA IS GENERATED
 ### by genomeBrowser/mammary/setup.sh in $MAMDATA
+
 
 ### ADDITIONAL DATA
 
@@ -51,27 +74,6 @@ cd -
 ### SAAP/RAAS ANALYSIS
 
 
-### TODO:
-## * move all old data and scripts to a backup folder,
-## * consider which parts of genomeBrowser/data/mammary should/could be
-##   moved here,
-## * rename file versions (scripts and output data) to avoid confusion,
-## * freshly download and record Shiri's data,
-## * generate .txt files from xlsx, and rerun the whole pipeline.
-
-## Shiri Tsour: main input files from google drive
-## downloaded from shared google drive on 20240627
-## * All_SAAP_patient_level_quant_df.xlsx
-## * All_SAAP_TMTlevel_quant_df.xlsx
-## * All_SAAP_protein_filter_df.xlsx
-
-## Sent by Shiri Tsour via slack:
-## * main_peptide_quant_df.xlsx
-## * tonsil_main_peptide_quant_df.xlsx
-## * All_main_nontryptic_peptide_list.txt
-## * All_main_tryptic_peptide_list.txt
-## * All_main_nontryptic_noKR_peptide_list.txt
-## * All_main_ArgC_LysC_peptide_list.txt
 
 ## convert xlsx files to text
 ## NOTE: when copy-pasting this line to bash you need to manually
