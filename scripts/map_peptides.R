@@ -18,6 +18,9 @@ out.path <- file.path(proj.path,"processedData")
 
 out.file <- file.path(out.path,"saap_mapped.tsv")
 
+ftyp <- "png"
+if ( !interactive() ) ftyp <- "pdf"
+
 ##if ( !interactive() )
 ##    stop("reset mapping to version 3, or fix new MANE mapping")
 
@@ -568,8 +571,8 @@ er <- c("unique BP/SAAP"=nrow(dat),
         "no gene"=sum(dat$nogene, na.rm=TRUE),
         "with mutation"=sum(dat[,"protein"]!=dat[,"ensembl"],na.rm=TRUE),
         apply(errs,2,sum))
-png(file.path(fig.path,"mapping_errors.png"),
-    res=300, width=3.5, height=3.5, units="in")
+plotdev(file.path(fig.path,"mapping_errors"),
+        res=300, width=3.5, height=3.5, type=ftyp)
 par(mai=c(1.5,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(er,las=2)
 text(bp+.25, er+.05*diff(par("usr")[3:4]),
@@ -584,8 +587,8 @@ recovery <- c("SAAP"=nrow(dat),
               "iupred3"=sum(!is.na(dat[,"iupred3"])),
               "genome"=sum(!is.na(dat[,"chr"])),
               "codon"=sum(!is.na(dat[,"codon"])))
-png(file.path(fig.path,"mapping_recovery.png"),
-    res=300, width=3.5, height=3.5, units="in")
+plotdev(file.path(fig.path,"mapping_recovery"),
+        res=300, width=3.5, height=3.5, type=ftyp)
 par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(recovery,las=2,ylab="")
 text(bp, recovery, recovery, pos=3, xpd=TRUE, cex=.8)
@@ -599,8 +602,8 @@ types <- c("SAAP"=nrow(dat),
            "globin"=sum(dat[,"globin"], na.rm=TRUE))
 
 types <- sort(types, decreasing=TRUE)
-png(file.path(fig.path,"mapping_types.png"),
-    res=300, width=3.5, height=3.5, units="in")
+plotdev(file.path(fig.path,"mapping_types"),
+        res=300, width=3.5, height=3.5, type=ftyp)
 par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25, cex=.8)
 bp <- barplot(types,las=2,ylab="")
 text(bp, types, types, pos=3, xpd=TRUE)

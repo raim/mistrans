@@ -183,6 +183,7 @@ R --vanilla <  ${THIS}/scripts/saap_proteins.R
 R --vanilla < ${THIS}/scripts/halflives.R
 R --vanilla < ${THIS}/scripts/ralser24.R
 
+## TODO: collect publication figures here!
 
 
 
