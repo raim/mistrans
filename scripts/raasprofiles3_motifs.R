@@ -812,7 +812,7 @@ nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_raas")),
-        height=nh, width=nw, res=300,  ftyp=ftyp)
+        height=nh, width=nw, res=300,  type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
@@ -837,7 +837,7 @@ nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("classes_conservation_motifs_overlap")),
-        height=nh, width=nw, res=300,  ftyp=ftyp)
+        height=nh, width=nw, res=300,  type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, xlab="", ylab="",
              show.total=TRUE)
