@@ -660,12 +660,14 @@ for ( pid in pids ) {
     }
 
     ## ADD all "Main peptides"
-    mps  <- mainp[mainp$protein==pid,]
-    mpd <- data.frame(type="tonsil, tryptic",
-                      start=mps$sstart,
-                      end=mps$send,
-                      chr=1, strand=".",
-                      color=mps$color)
+    mps  <- mainp[mainp$protein==pid,, drop=FALSE]
+    mpd <- NULL
+    if ( nrow(mps)>0 )
+        mpd <- data.frame(type="tonsil, tryptic",
+                          start=mps$sstart,
+                          end=mps$send,
+                          chr=1, strand=".",
+                          color=mps$color)
     
 
     ## PREPARE AAS PLOT
@@ -813,8 +815,12 @@ for ( pid in pids ) {
     mmaiaa <- mmai
     mmaiaa[1] <- 0.01
     par(mai=mmaiaa)
-    plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
-                 typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+    if ( !is.null(mpd) ) {
+        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+                     typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+    } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    }
     mmaiaa <- mmai
     mmaiaa[3] <- 0.01
     par(mai=mmaiaa)
@@ -958,8 +964,12 @@ for ( pid in pids ) {
     mmaiaa <- mmai
     mmaiaa[1] <- 0.01
     par(mai=mmaiaa)
-    plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
-                 typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+    if ( !is.null(mpd) ) {
+        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+                     typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+    } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    }
     mmaiaa <- mmai
     mmaiaa[3] <- mmaiaa[1] <- 0.01
     par(mai=mmaiaa)

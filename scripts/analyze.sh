@@ -1,18 +1,23 @@
 #!/bin/bash
 
+## SCRIPTS to analyze location and function of mistranslation
+## events, as provided by Shiri Tsour and Nikolai Slavov.
 
+## program paths
+blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
+
+## data paths
 export MISDATA=${MYDATA}/mistrans
 export MAMDATA=${MYDATA}/mammary
 SRC=$GENBRO/data/mammary
 THIS=${HOME}/work/mistrans
 
+## generate output paths
 mkdir $MISDATA/log
 mkdir $MISDATA/figures
 mkdir $MISDATA/originalData
 mkdir $MISDATA/processedData
 
-## SCRIPTS to analyze location and function of mistranslation
-## events, derived by Shiri Tsour from the slavovlab.
 
 ### NOTE : INPUT GENOME DATA IS GENERATED
 ### by genomeBrowser/mammary/setup.sh in $MAMDATA
@@ -114,15 +119,14 @@ cut -f 1  ${MISDATA}/processedData/unique_saap.tsv |sort|uniq|wc -l
 
 ## 2) collect all proteins tagged with mutations and add these to protein DB;
 ##    generates ${MISDATA}/processedData/all_proteins.fa 
-R --vanilla < ${THIS}/scripts/get_mutated_proteins.R  > ${MISDATA}/log/mutated_proteins.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_mutated_proteins.R  &> ${MISDATA}/log/mutated_proteins.txt 
 
 ## how many? 131328 proteins!
 grep -n ">"  ${MISDATA}/processedData/all_proteins.fa|wc -l
 
 ## 3) blast all BP against ensembl proteins + mutations
-blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 ## generate local blastdb 
-$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot > ${MISDATA}/log/blast_database.txt 2>&1
+$blastdir/makeblastdb -in ${MISDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot  &> ${MISDATA}/log/blast_database.txt
 ## blast - filter full length hit alignment length=query length,
 ## and at least 75% identity with awk.
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_bp.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore" 2> ${MISDATA}/log/unique_bp_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${MISDATA}/processedData/unique_bp_blast.tsv 
@@ -136,18 +140,14 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ## some statistics on blast
 ## TODO: expand this QC analysis a bit,
 ## do SAAP have the expected mismatches?
-R --vanilla < ${THIS}/scripts/saap_blast_stats.R > ${MISDATA}/log/saap_blast_stats.txt 2>&1
+R --vanilla < ${THIS}/scripts/saap_blast_stats.R &> ${MISDATA}/log/saap_blast_stats.txt
 
-## 3.C) blast all main peptides against 20k core proteins
-cat ${MISDATA}/originalData/All_main_tryptic_peptide_list.txt | sort |uniq | awk '{print ">" $0 ORS $0}' > ${MISDATA}/processedData/main_peptides.fas
-## call blast, only report full length hits with 100% identity
-${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/main_peptides.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${MISDATA}/log/main_peptides_blast.txt | awk '{if($5==$6 && $3==100) print}'  |grep -v "^#" > ${MISDATA}/processedData/main_peptides_blast.tsv
 
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
 ## 4.A) find best matching protein
 ##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
-R --vanilla < ${THIS}/scripts/get_protein_match.R > ${MISDATA}/log/protein_match.txt 2>&1
+R --vanilla < ${THIS}/scripts/get_protein_match.R &> ${MISDATA}/log/protein_match.txt
 
 ## collect ONLY required iupred3 data for transfer to intron
 if [ false ]; then
@@ -169,25 +169,35 @@ fi
 ## iupred3, anchor2, s4pred, codon, ...
 ##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
-R --vanilla < ${THIS}/scripts/map_peptides.R > ${MISDATA}/log/map_peptides.txt 2>&1
+R --vanilla < ${THIS}/scripts/map_peptides.R &> ${MISDATA}/log/map_peptides.txt
 
 ### 5) ANALYSIS
 
 
 ### CALCULATE RAAS PROFILES
-R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R > ${MISDATA}/log/codons.txt 2>&1 # FIGURE 2
-R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R > ${MISDATA}/log/aminoacids.txt 2>&1 # FIGURE 3
-R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R > ${MISDATA}/log/motifs.txt 2>&1 # FIGURE 4
-R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R > ${MISDATA}/log/kraq.txt 2>&1 ## TODO: reproduce diAA
-R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R > ${MISDATA}/log/structure.txt 2>&1
-R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R > ${MISDATA}/log/function.txt 2>&1
-R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R > ${MISDATA}/log/proteins.txt 2>&1
+R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R &> ${MISDATA}/log/codons.txt  # FIGURE 2
+R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R &> ${MISDATA}/log/aminoacids.txt  # FIGURE 3
+R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R &> ${MISDATA}/log/motifs.txt  # FIGURE 4
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R &> ${MISDATA}/log/kraq.txt  ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R &> ${MISDATA}/log/structure.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/function.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
 
-## all protein profiles
+## PROTEIN 3D: chimeraX codes for pdb
+R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R &> ${MISDATA}/log/protein_plots.txt 
+
+
+## PROTEIN 1D: plots of AAS along protein 1D
+
+## first blast all main peptides against 20k core proteins
+## NOTE: runs a few hours!
+cat ${MISDATA}/originalData/All_main_tryptic_peptide_list.txt | sort |uniq | awk '{print ">" $0 ORS $0}' > ${MISDATA}/processedData/main_peptides.fas
+## call blast, only report full length hits with 100% identity
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/main_peptides.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore"  2> ${MISDATA}/log/main_peptides_blast.txt | awk '{if($5==$6 && $3==100) print}'  |grep -v "^#" > ${MISDATA}/processedData/main_peptides_blast.tsv
+
+## plot 1D for all proteins
 R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.txt 
 
-## all protein chimeraX codes for pdb
-R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R > ${MISDATA}/log/protein_plots.txt 2>&1
 
 ### TODO: move those two scripts to genomeBrowser
 R --vanilla < ${THIS}/scripts/halflives.R
