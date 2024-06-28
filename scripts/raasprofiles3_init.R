@@ -519,7 +519,7 @@ for ( val in rank.vals ) {
     rankbins[is.na(rankbins)] <- "na"
     rank.mat[,val] <- rankbins
     plotdev(file.path(fig.path, paste0("rankbins_",val)),
-            width=3, height=2, res=200)
+            width=3, height=2, res=200, type=ftyp)
     par(mai=c(.75,.5,.1,.1), mgp=c(1.5,.3,0), tcl=-.25)
     boxplot(hdat[,val] ~ rankbins, ylab=val, las=2, xlab="")
     dev.off()
@@ -814,7 +814,7 @@ for ( colstyle in c("viridis","rocket","inferno","arno") ) {
     scols <- get(colstyle, mode="function")(length(vcols))
     
     segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_",colstyle)),
-                         height=nh, width=nw, res=300)
+                         height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
     dotprofile(ovw, value="median",
                vbrks=vbrks,
@@ -826,7 +826,7 @@ for ( colstyle in c("viridis","rocket","inferno","arno") ) {
     dev.off()
 }
 segmenTools::plotdev(file.path(fig.path,paste0("legend_dotplot_vcols")),
-                     height=nh, width=nw, res=300)
+                     height=nh, width=nw, res=300, type=ftyp)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(ovw, value="median",
            vbrks=vbrks,
