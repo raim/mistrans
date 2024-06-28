@@ -20,7 +20,7 @@ goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
 ## only use unique BP/SAAP per Dataset
 do.unique <-  FALSE #TRUE # 
-dfig.path <- file.path(fig.path,"domains")
+dfig.path <- file.path(fig.path,"function")
 dir.create(dfig.path, showWarnings=FALSE)
 
 tmtu <- tmtf
@@ -396,7 +396,7 @@ cnms["go"] <- "GOslim"
 ## by accident with the Q:G outside this domain?
 
 source("~/programs/segmenTools/R/clusterTools.R")
-omai <- c(.8,CMAIL,.5,.5)
+omai <- c(.8,CMAIL,.6,.6)
 for ( cid in cids ) {
 
     ovf <- get(paste0(cid, ".ovl"))

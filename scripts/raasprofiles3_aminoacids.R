@@ -407,7 +407,7 @@ if ( nrow(ovwp$p.value)>0 ) {
     ## calculate optimal figure height: result fields + figure margins (mai)
     nr <- nrow(ovwp$p.value)
     nc <- ncol(ovwp$p.value)
-    mai <- c(.8,.8,.6,.6)
+    mai <- c(.8,.8,.7,.6)
     nh <- nr *fh + mai[1] + mai[3]
     nw <- nc *fw + mai[2] + mai[4]
     ffam <- "monospace"#"sans"
@@ -479,7 +479,7 @@ for ( ds in auds ) {
                  vcols=acols, vbrks=abrks,
                  mtxt="Incorporated AA", 
                  mtxt1="Encoded AA", ffam="monospace",
-                 axis1.las=1, fw=.22, fh=.22,
+                 axis1.las=1, fw=.2, fh=.2,
                  gcols=gcols)
 }
 

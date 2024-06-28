@@ -19,7 +19,7 @@ if ( !interactive() ) ftyp <- "pdf"
 ## READ SAAP BLAST RESULTS
 saap <- read.delim(saap.file, header=FALSE)
 colnames(saap) <- c("SAAP","protein","identity", "mismatches",
-                  "alen", "qlen", "slen", "sstart", "send", "e", "bitscore")
+                    "alen", "qlen", "slen", "sstart", "send", "e", "bitscore")
 
 ## TODO: sort for best hits and remove duplicates as in get_protein_match.R
 ## TODO: fuse this into get_protein_match.R or map_peptides3.R

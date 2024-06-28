@@ -200,7 +200,65 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ## plot 1D for all proteins
 R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.txt 
 
+### COLLECT PUBLICATION FIGURES HERE!
 
 
-## TODO: collect publication figures here!
 
+## Figure 2:
+## * codon frequency as table file,
+## * full codon dotprofiles,
+
+results=${MISDATA}/results/
+mkdir $results
+
+cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.pdf $results/
+
+
+mkdir $results/codons
+cp -a ${MISDATA}/figures/raasprofiles3/codons/codon_frequencies.tsv $results/codons/
+cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.pdf $results/codons/
+pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot.pdf
+
+## Figure 3:
+## 3e: encoded/incorporated selection,
+## 3b: AAS type sorted/colored by AA properties,
+## 3c: AA property selection.
+## Extended 5a: incorporated by encoded over all Datasets,
+## Extended 5b: AA property,
+## Extended 5f: all encoded/incorporated.
+
+mkdir $results/aminoacids
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_cut_dotplot_manual.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_all_dotplot.pdf $results/aminoacids/
+
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_cut_dotplot_manual.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_dotplot_manual_acols.pdf $results/aminoacids/
+
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_cut_dotplot_manual_rotated.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_dotplot.pdf $results/aminoacids/
+
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_cut_dotplot_manual_rotated.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_dotplot.pdf $results/aminoacids/
+
+mkdir $results/motifs
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_KRAQ.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_CCxCC.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_MMxMM.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_WWxWW.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.pdf $results/motifs/
+
+mkdir $results/structure
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_lengths_all.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/proteins_raas.tsv $results/structure/
+
+mkdir $results/function
+cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.pdf $results/function
+pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
+
+
+##zip file of all protein plots,
+##zip file of all chimeraX commands.

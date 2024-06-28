@@ -17,8 +17,8 @@ pfig.path <- file.path(fig.path,"proteins")
 dir.create(pfig.path, showWarnings=FALSE)
 
 corW <- corH <- 2.5
-pmai <- c(.4,.4,.2,.2)
-pmpg <- c(1,.2,0)
+pmai <- c(.5,.5,.25,.25)
+pmpg <- c(1.3,.3,0)
 
 ## axis labels
 xl.hlfm <- expression(protein~"half-life"/h)
@@ -297,7 +297,7 @@ ptstat$p20_pval <- pval[rownames(ptstat)]
 
 ## write-out collected protein results
 write.table(cbind(protein=rownames(ptstat), ptstat),
-            file=file.path(out.path, "proteins_raas.tsv"), sep="\t",
+            file=file.path(pfig.path, "proteins_raas.tsv"), sep="\t",
             na="", row.names=FALSE, quote=FALSE)
 
 ### HOTSPOTS
