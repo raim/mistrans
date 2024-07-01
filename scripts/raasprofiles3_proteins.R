@@ -98,6 +98,12 @@ bpstat$bplen <- nchar(rownames(bpstat))
 bps <- unlist(lengths(lapply(split(bdat$SAAP, bdat$BP), unique)))
 bpstat$nsaap <- bps[rownames(bpstat)]
 
+## add median intensities per BP+SAAP
+bsints <- tmtf$BP.abundance+tmtf$SAAP.abundance
+bpint <- unlist(lapply(split(bsints, tmtf$BP), median, na.rm=TRUE))
+
+bpstat$intensity <- bpint[rownames(bpstat)]
+
 ## protein median raas per protein w/o site-specific median first
 ptl <- split(tmtf$RAAS, tmtf$mane)
 ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
@@ -362,18 +368,45 @@ for ( ax in 1:2 ) {
 }
 dev.off()
 
-## TODO: full AAS distance matrix where AAS on distinct proteins are Inf
 
-## BP HOTSPOTS
-## TODO:
-## * distance distributions for each protein,
-## * get main peptides for AHNAK/ENSP00000367263
-## * aligned plots of AAS per protein and AAS per BP,
-## * #RAAS values per protein/BP,
-## * RAAS distribution of frequently substituted BP,
+## RAAS DISTRIBUTION of UNIQUE SITES
+
+site[which.max(site$RAAS.n),]
+pid <- site[which.max(site$RAAS.n),"mane"]
+pos <- site[which.max(site$RAAS.n),"pos"]
+tidx <- which(tmtf$mane==pid & tmtf$pos==pos)
+
+plotdev(file.path(pfig.path,"hotspots_example_site_RAAS"), type=ftyp,
+        width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+hist(tmtf$RAAS[tidx], xlab=xl.raas, main=NA)
+mtext(paste0(pnms[pid], ", ", unique(tmtf[tidx,"from"]),pos), 3,0, cex=.7)
+dev.off()
+
+for ( i in 1:30 ) {
+    sid <- rownames(site)[order(site$RAAS.n,decreasing=TRUE)[i]]
 
 
+    pid <- site[sid,"mane"]
+    pos <- site[sid,"pos"]
+    tidx <- which(tmtf$mane==pid & tmtf$pos==pos)
+    plotdev(file.path(pfig.path,paste0("hotspots_example_site_RAAS_",i)),
+            type=ftyp, width=3, height=3, res=200)
+    par(mai=c(0.5,.5,.2,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+    hist(tmtf$RAAS[tidx], xlab=xl.raas, main=NA)
+    mtext(paste0(pnms[pid], ", ", unique(tmtf[tidx,"from"]),pos), 3,0, cex=1)
 
+    ##legend("right",  pnms[pid], bty="n")
+    from <- unique(tmtf[tidx,"from"])
+    to <- paste0(names(sort(table(tmtf[tidx,"to"]))),collapse=",")
+
+    legend("topleft",  legend=c(bquote(.(from) %->% .(to)),
+                                paste0("#RAAS=",site[sid,"RAAS.n"])), bty="n",
+           seg.len=0, x.intersp=0)
+    dev.off()
+}
+
+## RAAS DISTRIBUTIONS of SINGLE BP
 pns <- bpstat$nsaap
 pns[pns>15] <- ">15"
 paas <- table(pns)[c(as.character(1:15),">15")]
@@ -584,12 +617,51 @@ plotdev(file.path(pfig.path,paste0("protein_intensities_nsites")),
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(ptstat$intensity), log10(ptstat$n),
         ylab="#RAAS per protein",
-        xlab=expression(log[10](intensity)), title=TRUE, cor.legend=FALSE,
+        xlab=expression(median~log[10](intensity)),
+        title=TRUE, cor.legend=FALSE,
         axes=FALSE)
 axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 dev.off()
+
+## NOTE: for hotspots
+plotdev(file.path(pfig.path,paste0("peptide_intensities_nsites")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(log10(bpstat$intensity), log10(bpstat$n),
+        ylab="#RAAS per base peptide",
+        xlab=expression(median~log[10](intensity["BP+SAAP"])),
+        title=TRUE, cor.legend=FALSE,
+        axes=FALSE)
+axis(1)
+axis(2, at=1:10, labels=10^(1:10))
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+dev.off()
+plotdev(file.path(pfig.path,paste0("peptide_intensities_RAAS")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(log10(bpstat$intensity), bpstat$median, 
+        ylab="peptide median log10(RAAS)",
+        xlab=expression(median~log[10](intensity["BP+SAAP"])),
+        title=TRUE, cor.legend=FALSE,
+        axes=FALSE)
+axis(1)
+axis(2)
+dev.off()
+plotdev(file.path(pfig.path,paste0("peptide_RAAS_nsites")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+plotCor(bpstat$median, log10(bpstat$n), 
+        xlab="peptide median log10(RAAS)",
+        ylab="#RAAS per base peptide",
+        title=TRUE, cor.legend=FALSE,
+        axes=FALSE)
+axis(1)
+axis(2, at=1:10, labels=10^(1:10))
+axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+dev.off()
+
 
 ### PROTEIN LENGTH
 
@@ -787,65 +859,100 @@ dev.off()
 
 ### PAIRWISE DISTANCES of HIGH RAAS SITES
 
-dsts <- matrix(NA, nrow=nrow(bdat), ncol=nrow(bdat))
-for ( i in 1:nrow(bdat) ) {
-    dst <- abs(bdat$pos[i] - bdat$pos)
-    dst[bdat$ensembl!=bdat$ensembl[i]] <- Inf
-    dsts[i,] <- dst
+## nslavov at slack, 20240629:
+## Thus, we focus on inferences that are less affected by those
+## factors and by missing data. For example:
+
+## * We can report the # of protein loci having more than 2 AAS within
+##   10 amino acid segments. This of course underestimates the
+##   prevalence of AAS (as the rest of our results) though it helps
+##   describe the phenomena.
+## * If we detect multiple low RAAS AAS from a segment but no high
+##   RAAS AAS, we can conclude that likely (though not certainly) this
+##   segment did not have high ratio AAS.
+
+filters <- list(all=1:nrow(bdat),
+                high=which(bdat$RAAS> -1))
+fnms <- c(all="all", high="RAAS> 0.1")
+
+for ( i in 1:length(filters) ) {
+
+    nm <- names(filters)[i]
+    rdat <- bdat[filters[[i]],]
     
+    dsts <- matrix(NA, nrow=nrow(rdat), ncol=nrow(rdat))
+    for ( i in 1:nrow(rdat) ) {
+        dst <- abs(rdat$pos[i] - rdat$pos)
+        dst[rdat$ensembl!=rdat$ensembl[i]] <- Inf
+        dsts[i,] <- dst
+        
+    }
+    ## remove 0 distance
+    diag(dsts) <- NA
+    dsts[which(dsts==0)] <- NA
+    ## remove redundant
+    dsts[upper.tri(dsts)] <- NA
+
+    ## max. distance
+    mxd <- max(c(dsts[is.finite(dsts)]))
+    ## max. length BP
+    bpmx <- max(nchar(rdat$BP))
+    
+    plotdev(file.path(pfig.path,paste0("AAS_distances_",nm)),
+            type=ftyp, res=300, width=3, height=3)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, 
+         main=NA)
+    if ( nm!="all" ) {
+        par(xpd=TRUE)
+        figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
+    }
+    dev.off()
+    
+    plotdev(file.path(pfig.path,paste0("AAS_distances_zoom1_",nm)),
+            type=ftyp, res=300, width=3, height=3)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    hist(c(dsts), xlab="pairwise distances between AAS",
+         breaks=0:mxd, xlim=c(0,500), main=NA)
+    abline(v=bpmx, col=2)
+    text(x=bpmx, par("usr")[4]*.9, label="max. length BP", col=2, pos=4)
+    if ( nm!="all" ) {
+        par(xpd=TRUE)
+        figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
+    }
+    dev.off()
+    
+    plotdev(file.path(pfig.path,paste0("AAS_distances_zoom2_",nm)),
+            type=ftyp, res=300, width=3, height=3)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    hist(c(dsts), xlab="pairwise distances between AAS",
+         breaks=0:mxd, xlim=c(0,bpmx+10), main=NA)
+    if ( nm=="all" ) {
+        legend("topright", "BP lengths", col=2, lty=1, bty="n")
+        hist(nchar(rdat$BP), breaks=0:bpmx, add=TRUE, border=2)
+    } else {
+        par(xpd=TRUE)
+        figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
+    }
+    dev.off()
 }
-## remove 0 distance
-diag(dsts) <- NA
-dsts[which(dsts==0)] <- NA
-## remove redundant
-dsts[upper.tri(dsts)] <- NA
-
-mxd <- max(c(dsts[is.finite(dsts)]))
-hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd)
-
-bpmx <- max(nchar(bdat$BP))
-
-plotdev(file.path(pfig.path,paste0("AAS_distances")),
-        type=ftyp, res=300, width=3, height=3)
-par(mai=pmai, mgp=pmpg, tcl=-.25)
-hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, 
-     main=NA)
-dev.off()
-
-plotdev(file.path(pfig.path,paste0("AAS_distances_zoom1")),
-        type=ftyp, res=300, width=3, height=3)
-par(mai=pmai, mgp=pmpg, tcl=-.25)
-hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, xlim=c(0,500),
-     main=NA)
-abline(v=bpmx, col=2)
-text(x=bpmx, par("usr")[4]*.9, label="max. length BP", col=2, pos=4)
-dev.off()
-
-plotdev(file.path(pfig.path,paste0("AAS_distances_zoom2")),
-        type=ftyp, res=300, width=3, height=3)
-par(mai=pmai, mgp=pmpg, tcl=-.25)
-hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, xlim=c(0,bpmx+10),
-     main=NA)
-abline(v=bpmx, col=2)
-hist(nchar(bdat$BP), breaks=0:bpmx, add=TRUE, border=2)
-dev.off()
 
 ## investigate some with 0 distance
 
 tmp <- apply(dsts, 1, function(x) sum(x==0,na.rm=TRUE))
 idx <- c(which.max(tmp),which(dsts[which.max(tmp),]==0))
-bdat[idx,"name"]
+rdat[idx,"name"]
 
 tmp <- apply(dsts, 1, function(x) sum(x==1,na.rm=TRUE))
 idx <- which(tmp>0)[1]
 idx <- c(idx, which(dsts[idx,]==1))
-bdat[idx,"name"]
+rdat[idx,"name"]
 
 tmp <- apply(dsts, 1, function(x) sum(x==2,na.rm=TRUE))
 idx <- which(tmp>0)[1]
 idx <- c(idx, which(dsts[idx,]==2))
-bdat[idx,"name"]
-bdat[idx,"pos"]
+rdat[idx,"name"]
+rdat[idx,"pos"]
 
 ## TODO:
 ## BP/SAAP/RAAS per protein v intensity,
