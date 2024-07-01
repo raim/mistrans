@@ -961,9 +961,9 @@ for ( pid in pids ) {
     ## 
     plot(1:plen, man, type="l",
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
-    axis(2)
-    abline(h=0, col="gray", xpd=FALSE, las=2)
-    mtext("# RAAS", 2, 2.2, cex=.8, las=2)
+    axis(2, las=2)
+    abline(h=0, col="gray", xpd=FALSE)
+    mtext("# RAAS", 2, 2.5, cex=.8, las=2)
     
     ## main peptides
     mmaiaa <- mmai
