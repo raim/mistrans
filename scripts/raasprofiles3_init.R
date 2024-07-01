@@ -102,6 +102,7 @@ frequent <- c("Q","W","T","S")
 
 LAB <- "" # "all"
 fig.path <- file.path(proj.path,"figures","raasprofiles3")
+
 if (  exclude.albumin ) {
     fig.path <- paste0(fig.path,"_noalb")
     LAB <- "-Alb./Hemog."
@@ -132,7 +133,7 @@ SETID <- ifelse(healthy,"tissues","cancer")
 
 
 ## figure output paths
-dir.create(fig.path, showWarnings=FALSE)
+dir.create(fig.path, showWarnings=FALSE, recursive=TRUE)
 ## folder for detailed distributions
 dpath <- file.path(fig.path,"dists")
 dir.create(dpath, showWarnings=FALSE)
@@ -1160,3 +1161,5 @@ CMAIL <- 1.54 ## commonly used between motif and domain figures, defined
               ## in domain script via nchar to fit the y-axis labels
 FONT <- "monospace" # font used for aligned figures in motifs and domains
 
+
+## TODO: write out bdat or hdat, with all RAAS values added

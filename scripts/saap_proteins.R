@@ -235,8 +235,8 @@ tmts <- lapply(tmtl, function(x) {
 tmts <- as.data.frame(do.call(rbind, tmts))
 
 ## RAAS COLORS
-png(file.path(fig.path,paste0("legend_raas_proteins.png")),
-    res=300, width=4, height=3, units="in")
+plotdev(file.path(fig.path,paste0("legend_raas_proteins")),
+        res=300, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 lraas.col <- selectColors(tmtf$RAAS,
                           mn=RAAS.MIN, mx=RAAS.MAX,colf=COLF,
@@ -428,11 +428,16 @@ maini <- maini[,2:ncol(maini)]
 maini <- maini[maini$Trypsin>0,]
 
 ## TODO: plot to file
+
+plotdev(file.path(fig.path,paste0("legend_peptide_intensities")),
+        res=300, width=4, height=4)
+par(mai=c(.25,.5,.10,.15), mgp=c(1.4,.3,0), tcl=-.25)
 mcc <- log10(maini$Trypsin)
 mcc[mcc==-Inf] <- 0
-mcc <- selectColors(mcc, mn=6, mx=11, reverse=TRUE)
+mcc <- selectColors(mcc, mn=6, mx=11, reverse=TRUE,
+                    xlab=expression(log[10](intensity)))
+dev.off()
 
-hist(log10(maini$Trypsin))
 
 mc <- mcc$x.col
 mc[maini$Trypsin==0] <- NA
@@ -957,7 +962,7 @@ for ( pid in pids ) {
     plot(1:plen, man, type="l",
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
-    abline(h=0, col="gray", xpd=FALSE)
+    abline(h=0, col="gray", xpd=FALSE, las=2)
     mtext("# RAAS", 2, 2.2, cex=.8, las=2)
     
     ## main peptides

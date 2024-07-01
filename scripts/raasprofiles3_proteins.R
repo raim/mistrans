@@ -785,3 +785,69 @@ axis(1)
 axis(2)
 dev.off()
 
+### PAIRWISE DISTANCES of HIGH RAAS SITES
+
+dsts <- matrix(NA, nrow=nrow(bdat), ncol=nrow(bdat))
+for ( i in 1:nrow(bdat) ) {
+    dst <- abs(bdat$pos[i] - bdat$pos)
+    dst[bdat$ensembl!=bdat$ensembl[i]] <- Inf
+    dsts[i,] <- dst
+    
+}
+## remove 0 distance
+diag(dsts) <- NA
+dsts[which(dsts==0)] <- NA
+## remove redundant
+dsts[upper.tri(dsts)] <- NA
+
+mxd <- max(c(dsts[is.finite(dsts)]))
+hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd)
+
+bpmx <- max(nchar(bdat$BP))
+
+plotdev(file.path(pfig.path,paste0("AAS_distances")),
+        type=ftyp, res=300, width=3, height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, 
+     main=NA)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("AAS_distances_zoom1")),
+        type=ftyp, res=300, width=3, height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, xlim=c(0,500),
+     main=NA)
+abline(v=bpmx, col=2)
+text(x=bpmx, par("usr")[4]*.9, label="max. length BP", col=2, pos=4)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("AAS_distances_zoom2")),
+        type=ftyp, res=300, width=3, height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, xlim=c(0,bpmx+10),
+     main=NA)
+abline(v=bpmx, col=2)
+hist(nchar(bdat$BP), breaks=0:bpmx, add=TRUE, border=2)
+dev.off()
+
+## investigate some with 0 distance
+
+tmp <- apply(dsts, 1, function(x) sum(x==0,na.rm=TRUE))
+idx <- c(which.max(tmp),which(dsts[which.max(tmp),]==0))
+bdat[idx,"name"]
+
+tmp <- apply(dsts, 1, function(x) sum(x==1,na.rm=TRUE))
+idx <- which(tmp>0)[1]
+idx <- c(idx, which(dsts[idx,]==1))
+bdat[idx,"name"]
+
+tmp <- apply(dsts, 1, function(x) sum(x==2,na.rm=TRUE))
+idx <- which(tmp>0)[1]
+idx <- c(idx, which(dsts[idx,]==2))
+bdat[idx,"name"]
+bdat[idx,"pos"]
+
+## TODO:
+## BP/SAAP/RAAS per protein v intensity,
+## SAAP per BP v BP+SAAP intensity,
+## windows

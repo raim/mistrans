@@ -211,6 +211,8 @@ R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.t
 results=${MISDATA}/results/
 mkdir $results
 
+cp -a ${MISDATA}/processedData/bp_mapped.tsv $results/
+
 cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.pdf $results/
 
 
@@ -259,6 +261,8 @@ mkdir $results/function
 cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.pdf $results/function
 pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
+cd $MISDATA
+zip -r $MISDATA/results $results 
 
 ##zip file of all protein plots,
 ##zip file of all chimeraX commands.
