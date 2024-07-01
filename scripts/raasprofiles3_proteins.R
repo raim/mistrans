@@ -617,7 +617,7 @@ plotdev(file.path(pfig.path,paste0("protein_intensities_nsites")),
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(ptstat$intensity), log10(ptstat$n),
         ylab="#RAAS per protein",
-        xlab=expression(median~log[10](intensity)),
+        xlab=expression(log[10](median~intensity)),
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
 axis(1)
@@ -631,7 +631,7 @@ plotdev(file.path(pfig.path,paste0("peptide_intensities_nsites")),
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(bpstat$intensity), log10(bpstat$n),
         ylab="#RAAS per base peptide",
-        xlab=expression(median~log[10](intensity["BP+SAAP"])),
+        xlab=expression(log[10](median~intensity["BP+SAAP"])),
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
 axis(1)
@@ -642,8 +642,8 @@ plotdev(file.path(pfig.path,paste0("peptide_intensities_RAAS")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(bpstat$intensity), bpstat$median, 
-        ylab="peptide median log10(RAAS)",
-        xlab=expression(median~log[10](intensity["BP+SAAP"])),
+        ylab="log10(median RAAS)",
+        xlab=expression(log[10](median~intensity["BP+SAAP"])),
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
 axis(1)
@@ -653,7 +653,7 @@ plotdev(file.path(pfig.path,paste0("peptide_RAAS_nsites")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(bpstat$median, log10(bpstat$n), 
-        xlab="peptide median log10(RAAS)",
+        xlab="peptide log10(median RAAS)",
         ylab="#RAAS per base peptide",
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
