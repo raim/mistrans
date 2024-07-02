@@ -3,7 +3,7 @@
 ## and generate per protein plots
 
 ## TODO:
-## * indicate splice sites via CDS structure,
+## * BP+SAAP intensities, sum over positions.
 ## * 
 
 ## TODO: why is iupred3 for ENSP00000352639 wrong?

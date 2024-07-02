@@ -68,19 +68,19 @@ thatp.file <- file.path(mam.path, "originalData",
 
 ### median raas per unique mane protein site
 
-sitl <- split(tmtf$RAAS, paste(tmtf$mane, tmtf$pos))
+sitl <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
 site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 ## mod. column names and add protein and site info
 colnames(site) <- paste0("RAAS.", colnames(site))
-site$mane <- sub(" .*", "", rownames(site))
+site$ensembl <- sub(" .*", "", rownames(site))
 site$pos <- as.numeric(sub(".* ", "", rownames(site)))
 
 ## add gene names
-site$name <- ens2nam [site$mane]
+site$name <- ens2nam [site$ensembl]
 
 ## add uniprot id
-site$uniprot <- unlist(lapply(ens2u[site$mane], paste, collapse=";"))
+site$uniprot <- unlist(lapply(ens2u[site$ensembl], paste, collapse=";"))
 
 ## RAAS COLOR
 site$RAAS.color <- num2col(site$RAAS.median,
@@ -105,14 +105,14 @@ bpint <- unlist(lapply(split(bsints, tmtf$BP), median, na.rm=TRUE))
 bpstat$intensity <- bpint[rownames(bpstat)]
 
 ## protein median raas per protein w/o site-specific median first
-ptl <- split(tmtf$RAAS, tmtf$mane)
+ptl <- split(tmtf$RAAS, tmtf$ensembl)
 ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 ## count distinct BP per  protein
-pts <- unlist(lengths(lapply(split(bdat$BP, bdat$MANE.protein), unique)))
+pts <- unlist(lengths(lapply(split(bdat$BP, bdat$ensembl), unique)))
 ptstat$nbp <- pts[rownames(ptstat)]
 ## count distinct SAAP per protein
-pts <- unlist(lengths(lapply(split(bdat$SAAP, bdat$MANE.protein), unique)))
+pts <- unlist(lengths(lapply(split(bdat$SAAP, bdat$ensembl), unique)))
 ptstat$nsaap <- pts[rownames(ptstat)]
 
 
@@ -133,14 +133,14 @@ ptstat$rank <- rank(ptstat$median)
 
 ## make sure its ordered
 ## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
-site <-site[order(site$mane, site$pos),]
+site <-site[order(site$ensembl, site$pos),]
 
 ## order by protein RAAS rank (for hotspot plot)
-site$rank <- ptstat[site$mane,"rank"]
+site$rank <- ptstat[site$ensembl,"rank"]
 site <-site[order(site$rank, site$pos),]
 
 ##
-nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$mane)))
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$ensembl)))
 nsites[is.na(nsites)] <- 1
 site$n <- nsites
 
@@ -278,7 +278,7 @@ p20pv <- unlist(lapply(p20l, median, na.rm=TRUE))
 ## get uniprot mapping
 ## TODO: akugb with uni2e and ens2u  in init script.
 p2ens <- uni2ens
-p2ens <- p2ens[p2ens[,2]%in%tmtf$mane,]
+p2ens <- p2ens[p2ens[,2]%in%tmtf$ensembl,]
 p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
 
 cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
@@ -372,9 +372,9 @@ dev.off()
 ## RAAS DISTRIBUTION of UNIQUE SITES
 
 site[which.max(site$RAAS.n),]
-pid <- site[which.max(site$RAAS.n),"mane"]
+pid <- site[which.max(site$RAAS.n),"ensembl"]
 pos <- site[which.max(site$RAAS.n),"pos"]
-tidx <- which(tmtf$mane==pid & tmtf$pos==pos)
+tidx <- which(tmtf$ensembl==pid & tmtf$pos==pos)
 
 plotdev(file.path(pfig.path,"hotspots_example_site_RAAS"), type=ftyp,
         width=3, height=3, res=200)
@@ -387,9 +387,9 @@ for ( i in 1:30 ) {
     sid <- rownames(site)[order(site$RAAS.n,decreasing=TRUE)[i]]
 
 
-    pid <- site[sid,"mane"]
+    pid <- site[sid,"ensembl"]
     pos <- site[sid,"pos"]
-    tidx <- which(tmtf$mane==pid & tmtf$pos==pos)
+    tidx <- which(tmtf$ensembl==pid & tmtf$pos==pos)
     plotdev(file.path(pfig.path,paste0("hotspots_example_site_RAAS_",i)),
             type=ftyp, width=3, height=3, res=200)
     par(mai=c(0.5,.5,.2,.1),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
@@ -492,17 +492,17 @@ if ( interactive() )
 ## list sites per protein
 
 ## filter here for only proteins>1, but not used!
-multip <- split(site$pos, site$mane)
+multip <- split(site$pos, site$ensembl)
 multip <- names(lengths(multip)[lengths(multip)> 0 ])
-sites <- site[site$mane%in%multip,]
+sites <- site[site$ensembl%in%multip,]
 
 cpos <- cumsum(sites$pos) ## TODO: fix this!!!
 
 ### TODO: get correct cumulative position
 ## get cumulative position of each AAS for nice plot
-sites$plen <- plen[sites$mane]
-sites$clen[!duplicated(sites$mane)] <-
-    cumsum(sites$plen[!duplicated(sites$mane)])
+sites$plen <- plen[sites$ensembl]
+sites$clen[!duplicated(sites$ensembl)] <-
+    cumsum(sites$plen[!duplicated(sites$ensembl)])
 ## fill up
 nl <- NA
 for ( i in 1:nrow(sites) ) {
@@ -540,7 +540,7 @@ points(cpos, sites$RAAS.median, col=raas.col, pch=19, cex=.2, xpd=TRUE)
 axis(3, at=cpos[sites$n==1], col=2, col.axis=2, labels=FALSE, tcl=.5)
 pois <- c("AHNAK")
 for ( poi in pois ) {
-    gidx<- which(pnms[sites$mane]==poi)[1]
+    gidx<- which(pnms[sites$ensembl]==poi)[1]
     text(cpos[gidx], 2, labels=poi, pos=4)
     arrows(x0=cpos[gidx], y0=2, y1=1, length=.05)
 }
@@ -642,7 +642,7 @@ plotdev(file.path(pfig.path,paste0("peptide_intensities_RAAS")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(bpstat$intensity), bpstat$median, 
-        ylab="log10(median RAAS)",
+        ylab=expression(log[10](median RAAS)),
         xlab=expression(log[10](median~intensity["BP+SAAP"])),
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
@@ -871,90 +871,384 @@ dev.off()
 ##   RAAS AAS, we can conclude that likely (though not certainly) this
 ##   segment did not have high ratio AAS.
 
+
+## TODO:
+## * why so many small distances BETWEEN BP,
+
 filters <- list(all=1:nrow(bdat),
                 high=which(bdat$RAAS> -1))
 fnms <- c(all="all", high="RAAS> 0.1")
 
-for ( i in 1:length(filters) ) {
+for ( i in length(filters):1 ) {
 
     nm <- names(filters)[i]
     rdat <- bdat[filters[[i]],]
     
     dsts <- matrix(NA, nrow=nrow(rdat), ncol=nrow(rdat))
+    same <- dsts ## same basepeptide filter
     for ( i in 1:nrow(rdat) ) {
+
         dst <- abs(rdat$pos[i] - rdat$pos)
         dst[rdat$ensembl!=rdat$ensembl[i]] <- Inf
         dsts[i,] <- dst
+        same[i,] <- rdat$BP[i] == rdat$BP
         
     }
     ## remove 0 distance
-    diag(dsts) <- NA
+    diag(dsts) <-  NA
     dsts[which(dsts==0)] <- NA
     ## remove redundant
     dsts[upper.tri(dsts)] <- NA
+
+    ## TODO: plot distances separately
+    ## for same and distinct base peptides
+    dsts.same <- dsts.other <- dsts
+    dsts.other[same] <- NA
+    dsts.same[!same] <- NA
 
     ## max. distance
     mxd <- max(c(dsts[is.finite(dsts)]))
     ## max. length BP
     bpmx <- max(nchar(rdat$BP))
     
-    plotdev(file.path(pfig.path,paste0("AAS_distances_",nm)),
+    plotdev(file.path(pfig.path,paste0("AAS_distances_hist_",nm)),
             type=ftyp, res=300, width=3, height=3)
     par(mai=pmai, mgp=pmpg, tcl=-.25)
-    hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, 
+    hst <- hist(c(dsts), xlab="pairwise distances between AAS", breaks=0:mxd, 
          main=NA)
     if ( nm!="all" ) {
         par(xpd=TRUE)
         figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
     }
     dev.off()
+
+    ## plots using above hists
+    plot(hst$mids+.5, log10(hst$counts), type="l", xlim=c(0,500),
+         xlab="pairwise distances between AAS",
+         ylab="count")
     
-    plotdev(file.path(pfig.path,paste0("AAS_distances_zoom1_",nm)),
+ 
+    plotdev(file.path(pfig.path,paste0("AAS_distances_hist_zoom1_",nm)),
             type=ftyp, res=300, width=3, height=3)
     par(mai=pmai, mgp=pmpg, tcl=-.25)
     hist(c(dsts), xlab="pairwise distances between AAS",
          breaks=0:mxd, xlim=c(0,500), main=NA)
-    abline(v=bpmx, col=2)
     text(x=bpmx, par("usr")[4]*.9, label="max. length BP", col=2, pos=4)
+    
+    hst.other <- hist(c(dsts.other), breaks=c(0:mxd), border=4, add=TRUE)
+    hst.same <- hist(c(dsts.same), breaks=c(0:mxd), border=2, add=TRUE)
+
+    abline(v=bpmx, col=2)
     if ( nm!="all" ) {
         par(xpd=TRUE)
         figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
     }
     dev.off()
-    
+
+    plotdev(file.path(pfig.path,paste0("AAS_distances_zoom1_",nm)),
+            type=ftyp, res=300, width=3, height=3)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,500),
+         xlab="pairwise distances between AAS",
+         ylab="count", col=NA)
+    polygon(x=c(hst$mids+.5, rev(hst.same$mids)+.5),
+            y=c(hst$counts,rev(hst$counts-hst.same$counts)),
+            col="#ff0000", border=NA)
+    polygon(x=c(hst.other$mids+.5, hst.other$mids[1]+.5),
+            y=c(hst.other$counts,0),
+            col="#0000ff77", border=NA)
+    abline(v=bpmx, col=2)
+    if ( nm!="all" ) 
+        figlabel(fnms[nm], pos="topright")
+    legend("topright", c("within BP","between BP"), lty=1,
+           col=c(2,4))
+    dev.off()
+
     plotdev(file.path(pfig.path,paste0("AAS_distances_zoom2_",nm)),
             type=ftyp, res=300, width=3, height=3)
     par(mai=pmai, mgp=pmpg, tcl=-.25)
-    hist(c(dsts), xlab="pairwise distances between AAS",
-         breaks=0:mxd, xlim=c(0,bpmx+10), main=NA)
+    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,bpmx*2),
+         xlab="pairwise distances between AAS",
+         ylab="count", col=NA)
+
+    polygon(x=c(hst$mids+.5, rev(hst.same$mids)+.5),
+            y=c(hst$counts,rev(hst$counts-hst.same$counts)),
+            col="#ff0000", border=NA)
+    polygon(x=c(hst.other$mids+.5, hst.other$mids[1]+.5),
+            y=c(hst.other$counts,0), col="#0000ff77", border=NA)
     if ( nm=="all" ) {
-        legend("topright", "BP lengths", col=2, lty=1, bty="n")
-        hist(nchar(rdat$BP), breaks=0:bpmx, add=TRUE, border=2)
-    } else {
-        par(xpd=TRUE)
-        figlabel(fnms[nm], pos="topright", region="plot", xpd=TRUE)
+        hist(nchar(rdat$BP), breaks=0:bpmx, add=TRUE, border="yellow")
+        legend("topright", c("within BP","between BP", "BP lengths"), lty=1,
+               col=c(2,4,7))
+    } 
+    if ( nm!="all" )  {
+        figlabel(fnms[nm], pos="topright")
+        legend("topright", c("within BP","between BP"), lty=1,
+               col=c(2,4))
     }
     dev.off()
+
+    plotdev(file.path(pfig.path,paste0("AAS_distances_zoom3_",nm)),
+            type=ftyp, res=300, width=3, height=3)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,bpmx),
+         xlab="pairwise distances between AAS",
+         ylab="count", col=NA)
+    polygon(x=c(hst$mids+.5, rev(hst.same$mids)+.5),
+            y=c(hst$counts,rev(hst$counts-hst.same$counts)),
+            col="#ff0000", border=NA)
+    polygon(x=c(hst.other$mids+.5, hst.other$mids[1]+.5),
+            y=c(hst.other$counts,0), col="#0000ff77", border=NA)
+    if ( nm=="all" ) {
+        hist(nchar(rdat$BP), breaks=0:bpmx, add=TRUE, border="yellow")
+        legend("topright", c("within-BP","between BP", "BP lengths"), lty=1,
+               col=c(2,4,7))
+    } 
+    if ( nm!="all" )  {
+        figlabel(fnms[nm], pos="topright")
+        legend("topright", c("within-BP","between BP"), lty=1,
+               col=c(2,4))
+    }
+    abline(v=10)
+    dev.off()
+    
+
 }
 
-## investigate some with 0 distance
 
-tmp <- apply(dsts, 1, function(x) sum(x==0,na.rm=TRUE))
-idx <- c(which.max(tmp),which(dsts[which.max(tmp),]==0))
-rdat[idx,"name"]
+### AUTOCORRELATIONS 
 
-tmp <- apply(dsts, 1, function(x) sum(x==1,na.rm=TRUE))
-idx <- which(tmp>0)[1]
-idx <- c(idx, which(dsts[idx,]==1))
-rdat[idx,"name"]
+## TODO: do we need to clean data for this?
 
-tmp <- apply(dsts, 1, function(x) sum(x==2,na.rm=TRUE))
-idx <- which(tmp>0)[1]
-idx <- c(idx, which(dsts[idx,]==2))
-rdat[idx,"name"]
-rdat[idx,"pos"]
+## * concatenated proteins
+## * concatenated BP.
+
+N <- 150
+
+## autocorrelation of of site median RAAS with concatenated protein sequences
+
+## * initiate vector for concatenated proteins with median RAAS,
+## * set actual RAAS values,
+## * calculate auto-correlation.
+
+osite <-site[order(site$ensembl, site$pos),]
+ositel <- split(osite, osite$ensembl)
+##ositel <- ositel[unlist(lapply(ositel, nrow))>5]
+
+
+## RAAS
+
+## expand each protein to full sequence vector
+## initialized to global median RAAS
+globalraas <- median(tmtf$RAAS, na.rm=TRUE)
+araas <- lapply(ositel, function(x) {
+    aras <- rep(globalraas, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.median
+    aras
+})
+araas <- unlist(araas)
+
+## calculate autocorrelation
+acor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(araas)-N)
+    acor[k] <- cor(araas[rng], araas[rng+k])
+}
+
+## MEASUREMENT FREQUENCY
+
+## expand each protein to full sequence vector
+## initialized to 0 and add RAAS counts
+nraas <- lapply(ositel, function(x) {
+    aras <- rep(0, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.n
+    aras
+})
+nraas <- unlist(nraas)
+
+## calculate autocorrelation
+ncor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(nraas)-N)
+    ncor[k] <- cor(nraas[rng], nraas[rng+k])
+}
+
+
+## high RAAS measurement frequency
+rsite <- osite[osite$RAAS.median> .1,]
+rsitel <- split(rsite, rsite$ensembl)
+rraas <- lapply(rsitel, function(x) {
+    aras <- rep(0, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.n
+    aras
+})
+rraas <- unlist(rraas)
+
+## calculate autocorrelation
+rcor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(rraas)-N)
+    rcor[k] <- cor(rraas[rng], rraas[rng+k])
+}
+
+## plot auto-correlations
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, acor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
+points(1:N, acor, cex=.25)
+abline(v=10)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_frequency")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, ncor, type="l", xlab="lag k", ylab=expression(C[frequency]))
+points(1:N, ncor, cex=.25)
+dev.off()
+
+plotdev(file.path(pfig.path,
+                  paste0("autocorrelation_protein_frequency_highRAAS")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, rcor, type="l", xlab="lag k", ylab=expression(C[frequency]))
+points(1:N, rcor, cex=.25)
+figlabel(expression(RAAS > 0.1), pos="topright", region="plot")
+dev.off()
+
+## AUTO-CORRELATION FOR CONCATENATED BASE PEPTIDES
+
+## split by BP + site in BP
+bpl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$site))
+bpe <- listProfile(bpl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## mod. column names and add protein and site info
+colnames(bpe) <- paste0("RAAS.", colnames(bpe))
+bpe$BP <- sub(" .*", "", rownames(bpe))
+bpe$site <- as.numeric(sub(".* ", "", rownames(bpe)))
+bpe$len <- nchar(bpe$BP)
+
+## ORDER by BP and position and split by BP
+obpe <- bpe[order(bpe$BP, bpe$site),]
+obpl <- split(obpe, obpe$BP)
+##ositel <- ositel[unlist(lapply(ositel, nrow))>5]
+
+
+## RAAS
+
+## expand each protein to full sequence vector
+## initialized to global median RAAS
+globalraas <- median(tmtf$RAAS, na.rm=TRUE)
+araas <- lapply(obpl, function(x) {
+    aras <- rep(globalraas, unique(x$len))
+    aras[x$site] <- x$RAAS.median
+    aras
+})
+araas <- unlist(araas)
+
+## calculate autocorrelation
+acor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(araas)-N)
+    acor[k] <- cor(araas[rng], araas[rng+k])
+}
+
+## MEASUREMENT FREQUENCY
+
+## expand each protein to full sequence vector
+## initialized to 0 and add RAAS counts
+nraas <- lapply(obpl, function(x) {
+    aras <- rep(0, unique(x$len))
+    aras[x$site] <- x$RAAS.n
+    aras
+})
+nraas <- unlist(nraas)
+
+## calculate autocorrelation
+ncor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(nraas)-N)
+    ncor[k] <- cor(nraas[rng], nraas[rng+k])
+}
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_BP_RAAS")),
+            type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, acor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
+points(1:N, acor, cex=.25)
+abline(v=10)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_BP_frequency")),
+            type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, ncor, type="l", xlab="lag k", ylab=expression(C[frequency]))
+points(1:N, ncor, cex=.25)
+abline(v=10)
+dev.off()
+
+## TODO: fourier of auto-correlation function
+
+
+### COLLECT WINDOWS
+
+## TODO: count windows in maxdst distance and plot length distribution
+maxdst <- 20 
+
+osite <-site[order(site$ensembl, site$pos),]
+
+wsite <- split(osite, osite$ensembl)
+wsite <- lapply(wsite, function(x) {
+    if ( nrow(x)==1 ) {
+        x$window <- 1
+    } else {
+        
+        ## window ends: larger than max distance to next!
+        ends <- which(diff(x$pos)>maxdst)
+        
+        x$window <- rep(NA, nrow(x))
+        x$window[ends] <- 1:length(ends)
+        
+        ## propagate window number
+        win <- 1
+        for ( i in 1:nrow(x) ) {
+            if ( !is.na(x$window[i]) )
+                win <- x$window[i]
+            else x$window[i] <- win+1
+        }
+    }
+    x
+})
+wsite <- do.call(rbind, wsite)
+rownames(wsite) <- rownames(osite)
+
+wsite$windowID <- paste(wsite$ensembl, wsite$window, sep="-")
+
+wcnt <- table(wsite$windowID)
+wcnt[wcnt>15] <- ">15"
+wcnt <- table(wcnt)[c(as.character(1:15),">15")]
+barplot(wcnt, las=2,
+     xlab="unique AAS sites per window",
+     ylab="# of windows")
 
 ## TODO:
-## BP/SAAP/RAAS per protein v intensity,
-## SAAP per BP v BP+SAAP intensity,
-## windows
+## * window length distribution,
+## * align with SAAP per BP plot,
+## * write out window coordinates and plot
+##   as a track in protein plots, together
+##   with BP+SAAP intensities and tryptic/tonsil.
+
+## split by protein and window
+wins <- split(wsite, wsite$windowID)
+
+
+## expand each protein to full sequence vector
+## initialized to 0 and add RAAS counts
+nraas <- lapply(ositel, function(x) {
+    aras <- rep(0, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.n
+    aras
+})
+nraas <- unlist(nraas)
+
