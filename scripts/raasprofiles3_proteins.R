@@ -16,6 +16,9 @@ if ( !exists("tmtf") )
 pfig.path <- file.path(fig.path,"proteins")
 dir.create(pfig.path, showWarnings=FALSE)
 
+## file of windows with >2 AAS
+window.file <- file.path(out.path, "aas_windows.tsv")
+
 corW <- corH <- 2.5
 pmai <- c(.5,.5,.25,.25)
 pmpg <- c(1.3,.3,0)
@@ -638,11 +641,12 @@ axis(1)
 axis(2, at=1:10, labels=10^(1:10))
 axis(2, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
 dev.off()
+
 plotdev(file.path(pfig.path,paste0("peptide_intensities_RAAS")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 plotCor(log10(bpstat$intensity), bpstat$median, 
-        ylab=expression(log[10](median RAAS)),
+        ylab=expression(log[10](median~RAAS)),
         xlab=expression(log[10](median~intensity["BP+SAAP"])),
         title=TRUE, cor.legend=FALSE,
         axes=FALSE)
@@ -1194,12 +1198,20 @@ dev.off()
 ### COLLECT WINDOWS
 
 ## TODO: count windows in maxdst distance and plot length distribution
-maxdst <- 20 
+maxdst <- 10
 
 osite <-site[order(site$ensembl, site$pos),]
 
-wsite <- split(osite, osite$ensembl)
+wsite <- split(osite, osite$ensembl) # split by protein
+
+## TODO: why so large window in plot
+pid <- "ENSP00000458435"
+
+## for each protein detect and tag windows
 wsite <- lapply(wsite, function(x) {
+
+   ## x=wsite[[pid]]
+
     if ( nrow(x)==1 ) {
         x$window <- 1
     } else {
@@ -1214,12 +1226,15 @@ wsite <- lapply(wsite, function(x) {
         win <- 1
         for ( i in 1:nrow(x) ) {
             if ( !is.na(x$window[i]) )
-                win <- x$window[i]
-            else x$window[i] <- win+1
+                win <- x$window[i]+1
+            else x$window[i] <- win
         }
     }
     x
 })
+
+
+
 wsite <- do.call(rbind, wsite)
 rownames(wsite) <- rownames(osite)
 
@@ -1232,16 +1247,37 @@ barplot(wcnt, las=2,
      xlab="unique AAS sites per window",
      ylab="# of windows")
 
-## TODO:
-## * window length distribution,
-## * align with SAAP per BP plot,
-## * write out window coordinates and plot
-##   as a track in protein plots, together
-##   with BP+SAAP intensities and tryptic/tonsil.
+
 
 ## split by protein and window
-wins <- split(wsite, wsite$windowID)
+wins <- lapply(split(wsite$pos, wsite$windowID), range)
 
+## only realy windows (length>1)
+wlen <- unlist(lapply(wins, diff))+1
+wins <- wins[wlen>1]
+wlen <- wlen[wlen>1]
+
+wins <- as.data.frame(do.call(rbind, wins))
+wins$ensembl <- unlist(lapply(strsplit(rownames(wins),"-"), function(x) x[1]))
+
+write.table(window.file,
+            x=wins[,c(3,1,2)],
+            sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+## WINDOW LENGTH DISTRIBUTION,
+
+hst <- hist(wlen, breaks=0:max(wlen), axes=TRUE, main=NA,
+            xlab="window lengths", ylab="count")
+hst <- hist(wlen, breaks=0:max(wlen), axes=TRUE, main=NA,
+            xlab="window lengths", ylab="count", xlim=c(0,100))
+
+
+hst <- hist(log10(wlen), axes=FALSE, main=NA,
+            xlab="window lengths", ylab="count")
+axis(1, at=1:10, labels=10^(1:10))
+axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125,
+     labels=FALSE)
+axis(2)
 
 ## expand each protein to full sequence vector
 ## initialized to 0 and add RAAS counts

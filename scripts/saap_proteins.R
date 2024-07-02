@@ -47,6 +47,9 @@ in.file <- file.path(out.path,"saap_mapped.tsv")
 ## RAAS values
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
+## AAS windows
+window.file <- file.path(out.path,"aas_windows.tsv")
+
 ## protein fasta
 pfasta <- file.path(out.path,"all_proteins.fa")
 ## coding region fasta
@@ -167,6 +170,11 @@ tmtf <- tmtf[!rm,]
 tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 dat$Keep.SAAP <- !dat$IG
 
+## TAG BAD BLAST MATCHES
+dat$Keep.SAAP[dat$match!="good"] <- FALSE
+
+
+
 ## NOTE/TODO: KRAS removed via TMT leve file filter,
 ## since its tagged as "Potential.uncaptured.transcript".
 ## Here, for the protein plotter, BUT NOT in RAAS profile
@@ -186,8 +194,6 @@ alls <- split(alls$Keep.SAAP, alls$SAAP)
 keep <- unlist(lapply(alls, all))
 dat$keep <- keep[dat$SAAP]
 tmtf$keep <- keep[tmtf$SAAP]
-
-
 
 
 ## remove excluded
@@ -273,7 +279,8 @@ dat$raas <- raas
 ## LIST OF AAS BY PROTEIN
 aasl <- split(dat, dat$ensembl)
 
-
+## AAS windows
+windows <- read.delim(window.file, header=FALSE)
 
 ## s4pred
 s4p <- segmenTools::readFASTA(s4pred, grepID=TRUE)
@@ -548,7 +555,7 @@ pid=names(which(pnms=="PSMB5"))
 ## AHNAK: righ RAAS protein
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
-pid=names(which(pnms=="ACTG1"))
+pid=names(which(pnms=="ACTC1"))
 
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
@@ -557,6 +564,7 @@ pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
 
+do.full.plot <- FALSE
 for ( pid in pids ) {
 
     ffile <- file.path(fig.path, pnms[pid])
@@ -673,8 +681,18 @@ for ( pid in pids ) {
                           end=mps$send,
                           chr=1, strand=".",
                           color=mps$color)
-    
 
+    ## AAS windows
+    wins <- windows[windows[,1]==pid,]
+    wind <- NULL
+    if ( nrow(wins)>0 )
+        wind  <- data.frame(type="AAS window",
+                            start=wins[,2],
+                            end=wins[,3],
+                            chr=1, strand=".", color="#000000")
+
+    mpd <- rbind(mpd, wind)
+        
     ## PREPARE AAS PLOT
     ## order by RAAS such that higher RAAS will be on top of overlapping
     ##aas <- aas[order(aas$median),]
@@ -748,182 +766,159 @@ for ( pid in pids ) {
                  .075,# codon
                  .075 # CDS structure
                  )
-    plotdev(ffile, width=min(c(100,plen*wscale)),
-            height=2*sum(heights), type=ftyp, res=200)
-    layout(mat=t(t(1:length(heights))), heights=heights)
-    par(mai=mmai, xaxs="i", xpd=TRUE)
-
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(x=plen/2, y=1,
-         labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
-    
-    ## domains as arrows
-    if ( !is.null(pf) ) {
-        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
-                     typord=TRUE, axis2=FALSE)
-    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    mtext("Pfam\nclan", 2, 2)
-    
-    ## domains as blocks
-    ##plotFeatureBlocks(pf, coors=coors)
-
-
-
-    ## iupred3/anchor2 as heatmap
-    if ( !is.null(iu) ) {
+    if ( do.full.plot ) {
+        plotdev(ffile, width=min(c(100,plen*wscale)),
+                height=2*sum(heights), type=ftyp, res=200)
+        layout(mat=t(t(1:length(heights))), heights=heights)
+        par(mai=mmai, xaxs="i", xpd=TRUE)
         
-        ## standardize MMSeq2
-        cons <- dp[,2]
-        cons <- (cons - 0)/(4.5-0)
-        ## QC: mmseq2 must have samelength as iupred3
-        if ( length(cons) != nrow(iu) )
-            cons <- rep(NA, nrow(iu))
-        iud <- cbind(chr=1,
-                     coor=iu[,"V1"],
-                     MMSeq2=cons,
-                     iupred3=iu[,c("V3")],
-                     anchor2=iu[,c("V4")])
-        brks <- 0:100/100
-        ## TODO: saver y-axis labelling in plotHeat!
-        tm <- plotHeat(iud, coors=coors, breaks=brks,
-                 colors=c(ttcolf(length(brks)-1)), axis2=TRUE)
-    } else {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    }
-    ## phastcons data as heatmap
-    #if ( !is.null(phc) ) {
-    #    ##
-    #    phc$Score[is.na(phc$Score)] <- 0
-    #    phd <- cbind(chr=1,coor=1:nrow(phc),
-    #                 phastcons=phc[,c("Score")])
-    #    brks <- 1:100/100
-    #    plotHeat(phd, coors=coors, breaks=brks,
-    #             colors=c(viridis(length(brks)-1)))
-    #    axis(2, at=c(1), labels=c("phastcons"), las=2, cex.axis=1.2)
-    #} else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    ## MMSeq2 conservation as heatmap
-    if ( FALSE ) { # now plotted together with iupred3 above
-        if ( !is.null(dp) ) {
-            phd <- cbind(chr=1,coor=1:nrow(dp),
-                         MMSeq2=dp[,2])
-            brks <- seq(2.5,4.5, .1)
+        text(x=plen/2, y=1,
+             labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
+        
+        ## domains as arrows
+        if ( !is.null(pf) ) {
+            plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
+                         typord=TRUE, axis2=FALSE)
+        } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        mtext("Pfam\nclan", 2, 2)
+        
+        ## domains as blocks
+        ##plotFeatureBlocks(pf, coors=coors)
+        
+        
+
+        ## iupred3/anchor2 as heatmap
+        if ( !is.null(iu) ) {
+            
+            ## standardize MMSeq2
+            cons <- dp[,2]
+            cons <- (cons - 0)/(4.5-0)
+            ## QC: mmseq2 must have samelength as iupred3
+            if ( length(cons) != nrow(iu) )
+                cons <- rep(NA, nrow(iu))
+            iud <- cbind(chr=1,
+                         coor=iu[,"V1"],
+                         MMSeq2=cons,
+                         iupred3=iu[,c("V3")],
+                         anchor2=iu[,c("V4")])
+            brks <- 0:100/100
             ## TODO: saver y-axis labelling in plotHeat!
-            plotHeat(phd, coors=coors, breaks=brks,
-                 colors=c(viridis(length(brks)-1)))
-            axis(2, at=c(1), labels=c("MMSeq2"), las=2, cex.axis=1.2)
+            tm <- plotHeat(iud, coors=coors, breaks=brks,
+                           colors=c(ttcolf(length(brks)-1)), axis2=TRUE)
         } else {
             plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
         }
+
+        ## main peptides
+        mmaiaa <- mmai
+        mmaiaa[1] <- 0.01
+        par(mai=mmaiaa)
+        if ( !is.null(mpd) ) {
+            plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+                         typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+        } else {
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        }
+        mmaiaa <- mmai
+        mmaiaa[3] <- 0.01
+        par(mai=mmaiaa)
+        
+        ## secondary structure, K|R and AAS
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
+        axis(2, at=1, labels="PSSP", las=2)
+        ## indicate K|R cleavage sites - TODO: omit Keil rules
+        arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
+        if ( length(arg) )
+            arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
+        axis(2, at=1.4, labels="K|R", las=2)
+        lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
+        if ( length(lys) )
+            arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
+        
+        ## indicate ALL AAS
+        arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
+        arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
+        axis(2, at=.6, labels="AAS", las=2)
+        
+        par(mai=mmai, xpd=TRUE)
+        
+        ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
+        ## DETAILS for high RAAS AAS
+        if ( FALSE ) { # custom with n~size
+            plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+            for ( tp in unique(aad$type) )
+                shadowtext(x=aad$start[aad$type==tp],
+                           y=1,#-rep(tp,sum(aad$type==tp))*.25,
+                           labels=aaco[aad$type==tp],
+                           cex=aad$size[aad$type==tp],
+                           col=aad$color[aad$type==tp])
+        }
+        plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
+                     plotorder=order(aad$type), 
+                     types=as.character(rev(seq(-10,10,.1))), cuttypes=TRUE,
+                     typord=TRUE, axis2=TRUE)
+        mtext("AAS\ntype", 2, 2)
+        ## indicate ALL AAS
+        ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
+        ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
+        ##       xpd=TRUE)
+        
+
+        ## AA context
+        ## add AA sequences around AAS
+        ## TODO: fuse overlapping
+        pseq <- strsplit(psq,"")[[1]]
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        if ( nrow(aad)>0 )
+            for ( j in 1:nrow(aad) ) {
+                if ( aad$raas[j] < .1 ) next
+                x <- aad$start[j]
+                prng <- (x-1):(x+1)
+                prng <- prng[prng>0 & prng <= plen]
+                text(x=x, y=1, labels=paste(pseq[prng], collapse=""),
+                     family="monospace")
+            }
+        mtext("context", 2, las=2, cex=.8)
+        
+        ## AA by amino acid color code
+        mmaiaa <- mmai
+        mmaiaa[1] <- 0.01
+        aam <- cbind(chr=1,coor=1:length(pseq),
+                     vals=match(pseq, names(shapely.cols)))
+        par(mai=mmaiaa)
+        plotHeat(aam, coors=coors, colors=shapely.cols)
+        axis(3, at=aas$pos, labels=FALSE)
+        mtext("amino acid", 2, las=2)
+        ## codons as heatmap
+        mmaiaa <- mmai
+        mmaiaa[3] <- 0.01
+        if ( !is.null(cmt) ) {
+            cmm <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
+            brks <- 0:100/100
+            par(mai=mmaiaa)
+            plotHeat(cmm, coors=coors, breaks=brks,
+                     colors=c(viridis(length(brks)-1)))
+        ##axis(3, at=aas$pos, labels=FALSE)
+        } else {
+            plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        }
+        mtext("codon frq.", 2, las=2)
+        ## EXONS
+        par(mai=mmai)
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+        axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+        mtext("CDS", 2, las=2)
+        
+        dev.off()
+
+        if ( doit | file.exists(paste0(sfile,".",ftyp)) )
+            file.copy(paste0(ffile,".",ftyp),
+                      paste0(sfile,".",ftyp), overwrite = TRUE)
     }
     
-    ## main peptides
-    mmaiaa <- mmai
-    mmaiaa[1] <- 0.01
-    par(mai=mmaiaa)
-    if ( !is.null(mpd) ) {
-        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
-                     typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
-    } else {
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    }
-    mmaiaa <- mmai
-    mmaiaa[3] <- 0.01
-    par(mai=mmaiaa)
-   
-    ## secondary structure, K|R and AAS
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
-    axis(2, at=1, labels="PSSP", las=2)
-    ## indicate K|R cleavage sites - TODO: omit Keil rules
-    arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
-    if ( length(arg) )
-        arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
-    axis(2, at=1.4, labels="K|R", las=2)
-    lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
-    if ( length(lys) )
-        arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
-
-    ## indicate ALL AAS
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=3)
-    arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=2.5, col=aas$color)
-    axis(2, at=.6, labels="AAS", las=2)
-
-    par(mai=mmai, xpd=TRUE)
-
-    ##abline(v=aas$pos, col=aas$color) ## TODO: arrows, color by RAAS etc.
-    ## DETAILS for high RAAS AAS
-    if ( FALSE ) { # custom with n~size
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-        for ( tp in unique(aad$type) )
-            shadowtext(x=aad$start[aad$type==tp],
-                       y=1,#-rep(tp,sum(aad$type==tp))*.25,
-                       labels=aaco[aad$type==tp],
-                       cex=aad$size[aad$type==tp],
-                       col=aad$color[aad$type==tp])
-    }
-    plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-                 plotorder=order(aad$type), 
-                 types=as.character(rev(seq(-10,10,.1))), cuttypes=TRUE,
-                 typord=TRUE, axis2=TRUE)
-    mtext("AAS\ntype", 2, 2)
-    ## indicate ALL AAS
-    ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05, lwd=3, xpd=TRUE)
-    ##arrows(x0=aas$pos, y0=-.1, y1=.15, length=.05,lwd=2.5, col=aas$color,
-    ##       xpd=TRUE)
-
-
-    ## AA context
-    ## add AA sequences around AAS
-    ## TODO: fuse overlapping
-    pseq <- strsplit(psq,"")[[1]]
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    if ( nrow(aad)>0 )
-        for ( j in 1:nrow(aad) ) {
-            if ( aad$raas[j] < .1 ) next
-            x <- aad$start[j]
-            prng <- (x-1):(x+1)
-            prng <- prng[prng>0 & prng <= plen]
-            text(x=x, y=1, labels=paste(pseq[prng], collapse=""),
-                 family="monospace")
-        }
-    mtext("context", 2, las=2, cex=.8)
-
-    ## AA by amino acid color code
-    mmaiaa <- mmai
-    mmaiaa[1] <- 0.01
-    aam <- cbind(chr=1,coor=1:length(pseq),
-                 vals=match(pseq, names(shapely.cols)))
-    par(mai=mmaiaa)
-    plotHeat(aam, coors=coors, colors=shapely.cols)
-    axis(3, at=aas$pos, labels=FALSE)
-    mtext("amino acid", 2, las=2)
-    ## codons as heatmap
-    mmaiaa <- mmai
-    mmaiaa[3] <- 0.01
-    if ( !is.null(cmt) ) {
-        cmm <- cbind(chr=1,coor=1:length(cmt),vals=cmt)
-        brks <- 0:100/100
-        par(mai=mmaiaa)
-        plotHeat(cmm, coors=coors, breaks=brks,
-                 colors=c(viridis(length(brks)-1)))
-        ##axis(3, at=aas$pos, labels=FALSE)
-    } else {
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    }
-    mtext("codon frq.", 2, las=2)
-    ## EXONS
-    par(mai=mmai)
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
-    axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
-    mtext("CDS", 2, las=2)
-
-    dev.off()
-
-    if ( doit | file.exists(paste0(sfile,".",ftyp)) )
-        file.copy(paste0(ffile,".",ftyp),
-                  paste0(sfile,".",ftyp), overwrite = TRUE)
-
     ### TIGHT PLOT
     cat(paste("TIGHT PLOT", pnms[pid], pid, "\n"))
 
@@ -935,7 +930,7 @@ for ( pid in pids ) {
     heights <- c(.1,  # title
                  .15,  # PFAM/CLAN
                  .2,  # RAAS CURVES
-                 .1,  # main peptides
+                 .2,  # main peptides
                  .1, # secondary structure and cleavage
                  .5, # AAS type
                  .075 # CDS structure
@@ -970,7 +965,8 @@ for ( pid in pids ) {
     mmaiaa[1] <- 0.01
     par(mai=mmaiaa)
     if ( !is.null(mpd) ) {
-        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
+        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE,
+                     types=c("tonsil, tryptic","AAS window"),
                      typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
     } else {
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
