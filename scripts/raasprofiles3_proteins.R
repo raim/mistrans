@@ -445,11 +445,27 @@ for ( i in 1:30 ) {
 plotdev(file.path(pfig.path,"hotspots_SAAP_per_peptide"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- barplot(paas, xlab="SAAP per base peptide",
+bp <- barplot(paas, xlab="SAAP per BP",
               ylab=NA, axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of peptides", 2, 1.6)
+legend("topright",
+       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("hotspots_SAAP_per_peptide_log")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
+bp <- barplot(paas, xlab="SAAP per BP",ylab=NA,
+              axes=FALSE, axisnames = FALSE, log="y")
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+options(scipen=999)
+axis(2, at=10^(1:10), las=2)
+axis(2, at=c(1:10,(1:10)*10,(1:10)*100, (1:10)*1000), tcl=-.125,
+     labels=FALSE)
+options(scipen=0)
+mtext("# of peptides",2,1.6)
 legend("topright",
        paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
 dev.off()
@@ -1197,44 +1213,17 @@ dev.off()
 
 ### COLLECT WINDOWS
 
-## TODO: count windows in maxdst distance and plot length distribution
+## count windows in maxdst distance and plot length distribution
 maxdst <- 10
+
+## ALL WINDOWS - no RAAS filter
 
 osite <-site[order(site$ensembl, site$pos),]
 
 wsite <- split(osite, osite$ensembl) # split by protein
 
-## TODO: why so large window in plot
-pid <- "ENSP00000458435"
-
-## for each protein detect and tag windows
-wsite <- lapply(wsite, function(x) {
-
-   ## x=wsite[[pid]]
-
-    if ( nrow(x)==1 ) {
-        x$window <- 1
-    } else {
-        
-        ## window ends: larger than max distance to next!
-        ends <- which(diff(x$pos)>maxdst)
-        
-        x$window <- rep(NA, nrow(x))
-        x$window[ends] <- 1:length(ends)
-        
-        ## propagate window number
-        win <- 1
-        for ( i in 1:nrow(x) ) {
-            if ( !is.na(x$window[i]) )
-                win <- x$window[i]+1
-            else x$window[i] <- win
-        }
-    }
-    x
-})
-
-
-
+## use function in saap_utils to get windows
+wsite <- lapply(wsite, get.windows, maxdst=maxdst)
 wsite <- do.call(rbind, wsite)
 rownames(wsite) <- rownames(osite)
 
@@ -1248,9 +1237,9 @@ wtxt <- table(wtxt)[c(as.character(1:15),">15")]
 plotdev(file.path(pfig.path,paste0("windows_AAS")),
             type=ftyp, width=3, height=3, res=200)
 par(mai=c(.5,.5,.15,.1), mgp=pmpg, tcl=-.25, xaxs="i")
-barplot(wtxt, 
-        xlab="AAS sites per window",ylab=NA,
-        axes=FALSE, axisnames = FALSE)
+bp <- barplot(wtxt, 
+              xlab="AAS sites per window",ylab=NA,
+              axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("# of windows",2,1.6)
@@ -1258,6 +1247,22 @@ legend("topright",
        paste(sum(wcnt>1,na.rm=TRUE), "windows with >1 AAS"), bty="n")
 dev.off()
 
+plotdev(file.path(pfig.path,paste0("windows_AAS_log")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.15,.1), mgp=pmpg, tcl=-.25, xaxs="i")
+bp <- barplot(wtxt, 
+              xlab="AAS sites per window",ylab=NA,
+              axes=FALSE, axisnames = FALSE, log="y")
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+options(scipen=999)
+axis(2, at=10^(1:10), las=2)
+axis(2, at=c(1:10,(1:10)*10,(1:10)*100, (1:10)*1000), tcl=-.125,
+     labels=FALSE)
+options(scipen=0)
+mtext("# of windows",2,1.6)
+legend("topright",
+       paste(sum(wcnt>1,na.rm=TRUE), "windows with >1 AAS"), bty="n")
+dev.off()
 
 ## split by protein and window
 wins <- lapply(split(wsite$pos, wsite$windowID), range)
@@ -1306,12 +1311,104 @@ axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125,
 axis(2)
 dev.off()
 
-## expand each protein to full sequence vector
-## initialized to 0 and add RAAS counts
-nraas <- lapply(ositel, function(x) {
-    aras <- rep(0, plen[unique(x$ensembl)])
-    aras[x$pos] <- x$RAAS.n
-    aras
-})
-nraas <- unlist(nraas)
+
+## ALL WINDOWS - WITH RAAS filter
+
+osite <-site[order(site$ensembl, site$pos),]
+osite <- osite[osite$RAAS.median > -1,] ## FILTER
+
+wsite <- split(osite, osite$ensembl) # split by protein
+
+## use function in saap_utils to get windows
+wsite <- lapply(wsite, get.windows, maxdst=maxdst)
+wsite <- do.call(rbind, wsite)
+rownames(wsite) <- rownames(osite)
+
+wsite$windowID <- paste(wsite$ensembl, wsite$window, sep="-")
+
+wcnt <- table(wsite$windowID)
+wtxt <- wcnt
+wtxt[wtxt>15] <- ">15"
+wtxt <- table(wtxt)[c(as.character(1:15),">15")]
+
+plotdev(file.path(pfig.path,paste0("windows_highRAAS_AAS")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.15,.1), mgp=pmpg, tcl=-.25, xaxs="i")
+bp <- barplot(wtxt, 
+              xlab="AAS sites per window",ylab=NA,
+              axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+axis(2)
+mtext("# of windows",2,1.6)
+legend("topright",
+       paste(sum(wcnt>1,na.rm=TRUE), "windows with >1 AAS"), bty="n")
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("windows_AAS_highRAAS_log")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.25,.1), mgp=pmpg, tcl=-.25, xaxs="i")
+bp <- barplot(wtxt, 
+              xlab="AAS sites per window",ylab=NA,
+              axes=FALSE, axisnames = FALSE, log="y")
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+options(scipen=999)
+axis(2, at=10^(1:10), las=2)
+axis(2, at=c(1:10,(1:10)*10,(1:10)*100, (1:10)*1000), tcl=-.125,
+     labels=FALSE)
+options(scipen=0)
+mtext("# of windows",2,1.6)
+legend("topright",
+       paste(sum(wcnt>1,na.rm=TRUE), "windows with >1 AAS"), bty="n")
+figlabel("RAAS>0.1", pos="topright", region="plot")
+dev.off()
+
+## split by protein and window
+wins <- lapply(split(wsite$pos, wsite$windowID), range)
+
+## only realy windows (length>1)
+wlen <- unlist(lapply(wins, diff))+1
+wins <- wins[wlen>1]
+wlen <- wlen[wlen>1]
+
+wins <- as.data.frame(do.call(rbind, wins))
+wins$ensembl <- unlist(lapply(strsplit(rownames(wins),"-"), function(x) x[1]))
+
+##write.table(window.file,
+##            x=wins[,c(3,1,2)],
+## sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+## WINDOW LENGTH DISTRIBUTION,
+
+bplen <- nchar(unique(bdat$BP)) 
+wmax <- max(bplen, max(wlen))
+
+plotdev(file.path(pfig.path,paste0("windows_highRAAS_length")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+hist(bplen, breaks=0:wmax, border=2, freq=FALSE,
+     axes=FALSE, xlab=NA, ylab=NA, main=NA)
+legend("topright","BP length", col=2, lty=1, bty="n")
+par(new=TRUE)
+hst <- hist(wlen, breaks=0:wmax, axes=TRUE, main=NA,
+            xlab="window length", ylab="count")
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("windows_highRAAS_length_zoom")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+hst <- hist(wlen, breaks=0:wmax, axes=TRUE, main=NA,
+            xlab="window length", ylab="count", xlim=c(0,100))
+dev.off()
+
+
+plotdev(file.path(pfig.path,paste0("windows_highRAAS_length_log")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+hst <- hist(log10(wlen), axes=FALSE, main=NA,
+            xlab="window lengths", ylab="count")
+axis(1, at=1:10, labels=10^(1:10))
+axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125,
+     labels=FALSE)
+axis(2)
+dev.off()
 

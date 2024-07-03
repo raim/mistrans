@@ -334,20 +334,20 @@ plotProfiles(ovw, fname=file.path(sfig.path,paste0("structure_s4pred_",SETID)),
 fname <- file.path(sfig.path,paste0("structure_cor_iupred3_flDPnn"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$iupred3, tmtf$flDPnn, xlab="iupred3", ylab="flDPnn")
+plotCor(bdat$iupred3, bdat$flDPnn, xlab="iupred3", ylab="flDPnn")
 dev.off()
 
 fname <- file.path(sfig.path,paste0("structure_cor_anchor2_DisoRDPbind"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$anchor2, tmtf$DisoRDPbind, xlab="anchor2", ylab="DisoRDPbind",
+plotCor(bdat$anchor2, bdat$DisoRDPbind, xlab="anchor2", ylab="DisoRDPbind",
         legpos="bottomright")
 dev.off()
 
 fname <- file.path(sfig.path,paste0("structure_cor_MMSeq2_RAAS"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$MMSeq2, tmtf$RAAS,
+plotCor(bdat$MMSeq2, bdat$RAAS,
         xlab="conservation, MMSeq2",
         ylab=xl.raas, legpos="topright")
 dev.off()
@@ -355,7 +355,7 @@ dev.off()
 fname <- file.path(sfig.path,paste0("structure_cor_MMSeq2_iupred3"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$MMSeq2, tmtf$iupred3,
+plotCor(bdat$MMSeq2, bdat$iupred3,
         xlab="conservation, MMSeq2",
         ylab="disordered score, iupred3")
 dev.off()
@@ -363,14 +363,23 @@ dev.off()
 fname <- file.path(sfig.path,paste0("structure_cor_flDPnn_RAAS"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$flDPnn, tmtf$RAAS,
+plotCor(bdat$flDPnn, bdat$RAAS,
         xlab="disordered score, flDPnn",
         ylab=xl.raas, legpos="bottomright")
 dev.off()
 fname <- file.path(sfig.path,paste0("structure_cor_iupred3_RAAS"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(tmtf$iupred3, tmtf$RAAS,
+plotCor(bdat$iupred3, bdat$RAAS,
         xlab="disordered score, iupred3",
         ylab=xl.raas, legpos="bottomleft")
 dev.off()
+
+## TODO: better analyze alpha-helical assocation
+## get actual prediction score into the bp_mapped.tsv!
+plotCor(bdat$RAAS, bdat$C.protein)
+plotCor(bdat$RAAS, bdat$H.protein)
+plotCor(bdat$RAAS, bdat$E.protein)
+
+
+

@@ -186,7 +186,7 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/functi
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
 
 ## PROTEIN 3D: chimeraX codes for pdb
-R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R &> ${MISDATA}/log/protein_plots.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R &> ${MISDATA}/log/protein_pdb.txt 
 
 
 ## PROTEIN 1D: plots of AAS along protein 1D
@@ -256,6 +256,9 @@ cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.pdf $resul
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_lengths_all.pdf $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.pdf $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/proteins_raas.tsv $results/structure/
+
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/structure_cor_iupred3_RAAS.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/structure_cor_MMSeq2_RAAS.pdf $results/structure/
 
 mkdir $results/function
 cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.pdf $results/function

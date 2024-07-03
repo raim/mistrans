@@ -1051,6 +1051,8 @@ ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)
 pnms <- ens2nam
 
+
+
 ## list of all MANE proteins
 MANES <- genes$MANE.protein
 MANES <- MANES[MANES!=""]

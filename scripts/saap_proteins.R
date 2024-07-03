@@ -555,7 +555,7 @@ pid=names(which(pnms=="PSMB5"))
 ## AHNAK: righ RAAS protein
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
-pid=names(which(pnms=="ACTC1"))
+pid=names(which(pnms=="ACTG1"))
 
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
@@ -1001,8 +1001,8 @@ for ( pid in pids ) {
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
     lines(1:plen, mar, lwd=2)
-    points(aad$start, aad$raas, pch=19, col=aad$color, cex=1)#, cex=aad$cex)
-    points(aad$start, aad$raas, pch=1, col="white", cex=1)#, cex=aad$cex)
+    points(aad$start, aad$raas, pch=19, col=aad$color, cex=1.5)#, cex=aad$cex)
+    points(aad$start, aad$raas, pch=1, col="white", cex=1.5)#, cex=aad$cex)
     mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
     if ( FALSE ) {
         plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,

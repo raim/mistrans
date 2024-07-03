@@ -1522,3 +1522,29 @@ function (pwm, sparse = FALSE, drawLines = 0.5, stackHeight = sumProbabilities,
     }
     polygon(letters, col = letters$col, border = NA)
 }
+
+## for each protein detect and tag windows
+get.windows <- function(x, maxdst) {
+
+   ## x=wsite[[pid]]
+
+    if ( nrow(x)==1 ) {
+        x$window <- 1
+    } else {
+        
+        ## window ends: larger than max distance to next!
+        ends <- which(diff(x$pos)>maxdst)
+        
+        x$window <- rep(NA, nrow(x))
+        x$window[ends] <- 1:length(ends)
+        
+        ## propagate window number
+        win <- 1
+        for ( i in 1:nrow(x) ) {
+            if ( !is.na(x$window[i]) )
+                win <- x$window[i]+1
+            else x$window[i] <- win
+        }
+    }
+    x
+}
