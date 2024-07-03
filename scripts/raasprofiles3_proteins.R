@@ -1241,12 +1241,22 @@ rownames(wsite) <- rownames(osite)
 wsite$windowID <- paste(wsite$ensembl, wsite$window, sep="-")
 
 wcnt <- table(wsite$windowID)
-wcnt[wcnt>15] <- ">15"
-wcnt <- table(wcnt)[c(as.character(1:15),">15")]
-barplot(wcnt, las=2,
-     xlab="unique AAS sites per window",
-     ylab="# of windows")
+wtxt <- wcnt
+wtxt[wtxt>15] <- ">15"
+wtxt <- table(wtxt)[c(as.character(1:15),">15")]
 
+plotdev(file.path(pfig.path,paste0("windows_AAS")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.15,.1), mgp=pmpg, tcl=-.25, xaxs="i")
+barplot(wtxt, 
+        xlab="AAS sites per window",ylab=NA,
+        axes=FALSE, axisnames = FALSE)
+axis(1, at=bp, labels=names(paas), las=2, cex=.8)
+axis(2)
+mtext("# of windows",2,1.6)
+legend("topright",
+       paste(sum(wcnt>1,na.rm=TRUE), "windows with >1 AAS"), bty="n")
+dev.off()
 
 
 ## split by protein and window
@@ -1266,18 +1276,35 @@ write.table(window.file,
 
 ## WINDOW LENGTH DISTRIBUTION,
 
+plotdev(file.path(pfig.path,paste0("windows_length")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+hist(nchar(unique(bdat$BP)), breaks=0:max(wlen), border=2, freq=FALSE,
+     axes=FALSE, xlab=NA, ylab=NA, main=NA)
+legend("topright","BP length", col=2, lty=1, bty="n")
+par(new=TRUE)
 hst <- hist(wlen, breaks=0:max(wlen), axes=TRUE, main=NA,
-            xlab="window lengths", ylab="count")
+            xlab="window length", ylab="count")
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("windows_length_zoom")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
 hst <- hist(wlen, breaks=0:max(wlen), axes=TRUE, main=NA,
-            xlab="window lengths", ylab="count", xlim=c(0,100))
+            xlab="window length", ylab="count", xlim=c(0,100))
+dev.off()
 
 
+plotdev(file.path(pfig.path,paste0("windows_length_log")),
+            type=ftyp, width=3, height=3, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
 hst <- hist(log10(wlen), axes=FALSE, main=NA,
             xlab="window lengths", ylab="count")
 axis(1, at=1:10, labels=10^(1:10))
 axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125,
      labels=FALSE)
 axis(2)
+dev.off()
 
 ## expand each protein to full sequence vector
 ## initialized to 0 and add RAAS counts
