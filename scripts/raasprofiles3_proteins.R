@@ -1043,7 +1043,7 @@ for ( i in length(filters):1 ) {
 ## * concatenated proteins
 ## * concatenated BP.
 
-N <- 150
+N <- 250
 
 ## autocorrelation of of site median RAAS with concatenated protein sequences
 
@@ -1074,12 +1074,9 @@ for ( k in 1:N ) {
     rng <- 1:(length(araas)-N)
     acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
 }
-
-
-
+## TODO: different handling of NA in R's acf
 if ( interactive() ) {
 
-    ## TODO: different handling of NA in R's acf
     bcor <- acf(araas, lag.max=N, na.action = na.pass)
     ##abline(v=10, col=2)
     
@@ -1147,11 +1144,8 @@ rraas <- lapply(rsitel, function(x) {
 rraas <- unlist(rraas)
 
 ## calculate autocorrelation
-rcor <- rep(NA, N)
-for ( k in 1:N ) {
-    rng <- 1:(length(rraas)-N)
-    rcor[k] <- cor(rraas[rng], rraas[rng+k])
-}
+racf <- acf(rraas, lag.max=N, plot=FALSE)
+rcor <- racf$acf[1:N+1]
 
 ## plot auto-correlations
 
@@ -1227,11 +1221,8 @@ nraas <- lapply(obpl, function(x) {
 nraas <- unlist(nraas)
 
 ## calculate autocorrelation
-ncor <- rep(NA, N)
-for ( k in 1:N ) {
-    rng <- 1:(length(nraas)-N)
-    ncor[k] <- cor(nraas[rng], nraas[rng+k])
-}
+nacf <- acf(nraas, lag.max=N, plot=FALSE)
+ncor <- nacf$acf[1:N+1]
 
 plotdev(file.path(pfig.path,paste0("autocorrelation_BP_RAAS")),
             type=ftyp, res=300, width=4, height=2)
