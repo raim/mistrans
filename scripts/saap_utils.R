@@ -780,15 +780,17 @@ listProfile <- function(x, y, delog=TRUE, use.test=t.test, min=3) {
         xcv <- xsd/xmn
         xcvl <- cvl(lx)
         xmd <- median(lx)
+        xmx <- lx[which.max(abs(lx-xmd))] # maximal distance from median!
         if ( delog ) {
             xmn <- log10(xmn)
             xmd <- log10(xmd)
             xsd <- log10(xsd)
+            xmx <- log10(xmx)
         }
         c(mean=xmn, median=xmd,
           sd=xsd, cv=xcv, cvl=xcvl,
           statistic=tt, p.value=tp,
-          n=length(x))
+          n=length(x), absmax=xmx)
     })
     as.data.frame(do.call(rbind, stat))
 }

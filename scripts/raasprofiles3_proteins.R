@@ -1059,11 +1059,11 @@ ositel <- split(osite, osite$ensembl)
 ## RAAS
 
 ## expand each protein to full sequence vector
-## initialized to global median RAAS
-globalraas <- median(tmtf$RAAS, na.rm=TRUE)
+## initialized to NA (not: global median RAAS)
+##globalraas <- median(tmtf$RAAS, na.rm=TRUE)
 araas <- lapply(ositel, function(x) {
-    aras <- rep(globalraas, plen[unique(x$ensembl)])
-    aras[x$pos] <- x$RAAS.median
+    aras <- rep(NA, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.median # TODO: max(abs(median-RAAS))
     aras
 })
 araas <- unlist(araas)
@@ -1072,8 +1072,30 @@ araas <- unlist(araas)
 acor <- rep(NA, N)
 for ( k in 1:N ) {
     rng <- 1:(length(araas)-N)
-    acor[k] <- cor(araas[rng], araas[rng+k])
+    acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
 }
+
+
+
+if ( interactive() ) {
+
+    ## TODO: different handling of NA in R's acf
+    bcor <- acf(araas, lag.max=N, na.action = na.pass)
+    ##abline(v=10, col=2)
+    
+    plot(bcor$acf[1:N+1], type="l")
+    lines(acor, col=2)
+    plotCor(acor, bcor$acf[1:N+1])
+    
+    bfft <- fft(bcor$acf[1:N+1])
+    dc <- bfft[1]/N # TODO: compare with mean cor
+    plot(abs(bfft)/N, type="h")
+
+    afft <- fft(acor)
+    dc <- afft[1]/N # TODO: compare with mean cor
+    plot(abs(afft)/N, type="h")
+}
+
 
 ## MEASUREMENT FREQUENCY
 
@@ -1085,13 +1107,33 @@ nraas <- lapply(ositel, function(x) {
     aras
 })
 nraas <- unlist(nraas)
+nacf <- acf(nraas, lag.max=N, plot=FALSE)
+ncor <- nacf$acf[1:N+1]
 
-## calculate autocorrelation
-ncor <- rep(NA, N)
-for ( k in 1:N ) {
-    rng <- 1:(length(nraas)-N)
-    ncor[k] <- cor(nraas[rng], nraas[rng+k])
+## TODO: fourier with correct period
+if ( interactive() ) {
+    nfft <- fft(ncor)[1:(N/2)]
+    dc <- nfft[1]/N # TODO: compare with mean cor
+    tosc <- N/1:(N/2-1)
+    plot(tosc, abs(nfft[2:length(nfft)])/N, type="h", xlim=c(2,6))
 }
+
+### NOTE: R's acf is equivalent to manual pearson correlation
+### but behaves differently with NAs
+if ( interactive() ) {
+
+    ## calculate autocorrelation manually
+    mcor <- rep(NA, N)
+    for ( k in 1:N ) {
+        rng <- 1:(length(nraas)-N)
+        mcor[k] <- cor(nraas[rng], nraas[rng+k])
+    }
+    ##abline(v=10, col=2)
+    plot(ncor, type="l")
+    lines(mcor, col=2)
+    plotCor(ncor, mcor)
+}
+
 
 
 ## high RAAS measurement frequency
@@ -1158,10 +1200,9 @@ obpl <- split(obpe, obpe$BP)
 ## RAAS
 
 ## expand each protein to full sequence vector
-## initialized to global median RAAS
-globalraas <- median(tmtf$RAAS, na.rm=TRUE)
+## initialized to NA 
 araas <- lapply(obpl, function(x) {
-    aras <- rep(globalraas, unique(x$len))
+    aras <- rep(NA, unique(x$len))
     aras[x$site] <- x$RAAS.median
     aras
 })
@@ -1171,7 +1212,7 @@ araas <- unlist(araas)
 acor <- rep(NA, N)
 for ( k in 1:N ) {
     rng <- 1:(length(araas)-N)
-    acor[k] <- cor(araas[rng], araas[rng+k])
+    acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
 }
 
 ## MEASUREMENT FREQUENCY
