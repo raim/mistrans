@@ -71,6 +71,7 @@ cd $MISDATA/originalData/
 wget https://elifesciences.org/download/aHR0cHM6Ly9jZG4uZWxpZmVzY2llbmNlcy5vcmcvYXJ0aWNsZXMvNDUzOTYvZWxpZmUtNDUzOTYtZmlnMS1kYXRhMi12Mi5jc3Y-/elife-45396-fig1-data2-v2.csv?_hash=oV0Fjo95uQOzu5LreFXU9sbiAG2ub8ZzXLyP%2B0iTk98%3D  -O elife-45396-fig1-data2-v2.csv
 cd -
 
+
 ### SAAP/RAAS ANALYSIS
 
 
@@ -144,6 +145,18 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ## do SAAP have the expected mismatches?
 R --vanilla < ${THIS}/scripts/saap_blast_stats.R &> ${MISDATA}/log/saap_blast_stats.txt
 
+## SEARCH SECIS RFAM in ensembl transcripts
+## SECIS1-5: RF00031, RF01988, RF01989, RF01990, RF01991
+myrfam=${MYDATA}/rfam/
+declare -a rfams=("RF00031" "RF01988" "RF01989" "RF01990" "RF01991")
+
+## now loop through the above array
+for i in "${rfams[@]}"; do
+    echo $i
+    cmsearch --cpu 7 --tblout  ${MISDATA}/processedData/${i}.out --notextw ${myrfam}/${i}.cm $MAMDATA/originalData/Homo_sapiens.GRCh38.cdna.all.fa.gz &>> ${MISDATA}/processedData/${i}.log
+done
+## NOTE: the file secis_elements.out can be parsed by cmchainer::parseHomHits
+grep -h -v "^#" ${MISDATA}/processedData/RF*.out > ${MISDATA}/processedData/secis_elements.out
 
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
