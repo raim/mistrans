@@ -65,9 +65,38 @@ in.file <- file.path(out.path,"saap_mapped.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
 
+### ADDITIONAL PROTEIN LEVEL DATA
 ## protein complexes
 humap.file <- file.path(mam.path,"originalData","humap2_complexes_20200809.txt")
 corum.file <- file.path(mam.path,"originalData","humanComplexes.txt")
+
+## protein half-lives - @Mathieson2018
+math18.file <- file.path(mam.path,"originalData",
+                         "41467_2018_3106_MOESM5_ESM.xlsx")
+
+## 20S targets - @Pepelnjak2024
+pepe24.file <- file.path(mam.path,"originalData",
+                         "44320_2024_15_moesm1_esm.xlsx")
+
+##  @Watson2023 - T/osmo
+## NOTE/TODO: unused since this is data from mouse cells;
+## perhaps useful when mapped to human orthologs.
+w23prot.file <- file.path(mam.path,"originalData",
+                          "41586_2023_6626_MOESM4_ESM.xlsx")
+w23pprot.file <- file.path(mam.path,"originalData",
+                           "41586_2023_6626_MOESM5_ESM.xlsx")
+
+## @Yang2022: thermal stability prediction
+## https://structure-next.med.lu.se/ProTstab2/
+protstab.file <- file.path(mam.path,"originalData",
+                           "ProTstab2_human.csv")
+
+## @Savitski2014: Tracking cancer drugs in living cells by thermal
+## profiling of the proteome
+thermo.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS11.xlsx")
+thatp.file <- file.path(mam.path, "originalData",
+                         "savitski14_tableS3.xlsx")
 
 
 ## PROTEIN ID MAPPINGS
@@ -1157,11 +1186,124 @@ bdat$RAAS <- bdat$median
 ## row, due to missing RAAS values.
 
 
+## PROTEIN LENGTHS via bp_mapped.tsv
+plen <- split(hdat$len, hdat$ensembl)
+plen <- lapply(plen, unique)
+table(lengths(plen)) # check: all should be the same
+plen <- unlist(lapply(plen, function(x) x[1]))
+
+## PROTEIN HALF-LIVES via Mathieson et al. 2018
+hlvd <- readxl::read_xlsx(math18.file)
+## mean half-live over all replicates and cell types
+## TODO: consider halflife distributions instead of just taking mean
+## NOTE: THIS includes mouse data, but they correlate.
+cidx <- grep("half_life", colnames(hlvd), value=TRUE)
+phlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
+names(phlv) <- unlist(hlvd[,1])
+
+## THERMOSTABILITY @Savitski2014
+therm <- as.data.frame(read_xlsx(thermo.file, sheet=2))
+pmlt <- therm$meltP_Jurkat
+names(pmlt) <- therm[,2]
+
+
+## PROTEIN ABUNDANCES via Razor.protein.precursor.intensity
+
+## remove brackets
+pint <- sub("\\[","", sub("\\]","", tmtf$Razor.protein.precursor.intensity))
+## split multiple values and convert to numeric
+pint <- lapply(pint, function(x) as.numeric(unlist(strsplit(x, ","))))
+## remove zeros and take unique value
+pint <- lapply(pint, function(x) unique(x[x!=0]))
+## there are still many entries with multiple values
+table(lengths(pint))
+pint <- unlist(lapply(pint, mean))
+
+## MEDIAN of PROTEINS
+pint <- split(pint, tmtf$ensembl)
+pint <- lapply(pint, function(x) x[!is.na(x)])
+
+pint <- lapply(pint, as.numeric)
+
+barplot(table(lengths(pint)))
+
+## TODO: analyze stats before just taking the median
+pint <- lapply(pint, median, na.rm=TRUE)
+pint <- unlist(pint)
+
+#### UNIQUE SITE TABLE
+## median raas per unique mane protein site
+## plus protein level data since this table is used
+## externally for random forest et al. modeling
+
+##sitl <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
+##site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+sitl <- split(tmtf$RAAS, paste(tmtf$unique.site))
+site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## mod. column names and add protein and site info
+colnames(site) <- paste0("RAAS.", colnames(site))
+site$ensembl <- sub("_.*", "", rownames(site))
+site$pos <- as.numeric(sub(".*_", "", rownames(site)))
+
+## add gene names
+site$name <- ens2nam [site$ensembl]
+
+## add uniprot id
+site$uniprot <- unlist(lapply(ens2u[site$ensembl], paste, collapse=";"))
+
+## RAAS COLOR
+site$RAAS.color <- num2col(site$RAAS.median,
+                           limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
+
+## make sure its ordered
+## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
+site <-site[order(site$ensembl, site$pos),]
+
+
+## enumeration of sites within unique proteins
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$ensembl)))
+nsites[is.na(nsites)] <- 1
+site$n <- nsites
+
+
+## COLLECT DATA FOR SITES
+add.data <- c("name",
+              "codon", "fromto",
+              "iupred3", "flDPnn", # disorder
+              "anchor2","DisoRDPbind", # disorder-binding
+              "MMSeq2") # sequence conservation
+for ( i in 1:length(add.data) ) {
+    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
+    datl <- lapply(datl, function(x) x[x!=""])
+    if ( add.data[i]=="fromto" ) # multiple per site!
+        datl <- lapply(datl, function(x)
+            ifelse(length(x)==1, x, paste(x, collapse=";")))
+    datl <- unlist(datl)
+    if ( any(lengths(datl)>1) )
+        stop("all protein site data should be unique")
+    site[[add.data[i]]] <- datl[rownames(site)]
+}
+
+## add protein data, half-live, melting point, intensity, length
+site$protein.length <- plen[site$ensembl]
+site$protein.halflife <- phlv[pnms[site$ensembl]]
+site$protein.meltingT <- pmlt[pnms[site$ensembl]]
+site$protein.intensity <- pint[site$ensembl]
+
+if ( interactive() ) { ## test
+    plotCor(site$iupred3, site$RAAS.median)
+}
+
+## TODO: write out bdat or hdat, with all RAAS values added
+
+site.file <- file.path(out.path,"sites_raas.tsv")
+write.table(file=site.file, x=site, row.names=FALSE, quote=FALSE, na="")
+
 ### PLOT ALIGNMENT
 
 CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 
               ## in domain script via nchar to fit the y-axis labels
 FONT <- "monospace" # font used for aligned figures in motifs and domains
 
-
-## TODO: write out bdat or hdat, with all RAAS values added

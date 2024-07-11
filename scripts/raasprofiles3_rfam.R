@@ -21,13 +21,25 @@ pmai <- c(.5,.5,.25,.25)
 pmpg <- c(1.3,.3,0)
 
 ## additional data
-rfam.path <- file.path(out.path,"secis_elements.out")
+secis.path <- file.path(out.path,"secis_elements.out")
+rfam.path <- file.path(mam.path,"processedData",
+                       "Homo_sapiens.GRCh38.cdna.large.rfam.out")
 
 library(cmchainer)
-rfs <- parseHomHits(files=rfam.path, type="rfam11")
+source("~/programs/gIScanner/R/cmchainer.R") # TODO: mv to segmenTools
+
+
+## SECIS ELEMENTS
+rfs <- parseHomHits(files=secis.path, type="rfam11")
 
 rfs$transcript <- sub("\\.","",rfs$target)
 
 ## NO OVERLAP OF SECIS TARGETS WITH AAS PROTEINS
 rfs$transcript%in%bdat$transcript
 
+## ALL RFAM 
+rfs <- parseHomHits(files=rfam.path, type="cmscan")
+rfs$transcript <- sub("\\.","",rfs$query)
+
+## NO OVERLAP OF ANY RFAM WITH AAS PROTEINS
+sum(rfs$transcript%in%bdat$transcript)

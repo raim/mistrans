@@ -30,64 +30,12 @@ xl.hlf <- expression(protein~"half-life"/h)
 ## overrule specific y-axis label
 xl.prota <- xl.raas
 
-### ADDITIONAL DATA
-## protein half-lives - @Mathieson2018
-math18.file <- file.path(mam.path,"originalData",
-                         "41467_2018_3106_MOESM5_ESM.xlsx")
-
-## 20S targets - @Pepelnjak2024
-pepe24.file <- file.path(mam.path,"originalData",
-                         "44320_2024_15_moesm1_esm.xlsx")
-
-##  @Watson2023 - T/osmo
-## NOTE/TODO: unused since this is data from mouse cells;
-## perhaps useful when mapped to human orthologs.
-w23prot.file <- file.path(mam.path,"originalData",
-                          "41586_2023_6626_MOESM4_ESM.xlsx")
-w23pprot.file <- file.path(mam.path,"originalData",
-                           "41586_2023_6626_MOESM5_ESM.xlsx")
-
-## @Yang2022: thermal stability prediction
-## https://structure-next.med.lu.se/ProTstab2/
-protstab.file <- file.path(mam.path,"originalData",
-                           "ProTstab2_human.csv")
-
-## @Savitski2014: Tracking cancer drugs in living cells by thermal
-## profiling of the proteome
-thermo.file <- file.path(mam.path, "originalData",
-                         "savitski14_tableS11.xlsx")
-thatp.file <- file.path(mam.path, "originalData",
-                         "savitski14_tableS3.xlsx")
 
 
 ### START ANALYSIS
 
 
-#### PROTEINS and COMPLEXES
 
-## TODO: align use of raasProfile vs. listProfile
-
-## MEDIAN SITE AND PROTEIN RAAS
-
-### median raas per unique mane protein site
-
-sitl <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
-site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
-
-## mod. column names and add protein and site info
-colnames(site) <- paste0("RAAS.", colnames(site))
-site$ensembl <- sub(" .*", "", rownames(site))
-site$pos <- as.numeric(sub(".* ", "", rownames(site)))
-
-## add gene names
-site$name <- ens2nam [site$ensembl]
-
-## add uniprot id
-site$uniprot <- unlist(lapply(ens2u[site$ensembl], paste, collapse=";"))
-
-## RAAS COLOR
-site$RAAS.color <- num2col(site$RAAS.median,
-                           limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
 
 ### BP/SAAP/PROTEIN RAAS TABLES
 ## TODO: handle proteins/BP/SAAP missing from current tmt file!
@@ -119,6 +67,9 @@ pts <- unlist(lengths(lapply(split(bdat$SAAP, bdat$ensembl), unique)))
 ptstat$nsaap <- pts[rownames(ptstat)]
 
 
+## order site matrix by protein RAAS rank (for hotspot plot)
+site$rank <- ptstat[site$ensembl,"rank"]
+site <-site[order(site$rank, site$pos),]
 
 if ( interactive() ) {
     ## test alternative measures of consistent RAAS
@@ -134,18 +85,6 @@ if ( interactive() ) {
 ## order proteins by RAAS
 ptstat$rank <- rank(ptstat$median)
 
-## make sure its ordered
-## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
-site <-site[order(site$ensembl, site$pos),]
-
-## order by protein RAAS rank (for hotspot plot)
-site$rank <- ptstat[site$ensembl,"rank"]
-site <-site[order(site$rank, site$pos),]
-
-##
-nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$ensembl)))
-nsites[is.na(nsites)] <- 1
-site$n <- nsites
 
 ### COMPARE dataset sizes
 
@@ -171,40 +110,12 @@ if ( interactive() ) {
 #### TODO: why do we have n=747 at exon but n=713 for
 #### the log intensity plot on exon/intron?
 
-## PROTEIN ABUNDANCES via Razor.protein.precursor.intensity
 
-## remove brackets
-alst <- sub("\\[","", sub("\\]","", tmtf$Razor.protein.precursor.intensity))
-## split multiple values and convert to numeric
-alst <- lapply(alst, function(x) as.numeric(unlist(strsplit(x, ","))))
-## remove zeros and take unique value
-alst <- lapply(alst, function(x) unique(x[x!=0]))
-## there are still many entries with multiple values
-table(lengths(alst))
-alst <- unlist(lapply(alst, mean))
-
-## MEDIAN of PROTEINS
-alst <- split(alst, tmtf$ensembl)
-alst <- lapply(alst, function(x) x[!is.na(x)])
-
-alst <- lapply(alst, as.numeric)
-
-barplot(table(lengths(alst)))
-
-## TODO: analyze stats before just taking the median
-alst <- lapply(alst, median, na.rm=TRUE)
-alst <- unlist(alst)
-
-ptstat$intensity <- alst[rownames(ptstat)]
+ptstat$intensity <- pint[rownames(ptstat)]
 
 
 ## RELATIVE POSITON
 
-## PROTEIN LENGTH from saap_mapped4.tcv
-plen <- split(hdat$len, hdat$ensembl)
-plen <- lapply(plen, unique)
-table(lengths(plen)) # check: all should be the same
-plen <- unlist(lapply(plen, function(x) x[1]))
 
 ptstat$length <- plen[rownames(ptstat)]
 
