@@ -31,11 +31,38 @@ names(g2p) <- bdat$gene
 tmtp <- tmtf[tmtf$Dataset=="PDAC",]
 pdat <- bdat[bdat$BP%in%tmtp$BP,]
 
+## W/O PDAC
+tmtwop <- tmtf[tmtf$Dataset!="PDAC",]
+
+## all RAAS values of BP that appear in PDAC
+tmtpd <- tmtf[tmtf$BP%in%pdat$BP,]
+
 ## T->V in PDAC
 tvdat <- pdat[pdat$fromto=="T:V",]
 tmtv <- tmtp[tmtp$BP%in%tvdat$BP,]
 
-## GENE FUNCTIONS
+## COUNTS in PDAC vs OTHERS
+
+## BP/SAAP unique to PDAC and T->V?
+table(tmtv$Dataset) # T->V in PDAC: not in other Datasets!
+table(tmtpd$Dataset) # BP in PDAC: many also present in other
+
+## table
+nrow(pdat) # 1650 unique BP/SAAP in PDAC
+nrow(tvdat) # 192 unique BP/SAAP in T->V
+
+
+sum( pdat$BP %in% tmtwop$BP) #  1269 BP also occur in other data sets
+sum(!pdat$BP %in% tmtwop$BP) # 381 DO NOT occur in other data sets
+
+length(unique(tvdat$name)) # 147 unique proteins with T-->V
+
+dup <- which(duplicated(tvdat$gene))[1]
+tvdat$SAAP[which(tvdat$gene==tvdat$gene[dup])] # ACTG2 contains 3 distinct T->V
+
+
+
+### FUNCTIONS of T->V containing proteins in PDAC.
 
 sort(table(tvdat$name))
 
@@ -48,17 +75,21 @@ trms <- terms[,2]
 names(trms) <- terms[,1]
 colnames(got) <- trms[colnames(got)]
 
-go.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
-                    rows=got[tmtu$gene,], cols="Dataset",
-                    bg=TRUE, value=value, 
-                    col.srt=uds,
-                    use.test=use.test, do.plots=FALSE,
-                    xlab=xl.raas,
-                    verb=0)
+if ( FALSE ) {
+    ## TODO: raas profile?
+    go.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
+                          rows=got[tmtu$gene,], cols="Dataset",
+                          bg=TRUE, value=value, 
+                          col.srt=uds,
+                          use.test=use.test, do.plots=FALSE,
+                          xlab=xl.raas,
+                          verb=0)
+}
 
 gois <- unique(tvdat$gene)
 
-gores <- gprofiler2::gost(query = gois, organism = "human")
+if ( FALSE )
+    gores <- gprofiler2::gost(query = gois, organism = "human")
 
 gotv <- got[gois,]
 gotv <- gotv[, apply(gotv,2,sum)>0]
@@ -86,3 +117,4 @@ pnms[g2p[names(which(gotv[,"cellular amino acid metabolic process"]))]]
 ##       heterodimeric electron transfer flavoprotein (ETF). The
 ##       native ETF protein contains one molecule of FAD and one
 ##       molecule of AMP, respectively.[6][7]
+

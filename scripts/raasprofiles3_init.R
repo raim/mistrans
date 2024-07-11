@@ -1296,7 +1296,7 @@ if ( interactive() ) { ## test
     plotCor(site$iupred3, site$RAAS.median)
 }
 
-## TODO: write out bdat or hdat, with all RAAS values added
+## write out bdat or hdat, with all RAAS values added
 
 site.file <- file.path(out.path,"sites_raas.tsv")
 write.table(file=site.file, x=cbind(ID=rownames(site),site),
