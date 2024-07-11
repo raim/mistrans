@@ -1299,7 +1299,8 @@ if ( interactive() ) { ## test
 ## TODO: write out bdat or hdat, with all RAAS values added
 
 site.file <- file.path(out.path,"sites_raas.tsv")
-write.table(file=site.file, x=site, row.names=FALSE, quote=FALSE, na="")
+write.table(file=site.file, x=cbind(ID=rownames(site),site),
+            row.names=FALSE, quote=FALSE, na="")
 
 ### PLOT ALIGNMENT
 

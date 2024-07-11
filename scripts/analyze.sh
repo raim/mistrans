@@ -35,10 +35,10 @@ SRC=$GENBRO/data/mammary
 THIS=${HOME}/work/mistrans
 
 ## generate output paths
-mkdir $MISDATA/log
-mkdir $MISDATA/figures
-mkdir $MISDATA/originalData
-mkdir $MISDATA/processedData
+mkdir -p $MISDATA/log
+mkdir -p $MISDATA/figures
+mkdir -p $MISDATA/originalData
+mkdir -p $MISDATA/processedData
 
 
 ### NOTE : INPUT GENOME DATA IS GENERATED
@@ -188,6 +188,12 @@ R --vanilla < ${THIS}/scripts/map_peptides.R &> ${MISDATA}/log/map_peptides.txt
 
 ### 5) ANALYSIS
 
+## initializiation for all scripts below; NOTE, that this script
+## is (re-)called directly from the scripts below; TODO: call init
+## only once and use in scripts.
+## PRODUCES site_raas.txv,  a site-specific raas values with
+## protein annotation, for use in random forest model.
+R --vanilla <  ${THIS}/scripts/raasprofiles3_init.R &> ${MISDATA}/log/init.txt 
 
 ### CALCULATE RAAS PROFILES
 R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R &> ${MISDATA}/log/codons.txt  # FIGURE 2
@@ -225,6 +231,7 @@ results=${MISDATA}/results/
 mkdir $results
 
 cp -a ${MISDATA}/processedData/bp_mapped.tsv $results/
+cp -a ${MISDATA}/processedData/sites_raas.tsv $results/
 
 cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.pdf $results/
 
