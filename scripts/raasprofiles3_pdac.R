@@ -4,6 +4,12 @@ library(segmenTools)
 options(stringsAsFactors=FALSE)
 library(gprofiler2)
 
+### INVESTIGATING T->V in PDAC
+## * counts and overlaps of BP/SAAP in other datasets,
+## * TODO: load patient-level dataset to investigate
+##   differences between tumour and adjacent tissures.
+
+
 ## project-specific functions
 source("~/work/mistrans/scripts/saap_utils.R")
 

@@ -249,7 +249,11 @@ classes <- cbind(
     GGxGG=GGxGG,
     GxG=GxG,
     "W:x"=bdat$from=="W",
-    
+
+    "T:V"=bdat$fromto=="T:V",
+    "T:V_PDAC"=bdat$fromto=="T:V" & bdat$Datasets=="PDAC",
+    "T:V_others"=bdat$fromto=="T:V" & bdat$Datasets!="PDAC",
+
     QNrich= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("Q","N")))>2,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
@@ -348,6 +352,10 @@ tmp.path <- file.path(mfig.path, "selected")
 dir.create(tmp.path, showWarnings=FALSE)
 ##pwm <- getPFM(aam)
 ##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ASN2)
+
+### MANUAL INVESTIGATION OF T->V
+table(bdat$Datasets[classes[,"T:V"] & classes [,"MMxMM"]])
+
 
 i=which(colnames(classes)=="fromto_I:P")
 
