@@ -20,6 +20,7 @@ if ( !exists("tmtf") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
 ## additional data
+patient.file  <- file.path(dat.path,"All_SAAP_patient_level_quant_df.xlsx")
 goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
 pdfig.path <- file.path(fig.path,"PDAC")
@@ -221,3 +222,17 @@ pnms[g2p[names(which(gotv[,"cellular amino acid metabolic process"]))]]
 ##       native ETF protein contains one molecule of FAD and one
 ##       molecule of AMP, respectively.[6][7]
 
+pats <- read_xlsx(patient.file)
+pats <- as.data.frame(pats)
+
+pats <- pats[pats[,"Keep SAAP"],]
+
+patv <- pats[pats$AAS=="T to V" & pats$Dataset=="PDAC",]
+
+plotdev(file.path(pdfig.path,"TV_RAAS_per_tumor"),
+        width=corW, height=3)
+par(mai=c(.5,.5,.5,.05), mgp=c(1.3,.3,0), tcl=-.25)
+bp <- boxplot(patv$RAAS ~ patv[,"Sample type"], ylab=xl.raas,
+              xlab="T->V in PDAC; all patients")
+axis(3, at=1:2, labels=bp$n, las=2)
+dev.off()
