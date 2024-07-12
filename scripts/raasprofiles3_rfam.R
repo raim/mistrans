@@ -23,7 +23,7 @@ pmpg <- c(1.3,.3,0)
 ## additional data
 secis.path <- file.path(out.path,"secis_elements.out")
 rfam.path <- file.path(mam.path,"processedData",
-                       "Homo_sapiens.GRCh38.cdna.large.rfam.out")
+                       "Homo_sapiens.GRCh38.cdna.large.rfam_cut_ga.out")
 
 library(cmchainer)
 source("~/programs/gIScanner/R/cmchainer.R") # TODO: mv to segmenTools

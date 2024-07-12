@@ -1133,7 +1133,7 @@ bdat <- cbind(bdat[rownames(bpraas),], bpraas)
 ## use median as RAAS
 bdat$RAAS <- bdat$median
 
-## add Datasets where BP/SAAP appear
+## add Datasets+Tissues where each BP/SAAP appears
 datasets <- split(tmtf$Dataset, paste(tmtf$BP, tmtf$SAAP))
 datasets <- lapply(datasets, unique)
 bdat$numDatasets <-
@@ -1141,9 +1141,20 @@ bdat$numDatasets <-
 datasets <- unlist(lapply(datasets,  paste, collapse=";"))
 bdat$Datasets <- datasets[paste(bdat$BP, bdat$SAAP)]
 
+tissues <- tmtf$TMT.Tissue
+tissues[tmtf$Dataset!="Healthy"] <- "cancer"
+tissues <- split(tissues, paste(tmtf$BP, tmtf$SAAP))
+tissues <- lapply(tissues, unique)
+bdat$numTissues <-
+    lengths(tissues)[paste(bdat$BP, bdat$SAAP)]
+tissues <- unlist(lapply(tissues,  paste, collapse=";"))
+bdat$Tissues <- tissues[paste(bdat$BP, bdat$SAAP)]
+
 ## TODO: move this to global statistics
 if ( interactive() )
     barplot(table(bdat$numDatasets), log="y")
+if ( interactive() )
+    barplot(table(bdat$numTissues), log="y")
 
 ### NOTE: check use of bdat vs. hdat, where bdat has one less
 ## row, due to missing RAAS values.

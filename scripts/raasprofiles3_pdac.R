@@ -16,8 +16,8 @@ if ( !exists("tmtf") )
 ## additional data
 goslim.file  <- file.path(mam.path,"processedData","goslim.tsv")
 
-pfig.path <- file.path(fig.path,"PDAC")
-dir.create(pfig.path, showWarnings=FALSE)
+pdfig.path <- file.path(fig.path,"PDAC")
+dir.create(pdfig.path, showWarnings=FALSE)
 
 corW <- corH <- 2.5
 pmai <- c(.5,.5,.25,.25)
@@ -39,12 +39,16 @@ tmtpd <- tmtf[tmtf$BP%in%pdat$BP,]
 
 ## T->V in PDAC
 tvdat <- pdat[pdat$fromto=="T:V",]
-tmtv <- tmtp[tmtp$BP%in%tvdat$BP,]
+
+## T->V in Precurser Level RAAS
+tmtv <- tmtf[tmtf$fromto=="T:V",]
 
 ## COUNTS in PDAC vs OTHERS
 
 ## BP/SAAP unique to PDAC and T->V?
-table(tmtv$Dataset) # T->V in PDAC: not in other Datasets!
+
+table(tmtv$Dataset) # T->V mostly in PDAC
+
 table(tmtpd$Dataset) # BP in PDAC: many also present in other
 
 ## table
@@ -77,6 +81,59 @@ length(unique(tmtf$unique.site[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")]
 ## T->V in other tissues
 table(tmtf$BP[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")],
       tmtf$TMT.Tissue[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")])
+
+## TODO: summary plot T->V in PDAC vs. OTHERS
+
+bdat$fromto <- paste0(bdat$from,":",bdat$to)
+
+ft <- unique(bdat$fromto)
+aas.srt <- unique(c(grep("T:", ft, value=TRUE),grep(":V", ft, value=TRUE)))
+aas.srt <- c("T:V", "Q:G")
+
+dsets <- bdat$Datasets
+##dsets[dsets=="Healthy"] <- bdat$Tissues[dsets=="Healthy"]
+nsets <- stringr::str_count(dsets, ";")+1
+##dsets[nsets > 1] <- ">1"
+dsets[nsets > 2] <- ">2"
+dsets[nsets > 3] <- ">3"
+ds.srt <- unique(dsets)
+ds.srt <- ds.srt[order(nchar(ds.srt))]
+
+ovl <- clusterCluster(cl2=dsets, cl1=bdat$fromto,
+                      cl1.srt=aas.srt, cl2.srt=ds.srt)
+present <- colnames(ovl$overlap)[apply(ovl$overlap,2,sum)>0]
+ovl <- sortOverlaps(ovl, axis=1, srt=present)
+
+plotdev(file.path(pdfig.path,"TV_per_Dataset"),
+        width=length(present)*.3+1, height=length(aas.srt)*.2+2)
+par(mai=c(1.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovl, show.total=TRUE, xlab="", ylab="", p.min=p.min, p.txt=p.txt)
+figlabel("count of unique BP/SAAP in Datasets", pos="bottom")
+dev.off()
+
+## same for tissues
+dsets <- bdat$Tissues
+##dsets[dsets=="Healthy"] <- bdat$Tissues[dsets=="Healthy"]
+nsets <- stringr::str_count(dsets, ";")+1
+##dsets[nsets > 1] <- ">1"
+##dsets[nsets > 2] <- ">2"
+dsets[nsets > 3] <- ">3"
+ds.srt <- unique(dsets)
+ds.srt <- ds.srt[order(nchar(ds.srt))]
+
+ovl <- clusterCluster(cl2=dsets, cl1=bdat$fromto,
+                      cl1.srt=aas.srt, cl2.srt=ds.srt)
+## NOTE: only T:V
+present <- colnames(ovl$overlap)[ovl$overlap["T:V",]>0]
+ovl <- sortOverlaps(ovl, axis=1, srt=present)
+
+plotdev(file.path(pdfig.path,"TV_per_Tissue"),
+        width=length(present)*.3+1, height=length(aas.srt)*.2+2.5)
+par(mai=c(2,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotOverlaps(ovl, show.total=TRUE, xlab="", ylab="", p.min=p.min, p.txt=p.txt)
+figlabel("count of unique BP/SAAP in Tissues", pos="bottom")
+dev.off()
+
 
 ### COMPARE dataset sizes
 ## TODO: add T->V
