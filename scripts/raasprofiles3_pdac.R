@@ -7,7 +7,7 @@ library(gprofiler2)
 ### INVESTIGATING T->V in PDAC
 ## * counts and overlaps of BP/SAAP in other datasets,
 ## * TODO: load patient-level dataset to investigate
-##   differences between tumour and adjacent tissures.
+##   differences between tumour and adjacent tissues.
 
 
 ## project-specific functions
