@@ -66,6 +66,8 @@ ptstat$nbp <- pts[rownames(ptstat)]
 pts <- unlist(lengths(lapply(split(bdat$SAAP, bdat$ensembl), unique)))
 ptstat$nsaap <- pts[rownames(ptstat)]
 
+## rank proteins by RAAS
+ptstat$rank <- rank(ptstat$median)
 
 ## order site matrix by protein RAAS rank (for hotspot plot)
 site$rank <- ptstat[site$ensembl,"rank"]
@@ -80,29 +82,9 @@ if ( interactive() ) {
     hist(site$RAAS.sd)
 }
 
-## ORDER SITES
-
-## order proteins by RAAS
-ptstat$rank <- rank(ptstat$median)
 
 
-### COMPARE dataset sizes
 
-fmat <- matrix(NA, ncol=2, nrow=nrow(tmtf))
-##fmat[,3] <- tmtf$Dataset
-fmat[,2] <- tmtf$Dataset
-fmat[,1] <- tmtf$Dataset
-##fmat[duplicated(tmtf$unique),2] <- "na"
-fmat[duplicated(paste(tmtf$BP,tmtf$SAAP)),1] <- "na"
-
-cnts <- apply(fmat, 2, table)
-cnts <- do.call(rbind,lapply(cnts, function(x) x[uds]))
-rownames(cnts) <- c("BP/SAAP", "#RAAS")
-if ( interactive() ) {
-    barplot(cnts, beside=TRUE, legend=TRUE)
-    
-    hist(bdat$n, breaks=100)
-}
 
 
 ### COLLECT PROTEIN DATA
@@ -110,54 +92,23 @@ if ( interactive() ) {
 #### TODO: why do we have n=747 at exon but n=713 for
 #### the log intensity plot on exon/intron?
 
-
+## PROTEIN ABUNDANCE
 ptstat$intensity <- pint[rownames(ptstat)]
 
-
-## RELATIVE POSITON
-
-
+## PROTEIN LENGTH
 ptstat$length <- plen[rownames(ptstat)]
 
 ## THERMOSTABILITY @Savitski2014
-therm <- as.data.frame(read_xlsx(thermo.file, sheet=2))
-mlt <- therm$meltP_Jurkat
-names(mlt) <- therm[,2]
+ptstat$Tmelt <- pmlt[match(pnms[rownames(ptstat)], names(pmlt))]
 
-ptstat$Tmelt <- mlt[match(pnms[rownames(ptstat)], names(mlt))]
+## delta melting without ATP
+## TODO: analyze this better
+ptstat$DeltaTmelt <- pdmlt[match(pnms[rownames(ptstat)], names(pdmlt))]
 
 ## PROTEIN HALF-LIFE @Mathieson2018
-hlvd <- readxl::read_xlsx(math18.file)
+ptstat$halflife <- phlv[match(pnms[rownames(ptstat)], names(phlv))]
 
-## mean half-live over all replicates and cell types
-## TODO: consider halflife distributions instead of just taking mean
-## NOTE: THIS includes mouse data, but they correlate.
-cidx <- grep("half_life", colnames(hlvd), value=TRUE)
-hlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
-names(hlv) <- unlist(hlvd[,1])
-
-ptstat$halflife <- hlv[match(pnms[rownames(ptstat)], names(hlv))]
-
-## @Savitski2014 - difference of melting T w/o ATP
-## TODO: analyze this better
-therm <- as.data.frame(read_xlsx(thatp.file, sheet=2))
-mlt <- as.numeric(therm$diff_meltP_Exp1)
-names(mlt) <- therm[,2]
-
-ptstat$DeltaTmelt <- mlt[match(pnms[rownames(ptstat)], names(mlt))]
-
-## ProtStab2 Prediction
-protstab <- read.csv(protstab.file)
-## use refseq ID w/o version number as row names
-rownames(protstab) <- sub("\\.[0-9]*","", protstab$id)
-
-## get local reduced refseq mapping
-## TODO: use full n<->n mapping and maximize yield
-ps2ens <- refseq2ens[refseq2ens[,1] %in%rownames(ptstat),]
-ps2ens <- ps2ens[ps2ens[,2] %in%rownames(protstab),]
-protstab$ensembl <- ps2ens[match(rownames(protstab),ps2ens[,2]),1]
-
-
+## protstab2 - predicted 
 ptstat$ProtStab2 <- protstab$Human_predict_Tm[match(rownames(ptstat),
                                                     protstab$ensembl)]
 
@@ -169,50 +120,9 @@ iu3 <- unlist(lapply(iu3, unique))
 
 ptstat$iupred3 <- iu3[rownames(ptstat)]
 
-## @Pepelnjak2024: in vitro 20S targets
-## TODO: simplify mapping
-p20 <- data.frame(readxl::read_xlsx(pepe24.file, sheet=2))
-
-xl.20s <- expression(median~log[2]("20S"/control))
-xl.20p <- expression("20S target:"~sign~"x"~log[10](p))
-
-## MEDIAN LG2FC PER PROTEIN
-p20s <- p20[!is.na(p20$Log2.FC.),]
-p20l <- split(p20s[,c("Log2.FC.")],
-              p20s[,"UniprotID"])
-p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
-
-## median -log10(p)*sign
-p20s$pscale <- sign(p20s$Log2.FC.) * -log10(p20s$p.value)
-p20l <- split(p20s[,c("pscale")],
-              p20s[,"UniprotID"])
-p20pv <- unlist(lapply(p20l, median, na.rm=TRUE))
-
-
-## get uniprot mapping
-## TODO: akugb with uni2e and ens2u  in init script.
-p2ens <- uni2ens
-p2ens <- p2ens[p2ens[,2]%in%tmtf$ensembl,]
-p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
-
-cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
-cat(paste(sum(duplicated(p2ens[,2])),"uniprot with multiple ensembl\n"))
-p2el <- unlist(split(p2ens[,2], p2ens[,1]))
-
-e2u <- names(p2el)
-names(e2u) <- p2el
-
-if ( length(unique(lengths(p2el)))>1 )
-    stop("non-unique uniprot 2 ensembl mapping")
-
-
-lg2fc <- p20p
-names(lg2fc) <- p2el[names(lg2fc)]
-ptstat$p20_lgfc <- lg2fc[rownames(ptstat)]
-
-pval <- p20pv
-names(pval) <- p2el[names(pval)]
-ptstat$p20_pval <- pval[rownames(ptstat)]
+## p20 core proteasome in vitro targets
+ptstat$p20_lgfc <- p20.lg2fc[rownames(ptstat)]
+ptstat$p20_pval <- p20.pval[rownames(ptstat)]
 
 
 ## write-out collected protein results
@@ -646,7 +556,8 @@ if ( FALSE ) {
         axes=FALSE, title=TRUE, cor.legend=FALSE)
     axis(2)
     axis(1, at=-10:10, labels=10^(-10:10))
-    axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
+    axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)),
+         tcl=-.125, labels=FALSE)
     dev.off()
 }
 

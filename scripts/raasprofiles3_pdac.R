@@ -48,23 +48,63 @@ table(tmtv$Dataset) # T->V in PDAC: not in other Datasets!
 table(tmtpd$Dataset) # BP in PDAC: many also present in other
 
 ## table
+nrow(bdat) # 8402 unique BP/SAAP 
 nrow(pdat) # 1650 unique BP/SAAP in PDAC
-nrow(tvdat) # 192 unique BP/SAAP in T->V
+nrow(tvdat)#  192 unique BP/SAAP in T->V
+
+length(unique(bdat$BP)) # 5303 unique BP
+length(unique(pdat$BP)) #  621 unique BP in PDAC
 
 
-sum( pdat$BP %in% tmtwop$BP) #  1269 BP also occur in other data sets
-sum(!pdat$BP %in% tmtwop$BP) # 381 DO NOT occur in other data sets
+
+sum( pdat$BP %in% tmtwop$BP) # 1269 BP also occur in other data sets
+sum(!pdat$BP %in% tmtwop$BP) #  381 DO NOT occur in other data sets
 
 length(unique(tvdat$name)) # 147 unique proteins with T-->V
 
 dup <- which(duplicated(tvdat$gene))[1]
 tvdat$SAAP[which(tvdat$gene==tvdat$gene[dup])] # ACTG2 contains 3 distinct T->V
 
+## 7080 unique sites in all
+length(unique(tmtf$unique.site))
+## 786 unique sites in PDAC
+length(unique(tmtf$unique.site[which(tmtf$Dataset=="PDAC")]))
+## 188 unique T->V protein sites in PDAC
+length(unique(tmtf$unique.site[which(tmtf$Dataset=="PDAC" & tmtf$fromto=="T:V")]))
+## 25 unique  T->V protein sites in other tissues
+length(unique(tmtf$unique.site[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")]))
 
+## T->V in other tissues
+table(tmtf$BP[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")],
+      tmtf$TMT.Tissue[which(tmtf$Dataset!="PDAC" & tmtf$fromto=="T:V")])
+
+### COMPARE dataset sizes
+## TODO: add T->V
+
+fmat <- matrix(NA, ncol=2, nrow=nrow(tmtf))
+##fmat[,3] <- tmtf$Dataset
+fmat[,2] <- tmtf$Dataset
+fmat[,1] <- tmtf$Dataset
+##fmat[duplicated(tmtf$unique),2] <- "na"
+fmat[duplicated(paste(tmtf$BP,tmtf$SAAP)),1] <- "na"
+
+cnts <- apply(fmat, 2, table)
+cnts <- do.call(rbind,lapply(cnts, function(x) x[uds]))
+rownames(cnts) <- c("BP/SAAP", "#RAAS")
+if ( interactive() ) {
+    barplot(cnts, beside=TRUE, legend=TRUE)
+    
+}
+
+
+## TODO:
+## * Is there an enrichment for amino acids flanking the T-->V substitution ? 
+## * Do we observe high frequency of T-->V in the "healthy" pancreas
+##  from the label free dataset ?
+## * Is the RAAS for T-->V different between the tumors and their
+##  sounding tissues ?
 
 ### FUNCTIONS of T->V containing proteins in PDAC.
-
-sort(table(tvdat$name))
 
 
 ## get GOslim table for use with clusterAnnotation

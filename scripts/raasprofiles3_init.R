@@ -60,10 +60,16 @@ wu19.file <- file.path(dat.path,"elife-45396-fig1-data2-v2.csv")
 gingold14.file <- file.path(dat.path, "gingold14_mmc2.xls")
 
 
-## MAIN INPUT
+## MAIN INPUT: MAPPED BP AND SAAP
 in.file <- file.path(out.path,"saap_mapped.tsv")
 tmt.file <- file.path(proj.path,"originalData",
                       "All_SAAP_TMTlevel_quant_df.txt")
+
+## NON-/TRYPTIC PEPTDES
+pep.file <- file.path(dat.path, "All_main_tryptic_peptide_list.txt")
+non.file <- file.path(dat.path, "All_main_nontryptic_peptide_list.txt")
+nkr.file <- file.path(dat.path, "All_main_nontryptic_noKR_peptide_list.txt")
+akr.file <- file.path(dat.path, "All_main_ArgC_LysC_peptide_list.txt")
 
 ### ADDITIONAL PROTEIN LEVEL DATA
 ## protein complexes
@@ -99,7 +105,7 @@ thatp.file <- file.path(mam.path, "originalData",
                          "savitski14_tableS3.xlsx")
 
 
-## PROTEIN ID MAPPINGS
+### PROTEIN ID MAPPINGS
 
 ## uniprot/refseq/ensembl/name mappings
 uni2ens.file <- file.path(mam.path,"originalData","uniprot_ensembl.dat")
@@ -111,6 +117,9 @@ refseq.file <- file.path(mam.path,"originalData",
 ## genome feature file
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
+## gene name synonyms, via https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
+## downloaded on 20240712
+synonym.file <- file.path(mam.path, "originalData", "gene_synonyms.tsv")
 
 
 
@@ -944,7 +953,7 @@ dev.off()
 
 ## tightest RAAS colors - legend for tcols/tbrks
 pp <- seq(0, -log10(p.dot), length.out=3)
-rs <- seq(RAAS.MINT,RAAS.MAXT, length.out=3)
+rs <- seq(RAAS.MINT, RAAS.MAXT, length.out=3)
 pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
 rm <- matrix(rep(rs, length(pp)), ncol=length(pp))
 colnames(pm) <- colnames(rm) <- -pp
@@ -996,7 +1005,7 @@ dev.off()
 
 
 
-## tigtht RAAS range - legend for acols/abreaks
+## tight RAAS range - legend for acols/abreaks
 pp <- seq(0, -log10(p.dot), length.out=3)
 rs <- c(-4,-2,-1,0) #seq(RAAS.MIN,RAAS.MAX, length.out=3)
 pm <- matrix(rep(pp, each=length(rs)), nrow=length(rs))
@@ -1045,52 +1054,7 @@ mtext(plab, 1, 0.75, cex=1.2)
 dev.off()
 
 
-
-
-## UNIPROT <-> ENSEMBL MAPPING
-## NOTE: ~90 duplicated ensembl IDs
-uni2ens <- read.delim(uni2ens.file, header=FALSE)
-uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
-uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
-
-## filter for ensembl IDs in our data!
-uni2dat <- uni2ens[uni2ens[,2]%in%c(dat$ensembl, dat$mane),]
-## 1-many lists
-uni2e <- split(uni2ens[,2], uni2ens[,1])
-ens2u <- split(uni2ens[,1], uni2ens[,2])
-
-refseq2ens <- read.delim(refseq.file, header=TRUE)
-
-## remove duplicate ensembl IDs
-## TODO: is the list sorted? best uniprot hit?
-##uni2ens <- uni2ens[!duplicated(uni2ens[,2]),]
-
-## UNIPROT <-> NAME MAPPING
-## TODO: add MANE column
-uni2nam <- read.delim(uni2nam.file, header=FALSE)
-uni2nam[,1] <- sub("-.*", "", uni2nam[,1]) # remove uniprot version tag
-
-## ENSEMBL <-> NAME MAPPING
-## TODO: add MANE column
-genes <- read.delim(feature.file)
-genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
-genes <- genes[genes$name!="" & !is.na(genes$name),]
-ptl <- strsplit(genes$proteins, ";")
-ens2nam <- rep(genes$name, lengths(ptl))
-names(ens2nam) <- unlist(ptl)
-pnms <- ens2nam
-
-
-
-## list of all MANE proteins
-MANES <- genes$MANE.protein
-MANES <- MANES[MANES!=""]
-
-## filter MANE.protein in mappings
-rs2ens <- refseq2ens[refseq2ens[,1]%in%names(ens2nam),] # available
-rs2mane <- refseq2ens[refseq2ens[,1]%in%MANES,] # MANE
-
-### GLOBAL DISTRIBUTION BY CANCER TYPE
+## GLOBAL RAAS DISTRIBUTION BY CANCER TYPE
            
 ylm <- range(tmtf$RAAS)
 plotdev(file.path(fig.path,paste0("RAAS_distribution")),
@@ -1145,23 +1109,11 @@ if ( only.unique ) {
     dev.off()
 }
 
-## TODO: pairs of same SAAP
-##tmtl <- split(tmtf$Dataset, tmtf$SAAP)
 
 
-### MOTIFS & KRAQ
-## TODO: make sure this doesnt overwrite any of the above
-## it should mainly providebdat
-
-## additional input
-pep.file <- file.path(dat.path, "All_main_tryptic_peptide_list.txt")
-non.file <- file.path(dat.path, "All_main_nontryptic_peptide_list.txt")
-nkr.file <- file.path(dat.path, "All_main_nontryptic_noKR_peptide_list.txt")
-akr.file <- file.path(dat.path, "All_main_ArgC_LysC_peptide_list.txt")
 
 
-## FILTER UNIQUE BP - since those have the same AA CONTEXT
-## NOTE: that this looses different SAAPs for the same BP
+## FILTER and ANNOTATE unique BP/SAAP TABLE
 
 bpraas <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$SAAP)) #tmtf$BP)
 bpraas <- listProfile(bpraas, y=tmtf$RAAS, use.test=use.test, min=3)
@@ -1181,12 +1133,67 @@ bdat <- cbind(bdat[rownames(bpraas),], bpraas)
 ## use median as RAAS
 bdat$RAAS <- bdat$median
 
+## add Datasets where BP/SAAP appear
+datasets <- split(tmtf$Dataset, paste(tmtf$BP, tmtf$SAAP))
+datasets <- lapply(datasets, unique)
+bdat$numDatasets <-
+    lengths(datasets)[paste(bdat$BP, bdat$SAAP)]
+datasets <- unlist(lapply(datasets,  paste, collapse=";"))
+bdat$Datasets <- datasets[paste(bdat$BP, bdat$SAAP)]
+
+## TODO: move this to global statistics
+if ( interactive() )
+    barplot(table(bdat$numDatasets), log="y")
 
 ### NOTE: check use of bdat vs. hdat, where bdat has one less
 ## row, due to missing RAAS values.
 
 
-## PROTEIN LENGTHS via bp_mapped.tsv
+
+### PROTEIN PROPERTIES
+## collect published protein properties, each as
+## hash with ensembl protein names
+
+### PROTEIN ID MAPPING
+## generate vectors for unique mapping of ensembl protein IDs to
+## gene names, uniprot and refseq IDs
+
+
+## ENSEMBL <-> NAME MAPPING
+## TODO: add MANE column
+genes <- read.delim(feature.file)
+genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
+genes <- genes[genes$name!="" & !is.na(genes$name),]
+ptl <- strsplit(genes$proteins, ";")
+ens2nam <- rep(genes$name, lengths(ptl))
+names(ens2nam) <- unlist(ptl)
+pnms <- ens2nam
+
+## list of all MANE proteins
+MANES <- genes$MANE.protein
+MANES <- MANES[MANES!=""]
+
+## gene name synonyms - to catch missing proteins in experimental data below
+syns <- read.delim(synonym.file)
+syns <- syns[syns[,2]!="",]
+
+## UNIPROT <-> ENSEMBL MAPPING
+## NOTE: ~90 duplicated ensembl IDs
+uni2ens <- read.delim(uni2ens.file, header=FALSE)
+uni2ens[,2] <- sub("\\..*", "", uni2ens[,2]) # remove ensembl version tag
+uni2ens[,1] <- sub("-.*", "", uni2ens[,1]) # remove uniprot version tag
+
+## filter for ensembl IDs in our data!
+uni2dat <- uni2ens[uni2ens[,2]%in%c(dat$ensembl, dat$mane),]
+## 1-many lists
+##uni2e <- split(uni2ens[,2], uni2ens[,1])
+ens2u <- split(uni2ens[,1], uni2ens[,2])
+
+## REFSEQ <-> ENSEMBL MAPPING
+refseq2ens <- read.delim(refseq.file, header=TRUE)
+
+
+## PROTEIN LENGTHS via saap_mapped.tsv in hdat
 plen <- split(hdat$len, hdat$ensembl)
 plen <- lapply(plen, unique)
 table(lengths(plen)) # check: all should be the same
@@ -1201,10 +1208,108 @@ cidx <- grep("half_life", colnames(hlvd), value=TRUE)
 phlv <- apply(hlvd[,cidx], 1, mean, na.rm=TRUE)
 names(phlv) <- unlist(hlvd[,1])
 
+
+## rename via synonyms
+miss <- which(!names(phlv)%in%pnms)
+mnms <- names(phlv)[miss]
+## GET FIRST OF MULTIPLE
+msyns <- sapply(mnms, function(x) syns[grep(x, syns[,2], fixed=TRUE)[1],1])
+msyns <- msyns[!is.na(msyns)]
+## rename
+found <- miss[names(phlv)[miss]%in%names(msyns)]
+names(phlv)[found] <- msyns[names(phlv)[found]]
+
+
+
+
 ## THERMOSTABILITY @Savitski2014
+## NOTE: uses outdated IPI International Protein Identifier
 therm <- as.data.frame(read_xlsx(thermo.file, sheet=2))
 pmlt <- therm$meltP_Jurkat
-names(pmlt) <- therm[,2]
+names(pmlt) <- sub("_HUMAN","",therm[,2])
+
+## rename via synonyms
+miss <- which(!names(pmlt)%in%pnms)
+mnms <- names(pmlt)[miss]
+## GET FIRST OF MULTIPLE SYNONYMS
+msyns <- sapply(mnms, function(x) syns[grep(x, syns[,2], fixed=TRUE)[1],1])
+msyns <- msyns[!is.na(msyns)]
+## rename
+found <- miss[names(pmlt)[miss]%in%names(msyns)]
+names(pmlt)[found] <- msyns[names(pmlt)[found]]
+
+
+## difference of melting T w/o ATP
+## TODO: analyze this better, catch names
+therm <- as.data.frame(read_xlsx(thatp.file, sheet=2))
+pdmlt <- as.numeric(therm$diff_meltP_Exp1)
+names(pdmlt) <- sub("_HUMAN","",therm[,2])
+
+## rename via synonyms
+miss <- which(!names(pdmlt)%in%pnms)
+mnms <- names(pdmlt)[miss]
+## GET FIRST OF MULTIPLE SYNONYMS
+msyns <- sapply(mnms, function(x) syns[grep(x, syns[,2], fixed=TRUE)[1],1])
+msyns <- msyns[!is.na(msyns)]
+## rename
+found <- miss[names(pdmlt)[miss]%in%names(msyns)]
+names(pdmlt)[found] <- msyns[names(pdmlt)[found]]
+
+
+## ProtStab2 Prediction
+protstab <- read.csv(protstab.file)
+## use refseq ID w/o version number as row names
+rownames(protstab) <- sub("\\.[0-9]*","", protstab$id)
+
+## get local reduced refseq mapping
+## TODO: use full n<->n mapping and maximize yield or select MANE
+##ps2ens <- refseq2ens[refseq2ens[,1] %in%rownames(ptstat),]
+##ps2ens <- ps2ens[ps2ens[,2] %in%rownames(protstab),]
+protstab$ensembl <- refseq2ens[match(rownames(protstab),refseq2ens[,2]),1]
+
+
+## @Pepelnjak2024: in vitro 20S targets
+## TODO: simplify mapping
+p20 <- data.frame(readxl::read_xlsx(pepe24.file, sheet=2))
+
+xl.20s <- expression(median~log[2]("20S"/control))
+xl.20p <- expression("20S target:"~sign~"x"~log[10](p))
+
+## MEDIAN LG2FC PER PROTEIN
+p20s <- p20[!is.na(p20$Log2.FC.),]
+p20l <- split(p20s[,c("Log2.FC.")],
+              p20s[,"UniprotID"])
+p20p <- unlist(lapply(p20l, median, na.rm=TRUE))
+
+## median -log10(p)*sign
+p20s$pscale <- sign(p20s$Log2.FC.) * -log10(p20s$p.value)
+p20l <- split(p20s[,c("pscale")],
+              p20s[,"UniprotID"])
+p20pv <- unlist(lapply(p20l, median, na.rm=TRUE))
+
+
+## reduce uniprot mapping to required and available proteins
+p2ens <- uni2ens
+p2ens <- p2ens[p2ens[,2]%in%tmtf$ensembl,]
+p2ens <- p2ens[p2ens[,1]%in%names(p20p),]
+
+cat(paste(sum(duplicated(p2ens[,1])),"uniprot with multiple ensembl\n"))
+cat(paste(sum(duplicated(p2ens[,2])),"uniprot with multiple ensembl\n"))
+p2el <- unlist(split(p2ens[,2], p2ens[,1]))
+
+e2u <- names(p2el)
+names(e2u) <- p2el
+
+if ( length(unique(lengths(p2el)))>1 )
+    stop("non-unique uniprot 2 ensembl mapping")
+
+
+p20.lg2fc <- p20p
+names(p20.lg2fc) <- p2el[names(p20.lg2fc)]
+
+
+p20.pval <- p20pv
+names(p20.pval) <- p2el[names(p20.pval)]
 
 
 ## PROTEIN ABUNDANCES via Razor.protein.precursor.intensity
@@ -1215,9 +1320,9 @@ pint <- sub("\\[","", sub("\\]","", tmtf$Razor.protein.precursor.intensity))
 pint <- lapply(pint, function(x) as.numeric(unlist(strsplit(x, ","))))
 ## remove zeros and take unique value
 pint <- lapply(pint, function(x) unique(x[x!=0]))
-## there are still many entries with multiple values
-table(lengths(pint))
-pint <- unlist(lapply(pint, mean))
+## NOTE: there are still many entries with multiple values
+if ( interactive() ) table(lengths(pint))
+pint <- unlist(lapply(pint, median))
 
 ## MEDIAN of PROTEINS
 pint <- split(pint, tmtf$ensembl)
@@ -1225,7 +1330,8 @@ pint <- lapply(pint, function(x) x[!is.na(x)])
 
 pint <- lapply(pint, as.numeric)
 
-barplot(table(lengths(pint)))
+if ( interactive() )
+    barplot(table(lengths(pint)))
 
 ## TODO: analyze stats before just taking the median
 pint <- lapply(pint, median, na.rm=TRUE)
