@@ -325,6 +325,7 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
                 rngs$noncons._high <-  rngs$binding_high <- as.character(-10:10)
 
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
+rngs$"T:V" <- rngs$"T:V_PDAC" <- rngs$"T:V_others" <- as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$"KRAQ" <- as.character(-3:0)
 rngs$"x:[AG]" <- as.character(-3:1)
@@ -354,7 +355,16 @@ dir.create(tmp.path, showWarnings=FALSE)
 ##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ASN2)
 
 ### MANUAL INVESTIGATION OF T->V
-table(bdat$Datasets[classes[,"T:V"] & classes [,"MMxMM"]])
+
+if ( interactive() ) {
+
+    sum(classes[,"T:V"]) # 215 unique BP/SAAP with T:V
+    sum(classes[,"T:V"]& classes [,"MMxMM"]) # 128
+    table(bdat$Datasets[classes[,"T:V"] & classes [,"MMxMM"]])
+
+    ovl <- clusterCluster(classes[,"T:V"], classes[,"MMxMM"])
+    plotOverlaps(ovl, ylab="T:V", xlab="MMxMM")
+}
 
 
 i=which(colnames(classes)=="fromto_I:P")

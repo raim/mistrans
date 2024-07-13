@@ -114,28 +114,30 @@ Craas <- sapply(COD.SRT, function(cl)
 
 ## calculate unique SAAP/BP medians before
 ## taking codon median RAAS
-site <- split(ctmt$RAAS, ctmt$unique.site)
-site <- listProfile(site, y=ctmt$RAAS, use.test=use.test, min=3)
+## NOTE: THIS OVERRIDES the site table from init
+
+csite <- split(ctmt$RAAS, ctmt$unique.site)
+csite <- listProfile(csite, y=ctmt$RAAS, use.test=use.test, min=3)
 site.codons <- lapply(split(ctmt$aacodon,  ctmt$unique.site), unique)
 if ( length(table(lengths(site.codons)))!=1 )
     stop("multiple codons per protein site")
-site <- cbind(site, codon=unlist(site.codons))
+csite <- cbind(csite, codon=unlist(site.codons))
 
 ## median of site medians
 ## NOTE: correlation to codon frequency is lost
 ## when using the median of medians.
 Craas.site <- sapply(COD.SRT, function(cl)
-    log10(median(10^site$median[site$codon==cl])))
+    log10(median(10^csite$median[csite$codon==cl])))
 
 ## add columns for codon positions
-cpos <- strsplit(sub("[A-Z]-","",site$codon),"")
-site$pos1 <- unlist(lapply(cpos, function(x) x[1]))
-site$pos2 <- unlist(lapply(cpos, function(x) x[2]))
-site$pos3 <- unlist(lapply(cpos, function(x) x[3]))
+cpos <- strsplit(sub("[A-Z]-","",csite$codon),"")
+csite$pos1 <- unlist(lapply(cpos, function(x) x[1]))
+csite$pos2 <- unlist(lapply(cpos, function(x) x[2]))
+csite$pos3 <- unlist(lapply(cpos, function(x) x[3]))
 
 
 ## CODON FREQUENCIES at AAS
-lcodt <- table(site$codon)
+lcodt <- table(csite$codon)
 names(lcodt) <- sub(".*-","",names(lcodt))
 ## AAS codon frequencies per AA
 lcodl <- split(lcodt, GENETIC_CODE[names(lcodt)])
@@ -1120,9 +1122,9 @@ boxplot(ctmt$RAAS ~ ctmt$pos2)
 boxplot(ctmt$RAAS ~ ctmt$pos3)
 
 ## per unique site
-boxplot(site$median ~ site$pos1)
-boxplot(site$median ~ site$pos2)
-boxplot(site$median ~ site$pos3)
+boxplot(csite$median ~ csite$pos1)
+boxplot(csite$median ~ csite$pos2)
+boxplot(csite$median ~ csite$pos3)
 
 ### CODON CLASS
 ovd <- raasProfile(x=ctmt, id="unique.site", 

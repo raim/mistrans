@@ -1143,6 +1143,9 @@ bdat$Datasets <- datasets[paste(bdat$BP, bdat$SAAP)]
 
 tissues <- tmtf$TMT.Tissue
 tissues[tmtf$Dataset!="Healthy"] <- "cancer"
+
+tmtf$tissue <- tissues
+
 tissues <- split(tissues, paste(tmtf$BP, tmtf$SAAP))
 tissues <- lapply(tissues, unique)
 bdat$numTissues <-
@@ -1357,12 +1360,86 @@ pint <- unlist(pint)
 ##site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 sitl <- split(tmtf$RAAS, paste(tmtf$unique.site))
+asite <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## mod. column names and add protein and site info
+colnames(asite) <- paste0("RAAS.", colnames(asite))
+asite$ensembl <- sub("_.*", "", rownames(asite))
+asite$pos <- as.numeric(sub(".*_", "", rownames(asite)))
+
+## add gene names
+asite$name <- ens2nam [asite$ensembl]
+
+## add uniprot id
+asite$uniprot <- unlist(lapply(ens2u[asite$ensembl], paste, collapse=";"))
+
+## RAAS COLOR
+asite$RAAS.color <- num2col(asite$RAAS.median,
+                           limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
+
+## make sure its ordered
+## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
+asite <-asite[order(asite$ensembl, asite$pos),]
+
+
+## enumeration of sites within unique proteins
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(asite$ensembl)))
+nsites[is.na(nsites)] <- 1
+asite$n <- nsites
+
+
+## COLLECT DATA FOR SITES
+add.data <- c("name",
+              "codon", "fromto","Dataset","tissue",
+              "iupred3", "flDPnn", # disorder
+              "anchor2","DisoRDPbind", # disorder-binding
+              "MMSeq2") # sequence conservation
+for ( i in 1:length(add.data) ) {
+    
+    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
+    datl <- lapply(datl, function(x) x[x!=""])
+    if ( add.data[i]%in%c("fromto","Dataset","tissue") ) # multiple per site!
+        datl <- lapply(datl, function(x)
+            ifelse(length(x)==1, x, paste(x, collapse=";")))
+    datl <- unlist(datl)
+    if ( any(lengths(datl)>1) )
+        stop("all protein site data should be unique")
+    asite[[add.data[i]]] <- datl[rownames(asite)]
+}
+
+## add protein data, half-live, melting point, intensity, length
+asite$protein.length <- plen[asite$ensembl]
+asite$protein.halflife <- phlv[pnms[asite$ensembl]]
+asite$protein.meltingT <- pmlt[pnms[asite$ensembl]]
+asite$protein.intensity <- pint[asite$ensembl]
+
+if ( interactive() ) { ## test
+    plotCor(asite$iupred3, asite$RAAS.median)
+}
+
+## write-out unique site-specific RAAS stats with additional data
+## used for random forest and glm4 modeling
+asite.file <- file.path(out.path,"sites_raas_old.tsv")
+write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
+            row.names=FALSE, quote=FALSE, na="")
+
+
+#### UNIQUE SITE x AAS  TABLE
+## median raas per unique mane protein site, split by AAS type
+## plus protein level data since this table is used
+## externally for random forest et al. modeling
+
+##sitl <- split(tmtf$RAAS, paste(tmtf$ensembl, tmtf$pos))
+##site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+sitl <- split(tmtf$RAAS, paste(tmtf$unique.site, tmtf$fromto))
 site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 ## mod. column names and add protein and site info
 colnames(site) <- paste0("RAAS.", colnames(site))
 site$ensembl <- sub("_.*", "", rownames(site))
-site$pos <- as.numeric(sub(".*_", "", rownames(site)))
+site$pos <- as.numeric(sub(" .*", "",sub(".*_", "", rownames(site))))
+site$fromto <- sub(".*[0-9] ", "",rownames(site))
 
 ## add gene names
 site$name <- ens2nam [site$ensembl]
@@ -1387,14 +1464,16 @@ site$n <- nsites
 
 ## COLLECT DATA FOR SITES
 add.data <- c("name",
-              "codon", "fromto",
+              "codon", "fromto", "Dataset","tissue",
               "iupred3", "flDPnn", # disorder
               "anchor2","DisoRDPbind", # disorder-binding
               "MMSeq2") # sequence conservation
 for ( i in 1:length(add.data) ) {
-    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
+    
+    datl <- lapply(split(tmtf[[add.data[i]]],
+                         paste(tmtf$unique.site, tmtf$fromto)), unique)
     datl <- lapply(datl, function(x) x[x!=""])
-    if ( add.data[i]=="fromto" ) # multiple per site!
+    if ( add.data[i]%in%c("fromto","Dataset","tissue") ) # multiple per site!
         datl <- lapply(datl, function(x)
             ifelse(length(x)==1, x, paste(x, collapse=";")))
     datl <- unlist(datl)
@@ -1413,12 +1492,13 @@ if ( interactive() ) { ## test
     plotCor(site$iupred3, site$RAAS.median)
 }
 
-## write out bdat or hdat, with all RAAS values added
-
+## write-out unique site-specific RAAS stats with additional data
+## used for random forest and glm4 modeling
 site.file <- file.path(out.path,"sites_raas.tsv")
 write.table(file=site.file, x=cbind(ID=rownames(site),site),
             row.names=FALSE, quote=FALSE, na="")
 
+## TODO: also write out bdat or hdat, with all RAAS values added
 ### PLOT ALIGNMENT
 
 CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 

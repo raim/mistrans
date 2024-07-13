@@ -31,7 +31,7 @@ test <- site[-rnd,]
 
 ## NOTE: r=.55 when including + protein.halflife  + protein.meltingT` but
 ## only for about 500 proteins
-model <- randomForest(RAAS.median ~  MMSeq2 + iupred3 +  flDPnn + anchor2 + DisoRDPbind + fromto + codon + protein.length + protein.intensity,
+model <- randomForest(RAAS.median ~  MMSeq2 + iupred3 +  flDPnn + anchor2 + DisoRDPbind + fromto + codon + protein.length + protein.intensity + protein.halflife  + protein.meltingT,
                       data = train, na.action=na.roughfix)#na.omit)
   
 # Predict speed using the trained model
