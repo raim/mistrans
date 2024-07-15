@@ -716,24 +716,34 @@ dev.off()
 
 ## TODO:
 ## * why so many small distances BETWEEN BP,
+## * investigate overlapping BP; define group IDs
+table(stringr::str_count(asite$BP, ";"))
+# 396 sites with more than one BP
 
-filters <- list(all=1:nrow(bdat),
-                high=which(bdat$RAAS> -1))
+bsite <- asite
+bsite$RAAS <- bsite$RAAS.median
+bsite$BP <- bsite$BPl
+filters <- list(all=1:nrow(bsite),
+                high=which(bsite$RAAS.median> -1))
 fnms <- c(all="all", high="RAAS> 0.1")
 
-for ( i in length(filters):1 ) {
+## TODO: asite-based
+## * for asite-based distances, define BP groups,
+## * asite-based: why within-BP at very long distances?
 
-    nm <- names(filters)[i]
-    rdat <- bdat[filters[[i]],]
+for ( j in length(filters):1 ) {
+
+    nm <- names(filters)[j]
+    rdat <- bsite[filters[[j]],]
     
     dsts <- matrix(NA, nrow=nrow(rdat), ncol=nrow(rdat))
     same <- dsts ## same basepeptide filter
-    for ( i in 1:nrow(rdat) ) {
+    for ( k in 1:nrow(rdat) ) {
 
-        dst <- abs(rdat$pos[i] - rdat$pos)
-        dst[rdat$ensembl!=rdat$ensembl[i]] <- Inf
-        dsts[i,] <- dst
-        same[i,] <- rdat$BP[i] == rdat$BP
+        dst <- abs(rdat$pos[k] - rdat$pos)
+        dst[rdat$ensembl!=rdat$ensembl[k]] <- Inf
+        dsts[k,] <- dst
+        same[k,] <- rdat$BP[k] == rdat$BP
         
     }
     ## remove 0 distance
@@ -765,9 +775,10 @@ for ( i in length(filters):1 ) {
     dev.off()
 
     ## plots using above hists
-    plot(hst$mids+.5, log10(hst$counts), type="l", xlim=c(0,500),
-         xlab="pairwise distances between AAS",
-         ylab="count")
+    if ( interactive() )
+        plot(hst$mids+.5, log10(hst$counts), type="l", xlim=c(0,500),
+             xlab="pairwise distances between AAS",
+             ylab="count")
     
  
     plotdev(file.path(pfig.path,paste0("AAS_distances_hist_zoom1_",nm)),
@@ -809,7 +820,7 @@ for ( i in length(filters):1 ) {
     plotdev(file.path(pfig.path,paste0("AAS_distances_zoom2_",nm)),
             type=ftyp, res=300, width=3, height=3)
     par(mai=pmai, mgp=pmpg, tcl=-.25)
-    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,bpmx*2),
+    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,100),
          xlab="pairwise distances between AAS",
          ylab="count", col=NA)
 
@@ -833,7 +844,7 @@ for ( i in length(filters):1 ) {
     plotdev(file.path(pfig.path,paste0("AAS_distances_zoom3_",nm)),
             type=ftyp, res=300, width=3, height=3)
     par(mai=pmai, mgp=pmpg, tcl=-.25)
-    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,bpmx),
+    plot(hst$mids+.5, hst$counts, type="l", xlim=c(0,50),
          xlab="pairwise distances between AAS",
          ylab="count", col=NA)
     polygon(x=c(hst$mids+.5, rev(hst.same$mids)+.5),
@@ -851,10 +862,8 @@ for ( i in length(filters):1 ) {
         legend("topright", c("within-BP","between BP"), lty=1,
                col=c(2,4))
     }
-    abline(v=10)
+    ##abline(v=c(3.7,10), lty=2)
     dev.off()
-    
-
 }
 
 
@@ -865,15 +874,20 @@ for ( i in length(filters):1 ) {
 ## * concatenated proteins
 ## * concatenated BP.
 
-N <- 250
-
+N <- 150
+tosc <- N/1:(N/2) # periods for fourier of ACF
+freq <- c(0, 1/tosc)
+trng <- which(tosc>2 & tosc<12)
+     
 ## autocorrelation of of site median RAAS with concatenated protein sequences
 
 ## * initiate vector for concatenated proteins with median RAAS,
 ## * set actual RAAS values,
 ## * calculate auto-correlation.
 
-osite <-site[order(site$ensembl, site$pos),]
+## NOTE: asite, using really unique sites
+
+osite <-asite[order(site$ensembl, site$pos),]
 ositel <- split(osite, osite$ensembl)
 ##ositel <- ositel[unlist(lapply(ositel, nrow))>5]
 
@@ -882,21 +896,37 @@ ositel <- split(osite, osite$ensembl)
 
 ## expand each protein to full sequence vector
 ## initialized to NA (not: global median RAAS)
-##globalraas <- median(tmtf$RAAS, na.rm=TRUE)
+global.raas <- median(tmtf$RAAS, na.rm=TRUE)
+init.raas <- NA # global.raas # 
 araas <- lapply(ositel, function(x) {
-    aras <- rep(NA, plen[unique(x$ensembl)])
+    aras <- rep(init.raas, plen[unique(x$ensembl)])
     aras[x$pos] <- x$RAAS.median # TODO: max(abs(median-RAAS))
     aras
 })
 araas <- unlist(araas)
 
-## calculate autocorrelation
-acor <- rep(NA, N)
-for ( k in 1:N ) {
-    rng <- 1:(length(araas)-N)
-    acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
+if ( !is.na(init.raas) ) {
+    aacf <- acf(araas, lag.max=N, plot=FALSE)
+    acor <- aacf$acf[1:N+1]
+} else {
+    ## calculate autocorrelation
+    ## TODO: different handling of NA in R's acf
+    acor <- rep(NA, N)
+    for ( k in 1:N ) {
+        rng <- 1:(length(araas)-N)
+        acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
+    }
 }
-## TODO: different handling of NA in R's acf
+
+
+## FOURIER of ACF
+## TODO: fourier with correct period
+afft <- fft(acor)[1:(N/2+1)]
+dc <- afft[1]/N 
+aamp <- abs(afft[1:length(afft)])/N
+
+
+## compare to R's acf
 if ( interactive() ) {
 
     bcor <- acf(araas, lag.max=N, na.action = na.pass)
@@ -906,13 +936,7 @@ if ( interactive() ) {
     lines(acor, col=2)
     plotCor(acor, bcor$acf[1:N+1])
     
-    bfft <- fft(bcor$acf[1:N+1])
-    dc <- bfft[1]/N # TODO: compare with mean cor
-    plot(abs(bfft)/N, type="h")
 
-    afft <- fft(acor)
-    dc <- afft[1]/N # TODO: compare with mean cor
-    plot(abs(afft)/N, type="h")
 }
 
 
@@ -929,17 +953,16 @@ nraas <- unlist(nraas)
 nacf <- acf(nraas, lag.max=N, plot=FALSE)
 ncor <- nacf$acf[1:N+1]
 
+## FOURIER of ACF
 ## TODO: fourier with correct period
-if ( interactive() ) {
-    nfft <- fft(ncor)[1:(N/2)]
-    dc <- nfft[1]/N # TODO: compare with mean cor
-    tosc <- N/1:(N/2-1)
-    plot(tosc, abs(nfft[2:length(nfft)])/N, type="h", xlim=c(2,6))
-}
+nfft <- fft(ncor)[1:(N/2+1)]
+dc <- nfft[1]/N # TODO: compare with mean cor
+namp <- abs(nfft[1:length(nfft)])/N
+
 
 ### NOTE: R's acf is equivalent to manual pearson correlation
 ### but behaves differently with NAs
-if ( interactive() ) {
+if ( FALSE ) {
 
     ## calculate autocorrelation manually
     mcor <- rep(NA, N)
@@ -969,21 +992,82 @@ rraas <- unlist(rraas)
 racf <- acf(rraas, lag.max=N, plot=FALSE)
 rcor <- racf$acf[1:N+1]
 
-## plot auto-correlations
 
+## PLOT AUTO-CORRELATION AND DFT
 plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS")),
         type=ftyp, res=300, width=4, height=2)
 par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
 plot(1:N, acor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
 points(1:N, acor, cex=.25)
-abline(v=10)
+abline(h=aamp[1], col=2)
+abline(h=0, col=1)
 dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS_DFT_full")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(freq, aamp, type="h", 
+     xlab="AA frequency", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+lines(0, aamp[1], type="h",col=2)
+text(0, aamp[1], "mean: DC component", pos=4, col=2, xpd=TRUE)
+lines(1/tosc[1], aamp[2], type="h",col=4)
+text(1/tosc[1], aamp[2], "trend: 1 cycle", pos=4, col=4)
+lines(1/tosc[N/2], aamp[N/2+1], type="h",col=3)
+text(1/tosc[N/2], aamp[N/2+1], "noise: Nyquist freq.",
+     srt=90, pos=4, col=3, xpd=TRUE)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS_DFT")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+mxi <- which.max(aamp[trng+1])
+mxa <- max(aamp[trng+1])
+mxp <- tosc[trng][mxi]
+plot(tosc[trng], aamp[trng+1], type="h", 
+     ylim=c(0,mxa),
+     xlab="AA period", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+points(mxp, mxa, col=2)
+text(mxp, mxa, labels=round(mxp,2), font=2, col=2, xpd=TRUE, pos=4)
+dev.off()
+
 
 plotdev(file.path(pfig.path,paste0("autocorrelation_protein_frequency")),
         type=ftyp, res=300, width=4, height=2)
 par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
 plot(1:N, ncor, type="l", xlab="lag k", ylab=expression(C[frequency]))
 points(1:N, ncor, cex=.25)
+abline(h=namp[1], col=2)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_frequency_DFT_full")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(freq, namp, type="h", 
+     xlab="AA frequency", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+lines(0, namp[1], type="h",col=2)
+text(0, namp[1], "mean: DC component", pos=4, col=2, xpd=TRUE)
+lines(1/tosc[1], namp[2], type="h",col=4)
+text(1/tosc[1], namp[2], "trend: 1 cycle", pos=4, col=4)
+lines(1/tosc[N/2], namp[N/2+1], type="h",col=3)
+text(1/tosc[N/2], namp[N/2+1], "noise: Nyquist freq.",
+     srt=90, pos=4, col=3, xpd=TRUE)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_frequency_DFT")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+mxi <- which.max(namp[trng+1])
+mxa <- max(namp[trng+1])
+mxp <- tosc[trng][mxi]
+plot(tosc[trng], namp[trng+1], type="h", 
+     ylim=c(0,mxa),
+     xlab="AA period", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+points(mxp, mxa, col=2)
+text(mxp, mxa, labels=round(mxp,2), font=2, col=2, xpd=TRUE, pos=4)
 dev.off()
 
 plotdev(file.path(pfig.path,
@@ -995,74 +1079,6 @@ points(1:N, rcor, cex=.25)
 figlabel(expression(RAAS > 0.1), pos="topright", region="plot")
 dev.off()
 
-## AUTO-CORRELATION FOR CONCATENATED BASE PEPTIDES
-
-## split by BP + site in BP
-bpl <- split(tmtf$RAAS, paste(tmtf$BP, tmtf$site))
-bpe <- listProfile(bpl, y=tmtf$RAAS, use.test=use.test, min=3)
-
-## mod. column names and add protein and site info
-colnames(bpe) <- paste0("RAAS.", colnames(bpe))
-bpe$BP <- sub(" .*", "", rownames(bpe))
-bpe$site <- as.numeric(sub(".* ", "", rownames(bpe)))
-bpe$len <- nchar(bpe$BP)
-
-## ORDER by BP and position and split by BP
-obpe <- bpe[order(bpe$BP, bpe$site),]
-obpl <- split(obpe, obpe$BP)
-##ositel <- ositel[unlist(lapply(ositel, nrow))>5]
-
-
-## RAAS
-
-## expand each protein to full sequence vector
-## initialized to NA 
-araas <- lapply(obpl, function(x) {
-    aras <- rep(NA, unique(x$len))
-    aras[x$site] <- x$RAAS.median
-    aras
-})
-araas <- unlist(araas)
-
-## calculate autocorrelation
-acor <- rep(NA, N)
-for ( k in 1:N ) {
-    rng <- 1:(length(araas)-N)
-    acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
-}
-
-## MEASUREMENT FREQUENCY
-
-## expand each protein to full sequence vector
-## initialized to 0 and add RAAS counts
-nraas <- lapply(obpl, function(x) {
-    aras <- rep(0, unique(x$len))
-    aras[x$site] <- x$RAAS.n
-    aras
-})
-nraas <- unlist(nraas)
-
-## calculate autocorrelation
-nacf <- acf(nraas, lag.max=N, plot=FALSE)
-ncor <- nacf$acf[1:N+1]
-
-plotdev(file.path(pfig.path,paste0("autocorrelation_BP_RAAS")),
-            type=ftyp, res=300, width=4, height=2)
-par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
-plot(1:N, acor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
-points(1:N, acor, cex=.25)
-abline(v=10)
-dev.off()
-
-plotdev(file.path(pfig.path,paste0("autocorrelation_BP_frequency")),
-            type=ftyp, res=300, width=4, height=2)
-par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
-plot(1:N, ncor, type="l", xlab="lag k", ylab=expression(C[frequency]))
-points(1:N, ncor, cex=.25)
-abline(v=10)
-dev.off()
-
-## TODO: fourier of auto-correlation function
 
 
 ### COLLECT WINDOWS

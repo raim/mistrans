@@ -1393,12 +1393,12 @@ add.data <- c("name",
               "codon", "fromto","Dataset","tissue",
               "iupred3", "flDPnn", # disorder
               "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2") # sequence conservation
+              "MMSeq2", "BP","SAAP") # sequence conservation
 for ( i in 1:length(add.data) ) {
     
     datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
     datl <- lapply(datl, function(x) x[x!=""])
-    if ( add.data[i]%in%c("fromto","Dataset","tissue") ) # multiple per site!
+    if ( add.data[i]%in%c("fromto","Dataset","tissue","BP","SAAP") ) # multiple per site!
         datl <- lapply(datl, function(x)
             ifelse(length(x)==1, x, paste(x, collapse=";")))
     datl <- unlist(datl)
@@ -1406,6 +1406,11 @@ for ( i in 1:length(add.data) ) {
         stop("all protein site data should be unique")
     asite[[add.data[i]]] <- datl[rownames(asite)]
 }
+
+## get longest BP
+bpl <- strsplit(asite$BP, ";")
+bpl <- unlist(lapply(bpl, function(x) x[which.max(nchar(x))]))
+asite$BPl <- bpl
 
 ## add protein data, half-live, melting point, intensity, length
 asite$protein.length <- plen[asite$ensembl]
@@ -1419,7 +1424,7 @@ if ( interactive() ) { ## test
 
 ## write-out unique site-specific RAAS stats with additional data
 ## used for random forest and glm4 modeling
-asite.file <- file.path(out.path,"sites_raas_old.tsv")
+asite.file <- file.path(out.path,"sites_raas_unique.tsv")
 write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
             row.names=FALSE, quote=FALSE, na="")
 

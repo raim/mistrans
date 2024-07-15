@@ -161,14 +161,13 @@ dev.off()
 
 fmat <- matrix(NA, ncol=2, nrow=nrow(tmtf))
 ##fmat[,3] <- tmtf$Dataset
-fmat[,2] <- tmtf$Dataset
-fmat[,1] <- tmtf$Dataset
+fmat[,1] <- fmat[,2] <- tmtf$Dataset
 ##fmat[duplicated(tmtf$unique),2] <- "na"
-fmat[duplicated(paste(tmtf$BP,tmtf$SAAP)),1] <- "na"
+fmat[duplicated(paste(tmtf$BP,tmtf$SAAP)),2] <- "na"
 
 cnts <- apply(fmat, 2, table)
 cnts <- do.call(rbind,lapply(cnts, function(x) x[uds]))
-rownames(cnts) <- c("BP/SAAP", "#RAAS")
+rownames(cnts) <- c("#RAAS","BP/SAAP")
 if ( interactive() ) {
     barplot(cnts, beside=TRUE, legend=TRUE)
     
@@ -195,24 +194,47 @@ colnames(got) <- trms[colnames(got)]
 
 if ( FALSE ) {
     ## TODO: raas profile?
-    go.ovl <- raasProfile(x=tmtu, id="BP.SAAP", 
-                          rows=got[tmtu$gene,], cols="Dataset",
+    go.ovl <- raasProfile(x=tmtv, id="BP.SAAP", 
+                          rows=got[tmtv$gene,], cols="Dataset",
                           bg=TRUE, value=value, 
                           col.srt=uds,
                           use.test=use.test, do.plots=FALSE,
                           xlab=xl.raas,
                           verb=0)
+    go.ovl <- sortOverlaps(go.ovl, p.min=1e-5, cut=TRUE)
+    dotprofile(go.ovl, value="median")
 }
 
+
+### genes with T->V in PDAC
 gois <- unique(tvdat$gene)
 
-if ( FALSE )
-    gores <- gprofiler2::gost(query = gois, organism = "human")
+## TODO: proper GO analysis of T->V in PDAC
+if ( FALSE ) {
+    gores <- gprofiler2::gost(query = gois, organism = "hsapiens")
 
+    cls <- rep("T:V", length(gois))
+    names(cls) <- gois
+    ovll <- runGost(cls, organism="hsapiens", evcodes=FALSE, custom_bg=rownames(got))
+    
+    ovl <- sortOverlaps(ovll[["GO:CC"]], p.min=1e-5, cut=TRUE)
+    par(mai=c(.5,5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+    plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE)
+
+
+    ?clusterAnnotation
+}
+
+## only T->V
 gotv <- got[gois,]
 gotv <- gotv[, apply(gotv,2,sum)>0]
 
 sort(apply(gotv, 2, sum))
+
+## inspect genes with specific GO annotations
+pnms[g2p[names(which(gotv[,"cell adhesion"]))]]
+
+pnms[g2p[names(which(gotv[,"cytoskeleton"]))]]
 
 pnms[g2p[names(which(gotv[,"cellular amino acid metabolic process"]))]]
 
