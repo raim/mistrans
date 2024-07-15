@@ -502,22 +502,22 @@ hdat$sstruc <- ssrt[hdat$s4pred]
 hdat$sstruc[hdat$sstruc==""] <- "na"
 
 ## iupred3
-iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2))
+iupred3.bins <- cut(hdat$iupred3, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(iupred3.bins)
 hdat$iupred3.bins <- as.character(iupred3.bins)
 hdat$iupred3.bins[is.na(hdat$iupred3.bins)] <- "na"
 ## anchor2
-anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2))
+anchor2.bins <- cut(hdat$anchor2, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(anchor2.bins)
 hdat$anchor2.bins <- as.character(anchor2.bins)
 hdat$anchor2.bins[is.na(hdat$anchor2.bins)] <- "na"
 ## flDPnn - disordered
-flDPnn.bins <- cut(hdat$flDPnn, breaks=seq(0,1,.2))
+flDPnn.bins <- cut(hdat$flDPnn, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(flDPnn.bins)
 hdat$flDPnn.bins <- as.character(flDPnn.bins)
 hdat$flDPnn.bins[is.na(hdat$flDPnn.bins)] <- "na"
 ## DisoRDPbind - 
-DisoRDPbind.bins <- cut(hdat$DisoRDPbind, breaks=seq(0,1,.2))
+DisoRDPbind.bins <- cut(hdat$DisoRDPbind, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(DisoRDPbind.bins)
 hdat$DisoRDPbind.bins <- as.character(DisoRDPbind.bins)
 hdat$DisoRDPbind.bins[is.na(hdat$DisoRDPbind.bins)] <- "na"
@@ -525,17 +525,17 @@ hdat$DisoRDPbind.bins[is.na(hdat$DisoRDPbind.bins)] <- "na"
 mmseq2 <- hdat$MMSeq2
 mmseq2[mmseq2 <= 0] <- 1e-200
 mmseq2[mmseq2 > 5] <- 5
-MMSeq2.bins <- cut(mmseq2, breaks=seq(0,5,1))
+MMSeq2.bins <- cut(mmseq2, breaks=seq(0,5,1), include.lowest = TRUE)
 rsrt <- levels(MMSeq2.bins)
 hdat$MMSeq2.bins <- as.character(MMSeq2.bins)
 hdat$MMSeq2.bins[is.na(hdat$MMSeq2.bins)] <- "na"
 ## SCRIBER - binding
-SCRIBER.bins <- cut(hdat$SCRIBER, breaks=seq(0,1,.2))
+SCRIBER.bins <- cut(hdat$SCRIBER, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(SCRIBER.bins)
 hdat$SCRIBER.bins <- as.character(SCRIBER.bins)
 hdat$SCRIBER.bins[is.na(hdat$SCRIBER.bins)] <- "na"
 ## ASAquick - surface
-ASAquick.bins <- cut(hdat$ASAquick, breaks=seq(0,1,.2))
+ASAquick.bins <- cut(hdat$ASAquick, breaks=seq(0,1,.2), include.lowest = TRUE)
 rsrt <- levels(ASAquick.bins)
 hdat$ASAquick.bins <- as.character(ASAquick.bins)
 hdat$ASAquick.bins[is.na(hdat$ASAquick.bins)] <- "na"
@@ -543,7 +543,7 @@ hdat$ASAquick.bins[is.na(hdat$ASAquick.bins)] <- "na"
 ## protein length bins
 if ( interactive() ) hist(log10(hdat$len))
 hdat$loglen <- log10(hdat$len)
-loglen.bins <- cut(log10(hdat$len), breaks=seq(1.5,4,.5))
+loglen.bins <- cut(log10(hdat$len), breaks=seq(1.5,4,.5), include.lowest = TRUE)
 hdat$loglen.bins <- as.character(loglen.bins)
 
 ## by ranks
@@ -554,7 +554,8 @@ rank.mat <- matrix(NA, ncol=length(rank.vals), nrow=nrow(hdat))
 colnames(rank.mat) <- rank.vals
 for ( val in rank.vals ) {
     ranks <- rank(hdat[,val], na.last="keep")
-    rankbins <- as.character(cut(ranks/max(ranks,na.rm=TRUE), seq(0,1,.2)))
+    rankbins <- as.character(cut(ranks/max(ranks,na.rm=TRUE), seq(0,1,.2),
+                                 include.lowest = TRUE))
     rankbins[is.na(rankbins)] <- "na"
     rank.mat[,val] <- rankbins
     plotdev(file.path(fig.path, paste0("rankbins_",val)),
@@ -563,7 +564,7 @@ for ( val in rank.vals ) {
     boxplot(hdat[,val] ~ rankbins, ylab=val, las=2, xlab="")
     dev.off()
 }
-ranksrt <- c("na",levels(cut(1:10/10, seq(0,1,.2))))
+ranksrt <- c("na",levels(cut(1:10/10, seq(0,1,.2), include.lowest = TRUE)))
 colnames(rank.mat) <- paste0(colnames(rank.mat),".rank")
 hdat <- cbind(hdat, rank.mat)
 
@@ -675,7 +676,7 @@ tmtf$extracellular <- hdat$extracellular[idx]
 ## AAS position in peptide
 tmtf$site <- hdat$site[idx]
 tmtf$rsite <- hdat$site[idx]/nchar(hdat$BP)[idx]
-tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2))
+tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2), include.lowest = TRUE)
 
 ### CHOOSE DATASETS
 if ( healthy ) {
@@ -701,7 +702,7 @@ if ( healthy ) {
     tmtf$unique <- usaap
     tmtf$RAAS.median <- raas.median[usaap]
     
-    raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3))
+    raas.bins <- cut(tmtf$RAAS.median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
     raas.srt <- levels(raas.bins)
     tmtf$raas.bins <- as.character(raas.bins)
     tmtf$raas.bins[is.na(tmtf$raas.bins)] <- "na"

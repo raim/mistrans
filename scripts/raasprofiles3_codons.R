@@ -174,10 +174,10 @@ names(codr) <- sub("\\.", "-", names(codr))
 ctmt$codon.rank <- as.character(codr[ctmt$aacodon])
     
 ## codon frequency bins
-ctmt$codon.bins <- cut(Fbg[ctmt$aacodon], seq(0,1,.1))
+ctmt$codon.bins <- cut(Fbg[ctmt$aacodon], seq(0,1,.1), include.lowest = TRUE)
 
 ## TODO: do by 2|3, 4 or 6 codons
-cod.bins <- cut(Fbg[ctmt$aacodon], seq(0,1,.1))
+cod.bins <- cut(Fbg[ctmt$aacodon], seq(0,1,.1), include.lowest = TRUE)
 ncod <- unlist(lapply(CODL, length))
 
 
@@ -366,7 +366,7 @@ for ( ds in auds ) {
     cdsrt <- cdsrt[cdsrt%in%colnames(ovw$p.value)]
     
     ## codon frequency bins
-    codon.bins <- cut(Faas.ds[dtmt$aacodon], seq(0,1,.2))
+    codon.bins <- cut(Faas.ds[dtmt$aacodon], seq(0,1,.2), include.lowest = TRUE)
 
     ## codon class lines in plots
     cdn.cnt <- table(sub("-.*","",colnames(ovw$p.value)))[aap.srt]

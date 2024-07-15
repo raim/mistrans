@@ -895,29 +895,21 @@ ositel <- split(osite, osite$ensembl)
 ## RAAS
 
 ## expand each protein to full sequence vector
-## initialized to NA (not: global median RAAS)
-global.raas <- median(tmtf$RAAS, na.rm=TRUE)
-init.raas <- NA # global.raas # 
+## initialized to NA 
 araas <- lapply(ositel, function(x) {
-    aras <- rep(init.raas, plen[unique(x$ensembl)])
+    aras <- rep(NA, plen[unique(x$ensembl)])
     aras[x$pos] <- x$RAAS.median # TODO: max(abs(median-RAAS))
     aras
 })
 araas <- unlist(araas)
 
-if ( !is.na(init.raas) ) {
-    aacf <- acf(araas, lag.max=N, plot=FALSE)
-    acor <- aacf$acf[1:N+1]
-} else {
-    ## calculate autocorrelation
-    ## TODO: different handling of NA in R's acf
-    acor <- rep(NA, N)
-    for ( k in 1:N ) {
-        rng <- 1:(length(araas)-N)
-        acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
-    }
+## MANUAL autocorrelation due to NA
+## TODO: different handling of NA in R's acf
+acor <- rep(NA, N)
+for ( k in 1:N ) {
+    rng <- 1:(length(araas)-N)
+    acor[k] <- cor(araas[rng], araas[rng+k], use="pairwise.complete")
 }
-
 
 ## FOURIER of ACF
 ## TODO: fourier with correct period
@@ -938,6 +930,28 @@ if ( interactive() ) {
     
 
 }
+
+## RAAS initialized to global median
+
+## expand each protein to full sequence vector
+## initialized to global median RAAS
+global.raas <-  median(tmtf$RAAS, na.rm=TRUE)
+init.raas <- global.raas # 
+rraas <- lapply(ositel, function(x) {
+    aras <- rep(init.raas, plen[unique(x$ensembl)])
+    aras[x$pos] <- x$RAAS.median # TODO: max(abs(median-RAAS))
+    aras
+})
+rraas <- unlist(rraas)
+
+racf <- acf(rraas, lag.max=N, plot=FALSE)
+rcor <- racf$acf[1:N+1]
+
+## FOURIER of ACF
+## TODO: fourier with correct period
+rfft <- fft(rcor)[1:(N/2+1)]
+dc <- rfft[1]/N 
+ramp <- abs(rfft[1:length(rfft)])/N
 
 
 ## MEASUREMENT FREQUENCY
@@ -978,21 +992,6 @@ if ( FALSE ) {
 
 
 
-## high RAAS measurement frequency
-rsite <- osite[osite$RAAS.median> .1,]
-rsitel <- split(rsite, rsite$ensembl)
-rraas <- lapply(rsitel, function(x) {
-    aras <- rep(0, plen[unique(x$ensembl)])
-    aras[x$pos] <- x$RAAS.n
-    aras
-})
-rraas <- unlist(rraas)
-
-## calculate autocorrelation
-racf <- acf(rraas, lag.max=N, plot=FALSE)
-rcor <- racf$acf[1:N+1]
-
-
 ## PLOT AUTO-CORRELATION AND DFT
 plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS")),
         type=ftyp, res=300, width=4, height=2)
@@ -1001,6 +1000,7 @@ plot(1:N, acor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
 points(1:N, acor, cex=.25)
 abline(h=aamp[1], col=2)
 abline(h=0, col=1)
+figlabel(paste("NA sites: NA"), pos="topright", region="plot") 
 dev.off()
 
 plotdev(file.path(pfig.path,paste0("autocorrelation_protein_RAAS_DFT_full")),
@@ -1030,9 +1030,51 @@ plot(tosc[trng], aamp[trng+1], type="h",
 axis(1);axis(2)
 points(mxp, mxa, col=2)
 text(mxp, mxa, labels=round(mxp,2), font=2, col=2, xpd=TRUE, pos=4)
+figlabel(paste("NA sites: NA"), pos="topright", region="plot") 
 dev.off()
 
+## RAAS autocor, init. to global median RAAS
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_globalRAAS")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(1:N, rcor, type="l", xlab="lag k", ylab=expression(C[RAAS]))
+points(1:N, rcor, cex=.25)
+abline(h=ramp[1], col=2)
+abline(h=0, col=1)
+figlabel(paste("NA sites:", round(init.raas,1)), pos="topright", region="plot") 
+dev.off()
 
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_globalRAAS_DFT_full")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+plot(freq, ramp, type="h", 
+     xlab="AA frequency", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+lines(0, ramp[1], type="h",col=2)
+text(0, ramp[1], "mean: DC component", pos=4, col=2, xpd=TRUE)
+lines(1/tosc[1], ramp[2], type="h",col=4)
+text(1/tosc[1], ramp[2], "trend: 1 cycle", pos=4, col=4)
+lines(1/tosc[N/2], ramp[N/2+1], type="h",col=3)
+text(1/tosc[N/2], ramp[N/2+1], "noise: Nyquist freq.",
+     srt=90, pos=4, col=3, xpd=TRUE)
+dev.off()
+
+plotdev(file.path(pfig.path,paste0("autocorrelation_protein_globalRAAS_DFT")),
+        type=ftyp, res=300, width=4, height=2)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+mxi <- which.max(ramp[trng+1])
+mxa <- max(ramp[trng+1])
+mxp <- tosc[trng][mxi]
+plot(tosc[trng], ramp[trng+1], type="h", 
+     ylim=c(0,mxa),
+     xlab="AA period", ylab="amplitude", axes=FALSE)
+axis(1);axis(2)
+points(mxp, mxa, col=2)
+text(mxp, mxa, labels=round(mxp,2), font=2, col=2, xpd=TRUE, pos=4)
+figlabel(paste("NA sites:", round(init.raas,1)), pos="topright", region="plot") 
+dev.off()
+
+## AAS measurement frequency
 plotdev(file.path(pfig.path,paste0("autocorrelation_protein_frequency")),
         type=ftyp, res=300, width=4, height=2)
 par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)

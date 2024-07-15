@@ -240,6 +240,9 @@ classes <- cbind(
     CCxPP=CCxPP,
     xP=xP,
     MMxMM=MMxMM,
+    MMxMM_PDAC=MMxMM & bdat$Datasets=="PDAC",
+    MMxMM_others=MMxMM & bdat$Datasets!="PDAC",
+    "MM[T:V]MM"= ,
     MxM=MxM,
     "MM[ST]MM"=Mphos,
     WWxWW=WWxWW,
@@ -325,6 +328,7 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
                 rngs$noncons._high <-  rngs$binding_high <- as.character(-10:10)
 
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
+rngs$"MMxMM_PDAC" <- rngs$"MMxMM_others" <- as.character(-2:2)
 rngs$"T:V" <- rngs$"T:V_PDAC" <- rngs$"T:V_others" <- as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$"KRAQ" <- as.character(-3:0)
@@ -364,6 +368,42 @@ if ( interactive() ) {
 
     ovl <- clusterCluster(classes[,"T:V"], classes[,"MMxMM"])
     plotOverlaps(ovl, ylab="T:V", xlab="MMxMM")
+
+    mclasses <- rep("other", nrow(classes))
+    mclasses[classes[,"MMxMM"]] <- "MMxMM"
+    mclasses[classes[,"T:V"]] <- "T:V"
+    mclasses[classes[,"MMxMM"] & classes[,"T:V"]] <- "MMxMM & T:V"
+    msrt <- c("MMxMM","T:V","MMxMM & T:V","other")
+
+
+    dsets <- bdat$Datasets
+    ##dsets[dsets=="Healthy"] <- site$Tissues[dsets=="Healthy"]
+    nsets <- stringr::str_count(dsets, ";")+1
+    ##dsets[nsets > 1] <- ">1"
+    ##dsets[nsets > 2] <- ">2"
+    dsets[nsets > 3] <- ">3"
+    ds.srt <- unique(dsets)
+    ds.srt <- ds.srt[order(nchar(ds.srt))]
+
+    ##ovl <- clusterCluster(mclasses, bdat$Datasets, cl1.srt=msrt)
+
+    ovl <- clusterAnnotation(cls=dsets,
+                             data=classes[,c("MMxMM",
+                                        "T:V")], cls.srt=ds.srt)
+
+    ds.cut <- colnames(ovl$overlap)[apply(ovl$overlap,2,sum)>0]
+    ovl <- sortOverlaps(ovl, axis=1, srt=ds.cut)
+    
+    omai <- c(2,1.5,.6,.6)
+    nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
+    nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
+
+    plotdev(file.path(mfig.path,paste0("MMxMM_dissection")),
+            height=nh, width=nw, res=300,  type=ftyp)
+    par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+    plotOverlaps(ovl, ylab=NA, xlab=NA, show.total=TRUE)
+    figlabel("count of unique BP/SAAP in Datasets", pos="bottom", font=2, cex=1.2)
+    dev.off()
 }
 
 
@@ -815,7 +855,7 @@ if ( interactive() ) {
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
 }
 
-rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3))
+rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
 rsrt <- levels(rbins)
 rbins <- as.character(rbins)
 names(rbins) <- rownames(CLS)
@@ -839,7 +879,7 @@ dev.off()
 csrt <- as.character(CLS[,"noncons."])
 csrt[is.na(csrt)] <- "na."
 
-rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3))
+rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
 rsrt <- levels(rbins)
 rbins <- as.character(rbins)
 names(rbins) <- rownames(CLS)
