@@ -1408,10 +1408,28 @@ for ( i in 1:length(add.data) ) {
     asite[[add.data[i]]] <- datl[rownames(asite)]
 }
 
+## NOTE: where we require BP and SAAP we take the longes (but store all)
 ## get longest BP
 bpl <- strsplit(asite$BP, ";")
 bpl <- unlist(lapply(bpl, function(x) x[which.max(nchar(x))]))
-asite$BPl <- bpl
+asite$all.BP <- asite$BP
+asite$BP <- bpl
+
+## get longest SAAP
+saapl <- strsplit(asite$SAAP, ";")
+saapl <- unlist(lapply(saapl, function(x) x[which.max(nchar(x))]))
+asite$all.SAAP <- asite$SAAP
+asite$SAAP <- saapl
+
+## get AA context for longest BP/SAAP pair
+aal <- lapply(split(bdat$AA, paste(bdat$BP,bdat$SAAP)),unique)
+if ( length(table(lengths(aal)))!=1 )
+    stop("non-unique AA context per BP/SAAP pair")
+aal <- lapply(split(bdat$AA, paste(bdat$BP,bdat$SAAP)),unique)
+if ( any(!paste(asite$BP, asite$SAAP)%in%names(aal)) )
+    warning("AA context not available for selected site BP/SAAP pair")
+aal <- unlist(aal)
+asite$AA <- aal[paste(asite$BP, asite$SAAP)]
 
 ## add protein data, half-live, melting point, intensity, length
 asite$protein.length <- plen[asite$ensembl]

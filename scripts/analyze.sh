@@ -271,6 +271,9 @@ cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_WWxWW.pdf $results/
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.pdf $results/motifs/
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.pdf $results/motifs/
 
+##cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_fromto_*_encoded.pdf $results/motifs/
+pandoc ${THIS}/scripts/results_motifs.md -t beamer -o $results/motifs/Extended_Data_Figure_motifs.pdf
+
 mkdir $results/structure
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.pdf $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.pdf $results/structure/

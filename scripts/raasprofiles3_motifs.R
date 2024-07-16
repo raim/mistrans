@@ -34,17 +34,26 @@ mp.txt <- p.txt
 ## motif p-value cutoffs *, **, ***
 psig <- 10^-c(3,5,10)
 
+## remove identical sequences before motif plots
+remove.duplicated.sequences <- TRUE
+
 #### GENERAL SEQUENCE LOGOS
 
+### remove duplicate sites!
+## TODO: is there a cleaner way to do this? here we randomly loose
+## 
+cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
+
+
 ### AA MATRIX
-aam <- do.call(rbind, strsplit(bdat$AA,""))
+aam <- do.call(rbind, strsplit(cdat$AA,""))
 nc <- (ncol(aam)-1)/2
 colnames(aam) <- -nc:nc
-rownames(aam) <- paste0(bdat$BP,"_", bdat$SAAP)
+rownames(aam) <- paste0(cdat$BP,"_", cdat$SAAP)
 
 ## AA MATRIX WITH AAS
 aas <- aam
-aas[,"0"] <- bdat$to
+aas[,"0"] <- cdat$to
 
 ## TODO: AAS_overlap for RAAS BINS
 
@@ -90,7 +99,7 @@ dev.off()
 
 source("~/programs/segmenTools/R/clusterTools.R")
 
-ovl <- aaProfile(aam[bdat$median> -1,as.character(-7:7)], abc=AAT)
+ovl <- aaProfile(aam[cdat$median> -1,as.character(-7:7)], abc=AAT)
 ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
@@ -114,7 +123,7 @@ figlabel("RAAS > 0.1", pos="bottomleft")
 dev.off()
 
 ## MAX RAAS  log10(RAAS)>0.5
-ovl <- aaProfile(aam[bdat$median>0,as.character(-7:7)], abc=AAT)
+ovl <- aaProfile(aam[cdat$median>0,as.character(-7:7)], abc=AAT)
 ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
@@ -151,11 +160,11 @@ do.all.motifs <-  FALSE # TRUE #
 
 aatight <- apply(aam[,as.character(-2:2)], 1, paste, collapse="")
 
-kraq <- rep(FALSE, nrow(bdat))
+kraq <- rep(FALSE, nrow(cdat))
 kraq[grep("[KR]AQ",aatight)] <- TRUE
-krgq <- rep(FALSE, nrow(bdat))
+krgq <- rep(FALSE, nrow(cdat))
 krgq[grep("[KR]GQ",aatight)] <- TRUE
-krxq <- rep(FALSE, nrow(bdat))
+krxq <- rep(FALSE, nrow(cdat))
 krxq[grep("[KR][A-Z]Q",aatight)] <- TRUE
 
 
@@ -172,8 +181,8 @@ GxG <- apply(aam[,CTXTT], 1, function(x) any(x%in%c("G")))
 
 ## subclasses
 
-Wbranch <- WWxWW & bdat$from%in%c("I","L","V")
-Mphos <- MMxMM & bdat$from%in%c("S","T")
+Wbranch <- WWxWW & cdat$from%in%c("I","L","V")
+Mphos <- MMxMM & cdat$from%in%c("S","T")
 
 xP <- aam[,"1"] == "P"
 
@@ -182,54 +191,54 @@ CCxPP <- apply(aam[,c("-1","-2")], 1, function(x) any(x%in%c("C"))) &
     apply(aam[,c("1","2")], 1, function(x) any(x%in%c("P")))
 
 ## A in position 1 of BP
-bpA1 <- unlist(lapply(strsplit(bdat$AA, ""), function(x) x[1]=="A"))
-bpQ2 <- unlist(lapply(strsplit(bdat$AA, ""), function(x) x[2]=="Q"))
+bpA1 <- unlist(lapply(strsplit(cdat$AA, ""), function(x) x[1]=="A"))
+bpQ2 <- unlist(lapply(strsplit(cdat$AA, ""), function(x) x[2]=="Q"))
 
 aaall <- apply(aam, 1, paste, collapse="")
-kraqa <- rep(FALSE, nrow(bdat))
+kraqa <- rep(FALSE, nrow(cdat))
 kraqa[grep("[KR]AQ",aaall)] <- TRUE
 
 ## Mid-Peptide (non N/C-terminal)
 ## TODO: CHECK THIS SELECTION
 
 MIDPEP <- 3
-nt <- bdat$site
-ct <- nchar(bdat$BP)-bdat$site +1
+nt <- cdat$site
+ct <- nchar(cdat$BP)-cdat$site +1
 ## fuse central AAS
 nt[nt>MIDPEP] <- ct[ct>MIDPEP] <- MIDPEP+1
 at <- paste0("N",nt)
 at[ct<nt] <- paste0("C",ct[ct<nt])
 
 enmpc <- c("E","N","M","P","C")
-ENM <- bdat$from%in%enmpc | bdat$to%in%enmpc 
+ENM <- cdat$from%in%enmpc | cdat$to%in%enmpc 
 
 
 classes <- cbind(
-    "Q:x"=bdat$from=="Q",
-    "Q:G"=bdat$fromto=="Q:G",
-    "Q:A"=bdat$fromto=="Q:A",
+    "Q:x"=cdat$from=="Q",
+    "Q:G"=cdat$fromto=="Q:G",
+    "Q:A"=cdat$fromto=="Q:A",
     KRAQ_d=kraq,
     KRGQ=krgq,
     KRxQ=krxq,
     KRAQ_all=kraqa,
-    KRAQ_o=kraq & ! bdat$from%in%c("Q"),
+    KRAQ_o=kraq & ! cdat$from%in%c("Q"),
     bpA1=bpA1,
     bpQ2=bpQ2,
     bpAQ=bpQ2 & bpA1,
     "[KR]n-3"=apply(aam[,as.character(-3:-1)], 1,
              function(x) any(x%in%c("K","R"))),
-    n1=bdat$site%in%1,
-    n2=bdat$site%in%2,
-    n3=bdat$site%in%3,
-    n13=bdat$site%in%1:3,
-    "A:x"=bdat$from=="A",
-    "x:Gn1"= bdat$to=="G"& bdat$site%in%1,
-    "A:xn1"= bdat$from=="A"& bdat$site%in%1,
-    "[AG]:[AG]n1"= bdat$fromto%in%c("A:G","G:A")& bdat$site%in%1,
-    "x:[AG]n1"=bdat$to%in%c("G","A") & bdat$site%in%1,
-    "x:[AG]n2"=bdat$to%in%c("G","A") & bdat$site%in%2:3,
-    "KRAQ"=bdat$to%in%c("G","A") & bdat$site%in%1:3,
-    "x:[AG]"  =bdat$to%in%c("G","A"),
+    n1=cdat$site%in%1,
+    n2=cdat$site%in%2,
+    n3=cdat$site%in%3,
+    n13=cdat$site%in%1:3,
+    "A:x"=cdat$from=="A",
+    "x:Gn1"= cdat$to=="G"& cdat$site%in%1,
+    "A:xn1"= cdat$from=="A"& cdat$site%in%1,
+    "[AG]:[AG]n1"= cdat$fromto%in%c("A:G","G:A")& cdat$site%in%1,
+    "x:[AG]n1"=cdat$to%in%c("G","A") & cdat$site%in%1,
+    "x:[AG]n2"=cdat$to%in%c("G","A") & cdat$site%in%2:3,
+    "KRAQ"=cdat$to%in%c("G","A") & cdat$site%in%1:3,
+    "x:[AG]"  =cdat$to%in%c("G","A"),
 
     center= at==paste0("N",MIDPEP),
     ENM= ENM, 
@@ -240,45 +249,45 @@ classes <- cbind(
     CCxPP=CCxPP,
     xP=xP,
     MMxMM=MMxMM,
-    MMxMM_PDAC=MMxMM & bdat$Datasets=="PDAC",
-    MMxMM_others=MMxMM & bdat$Datasets!="PDAC",
-    "MM[T:V]MM"= ,
+    MMxMM_PDAC=MMxMM & cdat$Datasets=="PDAC",
+    MMxMM_others=MMxMM & cdat$Datasets!="PDAC",
+    "MM[T:V]MM"=MMxMM  &  cdat$fromto=="T:V",
     MxM=MxM,
     "MM[ST]MM"=Mphos,
     WWxWW=WWxWW,
     WxW=WxW,
     "WW[ILV]WW"=Wbranch,
-    "[ILV]:x"=bdat$from%in%c("I","L","V"),
+    "[ILV]:x"=cdat$from%in%c("I","L","V"),
     GGxGG=GGxGG,
     GxG=GxG,
-    "W:x"=bdat$from=="W",
+    "W:x"=cdat$from=="W",
 
-    "T:V"=bdat$fromto=="T:V",
-    "T:V_PDAC"=bdat$fromto=="T:V" & bdat$Datasets=="PDAC",
-    "T:V_others"=bdat$fromto=="T:V" & bdat$Datasets!="PDAC",
+    "T:V"=cdat$fromto=="T:V",
+    "T:V_PDAC"=cdat$fromto=="T:V" & cdat$Datasets=="PDAC",
+    "T:V_others"=cdat$fromto=="T:V" & cdat$Datasets!="PDAC",
 
     QNrich= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("Q","N")))>2,
     Acidic= apply(aam[,as.character(c(-6:-1,1:6))], 1,
                function(x) sum(x%in%c("E","D")))>2,
 
-    disord.  =bdat$iupred3 > .6,
-    disord._high  =bdat$iupred3 > .6 & bdat$median > -1,
-    binding  =bdat$DisoRDPbind > .6,
-    binding_high  =bdat$DisoRDPbind > .6 & bdat$median > -1,
-    noncons.  =bdat$MMSeq2 < 1,
-    noncons._high  =bdat$MMSeq2 < 1 & bdat$median > -1,
+    disord.  =cdat$iupred3 > .6,
+    disord._high  =cdat$iupred3 > .6 & cdat$median > -1,
+    binding  =cdat$DisoRDPbind > .6,
+    binding_high  =cdat$DisoRDPbind > .6 & cdat$median > -1,
+    noncons.  =cdat$MMSeq2 < 1,
+    noncons._high  =cdat$MMSeq2 < 1 & cdat$median > -1,
 
-    short=bdat$len <= 1000,
-    short_high=bdat$len <= 1000 & bdat$median > -1,
-    long=bdat$len > 1000,
-    longlow=bdat$len > 1000 & bdat$median <= -.5,
-    longhigh=bdat$len > 1000 & bdat$median > -.5,
-    longlow1=bdat$len > 1000 & bdat$median <= -1,
-    longhigh1=bdat$len > 1000 & bdat$median > -1,
-    max=bdat$median > 0,
-    high=bdat$median > -1,
-    low=bdat$median < -3)
+    short=cdat$len <= 1000,
+    short_high=cdat$len <= 1000 & cdat$median > -1,
+    long=cdat$len > 1000,
+    longlow=cdat$len > 1000 & cdat$median <= -.5,
+    longhigh=cdat$len > 1000 & cdat$median > -.5,
+    longlow1=cdat$len > 1000 & cdat$median <= -1,
+    longhigh1=cdat$len > 1000 & cdat$median > -1,
+    max=cdat$median > 0,
+    high=cdat$median > -1,
+    low=cdat$median < -3)
 
 ## NA values in filters
 classes[is.na(classes)] <- FALSE
@@ -288,25 +297,25 @@ classes[is.na(classes)] <- FALSE
 selected <- colnames(classes)
 
 
-fts <- unique(bdat$fromto)
+fts <- unique(cdat$fromto)
 ftcls <- matrix(NA, ncol=length(fts), nrow=nrow(aam))
 colnames(ftcls) <-  paste0("fromto_",fts)
 for ( i in seq_along(fts) ) 
-    ftcls[,i] <- bdat$fromto==fts[i]
+    ftcls[,i] <- cdat$fromto==fts[i]
 if ( !interactive() | do.all.motifs ) classes <- cbind(classes, ftcls)
 
-frm <- unique(bdat$from)
+frm <- unique(cdat$from)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("from_",frm)
 for ( i in seq_along(frm) ) 
-    ftcls[,i] <- bdat$from==frm[i]
+    ftcls[,i] <- cdat$from==frm[i]
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
-frm <- unique(bdat$to)
+frm <- unique(cdat$to)
 ftcls <- matrix(NA, ncol=length(frm), nrow=nrow(aam))
 colnames(ftcls) <- paste0("to_",frm)
 for ( i in seq_along(frm) ) 
-    ftcls[,i] <- bdat$to==frm[i]
+    ftcls[,i] <- cdat$to==frm[i]
 if ( !interactive() | do.all.motifs  ) classes <- cbind(classes, ftcls)
 
 cols <- as.character(c(-3:3))
@@ -328,7 +337,7 @@ rngs$Acidic <- rngs$long <- rngs$QNrich <- rngs$High <-
                 rngs$noncons._high <-  rngs$binding_high <- as.character(-10:10)
 
 rngs$MMxMM <- rngs$WWxWW <- rngs$CCxCC <- rngs$CCxPP <-as.character(-2:2)
-rngs$"MMxMM_PDAC" <- rngs$"MMxMM_others" <- as.character(-2:2)
+rngs$"MM[T:V]MM" <- rngs$"MMxMM_PDAC" <- rngs$"MMxMM_others" <- as.character(-2:2)
 rngs$"T:V" <- rngs$"T:V_PDAC" <- rngs$"T:V_others" <- as.character(-2:2)
 rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$"KRAQ" <- as.character(-3:0)
@@ -364,7 +373,7 @@ if ( interactive() ) {
 
     sum(classes[,"T:V"]) # 215 unique BP/SAAP with T:V
     sum(classes[,"T:V"]& classes [,"MMxMM"]) # 128
-    table(bdat$Datasets[classes[,"T:V"] & classes [,"MMxMM"]])
+    table(cdat$Datasets[classes[,"T:V"] & classes [,"MMxMM"]])
 
     ovl <- clusterCluster(classes[,"T:V"], classes[,"MMxMM"])
     plotOverlaps(ovl, ylab="T:V", xlab="MMxMM")
@@ -376,7 +385,7 @@ if ( interactive() ) {
     msrt <- c("MMxMM","T:V","MMxMM & T:V","other")
 
 
-    dsets <- bdat$Datasets
+    dsets <- cdat$Datasets
     ##dsets[dsets=="Healthy"] <- site$Tissues[dsets=="Healthy"]
     nsets <- stringr::str_count(dsets, ";")+1
     ##dsets[nsets > 1] <- ">1"
@@ -385,7 +394,7 @@ if ( interactive() ) {
     ds.srt <- unique(dsets)
     ds.srt <- ds.srt[order(nchar(ds.srt))]
 
-    ##ovl <- clusterCluster(mclasses, bdat$Datasets, cl1.srt=msrt)
+    ##ovl <- clusterCluster(mclasses, cdat$Datasets, cl1.srt=msrt)
 
     ovl <- clusterAnnotation(cls=dsets,
                              data=classes[,c("MMxMM",
@@ -408,6 +417,7 @@ if ( interactive() ) {
 
 
 i=which(colnames(classes)=="fromto_I:P")
+i=which(colnames(classes)=="KRAQ")
 
 for ( i in 1:ncol(classes) ) {
 
@@ -425,19 +435,31 @@ for ( i in 1:ncol(classes) ) {
         tmp.path <- file.path(mfig.path, "selected")
     
     if ( interactive() )
-        boxplot(bdat$median ~ filt)
+        boxplot(cdat$median ~ filt)
 
     
 
     ## PWM ENCODED
     ## position weight matrices and diffLogo
-    tmp <- aam[ filt,cols,drop=FALSE]
-    rownames(tmp) <- NULL
-    pfm1 <- getPFM(aam[ filt,cols,drop=FALSE])
-    pfm2 <- getPFM(aam[!filt,cols,drop=FALSE])
 
-    n1 <- sum(filt)
-    n2 <- sum(!filt)
+    aam1 <- aam[ filt,,drop=FALSE]
+    aam2 <- aam[!filt,,drop=FALSE]
+
+    if ( remove.duplicated.sequences ) {
+        aam1 <- aam1[!duplicated(apply(aam1,1,paste,collapse="")),]
+        aam2 <- aam2[!duplicated(apply(aam2,1,paste,collapse="")),]
+    }
+
+    ## filter tight context
+    aam1 <- aam1[,cols]
+    aam2 <- aam2[,cols]
+
+    pfm1 <- getPFM(aam1)
+    pfm2 <- getPFM(aam2)
+
+    n1 <- nrow(aam1)
+    n2 <- nrow(aam2)
+    
     dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
     dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
 
@@ -450,11 +472,24 @@ for ( i in 1:ncol(classes) ) {
 
     ## PWM INCORPORATED
     ## position weight matrices and diffLogo
-    pfn1 <- getPFM(aas[ filt,cols,drop=FALSE])
-    pfn2 <- getPFM(aas[!filt,cols,drop=FALSE])
-    n1 <- sum(filt)
-    n2 <- sum(!filt)
+    aas1 <- aas[ filt,,drop=FALSE]
+    aas2 <- aas[!filt,,drop=FALSE]
 
+    if ( remove.duplicated.sequences ) {
+        aas1 <- aas1[!duplicated(apply(aas1,1,paste,collapse="")),]
+        aas2 <- aas2[!duplicated(apply(aas2,1,paste,collapse="")),]
+    }
+
+    ## filter tight context
+    aas1 <- aas1[,cols]
+    aas2 <- aas2[,cols]
+
+    pfn1 <- getPFM(aas1)
+    pfn2 <- getPFM(aas2)
+
+    n1 <- nrow(aas1)
+    n2 <- nrow(aas2)
+  
     dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ASN2)
     dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
 
@@ -465,19 +500,6 @@ for ( i in 1:ncol(classes) ) {
     setpn[cols%in%npval[[id]]] <- TRUE
     dfnp$pvals[setpn] <- 1
 
-    ## write out sequences for more detailed analysis
-    ## TODO: currently not used
-    if ( FALSE ) {
-        motseq <- aam[ filt,]
-        refseq <- aam[!filt,]
-        fname <- file.path(seq.path,paste0(id,".fa")) 
-        if ( file.exists(fname) ) unlink(fname)
-        for ( j in 1:nrow(motseq) ) {
-            osq <- gsub("-","",paste0(motseq[j,], collapse=""))
-            cat(paste0(">", rownames(motseq)[j],"\n", osq, "\n"),
-                file=fname, append=TRUE)
-        }
-    }
 
     ## write out POSITION WEIGHT MATRICES
     ## for genome-wide scan
@@ -511,7 +533,7 @@ for ( i in 1:ncol(classes) ) {
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels="AAS", las=2)
-        figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
+        figlabel(paste0("n=",nrow(aam1)), pos="topright", font=2)
         figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfop, ymin=mx, levels=psig)
         ##mtext("encoded", 4,-.25,adj=.05)
@@ -535,7 +557,7 @@ for ( i in 1:ncol(classes) ) {
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
             axis(1, at=which(cols==0), labels=expression(INC), las=2)
-        figlabel(paste0("n=",sum(filt)), pos="topright", font=2)
+        figlabel(paste0("n=",nrow(aas1)), pos="topright", font=2)
         figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfnp, ymin=mx, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
@@ -582,7 +604,7 @@ for ( i in 1:ncol(classes) ) {
         axis(2, cex.axis=1.2, at=xat, labels=xlb)
         axis(2, at=pretty(par("usr")[3:4]), labels=FALSE)
         axis(1, at=1:length(cols), labels=FALSE)
-        figlabel(paste0("n=",sum(filt),"  "),
+        figlabel(paste0("n=",nrow(aam1),"  "),
                  pos="topright", font=1, cex=1.3)
         figlabel(lb, pos="topleft", cex=1.3, family=FONT, font=2)
         diffLogo_addPvals(dfop, ymin=mxo, levels=psig)
@@ -637,7 +659,7 @@ dev.off()
 
 plotdev(file.path(mfig.path,"protein_location_G"), 
         width=3, height=3, res=300, type=ftyp)
-hist(bdat$rpos[bdat$to=="G"])
+hist(cdat$rpos[cdat$to=="G"])
 dev.off()
 
 ## TODO:
@@ -653,7 +675,7 @@ dev.off()
 ## * KRAQ (high RAAS),
 ## * W/M context (current motif figures).
 
-## TODO: define motifs in bdat and map to tmtf
+## TODO: define motifs in cdat and map to tmtf
 ## MAP protein level info to TMT Data
 
 do.unique <- FALSE ## ONLY FOR TESTING
@@ -666,81 +688,76 @@ if ( do.unique ) {
     value <- "RAAS.median"
 
     ## NOTE: no Dataset - only works for non Dataset profiles
-    ##tmtm <- bdat
+    ##tmtm <- cdat
     ##value <- "median"
 }
     
-## TODO: is this filtering necessary??
-TIDX <- match(paste(tmtm$BP, tmtm$SAAP), paste(bdat$BP, bdat$SAAP))
+### MAP MOTIF TABLE w unique protein sites TO FULL RAAS TABLE
+## THIS is used below for RAAS profiles
+TIDX <- match(paste(tmtm$ensembl, tmtm$pos, tmtm$fromto),
+              paste(cdat$ensembl, cdat$pos, cdat$fromto))
+
+## is anyone missing
 ina <- which(is.na(TIDX))
-if ( length(ina)>0 ) {
-    cat(paste("TODO:", length(ina), "missing from unique saap file.\n"))
-    tmtm <- tmtm[-ina,]
-    TIDX <- TIDX[-ina]    
-}
-
-table(classes[,"WWxWW"],classes[,"Q:G"])
-
+if ( length(ina)>0 ) 
+    stop("TODO:", length(ina), "missing from unique site table.\n")
 
 
 
 ### CALCULATE ALL MOTIF RAAS PROFILES
-## TODO: implement overlapping classes in raasProfile
-plot.all.motifs <- FALSE
-dot.path <- file.path(mfig.path, "dotplots")
-dir.create(dot.path)
-covw <- list()
-for ( j in 1:length(selected) ) {
-    
-    mid <- selected[j]
-    mclass <- rep("n.a.", nrow(classes))
-    mclass[classes[,j]] <- mid
-
-    tmtm$motifs <- mclass[TIDX]
-    
-    ovw <- raasProfile(x=tmtm, id="SAAP", 
-                       rows="motifs", cols="Dataset",
-                       bg=TRUE, value=value, row.srt=mid,
-                       col.srt=uds,
+## NOTE: obsolete since raasProfile can now handle class tables
+## instead of a single "rows" vector in input data, but keeping
+## as a reminder to move mergeOverlaps to segmenTools
+if  ( FALSE ) {
+    plot.all.motifs <- FALSE
+    dot.path <- file.path(mfig.path, "dotplots")
+    dir.create(dot.path)
+    covw <- list()
+    for ( j in 1:length(selected) ) {
+        
+        mid <- selected[j]
+        mclass <- rep("n.a.", nrow(classes))
+        mclass[classes[,j]] <- mid
+        
+        tmtm$motifs <- mclass[TIDX]
+        
+        ovw <- raasProfile(x=tmtm, id="SAAP", 
+                           rows="motifs", cols="Dataset",
+                           bg=TRUE, value=value, row.srt=mid,
+                           col.srt=uds,
                        use.test=use.test, do.plots=FALSE,
                        xlab=xl.raas,
                        verb=0)
-    covw[[mid]] <- ovw
-
-    if ( plot.all.motifs ) {
-        plotProfiles(ovw,
-                     fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
-                     mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
-                     p.min=mp.min, p.txt=mp.txt,
-                     dot.sze=dot.sze, p.dot=mp.dot,
-                     rlab=LAB,  ftyp=ftyp,
-                     mtxt="", mtxt.line=2.3,
+        covw[[mid]] <- ovw
+        
+        if ( plot.all.motifs ) {
+            plotProfiles(ovw,
+                         fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
+                         mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
+                         p.min=mp.min, p.txt=mp.txt,
+                         dot.sze=dot.sze, p.dot=mp.dot,
+                         rlab=LAB,  ftyp=ftyp,
+                         mtxt="", mtxt.line=2.3,
                      vcols=acols, vbrks=abrks,
                      gcols=gcols, ffam=FONT)
+        }
     }
+
+### MERGE PROFILES - TODO: integrate this in segmenTools
+    ovm <- mergeProfiles(covw)
 }
-
-### MERGE PROFILES
-ovm <- mergeProfiles(covw)
-
-source("~/work/mistrans/scripts/saap_utils.R")
 
 ## use RAAS profile with matrix input (new 20240604)
 if ( "Dataset"%in%colnames(tmtm) ) {
     
     tcls <- classes[TIDX,]
-    ovm2 <- raasProfile(x=tmtm, id="SAAP", 
-                        rows=tcls, cols="Dataset",
-                        bg=TRUE, value=value, 
-                        col.srt=uds,
-                        use.test=use.test, do.plots=FALSE,
-                        xlab=xl.raas,
-                        verb=0)
-    
-    ## TODO: test new RAAS profiler with matrix input
-    ## and remove above loop if all is good.
-    if ( all(ovm$p.value==ovm2$.p.value))
-        warning("new profile ok, rm old code")
+    ovm <- raasProfile(x=tmtm, id="SAAP", 
+                       rows=tcls, cols="Dataset",
+                       bg=TRUE, value=value, 
+                       col.srt=uds,
+                       use.test=use.test, do.plots=FALSE,
+                       xlab=xl.raas,
+                       verb=0)
     
     
     ## sort
@@ -855,7 +872,7 @@ if ( interactive() ) {
     plotOverlaps(ovl, p.min=p.min, p.txt=p.txt)
 }
 
-rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
+rbins <- cut(cdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
 rsrt <- levels(rbins)
 rbins <- as.character(rbins)
 names(rbins) <- rownames(CLS)
@@ -879,13 +896,13 @@ dev.off()
 csrt <- as.character(CLS[,"noncons."])
 csrt[is.na(csrt)] <- "na."
 
-rbins <- cut(bdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
+rbins <- cut(cdat$median, breaks=c(-6,-4,-2,-1,0,3), include.lowest = TRUE)
 rsrt <- levels(rbins)
 rbins <- as.character(rbins)
 names(rbins) <- rownames(CLS)
 rbins[is.na(rbins)] <- "na."
 
-ovl <- clusterAnnotation(cls=bdat$MMSeq2.bins, data=CLS,
+ovl <- clusterAnnotation(cls=cdat$MMSeq2.bins, data=CLS,
                          cls.srt=levels(MMSeq2.bins))
 omai <- c(.75,1,.6,.6)
 nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
@@ -1018,9 +1035,9 @@ mtext("conservation",1, 1.3)
 dev.off()
 
 ## hypergeo overlap in unique BP/SAAP
-if ( sum(duplicated(paste(bdat$BP,bdat$SAAP)))>0 )
+if ( sum(duplicated(paste(cdat$BP,cdat$SAAP)))>0 )
     stop("non-unique BP/SAAP tuple at critical point")
-ovl <- clusterCluster(bdat$iupred3.bins, bdat$MMSeq2.bins,
+ovl <- clusterCluster(cdat$iupred3.bins, cdat$MMSeq2.bins,
                       cl1.srt=c(rev(levels(iupred3.bins)), "na"),
                       cl2.srt=c("na", levels(MMSeq2.bins)),
                       alternative="two.sided")
@@ -1053,7 +1070,7 @@ plotdev(file.path(mfig.path,
         height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
 levs <- c("na",levels(MMSeq2.bins))
-vioplot(bdat$RAAS ~ factor(bdat$MMSeq2.bins, levels=levs),
+vioplot(cdat$RAAS ~ factor(cdat$MMSeq2.bins, levels=levs),
         ylab=xl.raas, xlab="conservation", axes=FALSE, 
         col.axis="#ffffff", col.ticks="#ffffff")
 
@@ -1074,7 +1091,7 @@ plotdev(file.path(mfig.path,
         height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
 levs <- c("na",levels(iupred3.bins))
-vp <- vioplot(bdat$RAAS ~ factor(bdat$iupred3.bins, levels=levs),
+vp <- vioplot(cdat$RAAS ~ factor(cdat$iupred3.bins, levels=levs),
         ylab=xl.raas, xlab="disorder", axes=FALSE, col.axis="#ffffff")
 polygon(x=c(2, length(levs), length(levs)),
         y=ypos, xpd=TRUE, col="#aaaaaa", border=1)
@@ -1086,9 +1103,9 @@ plotdev(file.path(mfig.path,
                   paste0("classes_loglen_raas_violin")),
         height=2, width=3, res=300, type=ftyp)
 par(mfrow=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family=FONT)
-fct <- factor(bdat$loglen.bins)
+fct <- factor(cdat$loglen.bins)
 levs <- c(levels(fct))
-vp <- vioplot(bdat$RAAS ~ fct,
+vp <- vioplot(cdat$RAAS ~ fct,
               ylab=xl.raas, xlab=expression(log[10](length)),
               axes=FALSE, col.axis="#ffffff")
 polygon(x=c(1, length(levs), length(levs)),
@@ -1106,40 +1123,40 @@ stnd <- function(x,na.rm=TRUE) {
 plotdev(file.path(mfig.path,paste0("peptides_conservation+disorder_raas")),
         height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)+stnd(bdat$iupred3), xlab=xl.raas,
+plotCor(cdat$RAAS, stnd(-cdat$MMSeq2)+stnd(cdat$iupred3), xlab=xl.raas,
         ylab="disorder + -conservation", legpos="topright")
 dev.off()
 
 plotdev(file.path(mfig.path,paste0("peptides_conservationXdisorder_raas")),
         height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotCor(bdat$RAAS, stnd(-bdat$MMSeq2)*stnd(bdat$iupred3), xlab=xl.raas,
+plotCor(cdat$RAAS, stnd(-cdat$MMSeq2)*stnd(cdat$iupred3), xlab=xl.raas,
         ylab="disorder x -conservation", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_conservation_raas")),
         height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotCor(bdat$RAAS, stnd(-bdat$MMSeq2), xlab=xl.raas,
+plotCor(cdat$RAAS, stnd(-cdat$MMSeq2), xlab=xl.raas,
         ylab="-conservation", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_disorder_raas")),
         height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotCor(bdat$RAAS, stnd(bdat$iupred3), xlab=xl.raas,
+plotCor(cdat$RAAS, stnd(cdat$iupred3), xlab=xl.raas,
         ylab="disorder", legpos="topright")
 dev.off()
 plotdev(file.path(mfig.path,paste0("peptides_conservation_disorder")),
         height=3, width=3, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotCor(stnd(-bdat$MMSeq2), stnd(bdat$iupred3), xlab="conservation",
+plotCor(stnd(-cdat$MMSeq2), stnd(cdat$iupred3), xlab="conservation",
         ylab="disorder")
 dev.off()
 
 ## TODO: test "marginal distribution" thingy, cons. vs. disordered
 if ( interactive() ) {
-    plotCor(bdat$RAAS, bdat$iupred3)
-    plotCor(bdat$RAAS, bdat$MMSeq2)
-    plotCor(bdat$RAAS*bdat$iupred3, bdat$RAAS*bdat$MMSeq2,
+    plotCor(cdat$RAAS, cdat$iupred3)
+    plotCor(cdat$RAAS, cdat$MMSeq2)
+    plotCor(cdat$RAAS*cdat$iupred3, cdat$RAAS*cdat$MMSeq2,
             xlab=expression(log[10](RAAS)~x~disorder),
             ylab=expression(log[10](RAAS)~x~conservation))
 }
@@ -1367,10 +1384,10 @@ dev.off()
 ## TODO: add to motifs?
 
 ## first AA in BP
-bp1 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[1]))
-bp1[bp1==bdat$from & bdat$site==1] <- "AAS"
-##bp1[bdat$fromto=="Q:G"] <- "QG" ##- NOTE: this makes A at 1st insign.
-##bp1[bdat$fromto=="Q:A"] <- "QA" ##- NOTE: this makes A at 1st insign.
+bp1 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[1]))
+bp1[bp1==cdat$from & cdat$site==1] <- "AAS"
+##bp1[cdat$fromto=="Q:G"] <- "QG" ##- NOTE: this makes A at 1st insign.
+##bp1[cdat$fromto=="Q:A"] <- "QA" ##- NOTE: this makes A at 1st insign.
 ## AA/codon/structure mapping
 tmtm$bp1 <- bp1[TIDX]
 
@@ -1402,8 +1419,8 @@ plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp1_",SETID,"_cut")),
              gcols=gcols)
 
 ## second AA in BP
-bp2 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[2]))
-bp2[bp2==bdat$from & bdat$site==2] <- "AAS"
+bp2 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[2]))
+bp2[bp2==cdat$from & cdat$site==2] <- "AAS"
 
 ## AA/codon/structure mapping
 tmtm$bp2 <- bp2[TIDX]
@@ -1434,8 +1451,8 @@ plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp2_",SETID,"_cut")),
              vcols=acols, vbrks=abrks,
              gcols=gcols)
 ## second AA in BP
-bp3 <- unlist(lapply(strsplit(bdat$BP,""), function(x) x[3]))
-bp3[bp3==bdat$from & bdat$site==3] <- "AAS"
+bp3 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[3]))
+bp3[bp3==cdat$from & cdat$site==3] <- "AAS"
 
 ## AA/codon/structure mapping
 tmtm$bp3 <- bp3[TIDX]
