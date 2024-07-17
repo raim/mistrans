@@ -7,9 +7,6 @@
 
 library(DiffLogo)
 library(Biostrings)
-AAS <- sort(unique(GENETIC_CODE))
-AAT <- AAS[AAS!="*"]
-diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
 
 ## project-specific functions
 source("~/work/mistrans/scripts/saap_utils.R")
@@ -20,9 +17,25 @@ source("~/work/mistrans/scripts/saap_utils.R")
 if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
+do.nucleotides <- TRUE # FALSE # 
+
 seq.path <- file.path(out.path,"motifs")
 dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
+
+AAS <- sort(unique(GENETIC_CODE))
+AAT <- AAS[AAS!="*"]
+diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
+ABC <- ASN
+TYPE <- "AA"
+SITELAB <- "AAS"
+if ( do.nucleotides ) {
+    ABC <- DNA
+    AAT <- DNA$chars
+    TYPE <- "NT"
+    SITELAB <- "AAS"
+    mfig.path <- file.path(fig.path,"motifs_nt")
+}
 dir.create(mfig.path, showWarnings=FALSE)
 
 ## NOTE: 1e-6 doesn't seem to be worth it, little gain.
@@ -46,7 +59,7 @@ cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
 
 
 ### AA MATRIX
-aam <- do.call(rbind, strsplit(cdat$AA,""))
+aam <- do.call(rbind, strsplit(cdat[[TYPE]],""))
 nc <- (ncol(aam)-1)/2
 colnames(aam) <- -nc:nc
 rownames(aam) <- paste0(cdat$BP,"_", cdat$SAAP)
@@ -54,6 +67,8 @@ rownames(aam) <- paste0(cdat$BP,"_", cdat$SAAP)
 ## AA MATRIX WITH AAS
 aas <- aam
 aas[,"0"] <- cdat$to
+
+
 
 ## TODO: AAS_overlap for RAAS BINS
 
@@ -344,6 +359,13 @@ rngs$MxM <- rngs$WxW <- rngs$CxC <- as.character(-1:1)
 rngs$"KRAQ" <- as.character(-3:0)
 rngs$"x:[AG]" <- as.character(-3:1)
 
+if ( do.nucleotides )
+    rngs <- lapply(rngs, function(x) {
+        rng <- as.numeric(x)
+        rng <- as.character((3*min(rng)):(3*max(rng)))
+        rng
+    })
+
 ## suppress p-value indicators
 opval <- rep(list(""), ncol(classes))
 names(opval) <- colnames(classes)
@@ -357,16 +379,17 @@ npval[grep("x:\\[AG\\]",names(npval))] <- "0"
 npval["KRAQ"] <- "0"
 
 ## use our internal AA colors
-ASN2 <- ASN
-ASN2$cols <- aa.cols[ASN2$chars]
-ASN2$cols["V"] <- "#2eb774"
+if ( !do.nucleotides) {
+    ABC$cols <- aa.cols[ABC$chars]
+    ABC$cols["V"] <- "#2eb774"
+}
 
 log.path <- file.path(mfig.path, "logos")
 dir.create(log.path, showWarnings=FALSE)
 tmp.path <- file.path(mfig.path, "selected")
 dir.create(tmp.path, showWarnings=FALSE)
 ##pwm <- getPFM(aam)
-##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ASN2)
+##seqLogo(pwm, stackHeight=sumProbabilities, alphabet=ABC)
 
 ### MANUAL INVESTIGATION OF T->V
 
@@ -416,9 +439,18 @@ if ( interactive() ) {
     dev.off()
 }
 
+## TODO: why does e.g. W-> show ACC instead of UGG (complementary)
+## while T->V correctly shows AC[AC]
+if ( FALSE ) {
+    head(aam[cdat$from=="W",as.character(-10:10)])
+    head(aam[classes[,"W:x"],as.character(-10:10)])
+    table(aam[classes[,"W:x"],"0"])
+}
+
 
 i=which(colnames(classes)=="fromto_I:P")
 i=which(colnames(classes)=="KRAQ")
+i=which(colnames(classes)=="W:x")
 
 for ( i in 1:ncol(classes) ) {
 
@@ -455,13 +487,13 @@ for ( i in 1:ncol(classes) ) {
     aam1 <- aam1[,cols]
     aam2 <- aam2[,cols]
 
-    pfm1 <- getPFM(aam1)
-    pfm2 <- getPFM(aam2)
+    pfm1 <- getPFM(aam1, alphabet=ABC$chars)
+    pfm2 <- getPFM(aam2, alphabet=ABC$chars)
 
     n1 <- nrow(aam1)
     n2 <- nrow(aam2)
     
-    dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ASN2)
+    dfob <- createDiffLogoObject(pfm1, pfm2, alphabet=ABC)
     dfop <- enrichDiffLogoObjectWithPvalues(dfob, n1=n1, n2=n2)
 
     ## suppress p.vals where ALL AA are equal
@@ -485,13 +517,13 @@ for ( i in 1:ncol(classes) ) {
     aas1 <- aas1[,cols]
     aas2 <- aas2[,cols]
 
-    pfn1 <- getPFM(aas1)
-    pfn2 <- getPFM(aas2)
+    pfn1 <- getPFM(aas1, alphabet=ABC$chars)
+    pfn2 <- getPFM(aas2, alphabet=ABC$chars)
 
     n1 <- nrow(aas1)
     n2 <- nrow(aas2)
   
-    dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ASN2)
+    dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ABC)
     dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
 
     ## suppress p.vals where ALL AA are equal
@@ -525,7 +557,7 @@ for ( i in 1:ncol(classes) ) {
         ht <- 2.5
         mn <- dfob$ylim.negMax
         mx <- dfob$ylim.posMax
-        plotdev(file.path(tmp.path,paste0("logos_", id,"_encoded")),
+        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_encoded")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
@@ -533,7 +565,7 @@ for ( i in 1:ncol(classes) ) {
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="AAS", las=2)
+            axis(1, at=which(cols==0), labels=SITELAB, las=2)
         figlabel(paste0("n=",nrow(aam1)), pos="topright", font=2)
         figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfop, ymin=mx, levels=psig)
@@ -549,7 +581,7 @@ for ( i in 1:ncol(classes) ) {
         ht <- 2.5
         mn <- dfnb$ylim.negMax
         mx <- dfnb$ylim.posMax
-        plotdev(file.path(tmp.path,paste0("logos_", id,"_incorporated")),
+        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_incorporated")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mx)
@@ -591,7 +623,7 @@ for ( i in 1:ncol(classes) ) {
         
         dfop$ylab <- "JS divergence"
 
-        plotdev(file.path(tmp.path,paste0("logos_", id, "")),
+        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id, "")),
                 height=hto+htn , width=wd, res=300, type=ftyp)
         layout(t(t(1:2)), heights=c(hto, htn))
 
@@ -622,7 +654,7 @@ for ( i in 1:ncol(classes) ) {
         ##mtext("JS divergence", 2, 1.3)
         axis(1, at=1:length(cols), labels=axlab, cex.axis=1.2)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels="AAS", las=1, cex.axis=1.2)
+            axis(1, at=which(cols==0), labels=SITELAB, las=1, cex.axis=1.2)
         ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
         diffLogo_addPvals(dfnp, ymin=mxn, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)
@@ -1386,7 +1418,7 @@ dev.off()
 
 ## first AA in BP
 bp1 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[1]))
-bp1[bp1==cdat$from & cdat$site==1] <- "AAS"
+bp1[bp1==cdat$from & cdat$site==1] <- SITELAB
 ##bp1[cdat$fromto=="Q:G"] <- "QG" ##- NOTE: this makes A at 1st insign.
 ##bp1[cdat$fromto=="Q:A"] <- "QA" ##- NOTE: this makes A at 1st insign.
 ## AA/codon/structure mapping
@@ -1421,7 +1453,7 @@ plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp1_",SETID,"_cut")),
 
 ## second AA in BP
 bp2 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[2]))
-bp2[bp2==cdat$from & cdat$site==2] <- "AAS"
+bp2[bp2==cdat$from & cdat$site==2] <- SITELAB
 
 ## AA/codon/structure mapping
 tmtm$bp2 <- bp2[TIDX]
@@ -1453,7 +1485,7 @@ plotProfiles(ovwp, fname=file.path(mfig.path,paste0("bp2_",SETID,"_cut")),
              gcols=gcols)
 ## second AA in BP
 bp3 <- unlist(lapply(strsplit(cdat$BP,""), function(x) x[3]))
-bp3[bp3==cdat$from & cdat$site==3] <- "AAS"
+bp3[bp3==cdat$from & cdat$site==3] <- SITELAB
 
 ## AA/codon/structure mapping
 tmtm$bp3 <- bp3[TIDX]

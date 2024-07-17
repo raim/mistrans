@@ -36,7 +36,8 @@ substitutions by G or A within the 3 N-terminal sites of base peptides
 W (\texttt{WWxWW}), M (\texttt{MMxMM}), C (\texttt{CCxCC}) or G
 (\texttt{GGxGG}) within 2 positions of the substitution site. The
 selection \texttt{GGxGG} showed no specific enrichments at the
-subsitution site and is not shown.}
+subsitution site and is not shown.} TODO: omit AAS from filtering in this and logos?
+
 
 # 
 
@@ -169,7 +170,8 @@ score were obtained \textit{via} the \texttt{DescribePROT} database
 \textbf{Sequence Difference Logos} were generated with the R package
 \texttt{DiffLogo} (version 2.26.0) [@Nettling2015] with a customized
 \texttt{DiffLogo} function that allows to set the y-axis limits of the
-plots, and p-values were calculated with the ...
+plots, and p-values were calculated with the ... omitted (set to 1) for
+positions affected by our sequence selection.
 
 
 # References{.allowframebreaks}
