@@ -1054,6 +1054,20 @@ axis(4, at=nrow(ovp$p.value):1, labels=log10(ovp$p.value), las=2, col=NA,
 mtext(plab, 1, 0.75, cex=1.2)
 dev.off()
 
+## legend for p.values
+
+
+plotdev(file.path(fig.path,paste0("legend_pvals")),
+        type=ftyp, res=300, width=.7, height=2)
+par(mai=c(.05,.3,.05,.05), mgp=c(.1,.3,0), tcl=-.25, xaxs="i")
+plotOverlapsLegend(p.min=p.min, p.txt=p.txt)
+dev.off()
+
+plotdev(file.path(fig.path,paste0("legend_pvals_horizontal")),
+        type=ftyp, res=300, width=2, height=.6)
+par(mai=c(.3,.05,.05,.05), mgp=c(.5,.3,0), tcl=-.25, xaxs="i")
+plotOverlapsLegend(p.min=p.min, p.txt=p.txt, dir=2)
+dev.off()
 
 ## GLOBAL RAAS DISTRIBUTION BY CANCER TYPE
            

@@ -27,13 +27,17 @@ if ( !exists("bdat") )
 kfig.path <- file.path(fig.path,"kraq")
 dir.create(kfig.path, showWarnings=FALSE)
 
+### remove duplicate sites!
+## TODO: is there a cleaner way to do this? here we randomly loose AAS types
+cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
+
 ### POSITION OF AAS IN PEPTIDES
 
 ## Categorize by N+i and C-i
-mx <- 10
+mx <- 9
 
-nt <- bdat$site
-ct <- nchar(bdat$BP)-bdat$site +1
+nt <- cdat$site
+ct <- nchar(cdat$BP)-cdat$site +1
 
 ## fuse central AAS
 nt[nt>mx] <- ct[ct>mx] <- mx+1
@@ -58,20 +62,20 @@ asite.srt <- at.srt
 plotdev(file.path(kfig.path,paste0("peptides_sites_RAAS_cor")),
         height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05)
-plotCor(bdat$site, bdat$median, xlab="AAS position in peptide",
+plotCor(cdat$site, cdat$median, xlab="AAS position in peptide",
         ylab=xl.raas, legpos="topright")
 dev.off()
 
 plotdev(file.path(kfig.path,paste0("peptides_sites_RAAS")),
         height=3.5, width=7, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05, xaxs="i")
-boxplot(bdat$median ~ factor(asite.bins, levels=at.srt),
+boxplot(cdat$median ~ factor(asite.bins, levels=at.srt),
         ylab=expression(log[10](RAAS)), xlab="Position in peptide", las=2)
 dev.off()
 
 ## AAS vs. POSITION
 
-cls <- clusterCluster(bdat$from, asite.bins, cl2.srt=asite.srt,
+cls <- clusterCluster(cdat$from, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 cls <- sortOverlaps2(cls, p.min=p.txt)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_encoded")),
@@ -86,7 +90,7 @@ mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS, encoded", pos="bottomleft",cex=1.2, font=2)
 dev.off()
 
-cls <- clusterCluster(bdat$to, asite.bins, cl2.srt=asite.srt,
+cls <- clusterCluster(cdat$to, asite.bins, cl2.srt=asite.srt,
                       alternative="two.sided")
 cls <- sortOverlaps2(cls, p.min=p.txt)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_incorporated")),
@@ -102,8 +106,7 @@ mtext("position of AAS in peptide", 1, 1.5)
 figlabel("AAS, incorporated", pos="bottomleft",cex=1.2, font=2)
 dev.off()
 
-cls <- clusterCluster(bdat$fromto, asite.bins, cl2.srt=asite.srt,
-                      alternative="two.sided")
+cls <- clusterCluster(cdat$fromto, asite.bins, cl2.srt=asite.srt)#,alternative="two.sided")
 cls <- sortOverlaps(cls, p.min=1e-3)
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype")),
         height=.2*nrow(cls$p.value)+1, width=mx/2+1, res=300, type=ftyp)
@@ -118,38 +121,40 @@ figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
 ## sort by only enriched
-clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
+clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE)
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_cut")),
-        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300, type=ftyp)
-par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05)
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
+        height=.2*nrow(clc$p.value)+1.1, width=.25*nrow(clc$p.value)+1.25,
+        res=300, type=ftyp)
+par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
 par(mgp=c(1.3,.3,0), tcl=-.25)
 axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=2)
-axis(2, at=nrow(clc$p.value):1, labels=rownames(clc$p.value), las=2)
+axex <- ftlabels(rownames(clc$p.value))
+axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+mtext("AAS type", 2, 2.7)
 mtext("position of AAS in peptide", 1, 1.5)
-figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
-
-## tigher cut-off
-clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
-
-omai <- c(.6,.7,.5,.5)
-nw <- ncol(clc$p.value)*.3 + omai[2] + omai[4]
-nh <- nrow(clc$p.value)*.2 + omai[1] + omai[3]
-
-plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
-        height=.2*nrow(clc$p.value)+1, width=mx/2+1, res=300, type=ftyp)
-par(mai=omai, mgp=c(2.1,.3,0), tcl=-.05, family="monospace")
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab="AAS type", xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.8)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=2)
-axis(2, at=nrow(clc$p.value):1, labels=rownames(clc$p.value), las=2)
-mtext("Position of AAS in peptide", 1, 1.8)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
+
+clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+
+plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
+        height=.2*nrow(clc$p.value)+1.1, width=.25*nrow(clc$p.value)+1.25,
+        res=300, type=ftyp)
+par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=2)
+axex <- ftlabels(rownames(clc$p.value))
+axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+mtext("AAS type", 2, 2.7)
+mtext("position of AAS in peptide", 1, 1.5)
+##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
 
 ## * GENERAL PEPTIDE ANALYSIS
 
@@ -164,7 +169,7 @@ pp.txt <- 1e-10
 
 ## from N-term
 ## TODO: implement min dist from N and C
-paa <- strsplit(bdat$BP, "")
+paa <- strsplit(cdat$BP, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
 paa[is.na(paa)] <- "-"
 ovl <- aaProfile(paa, abc=c(AAT[!AAT%in%c("K","R","P","D","E")]))
@@ -179,7 +184,7 @@ figlabel("BP  w/o Keil", pos="bottomleft", font=2, cex=1.2)
 dev.off()
 
 ## from N-term - WITH keil rule AA
-paa <- strsplit(bdat$BP, "")
+paa <- strsplit(cdat$BP, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
 paa[is.na(paa)] <- "-"
 ovl <- aaProfile(paa, abc=c(AAT)) #[!AAT%in%c("K","R","P","D","E")]))
@@ -194,7 +199,7 @@ figlabel("BP", pos="bottomleft", font=2, cex=1.2)
 dev.off()
 
 ## from N-term w/o Q->G
-paa <- strsplit(bdat$BP[bdat$fromto!="Q:G"], "")
+paa <- strsplit(cdat$BP[cdat$fromto!="Q:G"], "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
 paa[is.na(paa)] <- "-"
 ovl <- aaProfile(paa, abc=c(AAT))#[!AAT%in%c("K","R","P","D","E")]))
@@ -209,7 +214,7 @@ figlabel("BP w/o Q:G", pos="bottomleft", font=2, cex=1.2)
 dev.off()
 
 ## from C-term
-paa <- strsplit(bdat$BP, "")
+paa <- strsplit(cdat$BP, "")
 paa <- do.call(rbind,lapply(paa, function(x) rev(x)[1:7]))
 paa[is.na(paa)] <- "-"
 ovl <- aaProfile(paa, abc=c(AAT[!AAT%in%c("K","R","P","D","E")]))
@@ -227,7 +232,7 @@ dev.off()
 tryptic <- readLines(pep.file)
 hist(nchar(tryptic))
 ## remove all that are in BP
-tryptic <- tryptic[!tryptic%in%bdat$BP]
+tryptic <- tryptic[!tryptic%in%cdat$BP]
 paa <- strsplit(tryptic, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
 paa[is.na(paa)] <- "-"
@@ -257,7 +262,7 @@ dev.off()
 nontry <- readLines(non.file)
 hist(nchar(nontry))
 ## remove all that are in BP
-nontry <- nontry[!nontry%in%bdat$BP]
+nontry <- nontry[!nontry%in%cdat$BP]
 
 paa <- strsplit(nontry, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
@@ -278,7 +283,7 @@ dev.off()
 nontry <- readLines(nkr.file)
 hist(nchar(nontry))
 ## remove all that are in BP
-nontry <- nontry[!nontry%in%bdat$BP]
+nontry <- nontry[!nontry%in%cdat$BP]
 
 paa <- strsplit(nontry, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
@@ -298,7 +303,7 @@ dev.off()
 nontry <- readLines(akr.file)
 hist(nchar(nontry))
 ## remove all that are in BP
-nontry <- nontry[!nontry%in%bdat$BP]
+nontry <- nontry[!nontry%in%cdat$BP]
 
 paa <- strsplit(nontry, "")
 paa <- do.call(rbind,lapply(paa, function(x) x[1:7]))
@@ -354,16 +359,16 @@ kproteome <- apply(kproteome,2,sum)
 ## tryptic peptide kmer count
 tryptic <- readLines(pep.file)
 ## remove all that are in BP
-tryptic <- tryptic[!tryptic%in%bdat$BP]
+tryptic <- tryptic[!tryptic%in%cdat$BP]
 conc <- paste0(tryptic, collapse="")
 ktryptic <-kcount(as.AAbin(conc), k=2)
 
 ## base peptide kmer count
-conc <- paste0(bdat$BP, collapse="")
+conc <- paste0(cdat$BP, collapse="")
 kbase <-kcount(as.AAbin(conc), k=2)
 
 ## cleavage site kmer count
-paa <- strsplit(bdat$AA, "")
+paa <- strsplit(cdat$AA, "")
 paa <- do.call(rbind, paa)
 DST <- (ncol(paa)-1)/2
 colnames(paa) <- -DST:DST
@@ -372,7 +377,7 @@ colnames(paa) <- -DST:DST
 ## analyze upstream site, it is NOT always K|R
 
 ## diAA dat cleavge site
-cuts <- sapply(bdat$site, function(x)
+cuts <- sapply(cdat$site, function(x)
     list(paste0("-",as.character(c(x,x-1)))))
 pal <- rep("", nrow(paa))
 for ( i in seq_along(cuts) )
@@ -384,27 +389,27 @@ kcuts <- table(pal)
 ## NON-TRYPTIC CLEAVAGE BIAS?
 ## * by RAAS 
 ## * TODO: overlaps with AAS type?
-bdat$cleavage2 <- pal
-bdat$cleavage <- unlist(lapply(strsplit(pal,""), function(x) x[1]))
+cdat$cleavage2 <- pal
+cdat$cleavage <- unlist(lapply(strsplit(pal,""), function(x) x[1]))
 
 plotdev(file.path(kfig.path,paste0("cleavage_diAA_RAAS")),
         height=3.5, width=10, res=300, type=ftyp)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-bp <- boxplot(bdat$median ~ bdat$cleavage2, las=2,
+bp <- boxplot(cdat$median ~ cdat$cleavage2, las=2,
               ylab=expression(log[10](bar(RAAS))),
               xlab="non-tryptic cleavage sites")
-axis(3, at=1:length(bp$names), labels=table(bdat$cleavage2)[bp$names], las=2)
+axis(3, at=1:length(bp$names), labels=table(cdat$cleavage2)[bp$names], las=2)
 axis(4)
 dev.off()
 
 plotdev(file.path(kfig.path,paste0("cleavage_monoAA_RAAS")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-bp <- boxplot(bdat$median ~ bdat$cleavage, las=2,
+bp <- boxplot(cdat$median ~ cdat$cleavage, las=2,
               ylab=expression(log[10](bar(RAAS))),
               xlab="non-tryptic cleavage sites")
-axis(3, at=1:length(bp$names), labels=table(bdat$cleavage)[bp$names], las=2)
-stripchart(median ~ cleavage, vertical = TRUE, data = bdat, 
+axis(3, at=1:length(bp$names), labels=table(cdat$cleavage)[bp$names], las=2)
+stripchart(median ~ cleavage, vertical = TRUE, data = cdat, 
            method = "jitter", add = TRUE, pch = 20,
            col="#00000077", cex=1,
            axes=FALSE)
@@ -475,14 +480,14 @@ dev.off()
 ## add first nucleotide of tryptic digest: just also have R|K
 
 ## first AA positions in BP, SAAP and Main 
-bp1 <- table(unlist(lapply(strsplit(bdat$BP,""), function(x) x[1])))
-saap1 <- table(unlist(lapply(strsplit(bdat$SAAP,""), function(x) x[1])))
+bp1 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[1])))
+saap1 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[1])))
 trp1 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[1])))
-bp2 <- table(unlist(lapply(strsplit(bdat$BP,""), function(x) x[2])))
-saap2 <- table(unlist(lapply(strsplit(bdat$SAAP,""), function(x) x[2])))
+bp2 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[2])))
+saap2 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[2])))
 trp2 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[2])))
-bp3 <- table(unlist(lapply(strsplit(bdat$BP,""), function(x) x[3])))
-saap3 <- table(unlist(lapply(strsplit(bdat$SAAP,""), function(x) x[3])))
+bp3 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[3])))
+saap3 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[3])))
 trp3 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[3])))
 
 ## proteome-wide frequency of AA next to K|R
@@ -635,7 +640,7 @@ dev.off()
 ## * ASAquick: is the KRAQ buried?
 ##   count all KRAQ in proteome,
 ##   and compare to ASAquick prediction.
-boxplot(bdat$ASAquick ~ bdat$fromto)
+boxplot(cdat$ASAquick ~ cdat$fromto)
 
 ## TODO:
 ## * read the Introduction to sequence motifs by Benjamin Jean-Marie Tremblay 
@@ -648,10 +653,10 @@ m <- 3
 ## SIMPLE MOTIF PROB.
 
 ## count in base peptides
-bcnt <- stringr::str_count(bdat$AA, pat)
-bpcnt <- table(unlist(strsplit(bdat$AA,"")))
+bcnt <- stringr::str_count(cdat$AA, pat)
+bpcnt <- table(unlist(strsplit(cdat$AA,"")))
 bpfrq <- bpcnt/sum(bpcnt)
-Lbp <- nchar(bdat$AA)
+Lbp <- nchar(cdat$AA)
 p <- (bpfrq["K"]+bpfrq["R"]) * bpfrq["A"] * bpfrq["Q"]
 expected <- sum(Lbp-m+1)*p
 

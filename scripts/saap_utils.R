@@ -1086,7 +1086,8 @@ raasProfile.row <- function(x=tmtf, id="SAAP",
 #' @param x a matrix of character values, e.g. amino acids, where
 #' rows are protein sequences and columns relative positions
 #' @param abc list of characters to consider, e.g. all amino acids
-aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
+aaProfile <- function(x, abc, k=1, p.min, alternative="two.sided",
+                      p.adjust="none", verb=0) {
 
     if ( missing(abc) )
         abc <- sort(unique(c(x)))
@@ -1117,17 +1118,26 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
             
             aac[i,j] <- q
             ## enriched
-            aam[i,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+            if ( alternative%in%c("two.sided","greater") )
+                aam[i,j] <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
             ## deprived
-            aap[i,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
+            if ( alternative%in%c("two.sided","less") )
+                aap[i,j] <- phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
             ## frequency ratio
             aar[i,j] <- q/k * N/m
         }
     }
+
+    
+    if ( alternative=="less" )
+        aam <- aap
+    
     ## FILTER SIGNIFICANT
     if ( !missing(p.min) ) {
         pval <- aam
-        pval[aap<aam] <- aap[aap<aam]
+        if ( alternative%in%c("two.sided") ) {
+            pval[aap<aam] <- aap[aap<aam]
+        }
         sig <- apply(pval, 1, function(x) any(x<p.min))
         aam <- aam[sig,,drop=FALSE]
         aap <- aap[sig,,drop=FALSE]
@@ -1140,8 +1150,10 @@ aaProfile <- function(x, abc, k=1, p.min, p.adjust="none", verb=0) {
     ovl$count <- aac
     ovl$ratio <- aar
     ovl$p.value <- aam
-    ovl$p.value[aap<aam] <- aap[aap<aam]
-    ovl$sign <- ifelse(aap<aam,-1,1)
+    if ( alternative%in%c("two.sided") ) {
+        ovl$p.value[aap<aam] <- aap[aap<aam]
+        ovl$sign <- ifelse(aap<aam,-1,1)
+    }
     ovl$num.query <-
         t(t(table(c(x))[rownames(aam)]))
     ovl$num.target <-

@@ -3,6 +3,7 @@
 
 ## AA ENRICHMENT AROUND AAS SITES
 
+## TODO: diAA plot from _kraq.
 
 library(DiffLogo)
 library(Biostrings)
@@ -40,8 +41,7 @@ remove.duplicated.sequences <- TRUE
 #### GENERAL SEQUENCE LOGOS
 
 ### remove duplicate sites!
-## TODO: is there a cleaner way to do this? here we randomly loose
-## 
+## TODO: is there a cleaner way to do this? here we randomly loose AAS types
 cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
 
 
@@ -61,17 +61,18 @@ aas[,"0"] <- cdat$to
 
 omai <- c(.5,.5,.6,.6)
 
-ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT)
+ovl <- aaProfile(aam[,as.character(-7:7)], abc=AAT, alternative="greater")
 ovl <- sortOverlaps(ovl, p.min=p.txt, sign=1)
 
-nw <- ncol(ovl$p.value)*.35 + omai[2] + omai[4]
+nw <- ncol(ovl$p.value)*.25 + omai[2] + omai[4]
 nh <- nrow(ovl$p.value)*.2 + omai[1] + omai[3]
 
 plotdev(file.path(mfig.path,paste0("AAS_overlap")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
-             xlab="Distance from AAS", ylab="Encoded AA")
+             xlab="Distance from AAS", ylab="Encoded AA",
+             text.cex=.7, show.sig=FALSE)
 ##figlabel("all", pos="bottomleft")
 dev.off()
 
@@ -86,12 +87,12 @@ figlabel("all", pos="bottomleft")
 dev.off()
 
 ovc <- sortOverlaps(ovl, p.min=p.txt, sign=1, cut=TRUE)
-nh <- nrow(ovc$p.value)*.5 + omai[1] + omai[3]
+nh <- nrow(ovc$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("AAS_overlap_cut")),
         height=nh, width=nw, res=300, type=ftyp)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-plotOverlaps(ovl, p.min=p.min, p.txt=p.txt, show.total=TRUE,
-             xlab="Distance from AAS", ylab="Encoded AA")
+plotOverlaps(ovc, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+             xlab="Distance from AAS", ylab="Encoded AA", text.cex=.7)
 figlabel("all", pos="bottomleft")
 dev.off()
 
