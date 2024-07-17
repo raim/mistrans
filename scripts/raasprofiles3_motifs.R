@@ -17,7 +17,7 @@ source("~/work/mistrans/scripts/saap_utils.R")
 if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
-do.nucleotides <- TRUE # FALSE # 
+do.nucleotides <- FALSE # TRUE # 
 
 seq.path <- file.path(out.path,"motifs")
 dir.create(seq.path, showWarnings=FALSE)
@@ -451,6 +451,7 @@ if ( FALSE ) {
 i=which(colnames(classes)=="fromto_I:P")
 i=which(colnames(classes)=="KRAQ")
 i=which(colnames(classes)=="W:x")
+i=which(colnames(classes)=="fromto_N:G")
 
 for ( i in 1:ncol(classes) ) {
 
@@ -504,36 +505,38 @@ for ( i in 1:ncol(classes) ) {
     dfop$pvals[setpo] <- 1
 
     ## PWM INCORPORATED
-    ## position weight matrices and diffLogo
-    aas1 <- aas[ filt,,drop=FALSE]
-    aas2 <- aas[!filt,,drop=FALSE]
+    if ( !do.nucleotides ) {
+        ## position weight matrices and diffLogo
+        aas1 <- aas[ filt,,drop=FALSE]
+        aas2 <- aas[!filt,,drop=FALSE]
+        
+        if ( remove.duplicated.sequences ) {
+            aas1 <- aas1[!duplicated(apply(aas1,1,paste,collapse="")),]
+            aas2 <- aas2[!duplicated(apply(aas2,1,paste,collapse="")),]
+        }
+        
+        ## filter tight context
+        aas1 <- aas1[,cols]
+        aas2 <- aas2[,cols]
+        
+        pfn1 <- getPFM(aas1, alphabet=ABC$chars)
+        pfn2 <- getPFM(aas2, alphabet=ABC$chars)
+        
+        n1 <- nrow(aas1)
+        n2 <- nrow(aas2)
+        
+        dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ABC)
+        dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
+        
+        ## suppress p.vals where ALL AA are equal
+        ## -> obvious selection bias
+        setpn <- apply(pfn1, 2, function(x) all(x%in%c(0.0,1.0)))
+        ## manual pval suppression
+        setpn[cols%in%npval[[id]]] <- TRUE
+        dfnp$pvals[setpn] <- 1
 
-    if ( remove.duplicated.sequences ) {
-        aas1 <- aas1[!duplicated(apply(aas1,1,paste,collapse="")),]
-        aas2 <- aas2[!duplicated(apply(aas2,1,paste,collapse="")),]
     }
-
-    ## filter tight context
-    aas1 <- aas1[,cols]
-    aas2 <- aas2[,cols]
-
-    pfn1 <- getPFM(aas1, alphabet=ABC$chars)
-    pfn2 <- getPFM(aas2, alphabet=ABC$chars)
-
-    n1 <- nrow(aas1)
-    n2 <- nrow(aas2)
-  
-    dfnb <- createDiffLogoObject(pfn1, pfn2, alphabet=ABC)
-    dfnp <- enrichDiffLogoObjectWithPvalues(dfnb, n1=n1, n2=n2)
-
-    ## suppress p.vals where ALL AA are equal
-    ## -> obvious selection bias
-    setpn <- apply(pfn1, 2, function(x) all(x%in%c(0.0,1.0)))
-    ## manual pval suppression
-    setpn[cols%in%npval[[id]]] <- TRUE
-    dfnp$pvals[setpn] <- 1
-
-
+    
     ## write out POSITION WEIGHT MATRICES
     ## for genome-wide scan
     fname <- file.path(seq.path,paste0(id,"pwm.tsv")) 
@@ -547,7 +550,11 @@ for ( i in 1:ncol(classes) ) {
         ft[ft=="x"] <- ""
            lb <- as.expression(bquote(.(ft[1]) %->% .(ft[2])))
     } else lb <- as.expression(bquote(.(lb)))
-   
+
+    ## set ylim to non-prespecified positions (via setp/setn)
+    focus.ylim <- FALSE
+    if ( length(grep("^from", colnames(classes)))>0 )
+        focus.ylim <- TRUE
 
     ## ENCODED
     if ( any(dfop$pvals<min(psig)) | id %in% selected ) {
@@ -557,6 +564,10 @@ for ( i in 1:ncol(classes) ) {
         ht <- 2.5
         mn <- dfob$ylim.negMax
         mx <- dfob$ylim.posMax
+        if ( focus.ylim )
+            mx <- max(dfob$ymaxs[!setpo])
+        
+        
         plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_encoded")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
@@ -573,6 +584,8 @@ for ( i in 1:ncol(classes) ) {
         dev.off()
     }
 
+    if ( do.nucleotides ) next
+
     ## INCORPORATED
     if ( any(dfnp$pvals<min(psig))  | id %in% selected ) {
 
@@ -581,6 +594,9 @@ for ( i in 1:ncol(classes) ) {
         ht <- 2.5
         mn <- dfnb$ylim.negMax
         mx <- dfnb$ylim.posMax
+        if ( focus.ylim )
+            mx <- max(dfnb$ymaxs[!setpn])
+        
         plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_incorporated")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
@@ -606,6 +622,11 @@ for ( i in 1:ncol(classes) ) {
         mxo <- dfob$ylim.posMax
         mnn <- dfnb$ylim.negMax
         mxn <- dfnb$ylim.posMax
+
+        if ( focus.ylim ) {
+            mxo <- max(dfob$ymaxs[!setpo])
+            mxn <- max(dfnb$ymaxs[!setpn])
+        }
         
         ##mxo <- mxn <- max(mxo, mxn)
         

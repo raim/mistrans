@@ -18,55 +18,56 @@ bibliography: /home/raim/ref/tata.bib
 \tiny
 
 Extended Data Figure Motifs: \textbf{Amino Acid and Substitution Site
-Enrichment Profiles.} (a) Lysine (K) and Arginine (R), the trypsin
-cleavage sites are enriched directly upstream of the substitution
-sites. Tryptophane (W), methionine (M), and at lower signficance,
-glycine (G) and cytosine (C) are enriched directly adjacent to
-substitution sites. (b) Substitutions by glycine (G) or alanine (A)
-are enriched within the 3 N-temrinal amino acids of base peptides (N1
-to N3), i.e., directly after the trypsin cleavage sites (K or
-R). Various substitutions involving arginine (N), methionine (M) or
-glutamate (E) as either the encoded or the incorporated amino acid are
-enriched distant from the N- and C-termini (>9). Only substitution
-types with significant enrichments ($p\le10^{-10}$) are shown in (b).
-\textcolor{red}{These observations lead to the definition of sequences
-for Figure 4e, where sequence difference logos were calculated for all
-substitutions by G or A within the 3 N-terminal sites of base peptides
-(motif \texttt{KRAQ}), and for all substitutions that had at least one
-W (\texttt{WWxWW}), M (\texttt{MMxMM}), C (\texttt{CCxCC}) or G
+Enrichment Profiles.} TODO: short description, text fields,
+p-value. (a) Lysine (K) and Arginine (R), the trypsin cleavage sites
+are enriched directly upstream of the substitution sites. Tryptophane
+(W), methionine (M), and at lower signficance, glycine (G) and
+cytosine (C) are enriched directly adjacent to substitution sites. (b)
+Substitutions by glycine (G) or alanine (A) are enriched within the 3
+N-temrinal amino acids of base peptides (N1 to N3), i.e., directly
+after the trypsin cleavage sites (K or R). Various substitutions
+involving arginine (N), methionine (M) or glutamate (E) as either the
+encoded or the incorporated amino acid are enriched distant from the
+N- and C-termini (>9). Only substitution types with significant
+enrichments ($p\le10^{-10}$) are shown in (b).  \textcolor{red}{These
+observations lead to the definition of sequences for Figure 4e, where
+sequence difference logos were calculated for all substitutions by G
+or A within the 3 N-terminal sites of base peptides (motif
+\texttt{KRAQ}), and for all substitutions that had at least one W
+(\texttt{WWxWW}), M (\texttt{MMxMM}), C (\texttt{CCxCC}) or G
 (\texttt{GGxGG}) within 2 positions of the substitution site. The
 selection \texttt{GGxGG} showed no specific enrichments at the
-subsitution site and is not shown.} TODO: omit AAS from filtering in this and logos?
+subsitution site and is not shown.}
 
 
 # 
 
 
-![](motifs/logos/logos_fromto_Q:G_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_Q:A_encoded.pdf){width=19%}
-<!-- ![](motifs/logos/logos_fromto_I:G_encoded.pdf){width=19%} prev sig on intron -->
-![](motifs/logos/logos_fromto_E:N_encoded.pdf){width=19%}
-<!-- ![](motifs/logos/logos_fromto_S:N_encoded.pdf){width=19%} prev sig -->
-![](motifs/logos/logos_fromto_T:V_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_N:M_encoded.pdf){width=19%}
-<!--  ![](motifs/logos/logos_fromto_T:Q_encoded.pdf){width=19%} prev sig on exon -->
+![](motifs/logos/AA_logos_fromto_Q:G_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_Q:A_encoded.pdf){width=19%}
+<!-- ![](motifs/logos/AA_logos_fromto_I:G_encoded.pdf){width=19%} prev sig on intron -->
+![](motifs/logos/AA_logos_fromto_E:N_encoded.pdf){width=19%}
+<!-- ![](motifs/logos/AA_logos_fromto_S:N_encoded.pdf){width=19%} prev sig -->
+![](motifs/logos/AA_logos_fromto_T:V_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_N:M_encoded.pdf){width=19%}
+<!--  ![](motifs/logos/AA_logos_fromto_T:Q_encoded.pdf){width=19%} prev sig on exon -->
 
-![](motifs/logos/logos_fromto_M:G_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_L:G_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_N:G_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_C:G_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_M:G_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_L:G_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_N:G_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_C:G_encoded.pdf){width=19%}
 
-![](motifs/logos/logos_fromto_E:C_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_I:Q_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_L:Q_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_P:T_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_E:C_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_I:Q_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_L:Q_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_P:T_encoded.pdf){width=19%}
 
 
-![](motifs/logos/logos_fromto_E:M_encoded.pdf){width=19%}
-<!-- ![](motifs/logos/logos_fromto_M:D_encoded.pdf){width=19%} prev sig -->
-![](motifs/logos/logos_fromto_W:D_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_H:D_encoded.pdf){width=19%}
-![](motifs/logos/logos_fromto_T:D_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_E:M_encoded.pdf){width=19%}
+<!-- ![](motifs/logos/AA_logos_fromto_M:D_encoded.pdf){width=19%} prev sig -->
+![](motifs/logos/AA_logos_fromto_W:D_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_H:D_encoded.pdf){width=19%}
+![](motifs/logos/AA_logos_fromto_T:D_encoded.pdf){width=19%}
 
 \tiny
 
