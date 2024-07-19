@@ -155,6 +155,47 @@ mtext("position of AAS in peptide", 1, 1.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
+### WOULD SAAP MAP TO OTHER BP?
+library(stringdist)
+## rows are BP and columns are SAAP
+mtx <- stringdistmatrix(unique(bdat$BP), unique(bdat$SAAP),
+                        method = "hamming", useNames = "strings")
+mtx <- mtx==1 # distance 1?
+mtb <-  apply(mtx, 2, sum)
+
+cat(paste(sum(mtb>1), "SAAP map to more than one BP\n"))
+
+ids <- names(which.max(mtb))
+
+ids <- names(which(mtb>1))[1]
+bps <- names(which(mtx[,ids]))
+
+cat(paste(paste(c(ids, bps), collapse="\n"),"\n"))
+
+15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
+17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
+
+pnms[unique(bdat[bdat$BP%in%bps,"protein"])]
+
+ids <- "ADQCYEDIR"
+bpr <- "ADQCYEDVR" # actual paired BP
+bpm <- "NDQCYEDIR" # missed BP with equal distance
+bps <- names(which(mtx[,ids]))
+
+tmtf[tmtf$BP%in%c(bps),c("BP","SAAP", "Dataset")]
+
+## SAAPs that map to more than 1 BP
+msaaps <- names(which(mtb>1))
+
+mdat <- bdat[bdat$SAAP%in%msaaps,]
+mlst <- split(mdat, mdat$SAAP)
+
+ml <- mlst[[2]]
+unique(ml$SAAP)
+unique(ml$SAAP)
+
+## TODO: investigate all:
+## * mutated proteins? would blast have reported the mutated protein?
 
 ## * GENERAL PEPTIDE ANALYSIS
 

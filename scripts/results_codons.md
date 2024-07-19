@@ -47,4 +47,4 @@ header-includes:
 
 \textbf{e}
 
-\vspace{20ex}
+\vspace{10ex}
