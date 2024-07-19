@@ -195,7 +195,12 @@ unique(ml$SAAP)
 unique(ml$SAAP)
 
 ## TODO: investigate all:
-## * mutated proteins? would blast have reported the mutated protein?
+## ## * mutated proteins? would blast have reported the mutated protein?
+## * just look at Healthy,
+## * ignore tissues and take a median intensity for each BP and SAAP over
+##   all tissues they are observed in,
+## * calculate RAAS for all possible (hamming distance==1) BP:SAAP pairs, 
+##   make a scatter plot showing each SAAP that has >1 matching BP.
 
 ## * GENERAL PEPTIDE ANALYSIS
 

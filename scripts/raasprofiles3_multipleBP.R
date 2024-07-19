@@ -24,8 +24,8 @@ if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
 
-kfig.path <- file.path(fig.path,"kraq")
-dir.create(kfig.path, showWarnings=FALSE)
+sfig.path <- file.path(fig.path,"saap")
+dir.create(sfig.path, showWarnings=FALSE)
 
 ### remove duplicate sites!
 ## TODO: is there a cleaner way to do this? here we randomly loose AAS types
@@ -83,8 +83,8 @@ tmth <- tmtf[tmtf$Dataset=="Healthy",]
 
 bpa <- split(tmth$BP.abundance, tmth$BP)
 spa <- split(tmth$SAAP.abundance, tmth$SAAP)
-bpa <- unlist(lapply(bpa, function(x) log10(median(x^10))))
-spa <- unlist(lapply(spa, function(x) log10(median(x^10))))
+bpa <- unlist(lapply(bpa, function(x) median))
+spa <- unlist(lapply(spa, function(x) median))
 
 ## rows are BP and columns are SAAP
 mtx <- stringdistmatrix(names(bpa), names(spa),
@@ -120,5 +120,9 @@ sbrl <- lapply(sbl, function(x) {
 })
 sbr <- do.call(rbind, sbrl)
 
+plotdev(file.path(sfig.path,paste0("saap_multiple_bp")),
+        height=2.5, width=2.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05)
 plotCor(sbr$x, sbr$y, density=FALSE, xlab=expression(log[10](RAAS[identified])),
         ylab=expression(log[10](RAAS["alternative BP"])))
+dev.off()
