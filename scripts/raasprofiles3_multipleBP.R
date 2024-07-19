@@ -83,8 +83,8 @@ tmth <- tmtf[tmtf$Dataset=="Healthy",]
 
 bpa <- split(tmth$BP.abundance, tmth$BP)
 spa <- split(tmth$SAAP.abundance, tmth$SAAP)
-bpa <- unlist(lapply(bpa, function(x) median))
-spa <- unlist(lapply(spa, function(x) median))
+bpa <- unlist(lapply(bpa,  median))
+spa <- unlist(lapply(spa,  median))
 
 ## rows are BP and columns are SAAP
 mtx <- stringdistmatrix(names(bpa), names(spa),
