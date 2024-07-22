@@ -10,6 +10,7 @@
 library(stringr)
 library(DiffLogo)
 library(Biostrings)
+library(segmenTools)
 AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
 diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
@@ -49,8 +50,8 @@ bps <- names(which(mtx[,ids]))
 
 cat(paste(paste(c(ids, bps), collapse="\n"),"\n"))
 
-15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
-17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
+##15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
+##17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
 
 pnms[unique(bdat[bdat$BP%in%bps,"protein"])]
 
@@ -122,7 +123,9 @@ sbr <- do.call(rbind, sbrl)
 
 plotdev(file.path(sfig.path,paste0("saap_multiple_bp")),
         height=2.5, width=2.5, res=300, type=ftyp)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.05)
+par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.05)
 plotCor(sbr$x, sbr$y, density=FALSE, xlab=expression(log[10](RAAS[identified])),
-        ylab=expression(log[10](RAAS["alternative BP"])))
+        ylab=expression(log[10](RAAS["alternative BP"])), line.methods="",
+        title=TRUE, cor.legend=FALSE)
+abline(a=0, b=1)
 dev.off()
