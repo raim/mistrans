@@ -205,6 +205,10 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/functi
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_models.R &> ${MISDATA}/log/models.txt 
 
+## COMPARE MULTIPLE BP per SAAP
+R --vanilla <  ${THIS}/scripts/raasprofiles3_multipleBP.R &> ${MISDATA}/log/multpleBP.txt 
+
+
 ## PROTEIN 3D: chimeraX codes for pdb
 R --vanilla <  ${THIS}/scripts/raasprofiles3_pdbscan.R &> ${MISDATA}/log/protein_pdb.txt 
 
