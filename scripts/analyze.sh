@@ -203,10 +203,10 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R &> ${MISDATA}/log/kraq.txt  
 R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R &> ${MISDATA}/log/structure.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/function.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
-R --vanilla <  ${THIS}/scripts/raasprofiles3_models.R &> ${MISDATA}/log/models.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_model.R &> ${MISDATA}/log/model.txt 
 
 ## COMPARE MULTIPLE BP per SAAP
-R --vanilla <  ${THIS}/scripts/raasprofiles3_multipleBP.R &> ${MISDATA}/log/multpleBP.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_multipleBP.R &> ${MISDATA}/log/multipleBP.txt 
 
 
 ## PROTEIN 3D: chimeraX codes for pdb
@@ -276,7 +276,8 @@ cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.pdf $results
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.pdf $results/motifs/
 
 ##cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_fromto_*_encoded.pdf $results/motifs/
-pandoc ${THIS}/scripts/results_motifs.md -t beamer -o $results/motifs/Extended_Data_Figure_motifs.pdf
+pandoc ${THIS}/scripts/results_motifs.md  -o $results/motifs/Extended_Data_Figure_8_A4.pdf
+pdfcrop --clip $results/motifs/Extended_Data_Figure_8_A4.pdf $results/motifs/Extended_Data_Figure_8.pdf
 
 mkdir $results/structure
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.pdf $results/structure/
