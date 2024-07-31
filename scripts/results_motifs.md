@@ -1,15 +1,12 @@
 ---
+fontfamily: helvet
 header-includes: 
+  - \renewcommand{\familydefault}{\sfdefault}
   - \graphicspath{{/home/raim/data/mistrans/figures/raasprofiles3}}
   - \usepackage[left=2cm,right=2cm,bottom=2cm,top=2cm]{geometry}
   - \pagenumbering{gobble}
 bibliography: /home/raim/ref/tata.bib
 ---
-
-
-# <!--  Sequence Context: logos by AAS type -->
-
-
 
 ![](motifs/AAS_overlap.pdf){height=35%}![](kraq/peptides_AAS_AAStype_tight.pdf){height=35%}
 
@@ -17,9 +14,9 @@ bibliography: /home/raim/ref/tata.bib
 
 \phantom{das muss noch mehr in die mitteeeeeeeee}![](legend_pvals_horizontal.pdf){width=20%}
 
-\vspace{-65ex} \huge \textbf{a}\phantom{das muss noch mehr in die}\textbf{b}
+\vspace{-50ex} \textbf{a}\phantom{das muss noch mehr in die mitteeeeeeeeeeeeeeee}\textbf{b}
 
-\vspace{25ex}
+\vspace{46ex}
 \textbf{c}
 
 ![](motifs/logos/AA_logos_fromto_Q:G_encoded.pdf){width=19%}

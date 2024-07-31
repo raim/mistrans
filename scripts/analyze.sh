@@ -244,7 +244,8 @@ cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.pdf $results/
 mkdir $results/codons
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codon_frequencies.tsv $results/codons/
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.pdf $results/codons/
-pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot.pdf
+pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.pdf
+pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_Figure_4.pdf
 
 ## Figure 3:
 ## 3e: encoded/incorporated selection,
@@ -294,7 +295,7 @@ cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot
 pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
 cd $MISDATA
-zip -r $MISDATA/results $results 
+zip -r results results
 
 ##zip file of all protein plots,
 ##zip file of all chimeraX commands.
