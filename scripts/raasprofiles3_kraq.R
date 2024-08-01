@@ -370,6 +370,13 @@ dev.off()
 
 ## ? K|RA, AQ, K|RAQ, compared to other K|R 
 
+## proteome kmer count
+pfasta <- file.path(out.path,"all_proteins.fa")
+
+fas <- readFASTA(pfasta, grepID=TRUE)
+fas <- fas[names(fas)%in%MANES]
+seql <- lapply(fas, function(x) x$seq)
+
 ## TODO: find and fix kmer bug - ERROR on exon but not intron
 if ( FALSE ) {
 
@@ -382,12 +389,6 @@ if ( FALSE ) {
     kproteome <- kcount(aabin, k=2) ## ERROR on exon but not intron
     
     
-    ## proteome kmer count
-    pfasta <- file.path(out.path,"all_proteins.fa")
-    
-    fas <- readFASTA(pfasta, grepID=TRUE)
-    fas <- fas[names(fas)%in%MANES]
-    seql <- lapply(fas, function(x) x$seq)
     conc <- paste0(unlist(seql), collapse="")
     concbin <- as.AAbin(conc) 
     kproteome <- kcount(concbin, k=2) ## ERROR on exon but not intron
