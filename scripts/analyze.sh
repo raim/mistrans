@@ -232,10 +232,12 @@ R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.t
 ## * codon frequency as table file,
 ## * full codon dotprofiles,
 
-ftyp=png
+ftyp=pdf #png
 
 results=${MISDATA}/results_${ftyp}/
 mkdir $results
+
+cp -a ${THIS}/scripts/README.md $results/
 
 cp -a ${MISDATA}/processedData/bp_mapped.tsv $results/
 cp -a ${MISDATA}/processedData/sites_raas.tsv $results/
@@ -300,7 +302,7 @@ cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot
 pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
 cd $MISDATA
-zip -r results results
+zip -r results_${ftyp} results_${ftyp}
 
 ##zip file of all protein plots,
 ##zip file of all chimeraX commands.
