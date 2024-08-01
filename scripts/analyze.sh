@@ -199,7 +199,7 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_init.R &> ${MISDATA}/log/init.txt
 R --vanilla <  ${THIS}/scripts/raasprofiles3_codons.R &> ${MISDATA}/log/codons.txt  # FIGURE 2
 R --vanilla <  ${THIS}/scripts/raasprofiles3_aminoacids.R &> ${MISDATA}/log/aminoacids.txt  # FIGURE 3
 R --vanilla <  ${THIS}/scripts/raasprofiles3_motifs.R &> ${MISDATA}/log/motifs.txt  # FIGURE 4
-R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R &> ${MISDATA}/log/kraq.txt  ## TODO: reproduce diAA
+R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R &> ${MISDATA}/log/kraq.txt  # EXTENDED DATA FIGURE 8: motif selection
 R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R &> ${MISDATA}/log/structure.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/function.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
@@ -232,20 +232,23 @@ R --vanilla <  ${THIS}/scripts/saap_proteins.R &> ${MISDATA}/log/protein_plots.t
 ## * codon frequency as table file,
 ## * full codon dotprofiles,
 
-results=${MISDATA}/results/
+ftyp=png
+
+results=${MISDATA}/results_${ftyp}/
 mkdir $results
 
 cp -a ${MISDATA}/processedData/bp_mapped.tsv $results/
 cp -a ${MISDATA}/processedData/sites_raas.tsv $results/
 
-cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.pdf $results/
+cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.${ftyp} $results/
 
 
 mkdir $results/codons
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codon_frequencies.tsv $results/codons/
-cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.pdf $results/codons/
-pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.pdf
-pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_Figure_4.pdf
+cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.${ftyp} $results/codons/
+## NOTE: markdown includes figures from _codons.R 
+pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.${ftyp}
+${ftyp}crop --clip $results/codons/codon_plot_A4.${ftyp}  $results/codons/Extended_Data_Figure_4.${ftyp}
 
 ## Figure 3:
 ## 3e: encoded/incorporated selection,
@@ -256,43 +259,45 @@ pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_
 ## Extended 5f: all encoded/incorporated.
 
 mkdir $results/aminoacids
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_cut_dotplot_manual.pdf $results/aminoacids/
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_all_dotplot.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_cut_dotplot_manual.${ftyp} $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_all_dotplot.${ftyp} $results/aminoacids/
 
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_cut_dotplot_manual.pdf $results/aminoacids/
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_dotplot_manual_acols.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_cut_dotplot_manual.${ftyp} $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_dotplot_manual.${ftyp} $results/aminoacids/
 
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_cut_dotplot_manual_rotated.pdf $results/aminoacids/
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_dotplot.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_cut_dotplot_manual_rotated.${ftyp} $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_dotplot.${ftyp} $results/aminoacids/
 
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_cut_dotplot_manual_rotated.pdf $results/aminoacids/
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_dotplot.pdf $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_cut_dotplot_manual_rotated.${ftyp} $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_dotplot.${ftyp} $results/aminoacids/
 
 mkdir $results/motifs
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_KRAQ.pdf $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_CCxCC.pdf $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_MMxMM.pdf $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_WWxWW.pdf $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.pdf $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.pdf $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_KRAQ.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_CCxCC.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_MMxMM.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_WWxWW.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.${ftyp} $results/motifs/
 
-##cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_fromto_*_encoded.pdf $results/motifs/
-pandoc ${THIS}/scripts/results_motifs.md  -o $results/motifs/Extended_Data_Figure_8_A4.pdf
-pdfcrop --clip $results/motifs/Extended_Data_Figure_8_A4.pdf $results/motifs/Extended_Data_Figure_8.pdf
+##cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_fromto_*_encoded.${ftyp} $results/motifs/
+## NOTE: markdown includes figures from _kraq.R and _motifs.R
+pandoc ${THIS}/scripts/results_motifs.md  -o $results/motifs/Extended_Data_Figure_8_A4.${ftyp}
+${ftyp}crop --clip $results/motifs/Extended_Data_Figure_8_A4.${ftyp} $results/motifs/Extended_Data_Figure_8.${ftyp}
 
 mkdir $results/structure
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.pdf $results/structure/
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.pdf $results/structure/
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_lengths_all.pdf $results/structure/
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.${ftyp} $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.${ftyp} $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_lengths_all.${ftyp} $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.${ftyp} $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/proteins_raas.tsv $results/structure/
 
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/structure_cor_iupred3_RAAS.pdf $results/structure/
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/structure_cor_MMSeq2_RAAS.pdf $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/structure/structure_cor_iupred3_RAAS.${ftyp} $results/structure/
+cp -a ${MISDATA}/figures/raasprofiles3/structure/structure_cor_MMSeq2_RAAS.${ftyp} $results/structure/
 
 mkdir $results/function
-cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.pdf $results/function
-pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
+cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.${ftyp} $results/function
+## NOTE: markdown includes figures from _function.R 
+pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.${ftyp}
 
 cd $MISDATA
 zip -r results results

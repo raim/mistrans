@@ -36,7 +36,7 @@ cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
 ### WOULD SAAP MAP TO OTHER BP?
 library(stringdist)
 ## rows are BP and columns are SAAP
-mtx <- stringdistmatrix(unique(bdat$BP), unique(bdat$SAAP),
+mtx <- stringdistmatrix(unique(cdat$BP), unique(cdat$SAAP),
                         method = "hamming", useNames = "strings")
 mtx <- mtx==1 # distance 1?
 mtb <-  apply(mtx, 2, sum)
@@ -53,7 +53,7 @@ cat(paste(paste(c(ids, bps), collapse="\n"),"\n"))
 ##15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
 ##17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
 
-pnms[unique(bdat[bdat$BP%in%bps,"protein"])]
+pnms[unique(cdat[cdat$BP%in%bps,"protein"])]
 
 ids <- "ADQCYEDIR"
 bpr <- "ADQCYEDVR" # actual paired BP
@@ -65,7 +65,7 @@ tmtf[tmtf$BP%in%c(bps),c("BP","SAAP", "Dataset")]
 ## SAAPs that map to more than 1 BP
 msaaps <- names(which(mtb>1))
 
-mdat <- bdat[bdat$SAAP%in%msaaps,]
+mdat <- cdat[cdat$SAAP%in%msaaps,]
 mlst <- split(mdat, mdat$SAAP)
 
 ml <- mlst[[2]]
@@ -121,9 +121,29 @@ sbrl <- lapply(sbl, function(x) {
 })
 sbr <- do.call(rbind, sbrl)
 
+cat(paste(sum(duplicated(sbr$SAAP)),"SAAP have multiple BPs\n"))
+
+idx <- which(sbr$SAAP==sbr$SAAP[duplicated(sbr$SAAP)])
+out <- which(abs(sbr$x-sbr$y)>2)
+
+plotdev(file.path(sfig.path,paste0("saap_multiple_bp_info")),
+        height=3, width=3, res=300, type=ftyp)
+par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(sbr$x, sbr$y, density=FALSE, xlab=expression(log[10](RAAS[identified])),
+        ylab=expression(log[10](RAAS["alternative BP"])), line.methods="",
+        title=TRUE, cor.legend=FALSE)
+points(sbr$x[idx], sbr$y[idx], col=4, pch=19,cex=.2)
+points(sbr$x[out], sbr$y[out], col=2, pch=19,cex=.2)
+text(sbr$x[out], sbr$y[out], labels=sbr$SAAP[out], col=2, cex=.5, xpd=TRUE)
+abline(a=0, b=1)
+dev.off()
+
+unique(tmth$name[tmth$BP%in%sbr$BPi[out]])
+unique(tmth$name[tmth$BP%in%sbr$BPe[out]])
+
 plotdev(file.path(sfig.path,paste0("saap_multiple_bp")),
         height=2.5, width=2.5, res=300, type=ftyp)
-par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.05)
+par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(sbr$x, sbr$y, density=FALSE, xlab=expression(log[10](RAAS[identified])),
         ylab=expression(log[10](RAAS["alternative BP"])), line.methods="",
         title=TRUE, cor.legend=FALSE)

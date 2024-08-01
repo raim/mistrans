@@ -253,7 +253,7 @@ tmts <- tmtf[!duplicated(tmtf$unique.site),]
 
 ## LOAD PDB2ENSEMBL
 ## and write RAAS color display for selected/all structures
-pdb2ens <- read.csv("~/data/mistrans/originalData/pdb_chain_ensembl.csv",
+pdb2ens <- read.csv("~/data/mammary/originalData/pdb_chain_ensembl.csv.gz",
                     skip=1)
 
 ## filter all structures where we have AAS

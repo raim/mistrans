@@ -172,8 +172,8 @@ bps <- names(which(mtx[,ids]))
 
 cat(paste(paste(c(ids, bps), collapse="\n"),"\n"))
 
-15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
-17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
+##15080 AEGPEVDVNLPK AEGPEVDVTLPK    PDAC
+##17325 GEGPEVDVTLPK GEGPEVDVSLPK    PDAC
 
 pnms[unique(bdat[bdat$BP%in%bps,"protein"])]
 
@@ -500,15 +500,15 @@ plotdev(file.path(kfig.path,paste0("cleavage_KR_kmers")),
         height=7, width=10, res=300, type=ftyp)
 par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
 par(mfcol=c(2,1))
-barplot(fmers[,grep("^R",colnames(kmers))], ylab="rel. frequency",
-        beside=TRUE, col=1:nrow(rmers), legend=TRUE)
-barplot(fmers[,grep("^K",colnames(kmers))], ylab="rel. frequency",
+barplot(fmers[,grep("^R",colnames(fmers))], ylab="rel. frequency",
+        beside=TRUE, col=1:nrow(fmers), legend=TRUE)
+barplot(fmers[,grep("^K",colnames(fmers))], ylab="rel. frequency",
         beside=TRUE, col=1:nrow(fmers), legend=TRUE)
 dev.off()
 
 ## add K and R frequencies
-kkmer <- fmers[,grep("^K",colnames(kmers))]
-rkmer <- fmers[,grep("^R",colnames(kmers))]
+kkmer <- fmers[,grep("^K",colnames(fmers))]
+rkmer <- fmers[,grep("^R",colnames(fmers))]
 colnames(kkmer) <- sub("^K", "", colnames(kkmer))
 colnames(rkmer) <- sub("^R", "", colnames(rkmer))
 
@@ -729,6 +729,7 @@ cat(paste("found", gcnt, "K|RAQ in the proteome, expected:",
 ## shown in univseralmotifs package.
 library(universalmotif)
 library(Biostrings)
+library(stringr)
 
 numperm <- 1000
 nums <- rep(0, length(numperm))

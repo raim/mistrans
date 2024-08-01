@@ -722,7 +722,7 @@ table(stringr::str_count(asite$BP, ";"))
 
 bsite <- asite
 bsite$RAAS <- bsite$RAAS.median
-bsite$BP <- bsite$BPl
+bsite$BP <- bsite$all.BP
 filters <- list(all=1:nrow(bsite),
                 high=which(bsite$RAAS.median> -1))
 fnms <- c(all="all", high="RAAS> 0.1")

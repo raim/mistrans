@@ -80,7 +80,7 @@ if ( nrow(ovwp$p.value)>0 )
 ## calculate optimal figure height: result fields + figure margins (mai)
 nr <- nrow(ovw$p.value)
 nc <- ncol(ovw$p.value)
-mai <- c(.8,1.75,.6,.6)
+mai <- c(.8,1.75,.7,.6)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 ffam <- "monospace"#"sans"
