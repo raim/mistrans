@@ -247,8 +247,8 @@ mkdir $results/codons
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codon_frequencies.tsv $results/codons/
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.${ftyp} $results/codons/
 ## NOTE: markdown includes figures from _codons.R 
-pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.${ftyp}
-${ftyp}crop --clip $results/codons/codon_plot_A4.${ftyp}  $results/codons/Extended_Data_Figure_4.${ftyp}
+pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.pdf
+pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_Figure_4.pdf
 
 ## Figure 3:
 ## 3e: encoded/incorporated selection,
@@ -281,8 +281,8 @@ cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas
 
 ##cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_fromto_*_encoded.${ftyp} $results/motifs/
 ## NOTE: markdown includes figures from _kraq.R and _motifs.R
-pandoc ${THIS}/scripts/results_motifs.md  -o $results/motifs/Extended_Data_Figure_8_A4.${ftyp}
-${ftyp}crop --clip $results/motifs/Extended_Data_Figure_8_A4.${ftyp} $results/motifs/Extended_Data_Figure_8.${ftyp}
+pandoc ${THIS}/scripts/results_motifs.md  -o $results/motifs/Extended_Data_Figure_8_A4.pdf
+pdfcrop --clip $results/motifs/Extended_Data_Figure_8_A4.pdf $results/motifs/Extended_Data_Figure_8.pdf
 
 mkdir $results/structure
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.${ftyp} $results/structure/
@@ -297,7 +297,7 @@ cp -a ${MISDATA}/figures/raasprofiles3/structure/structure_cor_MMSeq2_RAAS.${fty
 mkdir $results/function
 cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.${ftyp} $results/function
 ## NOTE: markdown includes figures from _function.R 
-pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.${ftyp}
+pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
 cd $MISDATA
 zip -r results results
