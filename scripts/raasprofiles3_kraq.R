@@ -371,311 +371,312 @@ dev.off()
 ## ? K|RA, AQ, K|RAQ, compared to other K|R 
 
 ## TODO: find and fix kmer bug - ERROR on exon but not intron
+if ( FALSE ) {
 
+    unloadNamespace("kmer")
+    library(kmer)
+    library(ape)
+    
+    ## mini example with error
+    aabin <- as.AAbin("ACDFGHKLMNRTY")
+    kproteome <- kcount(aabin, k=2) ## ERROR on exon but not intron
+    
+    
+    ## proteome kmer count
+    pfasta <- file.path(out.path,"all_proteins.fa")
+    
+    fas <- readFASTA(pfasta, grepID=TRUE)
+    fas <- fas[names(fas)%in%MANES]
+    seql <- lapply(fas, function(x) x$seq)
+    conc <- paste0(unlist(seql), collapse="")
+    concbin <- as.AAbin(conc) 
+    kproteome <- kcount(concbin, k=2) ## ERROR on exon but not intron
+    
+    ## error occurs for any sequence
+    for ( i in 1:length(seql) ) {
+        aabin <- as.AAbin(seql[[i]])
+        kcount(aabin, k=2)
+    }
 
-unloadNamespace("kmer")
-library(kmer)
-library(ape)
+    kproteome <- apply(kproteome,2,sum)
 
-## mini example with error
-aabin <- as.AAbin("ACDFGHKLMNRTY")
-kproteome <- kcount(aabin, k=2) ## ERROR on exon but not intron
+    ## TODO: K|R.x
 
+    ## tryptic peptide kmer count
+    tryptic <- readLines(pep.file)
+    ## remove all that are in BP
+    tryptic <- tryptic[!tryptic%in%cdat$BP]
+    conc <- paste0(tryptic, collapse="")
+    ktryptic <-kcount(as.AAbin(conc), k=2)
+    
+    ## base peptide kmer count
+    conc <- paste0(cdat$BP, collapse="")
+    kbase <-kcount(as.AAbin(conc), k=2)
+    
+    ## cleavage site kmer count
+    paa <- strsplit(cdat$AA, "")
+    paa <- do.call(rbind, paa)
+    DST <- (ncol(paa)-1)/2
+    colnames(paa) <- -DST:DST
+    
+    ## get cleavage site from AA,
+    ## analyze upstream site, it is NOT always K|R
+    
+    ## diAA dat cleavge site
+    cuts <- sapply(cdat$site, function(x)
+        list(paste0("-",as.character(c(x,x-1)))))
+    pal <- rep("", nrow(paa))
+    for ( i in seq_along(cuts) )
+        if ( all(cuts[[i]]%in%colnames(paa)) ) ## NOTE: loosing sites >DST!
+            pal[i] <-paste0(paa[i,cuts[[i]]], collapse="")
+    pal[pal==""] <- ">dst" # TODO: get longer DST in map_peptides3
+    kcuts <- table(pal)
+    
+    ## NON-TRYPTIC CLEAVAGE BIAS?
+    ## * by RAAS 
+    ## * TODO: overlaps with AAS type?
+    cdat$cleavage2 <- pal
+    cdat$cleavage <- unlist(lapply(strsplit(pal,""), function(x) x[1]))
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_diAA_RAAS")),
+            height=3.5, width=10, res=300, type=ftyp)
+    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
+    bp <- boxplot(cdat$median ~ cdat$cleavage2, las=2,
+                  ylab=expression(log[10](bar(RAAS))),
+                  xlab="non-tryptic cleavage sites")
+    axis(3, at=1:length(bp$names), labels=table(cdat$cleavage2)[bp$names], las=2)
+    axis(4)
+    dev.off()
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_monoAA_RAAS")),
+            height=3.5, width=5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
+    bp <- boxplot(cdat$median ~ cdat$cleavage, las=2,
+                  ylab=expression(log[10](bar(RAAS))),
+                  xlab="non-tryptic cleavage sites")
+    axis(3, at=1:length(bp$names), labels=table(cdat$cleavage)[bp$names], las=2)
+    stripchart(median ~ cleavage, vertical = TRUE, data = cdat, 
+               method = "jitter", add = TRUE, pch = 20,
+               col="#00000077", cex=1,
+               axes=FALSE)
+    dev.off()
+    
+    ## CLEAVAG SITE FREQUENCIES
+    ## total frequencies at cleavage site vs. proteomic
+    ## NOTE: compare only proper K|R sites!
+    knms <- grep("^[KR]", diAAT, value=TRUE)
+    fcuts <- rbind(BP=kcuts[knms],
+                   proteome=kproteome[knms])
+    fcuts <- fcuts[,order(fcuts[2,], decreasing=TRUE)]
+    fcuts <- fcuts/apply(fcuts, 1, sum)
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_frequencies_cor")),
+            height=3.5, width=3.5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
+    plotCor(fcuts[2,], fcuts[1,], ##outliers=fcuts[1,]<.001,
+            density=FALSE, xlim=c(0,.08), ylim=c(0,.08),
+            xlab="proteomic frequency", ylab="BP frequency")
+    text(fcuts[2,], fcuts[1,], labels=colnames(fcuts), pos=4)
+    abline(a=0, b=1)
+    dev.off()
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_frequencies_bar")),
+            height=3.5, width=10, res=300, type=ftyp)
+    par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    barplot(fcuts, las=2, beside=TRUE, legend=TRUE, ylab="rel. frequency")
+    dev.off()
+    
+    ## overall frequencies
 
-## proteome kmer count
-pfasta <- file.path(out.path,"all_proteins.fa")
-
-fas <- readFASTA(pfasta, grepID=TRUE)
-fas <- fas[names(fas)%in%MANES]
-seql <- lapply(fas, function(x) x$seq)
-conc <- paste0(unlist(seql), collapse="")
-concbin <- as.AAbin(conc) 
-kproteome <- kcount(concbin, k=2) ## ERROR on exon but not intron
-
-## error occurs for any sequence
-for ( i in 1:length(seql) ) {
-    aabin <- as.AAbin(seql[[i]])
-    kcount(aabin, k=2)
-}
-
-kproteome <- apply(kproteome,2,sum)
-
-## TODO: K|R.x
-
-## tryptic peptide kmer count
-tryptic <- readLines(pep.file)
-## remove all that are in BP
-tryptic <- tryptic[!tryptic%in%cdat$BP]
-conc <- paste0(tryptic, collapse="")
-ktryptic <-kcount(as.AAbin(conc), k=2)
-
-## base peptide kmer count
-conc <- paste0(cdat$BP, collapse="")
-kbase <-kcount(as.AAbin(conc), k=2)
-
-## cleavage site kmer count
-paa <- strsplit(cdat$AA, "")
-paa <- do.call(rbind, paa)
-DST <- (ncol(paa)-1)/2
-colnames(paa) <- -DST:DST
-
-## get cleavage site from AA,
-## analyze upstream site, it is NOT always K|R
-
-## diAA dat cleavge site
-cuts <- sapply(cdat$site, function(x)
-    list(paste0("-",as.character(c(x,x-1)))))
-pal <- rep("", nrow(paa))
-for ( i in seq_along(cuts) )
-    if ( all(cuts[[i]]%in%colnames(paa)) ) ## NOTE: loosing sites >DST!
-        pal[i] <-paste0(paa[i,cuts[[i]]], collapse="")
-pal[pal==""] <- ">dst" # TODO: get longer DST in map_peptides3
-kcuts <- table(pal)
-
-## NON-TRYPTIC CLEAVAGE BIAS?
-## * by RAAS 
-## * TODO: overlaps with AAS type?
-cdat$cleavage2 <- pal
-cdat$cleavage <- unlist(lapply(strsplit(pal,""), function(x) x[1]))
-
-plotdev(file.path(kfig.path,paste0("cleavage_diAA_RAAS")),
-        height=3.5, width=10, res=300, type=ftyp)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-bp <- boxplot(cdat$median ~ cdat$cleavage2, las=2,
-              ylab=expression(log[10](bar(RAAS))),
-              xlab="non-tryptic cleavage sites")
-axis(3, at=1:length(bp$names), labels=table(cdat$cleavage2)[bp$names], las=2)
-axis(4)
-dev.off()
-
-plotdev(file.path(kfig.path,paste0("cleavage_monoAA_RAAS")),
-        height=3.5, width=5, res=300, type=ftyp)
-par(mai=c(.5,.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)#, yaxs="i")
-bp <- boxplot(cdat$median ~ cdat$cleavage, las=2,
-              ylab=expression(log[10](bar(RAAS))),
-              xlab="non-tryptic cleavage sites")
-axis(3, at=1:length(bp$names), labels=table(cdat$cleavage)[bp$names], las=2)
-stripchart(median ~ cleavage, vertical = TRUE, data = cdat, 
-           method = "jitter", add = TRUE, pch = 20,
-           col="#00000077", cex=1,
-           axes=FALSE)
-dev.off()
-
-## CLEAVAG SITE FREQUENCIES
-## total frequencies at cleavage site vs. proteomic
-## NOTE: compare only proper K|R sites!
-knms <- grep("^[KR]", diAAT, value=TRUE)
-fcuts <- rbind(BP=kcuts[knms],
-               proteome=kproteome[knms])
-fcuts <- fcuts[,order(fcuts[2,], decreasing=TRUE)]
-fcuts <- fcuts/apply(fcuts, 1, sum)
-
-plotdev(file.path(kfig.path,paste0("cleavage_frequencies_cor")),
-        height=3.5, width=3.5, res=300, type=ftyp)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
-plotCor(fcuts[2,], fcuts[1,], ##outliers=fcuts[1,]<.001,
-        density=FALSE, xlim=c(0,.08), ylim=c(0,.08),
-        xlab="proteomic frequency", ylab="BP frequency")
-text(fcuts[2,], fcuts[1,], labels=colnames(fcuts), pos=4)
-abline(a=0, b=1)
-dev.off()
-
-plotdev(file.path(kfig.path,paste0("cleavage_frequencies_bar")),
-        height=3.5, width=10, res=300, type=ftyp)
-par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
-barplot(fcuts, las=2, beside=TRUE, legend=TRUE, ylab="rel. frequency")
-dev.off()
-
-## overall frequencies
-
-kmers <- rbind(proteome=kproteome,
-               tryptic=ktryptic[1,names(kproteome)],
-               base=kbase[1,names(kproteome)])
-
-## normalize each per total kmer count
-## TODO: normalize below, for R|K only.
-fmers <- kmers/apply(kmers,1,sum,na.rm=TRUE)
-
-plotdev(file.path(kfig.path,paste0("cleavage_KR_kmers")),
+    kmers <- rbind(proteome=kproteome,
+                   tryptic=ktryptic[1,names(kproteome)],
+                   base=kbase[1,names(kproteome)])
+    
+    ## normalize each per total kmer count
+    ## TODO: normalize below, for R|K only.
+    fmers <- kmers/apply(kmers,1,sum,na.rm=TRUE)
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_kmers")),
         height=7, width=10, res=300, type=ftyp)
-par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
-par(mfcol=c(2,1))
-barplot(fmers[,grep("^R",colnames(fmers))], ylab="rel. frequency",
-        beside=TRUE, col=1:nrow(fmers), legend=TRUE)
-barplot(fmers[,grep("^K",colnames(fmers))], ylab="rel. frequency",
-        beside=TRUE, col=1:nrow(fmers), legend=TRUE)
-dev.off()
+    par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    par(mfcol=c(2,1))
+    barplot(fmers[,grep("^R",colnames(fmers))], ylab="rel. frequency",
+            beside=TRUE, col=1:nrow(fmers), legend=TRUE)
+    barplot(fmers[,grep("^K",colnames(fmers))], ylab="rel. frequency",
+            beside=TRUE, col=1:nrow(fmers), legend=TRUE)
+    dev.off()
 
-## add K and R frequencies
-kkmer <- fmers[,grep("^K",colnames(fmers))]
-rkmer <- fmers[,grep("^R",colnames(fmers))]
-colnames(kkmer) <- sub("^K", "", colnames(kkmer))
-colnames(rkmer) <- sub("^R", "", colnames(rkmer))
+    ## add K and R frequencies
+    kkmer <- fmers[,grep("^K",colnames(fmers))]
+    rkmer <- fmers[,grep("^R",colnames(fmers))]
+    colnames(kkmer) <- sub("^K", "", colnames(kkmer))
+    colnames(rkmer) <- sub("^R", "", colnames(rkmer))
 
-rkmer <- rkmer + kkmer[,colnames(rkmer)]
+    rkmer <- rkmer + kkmer[,colnames(rkmer)]
 
-plotdev(file.path(kfig.path,paste0("cleavage_KR_fused_kmers")),
-        height=3.5, width=10, res=300, type=ftyp)
-par(mai=c(.5,1,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
-barplot(rkmer, beside=TRUE, col=1:nrow(rkmer), legend=TRUE,
-        xlab="K|R. Dimers")
-mtext("rel. frequency", 2, 2.75)
-dev.off()
-
-## COMPARE CLEAVAGE SITES DIRECTLY
-## add first nucleotide of tryptic digest: just also have R|K
-
-## first AA positions in BP, SAAP and Main 
-bp1 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[1])))
-saap1 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[1])))
-trp1 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[1])))
-bp2 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[2])))
-saap2 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[2])))
-trp2 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[2])))
-bp3 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[3])))
-saap3 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[3])))
-trp3 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[3])))
-
-## proteome-wide frequency of AA next to K|R
-k.cnt <- kproteome[grep("^[K]", names(kproteome))]
-r.cnt <- kproteome[grep("^[R]", names(kproteome))]
-names(k.cnt) <-  substr(names(k.cnt), 2, 2)
-names(r.cnt) <-  substr(names(r.cnt), 2, 2)
-kr.cnt <- k.cnt + r.cnt[names(k.cnt)]
-#k.frq <- kr.cnt/sum(kr.cnt)
-
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_fused_kmers")),
+            height=3.5, width=10, res=300, type=ftyp)
+    par(mai=c(.5,1,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    barplot(rkmer, beside=TRUE, col=1:nrow(rkmer), legend=TRUE,
+            xlab="K|R. Dimers")
+    mtext("rel. frequency", 2, 2.75)
+    dev.off()
+    
+    ## COMPARE CLEAVAGE SITES DIRECTLY
+    ## add first nucleotide of tryptic digest: just also have R|K
+    
+    ## first AA positions in BP, SAAP and Main 
+    bp1 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[1])))
+    saap1 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[1])))
+    trp1 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[1])))
+    bp2 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[2])))
+    saap2 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[2])))
+    trp2 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[2])))
+    bp3 <- table(unlist(lapply(strsplit(cdat$BP,""), function(x) x[3])))
+    saap3 <- table(unlist(lapply(strsplit(cdat$SAAP,""), function(x) x[3])))
+    trp3 <- table(unlist(lapply(strsplit(tryptic,""), function(x) x[3])))
+    
+    ## proteome-wide frequency of AA next to K|R
+    k.cnt <- kproteome[grep("^[K]", names(kproteome))]
+    r.cnt <- kproteome[grep("^[R]", names(kproteome))]
+    names(k.cnt) <-  substr(names(k.cnt), 2, 2)
+    names(r.cnt) <-  substr(names(r.cnt), 2, 2)
+    kr.cnt <- k.cnt + r.cnt[names(k.cnt)]
+                                        #k.frq <- kr.cnt/sum(kr.cnt)
+    
 ### TODO
-## * add pattern match K|R.x counts via regex.
-pat <- "[KR]"
-krxq <- gregexpr(pattern=pat, seql)
-kcnt1 <- table(unlist(sapply(seq_along(seql), function(x) {
-    unlist(strsplit(seql[[x]],""))[krxq[[x]]+1]
-})))
-kcnt2 <- table(unlist(sapply(seq_along(seql), function(x) {
-    unlist(strsplit(seql[[x]],""))[krxq[[x]]+2]
-})))
-kcnt3 <- table(unlist(sapply(seq_along(seql), function(x) {
-    unlist(strsplit(seql[[x]],""))[krxq[[x]]+3]
-})))
-
-cmer3 <- rbind(uniprot=kcnt3[AAT],
-               tryptic=trp3[AAT],
-               BP=bp3[AAT],
-               SAAP=saap3[AAT])
-cmer3 <- cmer3/apply(cmer3,1,sum,na.rm=TRUE)
-
-cmer2 <- rbind(uniprot=kcnt2[AAT],
-               tryptic=trp2[AAT],
-               BP=bp2[AAT],
-               SAAP=saap2[AAT])
-cmer2 <- cmer2/apply(cmer2,1,sum,na.rm=TRUE)
-
-cmer1 <- rbind(uniprot=kcnt1[AAT],
-               tryptic=trp1[AAT],
-               BP=bp1[AAT],
-               SAAP=saap1[AAT])
-cmer1 <- cmer1/apply(cmer1,1,sum,na.rm=TRUE)
-
-
-## sort by frequency in BP
-cmer3 <- cmer3[,order(cmer1["uniprot",], decreasing=TRUE)]
-cmer2 <- cmer2[,order(cmer1["uniprot",], decreasing=TRUE)]
-cmer1 <- cmer1[,order(cmer1["uniprot",], decreasing=TRUE)]
-
-## R4 colors for gas exchange rates
-col4 = c("#000000", "#DF536B", "#61D04F", "#2297E6", "#28E2E5")
-cols <- col4[-3]
-
+    ## * add pattern match K|R.x counts via regex.
+    pat <- "[KR]"
+    krxq <- gregexpr(pattern=pat, seql)
+    kcnt1 <- table(unlist(sapply(seq_along(seql), function(x) {
+        unlist(strsplit(seql[[x]],""))[krxq[[x]]+1]
+    })))
+    kcnt2 <- table(unlist(sapply(seq_along(seql), function(x) {
+        unlist(strsplit(seql[[x]],""))[krxq[[x]]+2]
+    })))
+    kcnt3 <- table(unlist(sapply(seq_along(seql), function(x) {
+        unlist(strsplit(seql[[x]],""))[krxq[[x]]+3]
+    })))
+    
+    cmer3 <- rbind(uniprot=kcnt3[AAT],
+                   tryptic=trp3[AAT],
+                   BP=bp3[AAT],
+                   SAAP=saap3[AAT])
+    cmer3 <- cmer3/apply(cmer3,1,sum,na.rm=TRUE)
+    
+    cmer2 <- rbind(uniprot=kcnt2[AAT],
+                   tryptic=trp2[AAT],
+                   BP=bp2[AAT],
+                   SAAP=saap2[AAT])
+    cmer2 <- cmer2/apply(cmer2,1,sum,na.rm=TRUE)
+    
+    cmer1 <- rbind(uniprot=kcnt1[AAT],
+                   tryptic=trp1[AAT],
+                   BP=bp1[AAT],
+                   SAAP=saap1[AAT])
+    cmer1 <- cmer1/apply(cmer1,1,sum,na.rm=TRUE)
+    
+    
+    ## sort by frequency in BP
+    cmer3 <- cmer3[,order(cmer1["uniprot",], decreasing=TRUE)]
+    cmer2 <- cmer2[,order(cmer1["uniprot",], decreasing=TRUE)]
+    cmer1 <- cmer1[,order(cmer1["uniprot",], decreasing=TRUE)]
+    
+    ## R4 colors for gas exchange rates
+    col4 = c("#000000", "#DF536B", "#61D04F", "#2297E6", "#28E2E5")
+    cols <- col4[-3]
+    
           
 
-plotdev(file.path(kfig.path,paste0("cleavage_KR_positions")),
-        height=5, width=5, res=300, type=ftyp)
-par(mai=c(.3,.3,.05,.1),
-    mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
-par(mfcol=c(3,1))
-barplot(cmer1, beside=TRUE, col=cols, legend=TRUE,
-        xlab=expression("proteomic K|R vs. 1st position in peptides"))
-barplot(cmer2, beside=TRUE, col=cols, legend=FALSE,
-        xlab=expression("proteomic K|R vs. 2nd position in peptides"),
-        ylab="rel. frequencies")
-barplot(cmer3, beside=TRUE, col=cols, legend=FALSE,
-        xlab=expression("proteomic K|R vs. 3rd position in peptides"))
-dev.off()
-## scatter plot first position
-
-plotdev(file.path(kfig.path,paste0("cleavage_KR_frequencies_cor")),
-        height=3.5, width=3.5, res=300, type=ftyp)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
-plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
-        density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
-        xlab="proteomic frequency", ylab="BP frequency")
-text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
-abline(a=0, b=1)
-dev.off()
-
-
-## PLOT AGAIN w/o KRP Frequencies
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_positions")),
+            height=5, width=5, res=300, type=ftyp)
+    par(mai=c(.3,.3,.05,.1),
+        mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    par(mfcol=c(3,1))
+    barplot(cmer1, beside=TRUE, col=cols, legend=TRUE,
+            xlab=expression("proteomic K|R vs. 1st position in peptides"))
+    barplot(cmer2, beside=TRUE, col=cols, legend=FALSE,
+            xlab=expression("proteomic K|R vs. 2nd position in peptides"),
+            ylab="rel. frequencies")
+    barplot(cmer3, beside=TRUE, col=cols, legend=FALSE,
+            xlab=expression("proteomic K|R vs. 3rd position in peptides"))
+    dev.off()
+    ## scatter plot first position
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_frequencies_cor")),
+            height=3.5, width=3.5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
+    plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
+            density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
+            xlab="proteomic frequency", ylab="BP frequency")
+    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
+    abline(a=0, b=1)
+    dev.off()
 
 
-AATkeil <- AAT[!AAT%in%c("K","R","P")]
-
-cmer3 <- rbind(uniprot=kcnt3[AATkeil],
-               tryptic=trp3[AATkeil],
-               BP=bp3[AATkeil],
-               SAAP=saap3[AATkeil])
-cmer3 <- cmer3/apply(cmer3,1,sum,na.rm=TRUE)
-
-cmer2 <- rbind(uniprot=kcnt2[AATkeil],
-               tryptic=trp2[AATkeil],
-               BP=bp2[AATkeil],
-               SAAP=saap2[AATkeil])
-cmer2 <- cmer2/apply(cmer2,1,sum,na.rm=TRUE)
-
-cmer1 <- rbind(uniprot=kcnt1[AATkeil],
-               tryptic=trp1[AATkeil],
-               BP=bp1[AATkeil],
-               SAAP=saap1[AATkeil])
-cmer1 <- cmer1/apply(cmer1,1,sum,na.rm=TRUE)
+    ## PLOT AGAIN w/o KRP Frequencies
 
 
-## sort by frequency in BP
-cmer3 <- cmer3[,order(cmer1["uniprot",], decreasing=TRUE)]
-cmer2 <- cmer2[,order(cmer1["uniprot",], decreasing=TRUE)]
-cmer1 <- cmer1[,order(cmer1["uniprot",], decreasing=TRUE)]
+    AATkeil <- AAT[!AAT%in%c("K","R","P")]
+    
+    cmer3 <- rbind(uniprot=kcnt3[AATkeil],
+                   tryptic=trp3[AATkeil],
+                   BP=bp3[AATkeil],
+                   SAAP=saap3[AATkeil])
+    cmer3 <- cmer3/apply(cmer3,1,sum,na.rm=TRUE)
+    
+    cmer2 <- rbind(uniprot=kcnt2[AATkeil],
+                   tryptic=trp2[AATkeil],
+                   BP=bp2[AATkeil],
+                   SAAP=saap2[AATkeil])
+    cmer2 <- cmer2/apply(cmer2,1,sum,na.rm=TRUE)
+    
+    cmer1 <- rbind(uniprot=kcnt1[AATkeil],
+                   tryptic=trp1[AATkeil],
+                   BP=bp1[AATkeil],
+                   SAAP=saap1[AATkeil])
+    cmer1 <- cmer1/apply(cmer1,1,sum,na.rm=TRUE)
+    
+    
+    ## sort by frequency in BP
+    cmer3 <- cmer3[,order(cmer1["uniprot",], decreasing=TRUE)]
+    cmer2 <- cmer2[,order(cmer1["uniprot",], decreasing=TRUE)]
+    cmer1 <- cmer1[,order(cmer1["uniprot",], decreasing=TRUE)]
+    
+    ## R4 colors for gas exchange rates
+    col4 = c("#000000", "#DF536B", "#61D04F", "#2297E6", "#28E2E5")
+    cols <- col4[-3]
 
-## R4 colors for gas exchange rates
-col4 = c("#000000", "#DF536B", "#61D04F", "#2297E6", "#28E2E5")
-cols <- col4[-3]
+    
 
-          
-
-plotdev(file.path(kfig.path,paste0("cleavage_KR_positions_noKeil")),
-        height=5, width=5, res=300, type=ftyp)
-par(mai=c(.3,.3,.05,.1),
-    mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
-par(mfcol=c(3,1))
-barplot(cmer1, beside=TRUE, col=cols, legend=TRUE,
-        xlab=expression("proteomic K|R vs. 1st position in peptides"))
-barplot(cmer2, beside=TRUE, col=cols, legend=FALSE,
-        xlab=expression("proteomic K|R vs. 2nd position in peptides"),
-        ylab="rel. frequencies")
-barplot(cmer3, beside=TRUE, col=cols, legend=FALSE,
-        xlab=expression("proteomic K|R vs. 3rd position in peptides"))
-dev.off()
-
-## scatter plot first position
-
-plotdev(file.path(kfig.path,paste0("cleavage_KR_frequencies_cor_noKeil")),
-        height=3.5, width=3.5, res=300, type=ftyp)
-par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
-plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
-        density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
-        xlab="proteomic frequency", ylab="BP frequency")
-text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
-abline(a=0, b=1)
-dev.off()
-
-## K|RAQ proteome-wide STATISTICS: more then expected?
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_positions_noKeil")),
+            height=5, width=5, res=300, type=ftyp)
+    par(mai=c(.3,.3,.05,.1),
+        mgp=c(1.3,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    par(mfcol=c(3,1))
+    barplot(cmer1, beside=TRUE, col=cols, legend=TRUE,
+            xlab=expression("proteomic K|R vs. 1st position in peptides"))
+    barplot(cmer2, beside=TRUE, col=cols, legend=FALSE,
+            xlab=expression("proteomic K|R vs. 2nd position in peptides"),
+            ylab="rel. frequencies")
+    barplot(cmer3, beside=TRUE, col=cols, legend=FALSE,
+            xlab=expression("proteomic K|R vs. 3rd position in peptides"))
+    dev.off()
+    
+    ## scatter plot first position
+    
+    plotdev(file.path(kfig.path,paste0("cleavage_KR_frequencies_cor_noKeil")),
+            height=3.5, width=3.5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25, family="monospace")
+    plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
+            density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
+            xlab="proteomic frequency", ylab="BP frequency")
+    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
+    abline(a=0, b=1)
+    dev.off()
+    
+    ## K|RAQ proteome-wide STATISTICS: more then expected?
+}
 
 ## TODO:
 ## * account for protein ends in total number of possible motifs (L-m+1)?
