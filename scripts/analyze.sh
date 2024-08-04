@@ -47,6 +47,10 @@ mkdir -p $MISDATA/processedData
 
 ### ADDITIONAL DATA
 
+## @Zhang2023: pseudouridylation
+cd $MISDATA/originalData/
+wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41589-023-01304-7/MediaObjects/41589_2023_1304_MOESM3_ESM.xlsx -O zhang13_stables_1-6.xlsx
+
 ## DEGRONS
 ## NOT USED
 ##wget https://degronopedia.com/degronopedia/download/data/DEGRONOPEDIA_degron_dataset.xlsx -P $MISDATA/originalData/
@@ -274,10 +278,10 @@ cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_cut_dotplot_manua
 cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_dotplot.${ftyp} $results/aminoacids/
 
 mkdir $results/motifs
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_KRAQ.${ftyp} $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_CCxCC.${ftyp} $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_MMxMM.${ftyp} $results/motifs/
-cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/logos_WWxWW.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/AA_logos_KRAQ.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/AA_logos_CCxCC.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/AA_logos_MMxMM.${ftyp} $results/motifs/
+cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/AA_logos_WWxWW.${ftyp} $results/motifs/
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/motifs_cancer_dotplot.${ftyp} $results/motifs/
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/classes_conservation_disorder_raas.${ftyp} $results/motifs/
 
