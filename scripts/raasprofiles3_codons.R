@@ -850,6 +850,7 @@ codon.freq <- data.frame(codon=sub(".*-","",names(Fbg)),
                          AA=sub("-.*","",names(Fbg)),
                          frequency_all=Fbg,
                          frequency_AAS=Faas[names(Fbg)],
+                         CSC=csc[sub(".*-","",names(Fbg)),"X293T_endo"],
                          RAAS=Craas[names(Fbg)])
 write.table(codon.freq, file=file.path(cfig.path, "codon_frequencies.tsv"),
             sep="\t", row.names=FALSE, quote=FALSE, na="")

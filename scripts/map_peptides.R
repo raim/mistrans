@@ -37,6 +37,9 @@ pfasta <- file.path(out.path,"all_proteins.fa")
 ## coding region fasta
 tfasta <- file.path(mam.path,"processedData","coding.fa")
 
+## UTR Lengths
+utr.file <- file.path(mam.path, "processedData", "transcript_utr_lengths.tsv")
+
 ## protein-transcript map
 tpmap <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 ## CDS structure
@@ -108,6 +111,10 @@ posl <- split(cpos[,2:5], cpos[,1])
 ## NOTE: reverse order for minus strand
 posl <- lapply(posl, function(x) x[order(x$start,
                                          decreasing=x$strand=="-"),])
+## transcript positions: add UTRs
+utr <- read.delim(utr.file, row.names=1)
+rownames(utr) <- pamrt[rownames(utr),1]
+
 
 ## s4pred
 s4p <- readFASTA(s4pred, grepID=TRUE)
@@ -178,7 +185,7 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
 ## result vectors
-mut <- pos <- len <- cdn <- aaf <- aat <-  aas <-
+mut <- pos <- len <- cdn <- tps <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <-
         mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
             pctx <- nctx <- pfam <- clan <- pfam.ebi <- clan.ebi <-
@@ -399,7 +406,7 @@ for ( i in 1:nrow(dat) ) {
     
     ## GET CODON
     ## protein:transcript mapping
-    ## load transcript, load UTR file, get codon
+    ## load coding region get codon
     nt <- trfas[[gid]]
     if ( is.null(nt) ) {
         cat(paste("WARNING:", i, "no transcript found for", oid, "\n"))
@@ -423,8 +430,13 @@ for ( i in 1:nrow(dat) ) {
         cat(paste("WARNING:",i,"wrong codon", aaf[i],
                   "vs", codon, GENETIC_CODE[codon],"in", gid, "\n"))
         errors[i,"wrong codon"] <- 1
-    } else {    
+    } else {
+        ## store codon
         cdn[i] <- codon
+        ## store position in transcript
+        if ( !gid%in%rownames(utr) )
+            stop("missing UTR data")
+        tps[i] <- npos + utr[gid,"start"]
     }
     
     ## GET NT SEQUENCE CONTEXT +/-25
@@ -493,6 +505,7 @@ for ( i in 1:nrow(dat) ) {
 
 
 
+
 ## relative position
 rpos <- pos/len
 ## bind to data frame
@@ -504,7 +517,9 @@ dat <- cbind(dat,
              len=len,
              rpos=pos/len,
              from=aaf, to=aat,
-             codon=cdn, gcoor, 
+             codon=cdn, 
+             tpos=tps,   # position of AAS codon within transcript
+             gcoor,      # genome coordinate of AAS
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg,
              MMSeq2=mmseq2,

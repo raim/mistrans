@@ -285,7 +285,8 @@ rp <- lapply(patl, function(x) {
     xl <- split(x, paste(x$BP, x$SAAP))
     
     rpaired <- lapply(xl, function(y) {
-        if ( sum(y[,"Sample type"]=="Tumor") == sum(y[,"Sample type"]=="Normal") )
+        if ( sum(y[,"Sample type"]=="Tumor") ==
+             sum(y[,"Sample type"]=="Normal") )
             data.frame(tumor= y[y[,"Sample type"]=="Tumor" ,"RAAS"],
                        normal=y[y[,"Sample type"]=="Normal","RAAS"],
                        sample=y[y[,"Sample type"]=="Tumor","sample"],

@@ -9,14 +9,19 @@ source("~/work/mistrans/scripts/saap_utils.R")
 ##dat <- as.data.frame(data)
 ## use pre-filtered data here
 tmt.file <- file.path("~/data/mistrans/originalData/",
-                      "All_filtered_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
+                      "All_SAAP_TMTlevel_quant_df.xlsx")
+##                      "All_filtered_SAAP_TMTlevel_quant_df_withTonsil.xlsx")
 dat <- readxl::read_xlsx(tmt.file)
 dat <- as.data.frame(dat)
+
+dat <- dat[dat[,"Keep SAAP"],]
 
 p.min <- 1e-10
 p.txt <- 1e-3
 
-setwd("~/data/mistrans/figures/tonsil")
+tpath <- "~/data/mistrans/figures/tonsil"
+dir.create(tpath)
+setwd(tpath)
 
 raas <- as.numeric(dat$RAAS)
 raas[!is.finite(raas)] <- NA
@@ -44,7 +49,8 @@ dev.off()
 
 plotdev("aas_dataset_signif", width=.25*ncol(ovlc$p.value)+2, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA,
+             show.total=TRUE, text.cex=.9)
 dev.off()
 
 
@@ -62,7 +68,8 @@ dev.off()
 
 plotdev("aas_dataset_signif_tissues", width=.25*ncol(ovlc$p.value)+2, height=6)
 par(mai=c(.6,1.5,.5,.5), mgp=c(1.3,.3,0), tcl=-.25)
-plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA, show.total=TRUE, text.cex=.9)
+plotOverlaps(ovlc, p.min=p.min, p.txt=p.txt, xlab=NA, ylab=NA,
+             show.total=TRUE, text.cex=.9)
 figlabel("tissues", pos="bottomleft",font=2, cex=1.2)
 dev.off()
 
@@ -128,3 +135,13 @@ for ( i in seq_along(pases) ) {
     cat(paste0(">",dig,"\n",
                paste(paste(bps,",",sps,"\t",rss),collapse="\n"),"\n"))
 }
+
+
+## use pre-filtered data here
+pat.file <- file.path("~/data/mistrans/originalData/",
+                      "All_SAAP_patient_level_quant_df.txt")
+dat <- read.delim(pat.file)
+
+
+dat <- dat[dat[,"Keep.SAAP"],]
+

@@ -553,7 +553,7 @@ for ( i in 1:ncol(classes) ) {
 
     ## set ylim to non-prespecified positions (via setp/setn)
     focus.ylim <- FALSE
-    if ( length(grep("^from", colnames(classes)))>0 )
+    if ( length(grep("^from", colnames(classes)[i]))>0 )
         focus.ylim <- TRUE
 
     ## ENCODED

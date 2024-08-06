@@ -252,6 +252,7 @@ cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.${ftyp} $result
 mkdir $results/codons
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codon_frequencies.tsv $results/codons/
 cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_fbg.${ftyp} $results/codons/
+cp -a ${MISDATA}/figures/raasprofiles3/codons/codons_raas_wu19.${ftyp} $results/codons/
 ## NOTE: markdown includes figures from _codons.R 
 pandoc ${THIS}/scripts/results_codons.md -t beamer -o $results/codons/codon_plot_A4.pdf
 pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_Figure_4.pdf
