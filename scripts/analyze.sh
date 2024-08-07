@@ -190,6 +190,10 @@ fi
 ##    QC figures in ${MISDATA}/figures/saap_mapping5/
 R --vanilla < ${THIS}/scripts/map_peptides.R &> ${MISDATA}/log/map_peptides.txt
 
+## sanity check derived coordinates: load protein, transcript and genome fasta files
+## to check correct nucleotides/codons at the selected positions.
+R --vanilla < ${THIS}/scripts/check_coordinates.R &> ${MISDATA}/log/check_coordinates.txt
+
 ### 5) ANALYSIS
 
 ## initializiation for all scripts below; NOTE, that this script
