@@ -165,10 +165,10 @@ grep -h -v "^#" ${MISDATA}/processedData/RF*.out > ${MISDATA}/processedData/seci
 ### 4) COLLECT DATA FOR ALL BP/SAAP
 
 ## 4.A) find best matching protein
-##    GENERATES ${MISDATA}/processedData/bp_mapped_3.tsv
+##    GENERATES ${MISDATA}/processedData/bp_mapped.tsv
 R --vanilla < ${THIS}/scripts/get_protein_match.R &> ${MISDATA}/log/protein_match.txt
 
-## collect ONLY required iupred3 data for transfer to intron
+## collect ONLY required iupred3 data for transfer to laptop (intron)
 if [ false ]; then
     cd ~/data/mammary/processedData
     all=$(cut -f 2 ~/data/mistrans/processedData/bp_mapped.tsv |sort|uniq|grep ENSP|grep -v "_")
@@ -186,8 +186,8 @@ fi
 ## 4.B) map each peptide to it's positions in proteins and transcripts, and
 ## add a variety of collected information on protein structure, e.g.
 ## iupred3, anchor2, s4pred, codon, ...
-##    GENERATES ${MISDATA}/processedData/saap_mapped_5.tsv, and
-##    QC figures in ${MISDATA}/figures/saap_mapping5/
+##    GENERATES ${MISDATA}/processedData/saap_mapped.tsv, and
+##    QC figures in ${MISDATA}/figures/saap_mapping/
 R --vanilla < ${THIS}/scripts/map_peptides.R &> ${MISDATA}/log/map_peptides.txt
 
 ## sanity check derived coordinates: load protein, transcript and genome fasta files

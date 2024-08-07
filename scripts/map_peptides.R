@@ -220,6 +220,10 @@ if ( !use.regex ) errors[,"using blast"] <- 1
 pid="ENSP00000354876" # no transcript even though its in protein_transcript_map
 ## it's not in coding.fa, why??
 
+## 20240807 #EGLELLK")
+i=which(dat$BP=="ACQRPQLWQTIQTQGHFQLQLPPGK" &
+        dat$SAAP=="ACQQPQLWQTIQTQGHFQLQLPPGK")
+                                        
 
 for ( i in 1:nrow(dat) ) {
    
@@ -414,9 +418,9 @@ for ( i in 1:nrow(dat) ) {
         next
     }
 
-    ## position of codon
+    ## position of first codon position
     npos <- (pos[i]-1)*3+1
-
+    ## retrieve codon from the transcript sequence
     codon <- substr(nt$seq, npos, npos+2)
 
     ## store codon and from/to AA
@@ -436,7 +440,7 @@ for ( i in 1:nrow(dat) ) {
         ## store position in transcript
         if ( !gid%in%rownames(utr) )
             stop("missing UTR data")
-        tps[i] <- npos + utr[gid,"start"]
+        tps[i] <- npos + utr[gid,"start"] +1 # 2nd codon pos
     }
     
     ## GET NT SEQUENCE CONTEXT +/-25
@@ -457,37 +461,34 @@ for ( i in 1:nrow(dat) ) {
     nctx[i] <- paste0(sq, collapse="")
 
     ## GET GENOMIC POSITION via CDS list and posl
-    cds <- cdl[[gid]]
-    coors <- posl[[gid]]
+    cds <- cdl[[gid]] # position of splice sites in transcript
+    coors <- posl[[gid]] # genomic positions of CDS
 
-    exon <- which(cds>=npos)[1]
+    ## get second codon position
+    npos <- npos+1
+
+    exon <- which(cds>=npos)[1] # in which exon is the 2nd codon position
     if ( is.na(exon) ) {
         cat(paste("WARNING:",i,"wrong genomic position", npos, "vs", max(cds),
                   "in", gid, "\n"))
          errors[i,"AAS > CDS len"] <- 1
     } else {
     
-        chr <- unique(coors$chr)
-        strand <- unique(coors$strand)
-        ## get genomic position of AAS 2nd codon
-        rpos <- npos
+        rpos <- npos # relative position in exon/CDS
         if ( exon>1 ) # subtract prior exons/CDS
             rpos <- npos-cds[exon-1]
-        if ( strand=="-") {
-            coor <- coors[exon, "end"] - rpos 
-        } else {
-            coor <- coors[exon, "start"] + rpos  
-        }
-        gcoor[i,] <-
-            c(chr, coor, strand)
-    }
 
-    ## TODO:
-    ## load chromosome index chrS
-    ## load phastcons genomic data, convert with coor2index
-    ## do this externally, write fasta like file, but with numbers
-    ## for riboseq, phastcons, etc.
- 
+        ## get genomic position of AAS 2nd codon position
+        chr <- unique(coors$chr)
+        strand <- unique(coors$strand)
+        
+        if ( strand=="-") {
+            coor <- coors[exon, "end"] - rpos +1
+        } else {
+            coor <- coors[exon, "start"] + rpos -1
+        }
+        gcoor[i,] <- c(chr, coor, strand)
+    }
      
     ## report
     if ( !interactive() ) {        
