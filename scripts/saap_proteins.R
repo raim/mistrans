@@ -97,7 +97,8 @@ feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 ## PROTEOMIC PEPTIDES
 mainp.file <- file.path(out.path,"main_peptides_blast.tsv")
 maini.file <- file.path(dat.path,"tonsil_main_peptide_quant_df.xlsx") # tonsil
-maina.file <- file.path(dat.path,"main_peptide_quant_df.xlsx") # other tissues
+maina.file <- file.path(paste0(dat.path,"_20240627"),
+                        "main_peptide_quant_df.xlsx") # other tissues
 
 ## ALL BP
 
@@ -417,13 +418,32 @@ colnames(mainp) <-  c("MP","protein","identity", "mismatches",
 if ( Sys.info() ["nodename"]=="exon" & interactive() ) {
     ## intensities in tissues w/o tonsil
     maina <- as.data.frame(read_xlsx(maina.file))
-    rownames(maina) <- maina[,1]
-    maina <- maina[,2:ncol(maina)]
+        
+    colnames(maina)[1] <- "MP"
     
-    mc <- apply(maina, 1, function(x) sum(x>0))
+    mc <- apply(maina[,2:ncol(maina)], 1, function(x) sum(x>0))
     
     ## TODO: plot to file
     hist(mc, xlab="# tissues", ylab="# peptides")
+
+    ## TODO: global analyses as previously
+    ## * intensities per protein, compare peptides starting with A
+    ##   with all peptides for that protein.
+    
+    ## add intensities to mainp
+    sum(!mainp$MP%in%rownames(maina))
+    sum(!rownames(maina)%in%mainp$MP)
+
+    ## TODO: find merge params
+    mains <- merge(mainp, maina, by="MP")
+
+    ## tag peptides that start with A
+    
+    ## grep("^A",mains$MP)
+
+    ## TODO: compare with protein intensities between ^A and other peptides
+    ## ?do this only on tryptic peptides in maini??
+    
 }
 
 ## intensities in tonsil
@@ -455,7 +475,6 @@ mainp$color <- mc[mainp$MP]
 
 ## ma
 
-## TODO: global analyses as previously
 
 ## AAS per protein
 app <- unlist(lapply(aasl, nrow))

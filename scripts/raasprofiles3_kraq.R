@@ -499,7 +499,8 @@ if ( FALSE ) {
     
     plotdev(file.path(kfig.path,paste0("cleavage_KR_kmers")),
         height=7, width=10, res=300, type=ftyp)
-    par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25, family="monospace", xaxs="i")
+    par(mai=c(.5,1,.1,.1), mgp=c(2.75,.3,0), tcl=-.25,
+        family="monospace", xaxs="i")
     par(mfcol=c(2,1))
     barplot(fmers[,grep("^R",colnames(fmers))], ylab="rel. frequency",
             beside=TRUE, col=1:nrow(fmers), legend=TRUE)
@@ -610,7 +611,8 @@ if ( FALSE ) {
     plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
             density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
             xlab="proteomic frequency", ylab="BP frequency")
-    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
+    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1),
+         pos=4, xpd=TRUE)
     abline(a=0, b=1)
     dev.off()
 
