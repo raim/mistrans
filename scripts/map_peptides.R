@@ -346,7 +346,7 @@ for ( i in 1:nrow(dat) ) {
     }
 
     ## GET IUPRED3
-    ##TODO: remove version tag from iupred files to avoid searching!
+    ## TODO: remove version tag from iupred files to avoid searching!
     ## or search once above
     iufile <- iufiles[gid]
     if ( is.na(iufile) )  {

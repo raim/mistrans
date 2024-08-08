@@ -1459,7 +1459,7 @@ if ( interactive() ) { ## test
 ## used for random forest and glm4 modeling
 asite.file <- file.path(out.path,"sites_raas_unique.tsv")
 write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
-            row.names=FALSE, quote=FALSE, na="")
+            sep="\t", row.names=FALSE, quote=FALSE, na="")
 
 
 #### UNIQUE SITE x AAS  TABLE
@@ -1534,10 +1534,32 @@ if ( interactive() ) { ## test
 ## used for random forest and glm4 modeling
 site.file <- file.path(out.path,"sites_raas.tsv")
 write.table(file=site.file, x=cbind(ID=rownames(site),site),
-            row.names=FALSE, quote=FALSE, na="")
+            sep="\t", row.names=FALSE, quote=FALSE, na="")
 
 ## TODO: also write out bdat or hdat, with all RAAS values added
+
+exportCols <- c("BP","SAAP",
+                "site","fromto", "codon",
+                "RAAS","n", "Datasets", "Tissues",
+                "name",
+                "ensembl","pos",
+                "transcript", "tpos",
+                "gene","chr","coor","strand")
+
+edat <- bdat[,exportCols]
+rownames(edat) <- NULL
+colnames(edat) <- sub("^pos$", "protein.position",
+                      sub("^tpos$","transcript.position",
+                          sub("^n$","RAAS.n",
+                              sub("ensembl","protein",colnames(edat)))))
+
+bpsaap.file <- file.path(out.path,"aas_coordinates.tsv")
+write.table(file=bpsaap.file, x=edat, sep="\t",
+            row.names=FALSE, quote=FALSE, na="")
+
+
 ### PLOT ALIGNMENT
+
 
 CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 
               ## in domain script via nchar to fit the y-axis labels

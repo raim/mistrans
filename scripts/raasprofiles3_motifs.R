@@ -55,6 +55,8 @@ remove.duplicated.sequences <- TRUE
 
 ### remove duplicate sites!
 ## TODO: is there a cleaner way to do this? here we randomly loose AAS types
+## TODO: is this still required? in logo calculation we rm duplicated anyways,
+## but in th enrichment plots it may have effects
 cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
 
 
@@ -786,7 +788,8 @@ if  ( FALSE ) {
         
         if ( plot.all.motifs ) {
             plotProfiles(ovw,
-                         fname=file.path(dot.path,paste0("motifs_",SETID,"_",mid)),
+                         fname=file.path(dot.path,
+                                         paste0("motifs_",SETID,"_",mid)),
                          mai=c(0,.7,0,.6), ttcols=ttcols, value="median",
                          p.min=mp.min, p.txt=mp.txt,
                          dot.sze=dot.sze, p.dot=mp.dot,
