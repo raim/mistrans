@@ -24,7 +24,7 @@ ensembl proteins are reported. All coordinates (position) are 1-based.
 * `RAAS.n`: number of measurement used for the median.
 * `Datasets`, `Tissues`: all cancer and tissue types were the BP and
   SAAP were measured.
-* `name`: human-readable gene name (`Name=` tag in the gff3 description column.
+* `name`: human-readable gene name (`Name=` tag in the gff3 description column).
 * `protein`: ensembl protein ID of the main selected blast hit of the the BP.
 * `protein.position`: position of the substituted amino acid in the protein
   indicated in column `protein`.
