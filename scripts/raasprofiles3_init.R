@@ -678,6 +678,12 @@ tmtf$site <- hdat$site[idx]
 tmtf$rsite <- hdat$site[idx]/nchar(hdat$BP)[idx]
 tmtf$rsite.bins <- cut(tmtf$rsite, seq(0,1,.2), include.lowest = TRUE)
 
+## coordinates in transcripts and chromosomes
+tmtf$tpos <- hdat$tpos[idx]
+tmtf$chr <- hdat$chr[idx]
+tmtf$coor <- hdat$coor[idx]
+tmtf$strand <- hdat$strand[idx]
+
 ### CHOOSE DATASETS
 if ( healthy ) {
     ds <- tmtf$Dataset
@@ -1480,7 +1486,7 @@ site$pos <- as.numeric(sub(" .*", "",sub(".*_", "", rownames(site))))
 site$fromto <- sub(".*[0-9] ", "",rownames(site))
 
 ## add gene names
-site$name <- ens2nam [site$ensembl]
+site$name <- ens2nam[site$ensembl]
 
 ## add uniprot id
 site$uniprot <- unlist(lapply(ens2u[site$ensembl], paste, collapse=";"))
@@ -1505,7 +1511,7 @@ add.data <- c("name",
               "codon", "fromto", "Dataset","tissue",
               "iupred3", "flDPnn", # disorder
               "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2") # sequence conservation
+              "MMSeq2", "tpos", "chr", "coor", "strand") # sequence conservation
 for ( i in 1:length(add.data) ) {
     
     datl <- lapply(split(tmtf[[add.data[i]]],
