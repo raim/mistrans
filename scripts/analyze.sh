@@ -49,7 +49,10 @@ mkdir -p $MISDATA/processedData
 
 ## @Zhang2023: pseudouridylation
 cd $MISDATA/originalData/
-wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41589-023-01304-7/MediaObjects/41589_2023_1304_MOESM3_ESM.xlsx -O zhang13_stables_1-6.xlsx
+wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41589-023-01304-7/MediaObjects/41589_2023_1304_MOESM3_ESM.xlsx -O zhang23_stables_1-6.xlsx
+
+## @Dai2023: pseudouridylation
+wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41587-022-01505-w/MediaObjects/41587_2022_1505_MOESM3_ESM.xlsx -O dai23_stables_1-23.xlsx
 
 ## DEGRONS
 ## NOT USED
