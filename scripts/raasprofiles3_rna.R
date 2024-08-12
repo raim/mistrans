@@ -17,7 +17,8 @@ rfig.path <- file.path(fig.path,"rna")
 dir.create(rfig.path, showWarnings=FALSE)
 
 ## use only AAS where we have a codon
-usite <- site[!is.na(site$codon),]
+## TODO: use unique sites?
+usite <- asite[!is.na(asite$codon),]
 
 
 ### ADDITIONAL DATA
@@ -36,9 +37,16 @@ chr.file <- file.path(mam.path,"chromosomes","sequenceIndex.csv")
 psi.file <- file.path(dat.path, "six_cell_lines_minimal(A549).csv")
 
 ## @Zhang2023 - PRAISE to find psi sites
-zh23.file <- file.path(dat.path, "zhang23_stables_1-6.xlsx")
+zh23.file <- file.path(mam.path, "originalData", "zhang23_stables_1-6.xlsx")
 ## @Dai2023 - BID-seq
-dai.file <- file.path(dat.path, "dai23_stables_1-23.xlsx")
+dai.file <- file.path(mam.path, "originalData", "dai23_stables_1-23.xlsx")
+
+## @Song2020: piano database of psi sites
+pia.file <- file.path(mam.path, "originalData", "piano_psi_human.txt")
+
+## RNAMD - mA6 modifications
+rmd.file <- file.path(mam.path, "originalData", "human_all_logFC.txt.gz")
+rma.file <- file.path(mam.path, "originalData", "hg38_CL_Tech.txt.gz")
 
 ## prepare AAS data and coordinates
 
@@ -68,6 +76,8 @@ bd3 <- cbind(chr=usite[,c("chr")],
 bd3dx <- coor2index(bd3, chrS=chrS)[,2]
 
 ### COLLECT VARIOUS PSI DATA
+
+
 PSI <- NULL
 
 ### RNA pseudouridylation data by Zhang et al.
@@ -183,6 +193,7 @@ for ( i in 1:3 ) {
     PSI <- rbind(PSI, psi)
 }
 
+
 ### RNA pseudouridylation data sent by
 ### Oleksandra Fanari <fanari.o@northeastern.edu>
 
@@ -204,10 +215,32 @@ psiz <- cbind(psi[,c("chr","start","end")],
               strand=".",
               info="",
               gene=psi$Annotation,
-              psi=psi[,"mm.Direct"]/100, # % -> fraction
+              psi=psi[,"mm.DirectMINUSmm.IVT"]/100, # % -> fraction
               source="fanari24pre")
 
 PSI <- rbind(PSI, psiz)
+
+## @Song2020 - PIANO
+## NOTE: unclear to which genome release the current version refers to,
+## and all loglikelihood ratios=100
+pia <- read.delim(pia.file)
+
+pia$chr <- sub("^chr","", pia$Chromosome)
+pia$start <- pia$end <- pia[,"Ψ_Site_POS"]
+
+## only take CDS
+pia <- pia[pia$Gene_Region=="CDS",]
+
+psiz <- cbind(pia[,c("chr","start","end","strand")],
+              info=pia[,"Ψ_Source"],
+              gene=pia$Gene, ## TODO: use ensembl gene ID?
+              psi=pia[,"likelihood_ratio"]/100, # % -> fraction
+              source="piano")
+##PSI <- rbind(PSI, psiz)
+
+
+
+### PROCESS PSI DATA
 
 ## get ensembl protein ID
 PSI$ensembl <- names(ens2nam[match(PSI$gene,  ens2nam)]) 
@@ -220,6 +253,20 @@ PSI$coor <- round(apply(PSI[,c("start","end")],1,mean))
 ## chromosome index
 PSI$chr <-  chrIdx[PSI$chr]
 
+
+### PSI DISTRIBUTIONS
+
+plotdev(file.path(rfig.path, "psi_boxplots"),
+        width=3.5, height=3.5, res=200, type=ftyp)
+par(mai=c(1.5,.5,.5,.1), mgp=c(1.4,.3,0), tcl=-.25)
+bp <- boxplot(PSI$psi ~ PSI$source, las=2, ylim=c(0,1.25), xlab=NA, ylab=NA)
+mtext(expression(psi~fraction~"?"), 2, 1.4)
+axis(3, at=1:length(bp$n), labels=bp$n, las=2)
+abline(h=1, col=2, lty=3)
+dev.off()
+
+
+### MAP PSI and AAS SITES
 psidx <- coor2index(PSI[,c("chr","coor")], chrS=chrS)[,2]
 
 ## collect overlapping sites
@@ -255,24 +302,27 @@ names(pch.source) <- sources
 for ( i in 1:3 ) {
     ccol <- paste0("codon",i,"_psi")
     scol <- paste0("codon",i,"_source")
-    plotdev(file.path(rfig.path,paste0("raas_psi_codon",i)), type=ftyp,
+    plotdev(file.path(rfig.path,paste0("psi_raas_codon",i)), type=ftyp,
             height=2.5, width=2.5, res=200)
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(psite$RAAS.median, psite[,ccol], density=FALSE,
 #            pch=pch.source[psite[,scol]],
-            xlab=xl.raas, ylab=paste0("codon position ",i,", psi/%"), col=NA)
+            xlab=xl.raas, ylab=bquote("codon pos"~.(i)*","~ psi~fraction),
+            col=NA)
     points(psite$RAAS.median, psite[,ccol], pch=pch.source[psite[,scol]],
            cex=.75, col=i)
+    text(psite$RAAS.median, psite[,ccol],labels=psite$fromto, xpd=TRUE,
+         col=1, cex=.5, pos=4)
     dev.off()
 }
 
 
 ## correlation of RAAS to psi %
-plotdev(file.path(rfig.path,"raas_psi"), type=ftyp,
+plotdev(file.path(rfig.path,"psi_raas_codons"), type=ftyp,
         height=2.5, width=2.5, res=200)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(psite$RAAS.median, psite$psi, density=FALSE,
-        xlab=xl.raas, ylab="psi/%", pch=NA)
+        xlab=xl.raas, ylab=expression(psi~fraction), pch=NA)
 points(psite$RAAS.median, psite$codon1_psi, col=1, pch=19, cex=.5)
 points(psite$RAAS.median, psite$codon2_psi, col=2, pch=19, cex=.5)
 points(psite$RAAS.median, psite$codon3_psi, col=3, pch=19, cex=.5)
@@ -284,39 +334,67 @@ dev.off()
 
 
 ## COUNT ONLY Us in CODING SEQUENCE
-tfas <- readFASTA(tfas.file, grepID=TRUE)
-## protein-transcript map
-trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
-## reverse map transcript-protein
-pamrt <- matrix(rownames(trmap), ncol=1)
-rownames(pamrt) <- trmap[,1]
-## rename by protein names via trmap, for quick access
-## of protein-specific transcript
-names(tfas) <- pamrt[names(tfas),1]
+if ( !exists("tfas")  ) {
+    tfas <- readFASTA(tfas.file, grepID=TRUE)
+    ## protein-transcript map
+    trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+    ## reverse map transcript-protein
+    pamrt <- matrix(rownames(trmap), ncol=1)
+    rownames(pamrt) <- trmap[,1]
+    ## rename by protein names via trmap, for quick access
+    ## of protein-specific transcript
+    names(tfas) <- pamrt[names(tfas),1]
 
-pids <- unique(c(psite$ensembl, PSI$ensembl))
-tfas <- tfas[pids[pids%in%names(tfas)]]
+    pids <- unique(c(psite$ensembl, PSI$ensembl))
+    tfas <- tfas[pids[pids%in%names(tfas)]]
+}
 
 ## total balls: all Us in coding sequences of the total gene set
 totaa <- sum(unlist(lapply(tfas,
                            function(x) sum(unlist(strsplit(x$seq,""))=="T"))))
 
 ## white balls: all detected psi
-m <- length(unique(paste(psi$chr, psi$coor)))
-n <- tot-m # black balls
+m <- length(unique(paste(PSI$chr, PSI$coor)))
+n <- totaa-m # black balls
 
 ## balls drawn: all U in AAS codons
 ## take only unique site here!
-filt <- !duplicated(paste(psite$chr,
-                          psite$coor, psite$strand))]
-k <- sum(unlist(strsplit(psite$codon[filt],""))=="T")
+FILT <- !duplicated(paste(psite$chr,
+                          psite$coor, psite$strand))
+k <- sum(unlist(strsplit(psite$codon[FILT],""))=="T")
 
 ## q: white balls drawn number of AAS with psi
-q <- sum(!is.na(psite$psi[!duplicated(paste(psite$chr,
-                                            psite$coor, psite$strand))]))
+q <- sum(!is.na(psite$psi[FILT]))
 
 ##m: the number of white balls in the urn.
 ##n: the number of black balls in the urn.
 ##k: the number of balls drawn from the urn
 
 phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+
+
+### m6A MODIFICATIONS
+
+M6A <- NULL
+
+## from rnamd database
+rmd <- read.delim(rmd.file)
+
+## TODO: understand data structure,
+## log2FC in different cell lines?
+##apply(rmd,2, function(x) sum(!is.na(x)))
+
+rmd$chr <- sub("^chr", "", rmd$seqnames)
+
+## take a median log2FC
+rmd$lg2fc <- apply(rmd[,6:(ncol(rmd)-1)], 1, median, na.rm=TRUE)
+rmd$lg2fc.n <- apply(rmd[,6:(ncol(rmd)-1)], 1, function(x) sum(!is.na(x)))
+
+## manually use this to test code below
+rmdz <- cbind(rmd[,c("chr","start","end","strand")],
+              info="m6A",
+              gene=NA, # TODO: load via site info file!
+              lg2fc=rmd$lg2fc, 
+              source="RNAMD")
+M6A <- rbind(M6A, rmdz)
+

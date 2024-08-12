@@ -1414,7 +1414,8 @@ add.data <- c("name",
               "codon", "fromto","Dataset","tissue",
               "iupred3", "flDPnn", # disorder
               "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2", "BP","SAAP") # sequence conservation
+              "MMSeq2", "BP","SAAP",
+              "tpos", "chr", "coor", "strand") # sequence conservation
 for ( i in 1:length(add.data) ) {
     
     datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
@@ -1507,17 +1508,17 @@ site$n <- nsites
 
 
 ## COLLECT DATA FOR SITES
-add.data <- c("name",
-              "codon", "fromto", "Dataset","tissue",
-              "iupred3", "flDPnn", # disorder
-              "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2", "tpos", "chr", "coor", "strand") # sequence conservation
+##add.data <- c("name",
+##              "codon", "fromto", "Dataset","tissue",
+##              "iupred3", "flDPnn", # disorder
+##              "anchor2","DisoRDPbind", # disorder-binding
+##              "MMSeq2", "tpos", "chr", "coor", "strand") # sequence conservation
 for ( i in 1:length(add.data) ) {
     
     datl <- lapply(split(tmtf[[add.data[i]]],
                          paste(tmtf$unique.site, tmtf$fromto)), unique)
     datl <- lapply(datl, function(x) x[x!=""])
-    if ( add.data[i]%in%c("fromto","Dataset","tissue") ) # multiple per site!
+    if ( add.data[i]%in%c("fromto","Dataset","tissue","BP","SAAP") ) # multiple per site!
         datl <- lapply(datl, function(x)
             ifelse(length(x)==1, x, paste(x, collapse=";")))
     datl <- unlist(datl)

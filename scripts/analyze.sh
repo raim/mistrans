@@ -47,12 +47,6 @@ mkdir -p $MISDATA/processedData
 
 ### ADDITIONAL DATA
 
-## @Zhang2023: pseudouridylation
-cd $MISDATA/originalData/
-wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41589-023-01304-7/MediaObjects/41589_2023_1304_MOESM3_ESM.xlsx -O zhang23_stables_1-6.xlsx
-
-## @Dai2023: pseudouridylation
-wget https://static-content.springer.com/esm/art%3A10.1038%2Fs41587-022-01505-w/MediaObjects/41587_2022_1505_MOESM3_ESM.xlsx -O dai23_stables_1-23.xlsx
 
 ## DEGRONS
 ## NOT USED
@@ -215,6 +209,7 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R &> ${MISDATA}/log/struc
 R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/function.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_model.R &> ${MISDATA}/log/model.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_rna.R &> ${MISDATA}/log/rna.txt
 
 ## COMPARE MULTIPLE BP per SAAP
 R --vanilla <  ${THIS}/scripts/raasprofiles3_multipleBP.R &> ${MISDATA}/log/multipleBP.txt 
