@@ -575,14 +575,15 @@ pid=names(which(pnms=="PSMB5"))
 ## AHNAK: righ RAAS protein
 pid=names(which(pnms=="AHNAK"))
 ## ACTG2: many AAS protein
-pid=names(which(pnms=="ACTG1"))
+pid=names(which(pnms=="ACTG2"))
 
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
 
 pid=names(which(pnms=="GSTA1"))
-zooms <- list("ENSP00000335620"=c(1,90))
-
+zooms <- list("ENSP00000335620"=c(1,90),
+              "ENSP00000295137"=c(200,300))#GSTA1
+pids <- names(zooms)
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -977,7 +978,8 @@ for ( pid in pids ) {
                  .2,  # main peptides
                  .1, # secondary structure and cleavage
                  .5, # AAS type
-                 .075 # CDS structure
+                 .075, # CDS structure
+                 .1 # coordinates
                  )
     plotdev(tfile, width=min(c(100,zlen*wscale)),
             height=2*sum(heights), type=ftyp, res=200)
@@ -1064,6 +1066,15 @@ for ( pid in pids ) {
     axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
     mtext("CDS", 2, las=2)
 
+    ## coordinates
+    amai <- mmai
+    par(mai=amai, xpd=FALSE)
+    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    xat <- pretty(1:coors[3])
+    xat[xat==0] <- 1
+    axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
+    mtext("position", 2, .5, las=2, cex=.7)
+
     dev.off()
 
     ### ZOOM PLOT
@@ -1090,17 +1101,15 @@ for ( pid in pids ) {
     
     heights <- c(.1,  # title
                  .15,  # PFAM/CLAN
-                 .14, # secondary structure and cleavage
+                 .15, # secondary structure 
                  .3,  # RAAS CURVES
-                 ##.2,  # main peptides
-                 .4, # AAS type
-                 ##.075, # CDS structure
+                 .4, # RAAS values
                  .1 # position labels
                  )
     plotdev(zfile, width=min(c(100,zlen*wscale)),
             height=2*sum(heights), type=ftyp, res=200)
     layout(mat=t(t(1:length(heights))), heights=heights)
-    par(mai=mmai, xaxs="i", xpd=TRUE)
+    par(mai=mmai, xaxs="i", xpd=FALSE)
     
     plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     text(x=midp, y=1,
@@ -1116,9 +1125,9 @@ for ( pid in pids ) {
     ## secondary structure as blocks
     par(mai=mmai)
     if ( !is.null(s4coors) ) {
-        plotFeatureBlocks(data=s4coors, coors=zoors, axis2=FALSE, abline=FALSE)
-        axis(2, at=c(.5,-.5), labels=c(expression(alpha),
-                                       expression(beta)), las=2)
+        plotFeatureBlocks(data=s4coors, coors=zoors, axis2=FALSE, abline=TRUE)
+        axis(2, at=c(.75,-.75), labels=c(expression(alpha),
+                                       expression(beta)), las=2, cex.axis=1.2)
         ##mtext("structure", 2, 2, cex=.7, las=2)
     } else plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
 
@@ -1138,12 +1147,12 @@ for ( pid in pids ) {
     axis(2)
     lines(1:plen, mar, lwd=2)
     points(aad$start, aad$raas, pch=19, col=aad$color, cex=2.5)
-        points(aad$start, aad$raas, pch=1, col="white", cex=2.5)
+    points(aad$start, aad$raas, pch=1, col="white", cex=2.5)
     mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
 
     ## coordinate axis
     amai <- mmai
-    par(mai=amai)
+    par(mai=amai, xpd=FALSE)
     plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
     xat <- pretty(1:zoors[3])
     xat[xat==0] <- 1
