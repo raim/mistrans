@@ -39,6 +39,7 @@ fig.path <- file.path(proj.path,"figures","proteins")
 dir.create(fig.path)
 dir.create(file.path(fig.path, "selected"))
 dir.create(file.path(fig.path, "tight"))
+dir.create(file.path(fig.path, "zoom"))
 
 mam.path <- "~/data/mammary/"
 
@@ -579,6 +580,9 @@ pid=names(which(pnms=="ACTG1"))
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
 
+pid=names(which(pnms=="GSTA1"))
+zooms <- list("ENSP00000335620"=c(1,90))
+
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
@@ -588,6 +592,7 @@ for ( pid in pids ) {
 
     ffile <- file.path(fig.path, pnms[pid])
     tfile <- file.path(fig.path, "tight", paste0(pnms[pid], "_tight"))
+    zfile <- file.path(fig.path, "zoom", paste0(pnms[pid], "_zoom"))
     sfile <- file.path(fig.path, "selected", pnms[pid])
     stfile <- file.path(fig.path, "selected", paste0(pnms[pid], "_tight"))
 
@@ -610,8 +615,24 @@ for ( pid in pids ) {
     dp <- NULL
     if ( puni[pid] %in% names(dpfiles) ) 
         dp <- read.delim(file.path(descrp,dpfiles[puni[pid]]), header=FALSE)
-    
-    
+
+
+    ## secondary structure prediction as feature blocks
+    s4b <- strsplit(s4p[[pid]]$seq,"")[[1]]
+    s4coors <- NULL
+    for ( tp in c("H","E") ) {
+        tpidx <- which(s4b==tp)
+        if ( length(tpidx) ) {
+            tpends <- c(tpidx[which(diff(tpidx)>1)], tail(tpidx,1))
+            tpstarts <- c(head(tpidx,1),tpidx[which(diff(tpidx)>1)+1])
+            tpcoor <- cbind(chr=1, start=tpstarts, end=tpends,
+                            strand=ifelse(tp=="H","+","-"),
+                            type=tp, color="#AAAAAA")
+            s4coors <- rbind(s4coors, tpcoor)
+        }
+    }
+
+    ## sequences
     psq <- pfas[[pid]]$seq
     tsq <- tfas[[pid]]$seq
     phc <- NULL
@@ -941,9 +962,13 @@ for ( pid in pids ) {
     ### TIGHT PLOT
     cat(paste("TIGHT PLOT", pnms[pid], pid, "\n"))
 
+    ## plot width
+    zlen <- plen
+    midp <- plen/2
+    
     wscale <- 1/30
-    if ( plen<90 ) wscale <- 1/10
-    if ( plen>2000 ) wscale <- 1/100
+    if ( zlen<90 ) wscale <- 1/10
+    if ( zlen>2000 ) wscale <- 1/100
     mmai <- c(.05,1,.05,.1)
     
     heights <- c(.1,  # title
@@ -954,13 +979,13 @@ for ( pid in pids ) {
                  .5, # AAS type
                  .075 # CDS structure
                  )
-    plotdev(tfile, width=min(c(100,plen*wscale)),
+    plotdev(tfile, width=min(c(100,zlen*wscale)),
             height=2*sum(heights), type=ftyp, res=200)
     layout(mat=t(t(1:length(heights))), heights=heights)
     par(mai=mmai, xaxs="i", xpd=TRUE)
 
     plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(x=plen/2, y=1,
+    text(x=midp, y=1,
          labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
     
     ## domains as arrows
@@ -1020,8 +1045,8 @@ for ( pid in pids ) {
          xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
     axis(2)
     lines(1:plen, mar, lwd=2)
-    points(aad$start, aad$raas, pch=19, col=aad$color, cex=1.5)#, cex=aad$cex)
-    points(aad$start, aad$raas, pch=1, col="white", cex=1.5)#, cex=aad$cex)
+    points(aad$start, aad$raas, pch=19, col=aad$color, cex=3.5)#, cex=aad$cex)
+    points(aad$start, aad$raas, pch=1, col="white", cex=3.5)#, cex=aad$cex)
     mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
     if ( FALSE ) {
         plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
@@ -1041,6 +1066,91 @@ for ( pid in pids ) {
 
     dev.off()
 
+    ### ZOOM PLOT
+    cat(paste("ZOOM PLOT", pnms[pid], pid, "\n"))
+
+    zlen <- plen
+    midp <- plen/2
+    zoors <- coors
+    if ( pid %in% names(zooms) ) {
+        zoors <- c(chr=1,
+                   start=zooms[[pid]][1], end=zooms[[pid]][2]+1)
+        zlen <- zoors[3] - zoors[2]
+        midp <- mean(zoors[2:3])
+
+    }
+
+    ## remove pfam clans
+    pf <- pf[pf$color=="#000000",]
+   
+    wscale <- 1/25
+    if ( zlen<90 ) wscale <- 1/10
+    if ( zlen>2000 ) wscale <- 1/100
+    mmai <- c(.05,.5,.05,.1)
+    
+    heights <- c(.1,  # title
+                 .15,  # PFAM/CLAN
+                 .14, # secondary structure and cleavage
+                 .3,  # RAAS CURVES
+                 ##.2,  # main peptides
+                 .4, # AAS type
+                 ##.075, # CDS structure
+                 .1 # position labels
+                 )
+    plotdev(zfile, width=min(c(100,zlen*wscale)),
+            height=2*sum(heights), type=ftyp, res=200)
+    layout(mat=t(t(1:length(heights))), heights=heights)
+    par(mai=mmai, xaxs="i", xpd=TRUE)
+    
+    plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    text(x=midp, y=1,
+         labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
+    
+    ## domains as arrows
+    if ( !is.null(pf) ) {
+        plotFeatures(pf, coors=zoors, tcx=1.5, names=TRUE,
+                     typord=TRUE, axis2=FALSE)
+    } else plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    mtext("Pfam", 2, 1.5)
+        
+    ## secondary structure as blocks
+    par(mai=mmai)
+    if ( !is.null(s4coors) ) {
+        plotFeatureBlocks(data=s4coors, coors=zoors, axis2=FALSE, abline=FALSE)
+        axis(2, at=c(.5,-.5), labels=c(expression(alpha),
+                                       expression(beta)), las=2)
+        ##mtext("structure", 2, 2, cex=.7, las=2)
+    } else plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+
+    ## RAAS MEASUREMENT FREQUENCY
+    plot(1:plen, man, type="l",
+         xlim=c(zoors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+    axis(2, las=2)
+    abline(h=0, col="gray", xpd=FALSE)
+    mtext("# RAAS", 2, 2, cex=.8)#, las=2)
+
+    ## RAAS VALUES
+    mmaiaa <- mmai
+    mmaiaa[3] <- mmaiaa[1] <- 0.01
+    par(mai=mmaiaa, xpd=TRUE)
+    plot(aad$start, aad$raas, pch=19, col=NA,
+         xlim=c(zoors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+    axis(2)
+    lines(1:plen, mar, lwd=2)
+    points(aad$start, aad$raas, pch=19, col=aad$color, cex=2.5)
+        points(aad$start, aad$raas, pch=1, col="white", cex=2.5)
+    mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
+
+    ## coordinate axis
+    amai <- mmai
+    par(mai=amai)
+    plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+    xat <- pretty(1:zoors[3])
+    xat[xat==0] <- 1
+    axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
+    mtext("position", 2, .5, las=2, cex=.7)
+    dev.off()
+    
     ## note that the file.exists part allows to update interesting proteins
     ## that were manually copied to the selected folder
     if ( doit | file.exists(paste0(stfile,".",ftyp)) )
