@@ -280,17 +280,46 @@ for ( i in 1:3 ) {
     ##pid <- which(psidx%in%intersect(psidx, bdidx))
     cat(paste("found", length(bid), "overlapping sites", i, "\n"))
     
+
+    ## annotate AAS
     psi2site <- match(bdidx, psidx)
-    
     sitepsi <- PSI[psi2site, ]
     colnames(sitepsi) <- paste0("codon",i, "_", colnames(sitepsi))
     psite <- cbind(psite, sitepsi)
+
+    ## annotate psi sites
+    aas2psi <- match(psidx, bdidx)
 }
 ## collapse all psi
 ## NOTE: using median as a helper
 psite$psi <- apply(psite[,paste0("codon",1:3,"_psi")], 1, median, na.rm=TRUE)
+psite$psi.codonpos <- unlist(apply(psite[,paste0("codon",1:3,"_psi")], 1,
+                                   function(x) { y<-which(!is.na(x));
+                                       if (length(y)==0) y<-NA;y
+                                   }))
 psite$psi.source <- apply(psite[,paste0("codon",1:3,"_source")], 1,
                           function(x) paste0(x[!is.na(x)],collapse=";"))
+psite$psi.chr <- apply(psite[,paste0("codon",1:3,"_chr")], 1,
+                          function(x) paste0(x[!is.na(x)],collapse=";"))
+psite$psi.coor <- apply(psite[,paste0("codon",1:3,"_coor")], 1,
+                          function(x) paste0(x[!is.na(x)],collapse=";"))
+
+## export site for Sara and Sasha
+## TODO: rm separate codon columns, and instead add affected
+## codon position:
+ecols <- c("chr", "coor", "strand", "RAAS.median", "name","ensembl",
+           "pos", "codon",
+           "fromto", "psi",
+           "psi.codonpos", "psi.chr", "psi.coor")
+table(psite$psi.source)
+expsite <- psite[psite$psi.source=="fanari24pre",ecols]
+expsite$chr <- paste0("chr", chrMap[expsite$chr,2])
+expsite$psi.chr <- paste0("chr", chrMap[expsite$psi.chr,2])
+
+write.table(file=file.path(rfig.path,"aas_vs_psi.tsv"),
+            x=expsite,
+            sep="\t", quote=FALSE, row.names=FALSE)
+
 
 ## CORRELATION OF PSI % TO RAAS
 
@@ -377,8 +406,11 @@ phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
 
 M6A <- NULL
 
-## from rnamd database
+## m6A quantification from rnamd database
 rmd <- read.delim(rmd.file)
+
+## m6A site annotation
+rma <- read.delim(rma.file)
 
 ## TODO: understand data structure,
 ## log2FC in different cell lines?
@@ -386,15 +418,155 @@ rmd <- read.delim(rmd.file)
 
 rmd$chr <- sub("^chr", "", rmd$seqnames)
 
-## take a median log2FC
-rmd$lg2fc <- apply(rmd[,6:(ncol(rmd)-1)], 1, median, na.rm=TRUE)
-rmd$lg2fc.n <- apply(rmd[,6:(ncol(rmd)-1)], 1, function(x) sum(!is.na(x)))
+## take median log2FC over all experiments
+## TODO: instead select a single column with most sites?
+expCols <- grep("^GSE", colnames(rmd))
+
+apply(rmd[,expCols], 2, function(x) sum(!is.na(x)))
+
+rmd$lg2fc <- apply(rmd[,expCols], 1, median, na.rm=TRUE)
+rmd$lg2fc.n <- apply(rmd[,expCols], 1, function(x) sum(!is.na(x)))
+
+## NOTE: distribution of values -> filter?
+hist(rmd$lg2fc.n)
+
+## FILTER by number of observations
+if ( FALSE ) 
+    rmd <- rmd[rmd$lg2fc.n > median(rmd$lg2fc.n),]
+
+## add gene name info
+d2a <- match(rmd$ID, rma$ID)
+rmd$gene <- rma[d2a,"Gene_Name"]
+rmd$annotation <- rma[d2a, "annotation"]
+
+##  REDUCE TO EXONS
+rmd <- rmd[rmd$annotation=="Exon",]
+
 
 ## manually use this to test code below
 rmdz <- cbind(rmd[,c("chr","start","end","strand")],
               info="m6A",
-              gene=NA, # TODO: load via site info file!
+              gene=rmd$gene, # TODO: load via site info file!
               lg2fc=rmd$lg2fc, 
               source="RNAMD")
 M6A <- rbind(M6A, rmdz)
 
+
+## get ensembl protein ID
+M6A$ensembl <- names(ens2nam[match(M6A$gene,  ens2nam)]) 
+
+
+## take mean position - only affects @Zhang which provides ranges,
+## and we found only one overlap (2nd and 3rd position of one AAS)
+M6A$coor <- round(apply(M6A[,c("start","end")],1,mean))
+
+## chromosome index
+M6A$chr <-  chrIdx[M6A$chr]
+
+
+### MAP M6A and AAS SITES
+m6adx <- coor2index(M6A[,c("chr","coor")], chrS=chrS)[,2]
+
+## collect overlapping sites
+psite <- usite
+for ( i in 1:3 ) {
+
+    bdidx <- get(paste0("bd",i,"dx"))
+                 
+    ## find same positions
+    bid <- which(bdidx%in%intersect(m6adx, bdidx))
+    ##pid <- which(m6adx%in%intersect(m6adx, bdidx))
+    cat(paste("found", length(bid), "overlapping sites", i, "\n"))
+    
+    m6a2site <- match(bdidx, m6adx)
+    
+    sitem6a <- M6A[m6a2site, ]
+    colnames(sitem6a) <- paste0("codon",i, "_", colnames(sitem6a))
+    psite <- cbind(psite, sitem6a)
+}
+## collapse all m6a
+## NOTE: using median as a helper
+psite$lg2fc <- apply(psite[,paste0("codon",1:3,"_lg2fc")], 1, median, na.rm=TRUE)
+psite$lg2fc.source <- apply(psite[,paste0("codon",1:3,"_source")], 1,
+                          function(x) paste0(x[!is.na(x)],collapse=";"))
+
+## CORRELATION OF M6A % TO RAAS
+
+sources <- unique(psite$lg2fc.source)
+sources <- sources[sources!=""]
+pch.source <- 1:length(sources) 
+names(pch.source) <- sources
+
+for ( i in 1:3 ) {
+    ccol <- paste0("codon",i,"_lg2fc")
+    scol <- paste0("codon",i,"_source")
+    plotdev(file.path(rfig.path,paste0("m6a_raas_codon",i)), type=ftyp,
+            height=2.5, width=2.5, res=200)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(psite$RAAS.median, psite[,ccol], density=FALSE,
+#            pch=pch.source[psite[,scol]],
+            xlab=xl.raas, ylab=bquote("codon pos"~.(i)*","~ log[2](FC)),
+            col=NA)
+    points(psite$RAAS.median, psite[,ccol], pch=pch.source[psite[,scol]],
+           cex=.75, col=i)
+    text(psite$RAAS.median, psite[,ccol],labels=psite$fromto, xpd=TRUE,
+         col=1, cex=.5, pos=4)
+    dev.off()
+}
+
+
+## correlation of RAAS to m6a %
+plotdev(file.path(rfig.path,"m6a_raas_codons"), type=ftyp,
+        height=2.5, width=2.5, res=200)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(psite$RAAS.median, psite$lg2fc, density=FALSE,
+        xlab=xl.raas, ylab=expression(log[2](FC)), pch=NA)
+points(psite$RAAS.median, psite$codon1_lg2fc, col=1, pch=19, cex=.5)
+points(psite$RAAS.median, psite$codon2_lg2fc, col=2, pch=19, cex=.5)
+points(psite$RAAS.median, psite$codon3_lg2fc, col=3, pch=19, cex=.5)
+legend("topright",paste(1:3), title="codon position", col=1:3, cex=.5,
+       pch=19, pt.cex=.75, bty="n")
+dev.off()
+
+## HYPERGEO, USING NUMBER OF Us AS BACKGROUND
+
+
+## COUNT ONLY Us in CODING SEQUENCE
+if ( !exists("tfas")  ) {
+    tfas <- readFASTA(tfas.file, grepID=TRUE)
+    ## protein-transcript map
+    trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+    ## reverse map transcript-protein
+    pamrt <- matrix(rownames(trmap), ncol=1)
+    rownames(pamrt) <- trmap[,1]
+    ## rename by protein names via trmap, for quick access
+    ## of protein-specific transcript
+    names(tfas) <- pamrt[names(tfas),1]
+
+    pids <- unique(c(psite$ensembl, M6A$ensembl))
+    tfas <- tfas[pids[pids%in%names(tfas)]]
+}
+
+## total balls: all Us in coding sequences of the total gene set
+totaa <- sum(unlist(lapply(tfas,
+                           function(x) sum(unlist(strsplit(x$seq,""))=="A"))))
+
+## white balls: all detected m6a
+m <- length(unique(paste(M6A$chr, M6A$coor)))
+n <- totaa-m # black balls
+
+## balls drawn: all U in AAS codons
+## take only unique site here!
+FILT <- !duplicated(paste(psite$chr,
+                          psite$coor, psite$strand))
+k <- sum(unlist(strsplit(psite$codon[FILT],""))=="A")
+
+## q: white balls drawn number of AAS with m6a
+q <- sum(!is.na(psite$lg2fc[FILT]))
+
+##m: the number of white balls in the urn.
+##n: the number of black balls in the urn.
+##k: the number of balls drawn from the urn
+
+phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+phyper(q=q, m=m, n=n, k=k, lower.tail=TRUE)
