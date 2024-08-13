@@ -625,10 +625,10 @@ for ( pid in pids ) {
         if ( length(tpidx) ) {
             tpends <- c(tpidx[which(diff(tpidx)>1)], tail(tpidx,1))
             tpstarts <- c(head(tpidx,1),tpidx[which(diff(tpidx)>1)+1])
-            tpcoor <- cbind(chr=1, start=tpstarts, end=tpends,
-                            strand=ifelse(tp=="H","+","-"),
-                            type=tp, color="#AAAAAA")
-            s4coors <- rbind(s4coors, tpcoor)
+            tpcoor <- cbind.data.frame(chr=1, start=tpstarts, end=tpends,
+                                       strand=ifelse(tp=="H","+","-"),
+                                       type=tp, color="#AAAAAA")
+            s4coors <- rbind.data.frame(s4coors, tpcoor)
         }
     }
 
