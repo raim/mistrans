@@ -222,6 +222,21 @@ psiz <- cbind(psi[,c("chr","start","end")],
               psi=psi[,"mm.DirectMINUSmm.IVT"]/100, # % -> fraction
               source=paste0("fanari24pre","_",psi$cell))
 
+## TODO: track different annotations!
+
+## QC: duplicated sites annotated for different genes!
+## also see below
+tmp <- paste(psiz$chr,psiz$start,psiz$source)
+psiz[which(tmp==tmp[which(duplicated(tmp))[2]]),]
+
+##  e.g. psia["NA.46990",] annotated as RP1-120G22.12
+## but this has coors chr1 6264900-6265840 while psi site
+## is annotated as chr1 6197653
+
+## line 26694: RP1-120G22.12	chr1	6197653	TTTTG	4013	13	2249	6	4062	2282	0.266075388026608	0.322901142573274	0.266075388026608	0	1	0.056825754546666	4026	2255	1	RP1-120G22.12chr16197653	1	pIVT	chr16197653
+
+## line 27997: RPL22	chr1	6197653	TTTTG	4013	13	2249	6	4062	2282	0.266075388026608	0.322901142573274	0.266075388026608	0	1	0.056825754546666	4026	2255	1	RPL22chr16197653	1	pIVT	chr16197653
+
 ## FILTER
 ##psiz <- psiz[psiz$psi>.1,]
 
@@ -281,6 +296,7 @@ psidx <- coor2index(PSI[,c("chr","coor")], chrS=chrS)[,2]
 
 ## collect overlapping sites
 psite <- usite
+psia <- PSI
 for ( i in 1:3 ) {
 
     bdidx <- get(paste0("bd",i,"dx"))
@@ -303,6 +319,9 @@ for ( i in 1:3 ) {
 
     ## annotate psi sites
     aas2psi <- match(psidx, bdidx)
+    aasite <- psite[aas2psi,c("ensembl","fromto","codon","RAAS.median")]
+    colnames(aasite) <- paste0("codon",i, "_", colnames(aasite))
+    psia <- cbind(psia, aasite)
 }
 
 ## collapse all psi
@@ -327,6 +346,13 @@ psite$psi.codonpos <- apply(psite[,paste0("codon",1:3,"_psi")], 1,  pcodons)
 psite$psi.source <- apply(psite[,paste0("codon",1:3,"_source")], 1, pvals)
 psite$psi.chr <- apply(psite[,paste0("codon",1:3,"_chr")], 1, pvals)
 psite$psi.coor <- apply(psite[,paste0("codon",1:3,"_coor")], 1, pvals)
+
+## TODO: use psia to track redundant annotations, see above
+
+psia$aas.n <- apply(psia[,paste0("codon",1:3,"_RAAS.median")], 1,
+                    function(x) sum(!is.na(x)))
+psia$aas.gene <- apply(psia[,paste0("codon",1:3,"_ensembl")], 1, pvals)
+
 
 ## export site for Sara and Sasha
 ## TODO: rm separate codon columns, and instead add affected
@@ -500,6 +526,61 @@ tot <- 300*10e3*3/4
 black <- 80e3
 draw <- 7e3*3/4
 dblack <- 150
+
+### USING ONLY INTERSECT
+pids <- unique(intersect(psite$ensembl, PSI$ensembl))
+sfas <- tfas[pids[pids%in%names(tfas)]]
+
+## total balls: all Us in coding sequences of the total gene set
+totaa <- sum(unlist(lapply(sfas,
+                           function(x) sum(unlist(strsplit(x$seq,""))=="T"))))
+
+## white balls: all detected psi
+m <- length(unique(paste(PSI$chr, PSI$coor)[PSI$ensembl%in%pids]))
+n <- totaa-m # black balls
+
+## balls drawn: all U in AAS codons
+## take only unique site here!
+FILT <- !duplicated(paste(psite$chr,
+                          psite$coor, psite$strand)) & psite$ensembl%in%pids
+k <- sum(unlist(strsplit(psite$codon[FILT],""))=="T")
+
+## q: white balls drawn number of AAS with psi
+## TODO: account for AAS with multiple hits!!
+q <- sum(psite$psi.n[FILT])
+
+##m: the number of white balls in the urn.
+##n: the number of black balls in the urn.
+##k: the number of balls drawn from the urn
+
+p <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
+
+## pdist
+
+plotdev(file.path(rfig.path,"psi_hypergeotest_intersect"), res=200,
+        width=2.5, height=2.5, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+qs <- 1:(2*q)
+plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
+     xlab="overlap count", ylab=expression(p), type="l", lwd=2)
+legend("topright", c(paste("total U=", round(totaa/1000000,1),"M"),
+                     paste("psi sites=", round(m/1000,1),"k"),
+                     paste("U in AAS=", round(k/1000,1),"k"),
+                     paste("overlap=", q)), cex=.8,
+       box.col=NA, bg=NA)
+points(q, p, pch=4, cex=1.2, col=2)
+shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
+dev.off()
+plotdev(file.path(rfig.path,"psi_hypergeotest_intersect_log"), res=200,
+        width=2.5, height=2.5, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+qs <- 1:700
+plot(qs, log10(phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE)),
+     xlab="overlap count", ylab=expression(log[10](p)), type="l", lwd=2)
+points(q, log10(p), pch=4, cex=1.2, col=2)
+shadowtext(q, log10(p), label=paste0("p=",signif(p,1)), pos=4, col=2, font=2)
+dev.off()
+
 
 
 ### m6A MODIFICATIONS
