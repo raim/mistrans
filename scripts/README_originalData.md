@@ -1,5 +1,5 @@
 
-* six_cell_lines_minimal(A549).csv
+* six_cell_lines_minimal(A549).xlsx
 
 downloaded via emailed link from Oleksandra Fanari <fanari.o@northeastern.edu>
 on 20240808: 
