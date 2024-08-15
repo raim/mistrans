@@ -470,18 +470,19 @@ p <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
 
 ## pdist
 
-qs <- 1:(2*q)
 plotdev(file.path(rfig.path,"psi_hypergeotest"), res=200,
         width=2.5, height=2.5, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
      xlab="overlap count", ylab=expression(p), type="l", lwd=2)
-abline(v=q, col=2)
 legend("topright", c(paste("total U=", round(totaa/1000000,1),"M"),
                      paste("psi sites=", round(m/1000,1),"k"),
                      paste("U in AAS=", round(k/1000,1),"k"),
-                     paste("overlap=", q)), cex=.8)
-legend("right", paste0("p=",signif(p,2)), bty="n", cex=1.2)
+                     paste("overlap=", q)), cex=.8,
+       box.col=NA, bg=NA)
+points(q, p, pch=4, cex=1.2, col=2)
+shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
 dev.off()
 plotdev(file.path(rfig.path,"psi_hypergeotest_log"), res=200,
         width=2.5, height=2.5, type=ftyp)
@@ -489,7 +490,8 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:700
 plot(qs, log10(phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE)),
      xlab="overlap count", ylab=expression(log[10](p)), type="l", lwd=2)
-abline(v=q, col=2)
+points(q, log10(p), pch=4, cex=1.2, col=2)
+shadowtext(q, log10(p), label=paste0("p=",signif(p,1)), pos=4, col=2, font=2)
 dev.off()
 
 ### order of magnitude test
@@ -709,18 +711,19 @@ p <- phyper(q=q-1, m=m, n=n, k=k, lower.tail=FALSE)
 
 ## pdist
 
-qs <- 1:(2*q)
 plotdev(file.path(rfig.path,"m6a_hypergeotest"), res=200,
         width=2.5, height=2.5, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
      xlab="overlap count", ylab=expression(p), type="l", lwd=2)
-abline(v=q, col=2)
+points(q, p, pch=4, cex=1.2, col=2)
+shadowtext(q, p, label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
 legend("topright", c(paste("total A=", round(totaa/1000000,1),"M"),
                      paste("psi sites=", round(m/1000,1),"k"),
                      paste("A in AAS=", round(k/1000,1),"k"),
-                     paste("overlap=", q)), cex=.7)
-legend("right", paste0("p=",signif(p,2)), bty="n", cex=1.2)
+                     paste("overlap=", q)), cex=.8,
+       box.col=NA, bg=NA)
 dev.off()
 plotdev(file.path(rfig.path,"m6a_hypergeotest_log"), res=200,
         width=2.5, height=2.5, type=ftyp)
@@ -728,7 +731,8 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:900
 plot(qs, log10(phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE)),
      xlab="overlap count", ylab=expression(log[10](p)), type="l", lwd=2)
-abline(v=q, col=2)
+points(q, log10(p), pch=4, cex=1.2, col=2)
+shadowtext(q, log10(p), label=paste0("p=",signif(p,1)), pos=4, col=2, font=2)
 dev.off()
 
 ## export site list
