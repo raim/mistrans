@@ -543,23 +543,6 @@ axis(1, at=-10:10, labels=10^(-10:10))
 axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)), tcl=-.125, labels=FALSE)
 dev.off()
 
-### POSITION ON PROTEIN
-
-if ( FALSE ) {
-    ## TODO: where was rpos added? makes no sense, since proteins can have
-    ## multiple rpos
-    plotdev(file.path(pfig.path,paste0("protein_rposition_all")),
-            type=ftyp, res=300, width=corW,height=corH)
-    par(mai=pmai, mgp=pmpg, tcl=-.25)
-    plotCor(ptstat$rpos, ptstat$median, ylim=range(ptstat$median),
-        ylab=xl.prota, xlab=expression(log[10](AAS/AA)),
-        axes=FALSE, title=TRUE, cor.legend=FALSE)
-    axis(2)
-    axis(1, at=-10:10, labels=10^(-10:10))
-    axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)),
-         tcl=-.125, labels=FALSE)
-    dev.off()
-}
 
 ## PROTEIN MELTING TEMPERATURE
 
@@ -699,6 +682,39 @@ axis(1)
 axis(2)
 dev.off()
 
+
+### POSITION IN PROTEIN
+
+if ( FALSE ) {
+    ## TODO: where was rpos added? makes no sense, since proteins can have
+    ## multiple rpos
+    plotdev(file.path(pfig.path,paste0("protein_rposition_all")),
+            type=ftyp, res=300, width=corW,height=corH)
+    par(mai=pmai, mgp=pmpg, tcl=-.25)
+    plotCor(ptstat$rpos, ptstat$median, ylim=range(ptstat$median),
+        ylab=xl.prota, xlab=expression(log[10](AAS/AA)),
+        axes=FALSE, title=TRUE, cor.legend=FALSE)
+    axis(2)
+    axis(1, at=-10:10, labels=10^(-10:10))
+    axis(1, at=log10(rep(1:10, 7) * 10^rep(-4:2, each=10)),
+         tcl=-.125, labels=FALSE)
+    dev.off()
+}
+
+plotdev(file.path(pfig.path,paste0("sites_position_hist")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=c(.5,.5,.1,.1), mgp=pmpg, tcl=-.25)
+hist(asite$rpos,
+     xlab="relative position in proteins", main=NA)
+dev.off()
+plotdev(file.path(pfig.path,paste0("sites_position_raas")),
+            type=ftyp, res=300, width=corW,height=corH)
+par(mai=c(.5,.5,.25,.1), mgp=pmpg, tcl=-.25)
+plotCor(asite$rpos, asite$RAAS.median, ylab=xl.raas,
+        xlab="relative position in proteins",
+        cor.legend=FALSE, title=TRUE, cex=.5)
+dev.off()
+
 ### PAIRWISE DISTANCES of HIGH RAAS SITES
 
 ## nslavov at slack, 20240629:
@@ -717,8 +733,10 @@ dev.off()
 ## TODO:
 ## * why so many small distances BETWEEN BP,
 ## * investigate overlapping BP; define group IDs
-table(stringr::str_count(asite$BP, ";"))
+table(stringr::str_count(site$BP, ";"))
 # 396 sites with more than one BP
+
+
 
 bsite <- asite
 bsite$RAAS <- bsite$RAAS.median

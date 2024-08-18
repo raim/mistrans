@@ -16,8 +16,7 @@ if ( !exists("bdat") )
 rfig.path <- file.path(fig.path,"rna")
 dir.create(rfig.path, showWarnings=FALSE)
 
-## use only AAS where we have a codon
-## TODO: use unique sites?
+## use only unique AAS sites where we have a codon
 usite <- asite[!is.na(asite$codon),]
 
 
@@ -198,11 +197,42 @@ for ( i in 1:3 ) {
 ### Oleksandra Fanari <fanari.o@northeastern.edu>
 psi <- NULL
 for ( i in excel_sheets(psi.file) ) {
+    
     tmp <-as.data.frame(read_xlsx(psi.file, sheet=i))
+
+    ## collapse duplicate sites
+    ## check whether
+    upos <- paste(tmp$chr, tmp$position)
+    dpos <-upos[which(duplicated(upos))]
+
+    ## all annotations as list
+    danl <- sapply(dpos, function(x) tmp$Annotation[which(upos==x)])
+    ## filter those that are in name vector
+    danl <- lapply(danl, function(x) x[x%in%pnms])
+
+    ## TODO: further reduce to a single annotation
+    ## e.g. by length
+
+    dann <- sapply(dpos, function(x)
+        paste(tmp$Annotation[which(upos==x)], collapse=";"))
+    fpos <- sapply(dpos, function(x)
+        which(upos==x)[1])
+
+    ## add annotation lists to be filtered later
+    tmp$Annotation.all <- tmp$Annotation.best <- tmp$Annotation.first <-
+        tmp$Annotation
+    tmp$Annotation.all[fpos] <- dann
+    tmp$Annotation.best[fpos] <- unlist(lapply(danl, paste, collapse=";"))
+    tmp$Annotation.first[fpos] <- unlist(lapply(danl, function(x) x[1]))
+
+    ## remove all duplicated
+    tmp <- tmp[!duplicated(upos),]
+    
     psi <- rbind(psi, cbind(tmp, cell=i))
 }
 ##psi <- read.csv(psi.file)
 colnames(psi) <- sub("position","coor", colnames(psi))
+
 
 ## match gene name
 ## TODO: find  missing 440
@@ -218,16 +248,11 @@ psi$start <- psi$end <- psi$coor
 psiz <- cbind(psi[,c("chr","start","end")],
               strand=".",
               info="",
-              gene=psi$Annotation,
+              gene=psi$Annotation.first,
               psi=psi[,"mm.DirectMINUSmm.IVT"]/100, # % -> fraction
               source=paste0("fanari24pre","_",psi$cell))
 
 ## TODO: track different annotations!
-
-## QC: duplicated sites annotated for different genes!
-## also see below
-tmp <- paste(psiz$chr,psiz$start,psiz$source)
-psiz[which(tmp==tmp[which(duplicated(tmp))[2]]),]
 
 ##  e.g. psia["NA.46990",] annotated as RP1-120G22.12
 ## but this has coors chr1 6264900-6265840 while psi site
@@ -267,6 +292,9 @@ psiz <- cbind(pia[,c("chr","start","end","strand")],
 ## get ensembl protein ID
 PSI$ensembl <- names(ens2nam[match(PSI$gene,  ens2nam)]) 
 
+## TODO: find in synonyms, trace where NA come from (find synonyms)
+## already while parsing and filtering multiple hits.
+PSI$gene[is.na(PSI$ensembl)]
 
 ## take mean position - only affects @Zhang which provides ranges,
 ## and we found only one overlap (2nd and 3rd position of one AAS)
@@ -293,6 +321,44 @@ dev.off()
 
 ### MAP PSI and AAS SITES
 psidx <- coor2index(PSI[,c("chr","coor")], chrS=chrS)[,2]
+
+## REANNOTATE PSI, EACH TO ENSEMBL TRANSCRIPTS
+cds.file <- "/home/raim/data/mammary/originalData/transcript_coordinates.tsv"
+cds <- read.delim(cds.file)
+cds <- cds[cds$transcript%in%genes$MANE,]
+cdsi <- cds[,c("transcript","chr","start","end")] # SKIP STRAND!
+cdsi$chr <- chrIdx[cdsi$chr]
+cdsi <- coor2index(cdsi, chrS=chrS)
+
+## find PSI sites in ensembl MANE transcript coordinates
+## (ignoring strand)
+## TODO: more efficient via cut or findInterval,see
+## cut(x, breaks = interval.vector, include.lowest = TRUE)
+psiu <- unique(psidx) # TODO: search only unique sites and map back
+psi2ens <- sapply(psiu, function(x) which(cdsi$start <= x &  cdsi$end >= x))
+
+psi2trans <- lapply(psi2ens,
+                    function(x) {
+                        if ( length(x)>0 ) {
+                            x <- cdsi[x,"transcript"]
+                        } else { x <- NA }
+                        x
+                    })
+## map to proteins
+tpmap <- "~/data/mammary/originalData/protein_transcript_map.tsv"
+## protein-transcript map
+trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+## reverse map transcript-protein
+pamrt <- matrix(rownames(trmap), ncol=1)
+rownames(pamrt) <- trmap[,1]
+psi2prot <- lapply(psi2trans, function(x) pamrt[x,1])
+
+## investigate dual hits
+table(lengths(psi2ens))
+psi2trans[which(lengths(psi2ens)==2)[1]]
+psi2prot[which(lengths(psi2ens)==2)[1]]
+## take longer transcript for dual hits
+
 
 ## collect overlapping sites
 psite <- usite
@@ -375,8 +441,7 @@ write.table(file=file.path(rfig.path,"aas_vs_psi.tsv"),
 
 ## CORRELATION OF PSI % TO RAAS
 
-sources <-
-    unique(na.omit(unlist(psite[,paste0("codon",1:3,"_source")])))
+sources <- unique(na.omit(unlist(psite[,paste0("codon",1:3,"_source")])))
 pch.source <- 1:length(sources) 
 names(pch.source) <- sources
 
@@ -502,13 +567,15 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
      xlab="overlap count", ylab=expression(p), type="l", lwd=2)
-legend("topright", c(paste("total U=", round(totaa/1000000,1),"M"),
+legend("topright", c(paste("transcripts=", round(length(pids)/1000,1),"k"),
+                     paste("total U=", round(totaa/1000000,1),"M"),
                      paste("psi sites=", round(m/1000,1),"k"),
                      paste("U in AAS=", round(k/1000,1),"k"),
                      paste("overlap=", q)), cex=.8,
        box.col=NA, bg=NA)
 points(q, p, pch=4, cex=1.2, col=2)
 shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
+figlabel("union",pos="bottomleft", font=2)
 dev.off()
 plotdev(file.path(rfig.path,"psi_hypergeotest_log"), res=200,
         width=2.5, height=2.5, type=ftyp)
@@ -528,14 +595,20 @@ draw <- 7e3*3/4
 dblack <- 150
 
 ### USING ONLY INTERSECT
-pids <- unique(intersect(psite$ensembl, PSI$ensembl))
+
+## TODO: find out which psi are NOT the intersect version and why
+## find those via synonym list.
+
+pids <- unique(psite$ensembl[psite$psi.n>0]) 
 sfas <- tfas[pids[pids%in%names(tfas)]]
 
 ## total balls: all Us in coding sequences of the total gene set
 totaa <- sum(unlist(lapply(sfas,
                            function(x) sum(unlist(strsplit(x$seq,""))=="T"))))
 
-## white balls: all detected psi
+## white balls: all detected psi in these transcripts
+## TODO: unclear whether we loose sites mapped to a different but
+## overlapping transcript
 m <- length(unique(paste(PSI$chr, PSI$coor)[PSI$ensembl%in%pids]))
 n <- totaa-m # black balls
 
@@ -563,13 +636,15 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
      xlab="overlap count", ylab=expression(p), type="l", lwd=2)
-legend("topright", c(paste("total U=", round(totaa/1000000,1),"M"),
-                     paste("psi sites=", round(m/1000,1),"k"),
-                     paste("U in AAS=", round(k/1000,1),"k"),
+legend("topright", c(paste("transcripts=", length(pids)),
+                     paste("total U=", round(totaa/1000,1),"k"),
+                     paste("psi sites=", round(m),""),
+                     paste("U in AAS=", round(k),""),
                      paste("overlap=", q)), cex=.8,
        box.col=NA, bg=NA)
 points(q, p, pch=4, cex=1.2, col=2)
 shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
+figlabel("intersect",pos="bottomleft", font=2)
 dev.off()
 plotdev(file.path(rfig.path,"psi_hypergeotest_intersect_log"), res=200,
         width=2.5, height=2.5, type=ftyp)

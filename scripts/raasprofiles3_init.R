@@ -1414,8 +1414,10 @@ add.data <- c("name",
               "codon", "fromto","Dataset","tissue",
               "iupred3", "flDPnn", # disorder
               "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2", "BP","SAAP",
-              "tpos", "chr", "coor", "strand") # sequence conservation
+              "MMSeq2", # sequence conservation
+              "BP","SAAP",
+              "pos","rpos", # position in protein
+              "tpos", "chr", "coor", "strand") 
 for ( i in 1:length(add.data) ) {
     
     datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
