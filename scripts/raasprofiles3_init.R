@@ -1417,6 +1417,7 @@ add.data <- c("name",
               "MMSeq2", # sequence conservation
               "BP","SAAP",
               "pos","rpos", # position in protein
+              "transcript",
               "tpos", "chr", "coor", "strand") 
 for ( i in 1:length(add.data) ) {
     

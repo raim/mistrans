@@ -246,8 +246,7 @@ psi$chr <-  sub("^M$","MT",sub("chr","",psi$chr))
 psi$start <- psi$end <- psi$coor
 
 psiz <- cbind(psi[,c("chr","start","end")],
-              strand=".",
-              info="",
+              strand=".", info="",
               gene=psi$Annotation.first,
               psi=psi[,"mm.DirectMINUSmm.IVT"]/100, # % -> fraction
               source=paste0("fanari24pre","_",psi$cell))
@@ -344,22 +343,33 @@ psi2trans <- lapply(psi2ens,
                         } else { x <- NA }
                         x
                     })
-## map to proteins
-tpmap <- "~/data/mammary/originalData/protein_transcript_map.tsv"
+
+## investigate dual hits
+table(lengths(psi2ens))
+unlist(psi2trans[which(lengths(psi2ens)==2)])%in%genes$MANE
+
+## expand back to site
+PSI$transcript <- unlist(lapply(psi2trans[match(psidx,psiu)],
+                                function(x) paste(x, collapse=";")))
+
+PSI$transcript[PSI$transcript=="NA"] <- NA
+
+## TODO: find transcripts for already mapped proteins
+## and find out why we don't find them directly
+
 ## protein-transcript map
 trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
 ## reverse map transcript-protein
 pamrt <- matrix(rownames(trmap), ncol=1)
 rownames(pamrt) <- trmap[,1]
-psi2prot <- lapply(psi2trans, function(x) pamrt[x,1])
-
-## investigate dual hits
-table(lengths(psi2ens))
-psi2trans[which(lengths(psi2ens)==2)[1]]
-psi2prot[which(lengths(psi2ens)==2)[1]]
-## take longer transcript for dual hits
 
 
+## add missing transcripts via proteins
+## TODO: this assumes transcripts that may not cover the psi site
+PSI$transcript.missing <- is.na(PSI$transcript)
+PSI$transcript[is.na(PSI$transcript)] <-
+    trmap[PSI$ensembl[is.na(PSI$transcript)],1]
+                
 ## collect overlapping sites
 psite <- usite
 psia <- PSI
@@ -523,16 +533,16 @@ dev.off()
 ## COUNT ONLY Us in CODING SEQUENCE
 if ( !exists("tfas")  ) {
     tfas <- readFASTA(tfas.file, grepID=TRUE)
-    ## protein-transcript map
-    trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
-    ## reverse map transcript-protein
-    pamrt <- matrix(rownames(trmap), ncol=1)
-    rownames(pamrt) <- trmap[,1]
-    ## rename by protein names via trmap, for quick access
-    ## of protein-specific transcript
-    names(tfas) <- pamrt[names(tfas),1]
+    #### protein-transcript map
+    ##trmap <- read.delim(file=tpmap, header=FALSE, row.names=2)
+    #### reverse map transcript-protein
+    ##pamrt <- matrix(rownames(trmap), ncol=1)
+    ##rownames(pamrt) <- trmap[,1]
+    #### rename by protein names via trmap, for quick access
+    #### of protein-specific transcript
+    ##names(tfas) <- pamrt[names(tfas),1]
 }
-pids <- unique(c(psite$ensembl, PSI$ensembl))
+pids <- unique(c(psite$transcript, PSI$transcript))
 sfas <- tfas[pids[pids%in%names(tfas)]]
 
 ## total balls: all Us in coding sequences of the total gene set
@@ -599,7 +609,7 @@ dblack <- 150
 ## TODO: find out which psi are NOT the intersect version and why
 ## find those via synonym list.
 
-pids <- unique(psite$ensembl[psite$psi.n>0]) 
+pids <- unique(psite$transcript[psite$psi.n>0]) 
 sfas <- tfas[pids[pids%in%names(tfas)]]
 
 ## total balls: all Us in coding sequences of the total gene set
@@ -609,13 +619,13 @@ totaa <- sum(unlist(lapply(sfas,
 ## white balls: all detected psi in these transcripts
 ## TODO: unclear whether we loose sites mapped to a different but
 ## overlapping transcript
-m <- length(unique(paste(PSI$chr, PSI$coor)[PSI$ensembl%in%pids]))
+m <- length(unique(paste(PSI$chr, PSI$coor)[PSI$transcript%in%pids]))
 n <- totaa-m # black balls
 
 ## balls drawn: all U in AAS codons
 ## take only unique site here!
 FILT <- !duplicated(paste(psite$chr,
-                          psite$coor, psite$strand)) & psite$ensembl%in%pids
+                          psite$coor, psite$strand)) & psite$transcript%in%pids
 k <- sum(unlist(strsplit(psite$codon[FILT],""))=="T")
 
 ## q: white balls drawn number of AAS with psi
