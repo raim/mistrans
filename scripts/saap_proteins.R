@@ -580,14 +580,23 @@ pid=names(which(pnms=="ACTG2"))
 ## just shiri's and my collection
 pids <- c(POI, names(pnms)[pnms%in%shiri.selection])
 
+
+### ZOOMed PLOTs
 pid=names(which(pnms=="GSTA1"))
-zooms <- list("ENSP00000335620"=c(1,90),
-              "ENSP00000295137"=c(200,300))#GSTA1
+pid=names(which(pnms=="MZB1"))
+pid=names(which(pnms=="ALDOB"))
+pid=names(which(pnms=="ANXA5"))
+zooms <- list("ENSP00000335620"=c(1,90),#GSTA1
+              "ENSP00000296511"=c(125,175),#ANXA5
+              "ENSP00000497767"=c(130,250),#ALDOB
+              "ENSP00000303920"=c(100,160),#MZB1
+              "ENSP00000295137"=c(200,300)) #ACTG2
 pids <- names(zooms)
 
 ## plot all proteins INCL. QC
 pids <- names(aasl)#POI #
 
+do.tight.plot <- FALSE
 do.full.plot <- FALSE
 for ( pid in pids ) {
 
@@ -960,124 +969,127 @@ for ( pid in pids ) {
                       paste0(sfile,".",ftyp), overwrite = TRUE)
     }
     
-    ### TIGHT PLOT
-    cat(paste("TIGHT PLOT", pnms[pid], pid, "\n"))
+### TIGHT PLOT
+    if ( do.tight.plot ) {
+        cat(paste("TIGHT PLOT", pnms[pid], pid, "\n"))
 
-    ## plot width
-    zlen <- plen
-    midp <- plen/2
-    
-    wscale <- 1/30
-    if ( zlen<90 ) wscale <- 1/10
-    if ( zlen>2000 ) wscale <- 1/100
-    mmai <- c(.05,1,.05,.1)
-    
-    heights <- c(.1,  # title
-                 .15,  # PFAM/CLAN
-                 .2,  # RAAS CURVES
-                 .2,  # main peptides
-                 .1, # secondary structure and cleavage
-                 .5, # AAS type
-                 .075, # CDS structure
-                 .1 # coordinates
-                 )
-    plotdev(tfile, width=min(c(100,zlen*wscale)),
-            height=2*sum(heights), type=ftyp, res=200)
-    layout(mat=t(t(1:length(heights))), heights=heights)
-    par(mai=mmai, xaxs="i", xpd=TRUE)
-
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(x=midp, y=1,
-         labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
-    
-    ## domains as arrows
-    if ( !is.null(pf) ) {
-        plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
-                     typord=TRUE, axis2=FALSE)
-    } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    mtext("Pfam\nclan", 2, 2)
-
-    ## MOVING AVERAGE
-    ## TODO: cex proportional to p-value
-    ## 
-    plot(1:plen, man, type="l",
-         xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
-    axis(2, las=2)
-    abline(h=0, col="gray", xpd=FALSE)
-    mtext("# RAAS", 2, 2.5, cex=.8, las=2)
-    
-    ## main peptides
-    mmaiaa <- mmai
-    mmaiaa[1] <- 0.01
-    par(mai=mmaiaa)
-    if ( !is.null(mpd) ) {
-        plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE,
-                     types=c("tonsil, tryptic","AAS window"),
-                     typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
-    } else {
+        ## plot width
+        zlen <- plen
+        midp <- plen/2
+        
+        wscale <- 1/30
+        if ( zlen<90 ) wscale <- 1/10
+        if ( zlen>2000 ) wscale <- 1/100
+        mmai <- c(.05,1,.05,.1)
+        
+        heights <- c(.1,  # title
+                     .15,  # PFAM/CLAN
+                     .2,  # RAAS CURVES
+                     .2,  # main peptides
+                     .1, # secondary structure and cleavage
+                     .5, # AAS type
+                     .075, # CDS structure
+                     .1 # coordinates
+                     )
+        plotdev(tfile, width=min(c(100,zlen*wscale)),
+                height=2*sum(heights), type=ftyp, res=200)
+        layout(mat=t(t(1:length(heights))), heights=heights)
+        par(mai=mmai, xaxs="i", xpd=TRUE)
+        
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    }
-    mmaiaa <- mmai
-    mmaiaa[3] <- mmaiaa[1] <- 0.01
-    par(mai=mmaiaa)
-   
-    ## secondary structure, K|R and AAS
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
-    axis(2, at=1, labels="PSSP", las=2)
-    ## indicate K|R cleavage sites - TODO: omit Keil rules
-    arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
-    if ( length(arg) )
+        text(x=midp, y=1,
+             labels=paste(pnms[pid],"/",puni[pid]), cex=2, xpd=TRUE)
+        
+        ## domains as arrows
+        if ( !is.null(pf) ) {
+            plotFeatures(pf, coors=coors, tcx=1.5, names=TRUE,
+                         typord=TRUE, axis2=FALSE)
+        } else plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        mtext("Pfam\nclan", 2, 2)
+        
+        ## MOVING AVERAGE
+        ## TODO: cex proportional to p-value
+        ## 
+        plot(1:plen, man, type="l",
+             xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+        axis(2, las=2)
+        abline(h=0, col="gray", xpd=FALSE)
+        mtext("# RAAS", 2, 2.5, cex=.8, las=2)
+        
+        ## main peptides
+        mmaiaa <- mmai
+        mmaiaa[1] <- 0.01
+        par(mai=mmaiaa)
+        if ( !is.null(mpd) ) {
+            plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE,
+                         types=c("tonsil, tryptic","AAS window"),
+                     typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
+        } else {
+            plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        }
+        mmaiaa <- mmai
+        mmaiaa[3] <- mmaiaa[1] <- 0.01
+        par(mai=mmaiaa)
+        
+        ## secondary structure, K|R and AAS
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        text(1:plen, y=1, labels=strsplit(s4,"")[[1]], cex=1)
+        axis(2, at=1, labels="PSSP", las=2)
+        ## indicate K|R cleavage sites - TODO: omit Keil rules
+        arg <- which(strsplit(psq,"")[[1]]%in%c("R"))
+        if ( length(arg) )
         arrows(x0=arg, y0=1.5, y1=1, length=.05, lwd=1)
-    axis(2, at=1.4, labels="K|R", las=2)
-    lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
-    if ( length(lys) )
-        arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
+        axis(2, at=1.4, labels="K|R", las=2)
+        lys <- which(strsplit(psq,"")[[1]]%in%c("K"))
+        if ( length(lys) )
+            arrows(x0=lys, y0=1.5, y1=1, length=.05, lwd=1.5, col=2)
+        
+        ## indicate ALL AAS
+        ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1.5)
+        ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1, col=aas$color)
+        ##axis(2, at=.6, labels="AAS", las=2)
+        
+        mmaiaa <- mmai
+        mmaiaa[3] <- mmaiaa[1] <- 0.01
+        par(mai=mmaiaa, xpd=TRUE)
+        
+        plot(aad$start, aad$raas, pch=19, col=NA,
+             xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
+        axis(2)
+        lines(1:plen, mar, lwd=2)
+        points(aad$start, aad$raas, pch=19, col=aad$color, cex=3.5)
+        points(aad$start, aad$raas, pch=1, col="white", cex=3.5)
+        mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
+        if ( FALSE ) {
+            plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
+                         plotorder=order(aad$type), 
+                         types=rev(seq(-10,10,.1)), cuttypes=TRUE,
+                         typord=TRUE, axis2=FALSE)
+            mtext("AAS\ntype", 2, 2)
+        }
+    
+        ## EXONS
+        par(mai=mmai)
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+        axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
+        mtext("CDS", 2, las=2)
+        
+        ## coordinates
+        amai <- mmai
+        par(mai=amai, xpd=FALSE)
+        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+        xat <- pretty(1:coors[3])
+        xat[xat==0] <- 1
+        axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
+        mtext("position", 2, .5, las=2, cex=.7)
 
-    ## indicate ALL AAS
-    ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1.5)
-    ##arrows(x0=aas$pos, y0=0, y1=1, length=.05, lwd=1, col=aas$color)
-    ##axis(2, at=.6, labels="AAS", las=2)
-
-    mmaiaa <- mmai
-    mmaiaa[3] <- mmaiaa[1] <- 0.01
-    par(mai=mmaiaa, xpd=TRUE)
-
-    plot(aad$start, aad$raas, pch=19, col=NA,
-         xlim=c(coors[2:3]), xlab=NA, ylab=NA, axes=FALSE)
-    axis(2)
-    lines(1:plen, mar, lwd=2)
-    points(aad$start, aad$raas, pch=19, col=aad$color, cex=3.5)#, cex=aad$cex)
-    points(aad$start, aad$raas, pch=1, col="white", cex=3.5)#, cex=aad$cex)
-    mtext(expression(log[10](RAAS)), 2, 2, cex=.8)
-    if ( FALSE ) {
-        plotFeatures(aad, coors=coors, names=TRUE, arrows=FALSE, tcx=1.5,
-                     plotorder=order(aad$type), 
-                     types=rev(seq(-10,10,.1)), cuttypes=TRUE,
-                     typord=TRUE, axis2=FALSE)
-        mtext("AAS\ntype", 2, 2)
+        dev.off()
     }
 
     
-    ## EXONS
-    par(mai=mmai)
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    axis(3, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
-    axis(1, at=c(1,1+cdl[[pid]]/3), tcl=1, label=FALSE)
-    mtext("CDS", 2, las=2)
+### ZOOM PLOT
 
-    ## coordinates
-    amai <- mmai
-    par(mai=amai, xpd=FALSE)
-    plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    xat <- pretty(1:coors[3])
-    xat[xat==0] <- 1
-    axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
-    mtext("position", 2, .5, las=2, cex=.7)
-
-    dev.off()
-
-    ### ZOOM PLOT
     cat(paste("ZOOM PLOT", pnms[pid], pid, "\n"))
 
     zlen <- plen
