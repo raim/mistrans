@@ -23,6 +23,9 @@ corW <- corH <- 2.5
 pmai <- c(.5,.5,.25,.25)
 pmpg <- c(1.3,.3,0)
 
+## maximal SAAP/peptide, etc.
+max.saap <- 12
+
 ## axis labels
 xl.hlfm <- expression(protein~"half-life"/h)
 xl.hlf <- expression(protein~"half-life"/h)
@@ -136,8 +139,8 @@ write.table(cbind(protein=rownames(ptstat), ptstat),
 ## * RAAS profiles by sliding window
 
 pns <- ptstat$n
-pns[pns>15] <- ">15"
-paas <- table(pns)[c(as.character(1:15),">15")]
+pns[pns>15] <- paste0(">", max.saap)
+paas <- table(pns)[c(as.character(1:15),paste0(">", max.saap))]
 plotdev(file.path(pfig.path,"hotspots_RAAS_per_protein"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
@@ -151,8 +154,8 @@ legend("topright",
 dev.off()
 
 pns <- ptstat$nbp
-pns[pns>15] <- ">15"
-paas <- table(pns)[c(as.character(1:15),">15")]
+pns[pns>15] <- paste0(">", max.saap)
+paas <- table(pns)[c(as.character(1:15),paste0(">", max.saap))]
 plotdev(file.path(pfig.path,"hotspots_BP_per_protein"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
@@ -166,8 +169,8 @@ legend("topright",
 dev.off()
 
 pns <- ptstat$nsaap
-pns[pns>15] <- ">15"
-paas <- table(pns)[c(as.character(1:15),">15")]
+pns[pns>15] <- paste0(">", max.saap)
+paas <- table(pns)[c(as.character(1:15),paste0(">", max.saap))]
 plotdev(file.path(pfig.path,"hotspots_SAAP_per_protein"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
@@ -231,9 +234,11 @@ for ( i in 1:30 ) {
 }
 
 ## RAAS DISTRIBUTIONS of SINGLE BP
+
+
 pns <- bpstat$nsaap
-pns[pns>15] <- ">15"
-paas <- table(pns)[c(as.character(1:15),">15")]
+pns[pns>max.saap] <- paste0(">",max.saap)
+paas <- table(pns)[c(as.character(1:max.saap),paste0(">", max.saap))]
 
 bid <- rownames(bpstat)[which(bpstat$nsaap>80)]
 plotdev(file.path(pfig.path,"hotspots_example_RAAS"), type=ftyp,
@@ -266,11 +271,11 @@ for ( i in 1:30 ) {
 plotdev(file.path(pfig.path,"hotspots_SAAP_per_peptide"), type=ftyp,
         width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- barplot(paas, xlab="SAAP per BP",
+bp <- barplot(paas, xlab="SAAPs / base peptide",
               ylab=NA, axes=FALSE, axisnames = FALSE)
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
-mtext("# of peptides", 2, 1.6)
+mtext("Number of base peptides", 2, 1.6)
 legend("topright",
        paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
 dev.off()
@@ -278,23 +283,23 @@ dev.off()
 plotdev(file.path(pfig.path,paste0("hotspots_SAAP_per_peptide_log")),
             type=ftyp, width=3, height=3, res=200)
 par(mai=c(0.5,.5,.15,.05),mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-bp <- barplot(paas, xlab="SAAP per BP",ylab=NA,
-              axes=FALSE, axisnames = FALSE, log="y")
+bp <- barplot(paas, xlab="SAAPs / base peptide",ylab=NA,
+              axes=FALSE, axisnames = FALSE, log="y", ylim=c(1,max(paas)))
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 options(scipen=999)
-axis(2, at=10^(1:10), las=2)
+axis(2, at=10^(1:10))#, las=1)
 axis(2, at=c(1:10,(1:10)*10,(1:10)*100, (1:10)*1000), tcl=-.125,
      labels=FALSE)
 options(scipen=0)
-mtext("# of peptides",2,1.6)
+mtext("Number of base peptides", 2, 1.3)
 legend("topright",
        paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
 dev.off()
 
 
 pns <- bpstat$n
-pns[pns>15] <- ">15"
-paas <- table(pns)[c(as.character(1:15),">15")]
+pns[pns>max.saap] <- paste0(">", max.saap)
+paas <- table(pns)[c(as.character(1:max.saap),paste0(">", max.saap))]
 
 plotdev(file.path(pfig.path,"hotspots_RAAS_per_peptide"), type=ftyp,
         width=3, height=3, res=200)
@@ -1161,8 +1166,8 @@ wsite$windowID <- paste(wsite$ensembl, wsite$window, sep="-")
 
 wcnt <- table(wsite$windowID)
 wtxt <- wcnt
-wtxt[wtxt>15] <- ">15"
-wtxt <- table(wtxt)[c(as.character(1:15),">15")]
+wtxt[wtxt>max.saap] <- paste0(">", max.saap)
+wtxt <- table(wtxt)[c(as.character(1:max.saap),paste0(">", max.saap))]
 
 plotdev(file.path(pfig.path,paste0("windows_AAS")),
             type=ftyp, width=3, height=3, res=200)
@@ -1182,7 +1187,7 @@ plotdev(file.path(pfig.path,paste0("windows_AAS_log")),
 par(mai=c(.5,.5,.15,.1), mgp=pmpg, tcl=-.25, xaxs="i")
 bp <- barplot(wtxt, 
               xlab="AAS sites per window",ylab=NA,
-              axes=FALSE, axisnames = FALSE, log="y")
+              axes=FALSE, axisnames = FALSE, log="y", ylim=c(1, max(wtxt)))
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 options(scipen=999)
 axis(2, at=10^(1:10), las=2)
@@ -1258,8 +1263,8 @@ wsite$windowID <- paste(wsite$ensembl, wsite$window, sep="-")
 
 wcnt <- table(wsite$windowID)
 wtxt <- wcnt
-wtxt[wtxt>15] <- ">15"
-wtxt <- table(wtxt)[c(as.character(1:15),">15")]
+wtxt[wtxt>max.saap] <- paste0(">", max.saap)
+wtxt <- table(wtxt)[c(as.character(1:max.saap),paste0(">", max.saap))]
 
 plotdev(file.path(pfig.path,paste0("windows_highRAAS_AAS")),
             type=ftyp, width=3, height=3, res=200)
