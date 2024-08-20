@@ -588,8 +588,8 @@ pid=names(which(pnms=="ALDOB"))
 pid=names(which(pnms=="ANXA5"))
 zooms <- list("ENSP00000335620"=c(1,90),#GSTA1
               "ENSP00000296511"=c(125,175),#ANXA5
-              "ENSP00000497767"=c(130,250),#ALDOB
-              "ENSP00000303920"=c(100,160),#MZB1
+              "ENSP00000497767"=c(135,250),#ALDOB
+              "ENSP00000303920"=c(120,155),#MZB1
               "ENSP00000295137"=c(200,300)) #ACTG2
 pids <- names(zooms)
 
@@ -1079,8 +1079,9 @@ for ( pid in pids ) {
         amai <- mmai
         par(mai=amai, xpd=FALSE)
         plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-        xat <- pretty(1:coors[3])
-        xat[xat==0] <- 1
+        xat <- pretty(coors[2:3])
+        if ( 0%in%xat )
+            xat[xat==0] <- 1
         axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
         mtext("position", 2, .5, las=2, cex=.7)
 
@@ -1166,8 +1167,9 @@ for ( pid in pids ) {
     amai <- mmai
     par(mai=amai, xpd=FALSE)
     plot(1, xlim=c(zoors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
-    xat <- pretty(1:zoors[3])
-    xat[xat==0] <- 1
+    xat <- pretty(zoors[2:3])
+    if ( 0%in%xat )
+        xat[xat==0] <- 1
     axis(1, tcl=.25, at=xat, mgp=c(0,-1.25,0))
     mtext("position", 2, .5, las=2, cex=.7)
     dev.off()
