@@ -277,7 +277,7 @@ axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 axis(2)
 mtext("Number of base peptides", 2, 1.6)
 legend("topright",
-       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
+       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "base peptides\nwith >1 SAAP"), bty="n")
 dev.off()
 
 plotdev(file.path(pfig.path,paste0("hotspots_SAAP_per_peptide_log")),
@@ -287,13 +287,14 @@ bp <- barplot(paas, xlab="SAAPs / base peptide",ylab=NA,
               axes=FALSE, axisnames = FALSE, log="y", ylim=c(1,max(paas)))
 axis(1, at=bp, labels=names(paas), las=2, cex=.8)
 options(scipen=999)
+axis(2, at=1)
 axis(2, at=10^(1:10))#, las=1)
 axis(2, at=c(1:10,(1:10)*10,(1:10)*100, (1:10)*1000), tcl=-.125,
      labels=FALSE)
 options(scipen=0)
 mtext("Number of base peptides", 2, 1.3)
 legend("topright",
-       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "peptides with >1 SAAP"), bty="n")
+       paste(sum(bpstat$nsaap>1,nr.rm=TRUE), "base peptides\nwith >1 SAAP"), bty="n")
 dev.off()
 
 

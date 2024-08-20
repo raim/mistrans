@@ -308,6 +308,11 @@ cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot
 ## NOTE: markdown includes figures from _function.R 
 pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
+mkdir $results/clusters/
+## caption: The number of base peptides decreases exponentially with the number
+## of distinct SAAP detected per base peptide. 
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/hotspots_SAAP_per_peptide_log.pdf $results/clusters/
+
 cd $MISDATA
 zip -r results_${ftyp} results_${ftyp}
 
