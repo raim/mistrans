@@ -223,7 +223,8 @@ pid="ENSP00000354876" # no transcript even though its in protein_transcript_map
 ## 20240807 #EGLELLK")
 i=which(dat$BP=="ACQRPQLWQTIQTQGHFQLQLPPGK" &
         dat$SAAP=="ACQQPQLWQTIQTQGHFQLQLPPGK")
-                                        
+
+## 2002408
 
 for ( i in 1:nrow(dat) ) {
    
@@ -260,7 +261,8 @@ for ( i in 1:nrow(dat) ) {
                        "more than two hits in",j, names(fas)[j], "\n"))
         } else if ( res[[1]][1]==-1 ) {
             cat(paste("WARNING:",i, oid, "no match in", j, names(fas)[j],
-                      ", using blast result.\n"))
+                      ", using blast result with",
+                      dat$mismatches[i]," mismatches, class:",dat$match[i],"\n"))
             errors[i,"using blast"] <- 1
             AAS <- dat[i,"sstart"]
         } else if ( res[[1]][1] != dat[i,"sstart"] ) {
@@ -423,16 +425,16 @@ for ( i in 1:nrow(dat) ) {
     ## retrieve codon from the transcript sequence
     codon <- substr(nt$seq, npos, npos+2)
 
-    ## store codon and from/to AA
-    ##codon <- codons(DNAString(nt$seq))[pos[i]]
-
-    ## don't store wrong codon!
+    ## STORE FROM/TO AA
     aas[i] <- strsplit(target,"")[[1]][pos[i]]
     aaf[i] <- strsplit(query,"")[[1]][mut[i]]
     aat[i] <- strsplit(saap,"")[[1]][mut[i]]
+
+    ## STORE CODON
+    ## don't store wrong codon!
     if ( GENETIC_CODE[codon] != aaf[i] ) {
         cat(paste("WARNING:",i,"wrong codon", aaf[i],
-                  "vs", codon, GENETIC_CODE[codon],"in", gid, "\n"))
+                  "vs", codon, GENETIC_CODE[codon],"in", oid, "\n"))
         errors[i,"wrong codon"] <- 1
     } else {
         ## store codon
