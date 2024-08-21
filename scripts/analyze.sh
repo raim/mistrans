@@ -145,9 +145,8 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/process
 ## NOTE: 20240821 - redo w/o pre-filtering, see comment above.
 ${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${MISDATA}/processedData/unique_saap.fas -db ${MISDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch gaps length qlen qstart qend slen sstart send  evalue bitscore"  2> ${MISDATA}/log/unique_saap_blast.txt  |grep -v "^#" > ${MISDATA}/processedData/unique_saap_blast.tsv 
 
+
 ## TEST BLAST BEHAVIOUR
-## WHY DOES THIS HAVE 0 MISMATCHES TO ENSP00000419749
-## WHY DOES THIS HAVE 0 MISMATCHES TO ENSP00000419749
 echo -e ">NWTKEEGELDKDR\nNWTKEEGELDKDR" > ${MISDATA}/processedData/TEST_SAAP.fa
 echo -e ">ASQLSSSR\nASQLSSSR" > ${MISDATA}/processedData/TEST_BP.fa
 echo -e ">LLCCVVFCLLQAGPLDTAVSQTPK\nLLCCVVFCLLQAPLDTAVSQTPN" > ${MISDATA}/processedData/TEST_GAP.fa
