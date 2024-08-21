@@ -73,7 +73,7 @@ pkore <- pkeep[grep("_", pkeep$protein, invert=TRUE),]
 cat(paste("finding perfect matches for", sum(!duplicated(pkeep$SAAP)),
           "SAAPs that are not tagged to be removed\n"))
 cat(paste("finding perfect matches for", sum(!duplicated(pkore$SAAP)),
-          "SAAPs that are not tagged to be removed and have no mutation tage\n"))
+          "SAAPs that are not tagged to be removed and have no mutation tag\n"))
 
 ## TESTING SOME CASES
 ## BP:   LGFYGLDESDLDKVFHLPTTTFIGGQESALPLR, matches ENSP00000222673 (MANE)
