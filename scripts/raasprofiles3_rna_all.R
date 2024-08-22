@@ -19,8 +19,6 @@ dir.create(rfig.path, showWarnings=FALSE)
 ## use only unique AAS sites where we have a codon
 usite <- asite[!is.na(asite$codon),]
 
-## use only AAS mapped to a MANE transcripts
-usite <- usite[usite$transcript%in%genes$MANE,]
 
 ### ADDITIONAL DATA
 
@@ -37,6 +35,13 @@ chr.file <- file.path(mam.path,"chromosomes","sequenceIndex.csv")
 ## Oleksandra Fanari <fanari.o@northeastern.edu>
 psi.file <- file.path(dat.path, "six_cell_lines_minimal.xlsx")#(A549).csv")
 
+## @Zhang2023 - PRAISE to find psi sites
+zh23.file <- file.path(mam.path, "originalData", "zhang23_stables_1-6.xlsx")
+## @Dai2023 - BID-seq
+dai.file <- file.path(mam.path, "originalData", "dai23_stables_1-23.xlsx")
+
+## @Song2020: piano database of psi sites
+pia.file <- file.path(mam.path, "originalData", "piano_psi_human.txt")
 
 ## RNAMD - mA6 modifications
 rmd.file <- file.path(mam.path, "originalData", "human_all_logFC.txt.gz")
@@ -74,6 +79,119 @@ bd3dx <- coor2index(bd3, chrS=chrS)[,2]
 
 PSI <- NULL
 
+### RNA pseudouridylation data by Zhang et al.
+## NOTE: sheet 2 has only 1 overlap (codons 2 and 3 in one psi site),
+##       and sheet 3 has none.
+
+## @Zhang2023 Supp. Dataset 2
+## sheet 2: Ψ identified by PRAISE in HEK293T mRNAs and ncRNAs
+psiz <- as.data.frame(read_xlsx(zh23.file, sheet=2, skip=2))
+
+## calculate mean deletion ratio of two replications
+psiz$deletion_ratio <- apply(psiz[,c("rep1_deletion_ratio",
+                                     "rep2_deletion_ratio")],1,mean)
+
+
+## parse chromosoe coordiantes - "PRAISE-tools firstly got all possible
+## mapped positions to reference transcriptome (GRCh38)"
+
+## first, through away all w/o chromosome mapping
+## TODO: alternatively use transcript mapping
+psiz <- psiz[psiz$chr_site!="NONE",]
+
+coors <- strsplit(psiz$chr_site, "_")
+coors <- lapply(lapply(coors, strsplit, "-"), unlist)
+## add coordinate for single coor positions
+coors <- lapply(coors, function(x) {if(length(x)==2) x<-c(x,x[2]); x})
+## handling location tags of the form "chr17_KV575245v1_fix" 
+coors <- lapply(coors, function(x) {if(length(x)==4) x<-c(x,x[4]); x})
+fixtag <- unlist(lapply(coors, length))==5
+coors[fixtag] <- lapply(coors[fixtag], function(x) x[c(1,4,5)])
+coors <- as.data.frame(cbind(do.call(rbind, coors), fix=fixtag))
+coors[,1] <- sub("^chr","", coors[,1])
+coors[,2:3] <- apply(coors[,2:3], 2, as.numeric)
+
+colnames(coors) <- c("chr","start","end","fix")
+
+## add strand info: testing some coors, it seems that end<start
+## implies negative strand
+coors$strand <- ifelse(coors[,3]>=coors[,2], "+","-")
+
+## collect relevant columns
+psi <- cbind(coors[,c("chr","start","end","strand")],
+             info="",
+             gene=psiz$gene_name,
+             psi=psiz$deletion_ratio, source="zhang23_stable2")
+##PSI <- rbind(PSI, psi)
+      
+
+## @Zhang2023 Supp. Dataset 3
+## sheet 3: PUS-dependent Ψ list in HEK293T mRNAs and ncRNAs
+psiz <- as.data.frame(read_xlsx(zh23.file, sheet=3, skip=2))
+
+## calculate mean deletion ratio of two replications
+psiz$deletion_ratio <- apply(psiz[,c("ko_rep1_deletion_ratio",
+                                     "ko_rep2_deletion_ratio")],1,mean)
+
+
+## parse chromosoe coordiantes - "PRAISE-tools firstly got all possible
+## mapped positions to reference transcriptome (GRCh38)"
+
+## first, through away all w/o chromosome mapping
+## TODO: alternatively use transcript mapping
+psiz <- psiz[psiz$chr_site!="NONE",]
+
+coors <- strsplit(psiz$chr_site, "_")
+coors <- lapply(lapply(coors, strsplit, "-"), unlist)
+## add coordinate for single coor positions
+coors <- lapply(coors, function(x) {if(length(x)==2) x<-c(x,x[2]); x})
+## handling location tags of the form "chr17_KV575245v1_fix" 
+coors <- lapply(coors, function(x) {if(length(x)==4) x<-c(x,x[4]); x})
+fixtag <- unlist(lapply(coors, length))==5
+coors[fixtag] <- lapply(coors[fixtag], function(x) x[c(1,4,5)])
+coors <- as.data.frame(cbind(do.call(rbind, coors), fix=fixtag))
+coors[,1] <- sub("^chr","", coors[,1])
+coors[,2:3] <- apply(coors[,2:3], 2, as.numeric)
+
+colnames(coors) <- c("chr","start","end","fix")
+
+## add strand info: testing some coors, it seems that end<start
+## implies negative strand
+coors$strand <- ifelse(coors[,3]>=coors[,2], "+","-")
+
+
+## collect relevant columns
+psi <- cbind(coors[,c("chr","start","end","strand")],
+             info=psiz$enzyme_dependency,
+             gene=psiz$gene_name,
+             psi=psiz$deletion_ratio, source="zhang23_stable3")
+##PSI <- rbind(PSI, psi)
+      
+
+### @Dai2023: BID-seq
+## sheet/STable 5: Ψ on wild-type HeLa mRNA (>10% fraction)
+## sheet/Stable 6: Ψ on wild-type HEK293T mRNA (>10% fraction)
+## sheet/STable 7: Ψ on wild-type A549 mRNA (>10% fraction)
+
+ids <- c("HeLa", "HEK293T", "A549")
+tcol <- "Frac_Ave %" # TODO: use deletion average or fraction?
+for ( i in 1:3 ) {
+    psiz <- as.data.frame(read_xlsx(dai.file, sheet=i+4, skip=3))
+
+    psiz$start <- psiz$end <- psiz$pos
+    psiz$chr <- sub("^chr","", psiz$chr)
+
+    ## only take CDS
+    psiz <- psiz[psiz$seg=="CDS",]
+    
+    psi <- cbind(psiz[,c("chr","start","end","strand")],
+                 info=ids[i],
+                 gene=psiz$name,
+                 psi=psiz[,tcol]/100,
+                 source=paste0("dai23_stable",i+4))
+    ##PSI <- rbind(PSI, psi)
+}
+
 
 ### RNA pseudouridylation data sent by
 ### Oleksandra Fanari <fanari.o@northeastern.edu>
@@ -89,7 +207,7 @@ for ( i in excel_sheets(psi.file) ) {
 
     ## all annotations as list
     danl <- sapply(dpos, function(x) tmp$Annotation[which(upos==x)])
-    ## filter those that are present in protein name vector
+    ## filter those that are in name vector
     danl <- lapply(danl, function(x) x[x%in%pnms])
 
     ## TODO: further reduce to a single annotation
@@ -112,8 +230,8 @@ for ( i in excel_sheets(psi.file) ) {
     
     psi <- rbind(psi, cbind(tmp, cell=i))
 }
+##psi <- read.csv(psi.file)
 colnames(psi) <- sub("position","coor", colnames(psi))
-
 
 
 ## match gene name
@@ -147,6 +265,25 @@ psiz <- cbind(psi[,c("chr","start","end")],
 ##psiz <- psiz[psiz$psi>.1,]
 
 PSI <- rbind(PSI, psiz)
+
+## @Song2020 - PIANO
+## NOTE: unclear to which genome release the current version refers to,
+## and all loglikelihood ratios=100
+pia <- read.delim(pia.file)
+
+pia$chr <- sub("^chr","", pia$Chromosome)
+pia$start <- pia$end <- pia[,"Ψ_Site_POS"]
+
+## only take CDS
+pia <- pia[pia$Gene_Region=="CDS",]
+
+psiz <- cbind(pia[,c("chr","start","end","strand")],
+              info=pia[,"Ψ_Source"],
+              gene=pia$Gene, ## TODO: use ensembl gene ID?
+              psi=pia[,"likelihood_ratio"]/100, # % -> fraction
+              source="piano")
+##PSI <- rbind(PSI, psiz)
+
 
 
 ### PROCESS PSI DATA
@@ -208,18 +345,12 @@ psi2trans <- lapply(psi2ens,
                     })
 
 ## investigate dual hits
-if ( FALSE ) {
-    table(lengths(psi2ens))
-    unlist(psi2trans[which(lengths(psi2ens)==2)])%in%genes$MANE
-}
+table(lengths(psi2ens))
+unlist(psi2trans[which(lengths(psi2ens)==2)])%in%genes$MANE
 
 ## expand back to site
-PSI$transcripts <- unlist(lapply(psi2trans[match(psidx,psiu)],
-                                function(x) paste(x, collapse=";")))
-
-## take only first
 PSI$transcript <- unlist(lapply(psi2trans[match(psidx,psiu)],
-                                function(x) x[1]))
+                                function(x) paste(x, collapse=";")))
 
 PSI$transcript[PSI$transcript=="NA"] <- NA
 
@@ -236,17 +367,9 @@ rownames(pamrt) <- trmap[,1]
 ## add missing transcripts via proteins
 ## TODO: this assumes transcripts that may not cover the psi site
 PSI$transcript.missing <- is.na(PSI$transcript)
-PSI$transcript.annotated <- trmap[PSI$ensembl,1]
-
-### ONLY CONSIDER PSI SITES THAT WE COULD MAP TO
-### MANE ENSEMBL TRANSCRIPTS
-cat(paste("NOTE: REMOVING", sum(is.na(PSI$transcript)), "of", nrow(PSI),
-          "PSI SITES w/o MANE TRANSCRIPT MATCH\n"))
-
-PSI <- PSI[!is.na(PSI$transcript),]
-### RE-MAP PSI SITES COORDINATES
-psidx <- coor2index(PSI[,c("chr","coor")], chrS=chrS)[,2]
-
+PSI$transcript[is.na(PSI$transcript)] <-
+    trmap[PSI$ensembl[is.na(PSI$transcript)],1]
+                
 ## collect overlapping sites
 psite <- usite
 psia <- PSI
@@ -272,7 +395,7 @@ for ( i in 1:3 ) {
 
     ## annotate psi sites
     aas2psi <- match(psidx, bdidx)
-    aasite <- psite[aas2psi,c("transcript","fromto","codon","RAAS.median")]
+    aasite <- psite[aas2psi,c("ensembl","fromto","codon","RAAS.median")]
     colnames(aasite) <- paste0("codon",i, "_", colnames(aasite))
     psia <- cbind(psia, aasite)
 }
@@ -291,7 +414,6 @@ pmax <- function(x) {
     ifelse(length(y)==0, NA, max(y))
 }
 
-## add summary to AAS table
 psite$psi.n <- apply(psite[,paste0("codon",1:3,"_psi")], 1,
                      function(x) sum(!is.na(x)))
 psite$psi.max <- apply(psite[,paste0("codon",1:3,"_psi")], 1, pmax)
@@ -301,19 +423,17 @@ psite$psi.source <- apply(psite[,paste0("codon",1:3,"_source")], 1, pvals)
 psite$psi.chr <- apply(psite[,paste0("codon",1:3,"_chr")], 1, pvals)
 psite$psi.coor <- apply(psite[,paste0("codon",1:3,"_coor")], 1, pvals)
 
-## add summary to PSI table
+## TODO: use psia to track redundant annotations, see above
+
 psia$aas.n <- apply(psia[,paste0("codon",1:3,"_RAAS.median")], 1,
                     function(x) sum(!is.na(x)))
-psia$aas.transcript <- apply(psia[,paste0("codon",1:3,"_transcript")], 1, pvals)
-
-### NOTE: mitochondrial transcripts missing
+psia$aas.gene <- apply(psia[,paste0("codon",1:3,"_ensembl")], 1, pvals)
 
 
 ## export site for Sara and Sasha
 ## TODO: rm separate codon columns, and instead add affected
 ## codon position:
-ecols <- c("chr", "coor", "strand", "RAAS.median", "name",
-           "ensembl", "transcript",
+ecols <- c("chr", "coor", "strand", "RAAS.median", "name","ensembl",
            "pos", "codon",
            "fromto", "psi",
            "psi.codonpos", "psi.chr", "psi.coor", "psi.source")
@@ -336,22 +456,13 @@ pch.source <- 1:length(sources)
 names(pch.source) <- sources
 
 ## for each source/cell line separately
-cors <- list()
 for ( src in sources ) {
-    ##ssite <- psite[grep(src,psite$psi.source),]
+    ssite <- psite[grep(src,psite$psi.source),]
     src <- sub(".*_","",src)
-    cors[[src]] <- list()
     for ( i in 1:3 ) {
-
-        
         ccol <- paste0("codon",i,"_psi")
         scol <- paste0("codon",i,"_source")
-
-        ssite <- psite[grep(src,psite[,scol]),]
         nvals <- sum(!is.na(ssite[,ccol]))
-
-        pc <- NA
-
         plotdev(file.path(rfig.path,paste0("psi_raas_codon",i,"_",src)),
                 type=ftyp, height=2.5, width=2.5, res=200)
         par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
@@ -359,29 +470,22 @@ for ( src in sources ) {
             plot(1, col=NA, xlab=NA, ylab=NA, axes=FALSE)
             box()
         } else if ( nvals>2) {
-            pc <- plotCor(ssite$RAAS.median, ssite[,ccol], density=FALSE,
-                          xlab=NA, ylab=NA, signif=2, col=NA,
-                          legcex=.8)$p
-            
+            plotCor(ssite$RAAS.median, ssite[,ccol], density=FALSE,
+                    xlab=NA, ylab=NA, signif=2, col=NA)
         } else {
             plot(ssite$RAAS.median, ssite[,ccol], col=NA,
                  xlab=NA, ylab=NA)
         }
         if ( nvals>0 ) {
-            points(ssite$RAAS.median, ssite[,ccol],
-                   pch=1,#pch.source[ssite[,scol]],
+            points(ssite$RAAS.median, ssite[,ccol], pch=pch.source[ssite[,scol]],
                    cex=.75, col=i)
-            basicPlotteR::addTextLabels(ssite$RAAS.median, ssite[,ccol],
-                                        labels=ssite$fromto, #xpd=TRUE,
-                                        col.label=1, col.line=i,
-                                        cex.label=.5)#, pos=4)
+            text(ssite$RAAS.median, ssite[,ccol],labels=ssite$fromto, xpd=TRUE,
+                 col=1, cex=.5, pos=4)
         }
-        mtext(paste0(src, ", codon pos. ", i) , 3, 0)
+        mtext(src, 3, 0)
         mtext(xl.raas, 1, 1.3)
-        mtext(bquote(psi~fraction), 2, 1.3)
+        mtext(bquote("codon pos"~.(i)*","~ psi~fraction), 2, 1.3)
         dev.off()
-        cors[[src]][[i]] <- pc
-        
     }
 }
 
@@ -401,6 +505,10 @@ for ( i in 1:3 ) {
          col=1, cex=.5, pos=4)
     dev.off()
 }
+
+
+## correlation of RAAS to psi %
+
 
 
 ## split multiple psi per AAS
@@ -441,7 +549,7 @@ sfas <- tfas[pids[pids%in%names(tfas)]]
 totaa <- sum(unlist(lapply(sfas,
                            function(x) sum(unlist(strsplit(x$seq,""))=="T"))))
 
-## white balls: all UNIQUE detected psi
+## white balls: all detected psi
 m <- length(unique(paste(PSI$chr, PSI$coor)))
 n <- totaa-m # black balls
 
@@ -468,7 +576,7 @@ plotdev(file.path(rfig.path,"psi_hypergeotest"), res=200,
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
-     xlab="overlap count", ylab="probability", type="l", lwd=2)
+     xlab="overlap count", ylab=expression(p), type="l", lwd=2)
 legend("topright", c(paste("transcripts=", round(length(pids)/1000,1),"k"),
                      paste("total U=", round(totaa/1000000,1),"M"),
                      paste("psi sites=", round(m/1000,1),"k"),
@@ -477,7 +585,7 @@ legend("topright", c(paste("transcripts=", round(length(pids)/1000,1),"k"),
        box.col=NA, bg=NA)
 points(q, p, pch=4, cex=1.2, col=2)
 shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
-##figlabel("union",pos="bottomleft", font=2)
+figlabel("union",pos="bottomleft", font=2)
 dev.off()
 plotdev(file.path(rfig.path,"psi_hypergeotest_log"), res=200,
         width=2.5, height=2.5, type=ftyp)
@@ -537,7 +645,7 @@ plotdev(file.path(rfig.path,"psi_hypergeotest_intersect"), res=200,
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
-     xlab="overlap count", ylab="probability", type="l", lwd=2)
+     xlab="overlap count", ylab=expression(p), type="l", lwd=2)
 legend("topright", c(paste("transcripts=", length(pids)),
                      paste("total U=", round(totaa/1000,1),"k"),
                      paste("psi sites=", round(m),""),
@@ -546,7 +654,7 @@ legend("topright", c(paste("transcripts=", length(pids)),
        box.col=NA, bg=NA)
 points(q, p, pch=4, cex=1.2, col=2)
 shadowtext(q, p,label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
-##figlabel("intersect",pos="bottomleft", font=2)
+figlabel("intersect",pos="bottomleft", font=2)
 dev.off()
 plotdev(file.path(rfig.path,"psi_hypergeotest_intersect_log"), res=200,
         width=2.5, height=2.5, type=ftyp)
@@ -774,7 +882,7 @@ plotdev(file.path(rfig.path,"m6a_hypergeotest"), res=200,
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 qs <- 1:(2*q)
 plot(qs, phyper(q=qs-1, m=m, n=n, k=k, lower.tail=FALSE),
-     xlab="overlap count", ylab="probability", type="l", lwd=2)
+     xlab="overlap count", ylab=expression(p), type="l", lwd=2)
 points(q, p, pch=4, cex=1.2, col=2)
 shadowtext(q, p, label=paste0("p=",signif(p,1)), pos=3, col=2, font=2)
 legend("topright", c(paste("total A=", round(totaa/1000000,1),"M"),

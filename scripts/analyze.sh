@@ -327,6 +327,10 @@ mkdir $results/clusters/
 ## of distinct SAAP detected per base peptide. 
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/hotspots_SAAP_per_peptide_log.pdf $results/clusters/
 
+mkdir $results/rnamod/
+pandoc ${THIS}/scripts/results_psi.md  -o $results/rnamod/Extended_Data_Figure_psi_A4.pdf
+pdfcrop --clip $results/rnamod/Extended_Data_Figure_psi_A4.pdf $results/rnamod/Supplemental_Figure_2.pdf
+
 cd $MISDATA
 zip -r results_${ftyp} results_${ftyp}
 
