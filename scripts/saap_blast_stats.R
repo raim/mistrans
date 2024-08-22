@@ -70,7 +70,9 @@ tmt.file <- file.path(proj.path,"originalData",
 
 tmtf <- read.delim(tmt.file)
 
+## remove SAAP that are tagged to be removed
 pkeep <- perfect[perfect$SAAP%in%tmtf$SAAP[tmtf$Keep.SAAP],]
+## subset of SAAP that have a mutation tag
 pkore <- pkeep[grep("_", pkeep$protein, invert=TRUE),]
 
 cat(paste("finding perfect matches for", sum(!duplicated(pkeep$SAAP)),
@@ -89,24 +91,55 @@ cat(paste("finding perfect matches for", sum(!duplicated(pkore$SAAP)),
 ## BP:   QGVEDAFYTLVR ENSP00000309845, HRAS, P01112
 ## SAAP: QGVDDAFYTLVR ENSP00000308495, KRAS, P01116
 
-hist(tmtf$RAAS[tmtf$Keep.SAAP])
-hist(tmtf$RAAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(perfect$SAAP)],
-     col=2, add=TRUE)
-
+## count SAAP
 nsaap <- sum(unique(tmtf$SAAP[tmtf$Keep.SAAP])%in%unique(perfect$SAAP))
+## NOTE: count contains Inf values
 nraas <- length(tmtf$RAAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(perfect$SAAP)])
+asaap <- length(unique(tmtf$SAAP[tmtf$Keep.SAAP]))
+
+allraas <- tmtf$RAAS[tmtf$Keep.SAAP]
+mtcraas <- tmtf$RAAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(perfect$SAAP)]
+
+## handle infinite RAAS
+
+mxraas <- max(allraas[is.finite(allraas)])
+mnraas <- min(allraas[is.finite(allraas)])
+
+allraas[allraas==Inf] <-mxraas +1
+allraas[allraas==-Inf] <- mnraas -1
+
+mtcraas[mtcraas==Inf] <- mxraas +1
+mtcraas[mtcraas==-Inf] <- mnraas -1
+
+brks <- -7:5
+
+plotdev(file.path(fig.path,"saap_blast_raas_total"),
+        res=300, width=3.5, height=3.5, type=ftyp)
+par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(allraas, xlab=expression(log[10](RAAS)), main=NA, breaks=brks)
+hist(mtcraas, col=2, add=TRUE, breaks=brks)
+legend("topright", c(paste0("all SAAP: ", asaap),
+                     paste0("perfect match: ", nsaap)),
+       col=c(8,2), lty=1, lwd=5, bty="n")
+dev.off()
 
 
 plotdev(file.path(fig.path,"saap_blast_raas"),
-        res=300, width=7, height=3.5, type=ftyp)
+        res=300, width=3.5, height=3.5, type=ftyp)
 par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(tmtf$RAAS[tmtf$Keep.SAAP], freq=FALSE, ylim=c(0,.4),
-     xlab=expression(log[10](RAAS)), main=NA)
-hist(tmtf$RAAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(perfect$SAAP)],
+hist(allraas, freq=FALSE, ylim=c(0,.4),
+     xlab=expression(log[10](RAAS)), main=NA, breaks=brks)
+hist(mtcraas, breaks=brks, 
      col="#ff000077", border=2, add=TRUE, freq=FALSE)
-legend("topright", c("all SAAP",
-                     paste0("perfect match: ", nraas)),
-       col=c(8,2), lty=1, lwd=5)
+legend("topright", c(paste0("all SAAP: ", asaap),
+                     paste0("perfect match: ", nsaap)),
+       col=c(8,2), lty=1, lwd=5, bty="n")
 dev.off()
 
-table(tmtf$AAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(perfect$SAAP)])
+## AAS TYPES
+table(tmtf$AAS[tmtf$Keep.SAAP & tmtf$SAAP %in% unique(pkeep$SAAP)])
+
+
+## TODO:
+## count ensembl vs. ensembl+mutation match
+## non-mutation examples
