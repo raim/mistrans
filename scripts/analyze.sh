@@ -261,6 +261,7 @@ cp -a ${THIS}/scripts/README.md $results/
 
 cp -a ${MISDATA}/processedData/saap_mapped.tsv $results/
 cp -a ${MISDATA}/processedData/sites_raas.tsv $results/
+cp -a ${MISDATA}/processedData/aas_coordinates.tsv $results/Supplemental_Data_7_SAAP_coordinates.tsv
 
 cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.${ftyp} $results/
 
