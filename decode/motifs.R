@@ -2,7 +2,7 @@
 ## SEQUENCE CONTEXT at AMINO ACID SUBSTITUTION SITES
 
 ## project-specific functions
-source("~/work/mistrans/decode/raas_utils.R")
+source("raas_utils.R")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,

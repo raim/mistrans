@@ -17,7 +17,7 @@ options(stringsAsFactors=FALSE)
 options(scipen=0) # use e notation for p-values
 
 ## project-specific functions
-source("~/work/mistrans/decode/raas_utils.R")
+source("raas_utils.R")
 
 
 
