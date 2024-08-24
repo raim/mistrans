@@ -1,5 +1,5 @@
 
-### ANALYZE AMINO ACID AND PROTEIN STRUCTURAL PROPERTIES at AAS
+### AMINO ACIDS at AMINO ACID SUBSTITUTION SITES
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -7,7 +7,8 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-source("~/work/mistrans/decode/raas_init.R")
+if ( !exists("bdat") )
+    source("~/work/mistrans/decode/raas_init.R")
 
 ## local output path
 afig.path <- file.path(fig.path,"aminoacids")

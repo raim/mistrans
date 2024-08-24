@@ -361,7 +361,7 @@ codon.freq <- data.frame(codon=sub(".*-","",names(Fbg)),
                          CSC=csc[sub(".*-","",names(Fbg)),"X293T_endo"],
                          RAAS=Craas[names(Fbg)])
 
-write.table(codon.freq, file=file.path(cfig.path, "codon_frequencies.tsv"),
+write.table(codon.freq, file=file.path(out.path, "codon_frequencies.tsv"),
             sep="\t", row.names=FALSE, quote=FALSE, na="")
 
 fftyp <- ftyp # "pdf" # 

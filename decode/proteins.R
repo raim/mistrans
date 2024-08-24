@@ -1,6 +1,5 @@
 
-### PROTEIN-LEVEL ANALYSIS OF AMINO ACID SUBSTITUTIONS
-
+## PROTEIN-LEVEL ANALYSIS OF AMINO ACID SUBSTITUTIONS
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -8,7 +7,7 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-if ( !exists("tmtf") )
+if ( !exists("bdat") )
     source("~/work/mistrans/decode/raas_init.R")
 
 ## local output path
@@ -97,7 +96,7 @@ ptstat$iupred3 <- iu3[rownames(ptstat)]
 
 ## write-out collected protein results
 write.table(cbind(protein=rownames(ptstat), ptstat),
-            file=file.path(pfig.path, "proteins_raas.tsv"), sep="\t",
+            file=file.path(out.path, "proteins_raas.tsv"), sep="\t",
             na="", row.names=FALSE, quote=FALSE)
 
 

@@ -1,7 +1,6 @@
 
 ### ANALYZE SEQUENCE CONTEXT along BASE PEPTIDES
 
-
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
 

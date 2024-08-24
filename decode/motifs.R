@@ -1,7 +1,6 @@
 
-### ANALYZE SEQUENCE CONTEXT around AAS
+## SEQUENCE CONTEXT at AMINO ACID SUBSTITUTION SITES
 
-#
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
 

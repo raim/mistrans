@@ -1,25 +1,26 @@
 #!/bin/bash
 
+## ANALYSIS OF AMINO ACID SUBSTITUTION SITES
+
 ## OUTPUT DATA PATHS
 ## SET THIS PATH TO WHERE YOU WANT OUTPUT
-export DECDATA=${MYDATA}/decode_results
+export DECDATA=decode_results
 
 ## generate output paths
 mkdir -p $DECDATA/log
 mkdir -p $DECDATA/figures
-mkdir -p $DECDATA/originalData
-mkdir -p $DECDATA/processedData
+mkdir -p $DECDATA/data_tables
 
-## initialize RAAS TABLES
-## NOTE that this script is called redundantly
+## Initialize BP/SAAP and RAAS TABLES
+## NOTE that this script is called redundantly from each script below
 R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
 
-### CALCULATE RAAS PROFILES
-R --vanilla <  codons.R &> ${DECDATA}/log/codons.txt  # FIGURE 2
-R --vanilla <  aminoacids.R &> ${DECDATA}/log/aminoacids.txt  # FIGURE 3
-R --vanilla <  motifs.R &> ${DECDATA}/log/motifs.txt  # FIGURE 4
-R --vanilla <  kraq.R &> ${DECDATA}/log/kraq.txt  # EXTENDED DATA FIGURE 8: motif selection
-R --vanilla <  proteins.R &> ${DECDATA}/log/proteins.txt 
-R --vanilla <  structure.R &> ${DECDATA}/log/structure.txt 
-R --vanilla <  function.R &> ${DECDATA}/log/function.txt 
-R --vanilla <  rna.R &> ${DECDATA}/log/rna.txt
+### CALCULATE RAAS PROFILES and GENERATE PUBLICATION FIGURES
+R --vanilla < codons.R &> ${DECDATA}/log/codons.txt  # FIGURE 2
+R --vanilla < aminoacids.R &> ${DECDATA}/log/aminoacids.txt  # FIGURE 3
+R --vanilla < motifs.R &> ${DECDATA}/log/motifs.txt  # FIGURE 4, FIGURE 5
+R --vanilla < function.R &> ${DECDATA}/log/function.txt # FIGURE 4
+R --vanilla < kraq.R &> ${DECDATA}/log/kraq.txt  # Ext. Data Figure 8: motifs
+R --vanilla < proteins.R &> ${DECDATA}/log/proteins.txt # FIGURE 5
+R --vanilla < structure.R &> ${DECDATA}/log/structure.txt  # Ext. Data Figure 10: structure
+R --vanilla < rna.R &> ${DECDATA}/log/rna.txt # Suppl. Figure 2

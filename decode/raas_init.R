@@ -28,8 +28,7 @@ source("~/work/mistrans/decode/raas_utils.R")
 ##proj.path <- file.path(Sys.getenv("DECDATA"))
 proj.path <- "/home/raim/data/decode_results"
 
-dat.path <- file.path(proj.path,"originalData")
-out.path <- file.path(proj.path,"processedData")
+out.path <- file.path(proj.path,"data_tables")
 fig.path <- file.path(proj.path,"figures")
 
 ifig.path <- file.path(fig.path,"init")
@@ -1047,5 +1046,3 @@ CMAIL <- 1.54 ## commonly used between motif and domain figures, defined
               ## in domain script via nchar to fit the y-axis labels
 FONT <- "monospace" # font used for aligned figures in motifs and domains
 
-### SAVE IMAGE - to be loaded for other scripts
-save.image(file.path(out.path, "init.rda"))

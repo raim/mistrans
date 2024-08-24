@@ -1,5 +1,5 @@
 
-## GO ANALYSIS of PROTEINS WITH SUBSTITUTION
+## GO ANALYSIS of PROTEINS WITH AMINO ACID SUBSTITUTIONS
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -7,7 +7,7 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-if ( !exists("tmtf") )
+if ( !exists("bdat") )
     source("~/work/mistrans/decode/raas_init.R")
 
 

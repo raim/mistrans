@@ -1,5 +1,5 @@
 
-### COMPARING AAS WITH mRNA MODIFICATIONS
+## mRNA MODIFICATIONS at AMINO ACID SUBSTITUTION SITES  
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
