@@ -7,7 +7,7 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-if ( !exists("bdat")
+if ( !exists("bdat") )
     source("~/work/mistrans/decode/raas_init.R")
 
 

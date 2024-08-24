@@ -808,7 +808,6 @@ refseq2ens <- read.delim(refseq.file, header=TRUE)
 ## PROTEIN LENGTHS via saap_mapped.tsv in hdat
 plen <- split(hdat$len, hdat$ensembl)
 plen <- lapply(plen, unique)
-table(lengths(plen)) # check: all should be the same
 plen <- unlist(lapply(plen, function(x) x[1]))
 
 ## PROTEIN HALF-LIVES via Mathieson et al. 2018
