@@ -18,7 +18,7 @@ mkdir -p $DECDATA/data_tables
 ## It calls all required libraries, and defines all input and output
 ## data paths. This script also generates the
 ## "Supplemental_Data_7.SAAP_coordinates.tsv" as well as tables for
-## unique used for the random forest model by Andrew Leduc.
+## unique protein sites used in the random forest model by Andrew Leduc.
 R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
 
 ### CALCULATE RAAS PROFILES and GENERATE PUBLICATION FIGURES
