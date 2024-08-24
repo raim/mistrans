@@ -8,21 +8,19 @@ source("raas_utils.R")
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
 if ( !exists("bdat") )
-    source("~/work/mistrans/scripts/raasprofiles3_init.R")
+    source("raas_init.R")
 
 ## local output path
 seq.path <- file.path(out.path,"motifs")
 dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
+dir.create(mfig.path, showWarnings=FALSE)
 
 ## AA SORTING
-AAS <- sort(unique(GENETIC_CODE))
+AAS <- sort(unique(Biostrings::GENETIC_CODE)) 
 AAT <- AAS[AAS!="*"]
-diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
-ABC <- ASN
-TYPE <- "AA"
-SITELAB <- "AAS"
-dir.create(mfig.path, showWarnings=FALSE)
+ABC <- DiffLogo::ASN 
+
 
 ## NOTE: 1e-6 doesn't seem to be worth it, little gain.
 ## but further experience required
@@ -47,7 +45,7 @@ cdat <- bdat[!duplicated(paste(bdat$ensembl,bdat$pos, bdat$fromto)),]
 
 
 ### AA MATRIX
-aam <- do.call(rbind, strsplit(cdat[[TYPE]],""))
+aam <- do.call(rbind, strsplit(cdat[["AA"]],""))
 nc <- (ncol(aam)-1)/2
 colnames(aam) <- -nc:nc
 rownames(aam) <- paste0(cdat$BP,"_", cdat$SAAP)
@@ -258,7 +256,7 @@ for ( i in 1:ncol(classes) ) {
             mx <- max(dfob$ymaxs[!setpo])
         
         
-        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_encoded")),
+        plotdev(file.path(tmp.path,paste0("AA","_logos_", id,"_encoded")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfob, sparse=TRUE, ymin=0, ymax=mx)
@@ -266,7 +264,7 @@ for ( i in 1:ncol(classes) ) {
         axis(1, at=1:length(cols), labels=axlab)
         mtext("JS divergence", 2, 1.3)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels=SITELAB, las=2)
+            axis(1, at=which(cols==0), labels="AAS", las=2)
         figlabel(paste0("n=",nrow(aam1)), pos="topright", font=2)
         figlabel(lb, pos="topleft", cex=1.3, family=FONT)
         diffLogo_addPvals(dfop, ymin=mx, levels=psig)
@@ -286,7 +284,7 @@ for ( i in 1:ncol(classes) ) {
         if ( focus.ylim )
             mx <- max(dfnb$ymaxs[!setpn])
         
-        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id,"_incorporated")),
+        plotdev(file.path(tmp.path,paste0("AA","_logos_", id,"_incorporated")),
                 height=ht, width=wd, res=300, type=ftyp)
         par(mai=mmai, mgp=c(1.3,.3,0), tcl=-.25, yaxs="i")
         myDiffLogo(dfnb, sparse=TRUE, ymin=0, ymax=mx)
@@ -333,7 +331,7 @@ for ( i in 1:ncol(classes) ) {
         
         dfop$ylab <- "JS divergence"
 
-        plotdev(file.path(tmp.path,paste0(TYPE,"_logos_", id, "")),
+        plotdev(file.path(tmp.path,paste0("AA","_logos_", id, "")),
                 height=hto+htn , width=wd, res=300, type=ftyp)
         layout(t(t(1:2)), heights=c(hto, htn))
 
@@ -364,7 +362,7 @@ for ( i in 1:ncol(classes) ) {
         ##mtext("JS divergence", 2, 1.3)
         axis(1, at=1:length(cols), labels=axlab, cex.axis=1.2)
         if ( 0 %in% cols )
-            axis(1, at=which(cols==0), labels=SITELAB, las=1, cex.axis=1.2)
+            axis(1, at=which(cols==0), labels="AAS", las=1, cex.axis=1.2)
         ##text(par("usr")[2], mxn*.75, "incorporated", pos=2)
         diffLogo_addPvals(dfnp, ymin=mxn, levels=psig)
         ##mtext("incorporated", 4,-.25,adj=.05)

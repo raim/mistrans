@@ -164,10 +164,10 @@ aaprop.cols["hydrophobic"] <- rgb(0.8745098,
 aaprop.cols["hphobic"] <- aaprop.cols["hydrophobic"]
 
 ###  CODONS
-aa <- unique(GENETIC_CODE)
+aa <- unique(Biostrings::GENETIC_CODE)
 CODONS <- rep("", length(aa))
 for ( i in seq_along(aa) )
-    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
+    CODONS[i] <- paste(names(which(Biostrings::GENETIC_CODE==aa[i])), collapse=";")
 names(CODONS) <- aa
 ACODONS <- paste0(names(CODONS),": ", CODONS)
 names(ACODONS) <- aa
@@ -176,7 +176,7 @@ names(ACODONS) <- aa
 CODL <- strsplit(CODONS, ";")[names(aaprop)]
 CODL <- CODL[unlist(lapply(CODL, function(x) !is.null(x)))]
 CODL <- lapply(CODL, sort)
-COD.SRT <- paste(GENETIC_CODE[unlist(CODL)], unlist(CODL), sep="-")
+COD.SRT <- paste(Biostrings::GENETIC_CODE[unlist(CODL)], unlist(CODL), sep="-")
 
 ## CODON PWM
 cod.pwm <- lapply(CODL, function(x) do.call(rbind,strsplit(x,"")))
