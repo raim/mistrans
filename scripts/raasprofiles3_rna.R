@@ -3,6 +3,7 @@
 
 library(segmenTools)
 library(readxl)
+library(basicPlotteR) # for non-overlapping text
 
 ## project-specific functions
 source("~/work/mistrans/scripts/saap_utils.R")

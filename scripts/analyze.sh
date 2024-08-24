@@ -283,8 +283,6 @@ pdfcrop --clip $results/codons/codon_plot_A4.pdf  $results/codons/Extended_Data_
 ## Extended 5f: all encoded/incorporated.
 
 mkdir $results/aminoacids
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_cut_dotplot_manual.${ftyp} $results/aminoacids/
-cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_all_dotplot.${ftyp} $results/aminoacids/
 
 cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_cut_dotplot_manual.${ftyp} $results/aminoacids/
 cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AAprop_cancer_dotplot_manual.${ftyp} $results/aminoacids/
@@ -294,6 +292,9 @@ cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/fromAA_cancer_dotplot.${ftyp}
 
 cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_cut_dotplot_manual_rotated.${ftyp} $results/aminoacids/
 cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/toAA_cancer_dotplot.${ftyp} $results/aminoacids/
+
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_cut_dotplot_manual.${ftyp} $results/aminoacids/
+cp -a  ${MISDATA}/figures/raasprofiles3/aminoacids/AA_cancer_all_dotplot.${ftyp} $results/aminoacids/
 
 mkdir $results/motifs
 cp -a ${MISDATA}/figures/raasprofiles3/motifs/selected/AA_logos_KRAQ.${ftyp} $results/motifs/
@@ -312,21 +313,22 @@ mkdir $results/structure
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_intensities_all.${ftyp} $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_halflives_all.${ftyp} $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_lengths_all.${ftyp} $results/structure/
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.${ftyp} $results/structure/
+##cp -a ${MISDATA}/figures/raasprofiles3/proteins/protein_Tmelt_all.${ftyp} $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/proteins/proteins_raas.tsv $results/structure/
 
 cp -a ${MISDATA}/figures/raasprofiles3/structure/structure_cor_iupred3_RAAS.${ftyp} $results/structure/
 cp -a ${MISDATA}/figures/raasprofiles3/structure/structure_cor_MMSeq2_RAAS.${ftyp} $results/structure/
+
+mkdir $results/clusters/
+## caption: The number of base peptides decreases exponentially with the number
+## of distinct SAAP detected per base peptide. 
+cp -a ${MISDATA}/figures/raasprofiles3/proteins/hotspots_SAAP_per_peptide_log.pdf $results/clusters/
 
 mkdir $results/function
 cp -a ${MISDATA}/figures/raasprofiles3/function/type_go_cancer_ptgt_high_dotplot.${ftyp} $results/function
 ## NOTE: markdown includes figures from _function.R 
 pandoc ${THIS}/scripts/go_dissection.md -t beamer -o $results/function/go_dissection.pdf
 
-mkdir $results/clusters/
-## caption: The number of base peptides decreases exponentially with the number
-## of distinct SAAP detected per base peptide. 
-cp -a ${MISDATA}/figures/raasprofiles3/proteins/hotspots_SAAP_per_peptide_log.pdf $results/clusters/
 
 mkdir $results/rnamod/
 pandoc ${THIS}/scripts/results_psi.md  -o $results/rnamod/Extended_Data_Figure_psi_A4.pdf
@@ -337,3 +339,45 @@ zip -r results_${ftyp} results_${ftyp}
 
 ##zip file of all protein plots,
 ##zip file of all chimeraX commands.
+
+## TRANSFER STRIPPED DOWN CODE TO decode git
+
+## 1) describe generation of saap_mapped.tsv in README.md, add code
+##    but don't execute
+## 2) copy all raasprofiles3_*.R, saap_mapped.tsv
+##    and all required data files (coordinates, ID mappings, supplement)
+##    to decode git
+
+
+decode=/home/raim/work/mistrans/decode
+ddata=${decode}/data
+mkdir -p $ddata
+
+## BP/SAAP AND RAAS DATA
+cp -a ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt $ddata/
+cp -a ${MISDATA}/processedData/saap_mapped.tsv $ddata/
+
+## supplemental data
+cp -a ${MAMDATA}/originalData/41467_2018_3106_MOESM5_ESM.xlsx $ddata/
+cp -a ${MISDATA}/originalData/elife-45396-fig1-data2-v2.csv $ddata/
+cp -a ${MISDATA}/originalData/six_cell_lines_minimal.xlsx $ddata/
+
+## genomeBrowser data
+cp -a ${MAMDATA}/originalData/uniprot_ensembl.dat $ddata/
+cp -a ${MAMDATA}/originalData/uniprot_name.dat $ddata/
+cp -a ${MAMDATA}/originalData/ensembl_refseq_20240528.tsv.gz $ddata/
+cp -a ${MAMDATA}/originalData/gene_synonyms.tsv $ddata/
+cp -a ${MAMDATA}/processedData/coding_codons.tsv $ddata/
+cp -a ${MAMDATA}/processedData/goslim.tsv $ddata/
+cp -a ${MAMDATA}/processedData/coding.fa $ddata/
+
+cp -a ${MAMDATA}/features_GRCh38.110.tsv $ddata/
+cp -a ${MAMDATA}/codons_GRCh38.tsv $ddata/
+cp -a ${MAMDATA}/chromosomes/sequenceIndex.csv $ddata/
+
+cd $ddata
+gzip $ddata/*.csv
+gzip $ddata/*.tsv
+gzip $ddata/*.fa
+gzip $ddata/*.txt
+gzip $ddata/*.dat

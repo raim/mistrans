@@ -235,7 +235,6 @@ for ( i in 1:30 ) {
 
 ## RAAS DISTRIBUTIONS of SINGLE BP
 
-
 pns <- bpstat$nsaap
 pns[pns>max.saap] <- paste0(">",max.saap)
 paas <- table(pns)[c(as.character(1:max.saap),paste0(">", max.saap))]

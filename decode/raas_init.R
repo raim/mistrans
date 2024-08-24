@@ -71,10 +71,10 @@ synonym.file <- file.path(dec.path, "gene_synonyms.tsv.gz")
 codon.file <- file.path(dec.path,"coding_codons.tsv.gz")
 
 ## coding sequence fasta
-tfas.file <- file.path(dec.path, "coding.fa")
+tfas.file <- file.path(dec.path, "coding.fa.gz")
 
 ## chromosome length index
-chr.file <- file.path(dec.path,"sequenceIndex.csv")
+chr.file <- file.path(dec.path,"sequenceIndex.csv.gz")
 
 ## genome feature table 
 feature.file <- file.path(dec.path,"features_GRCh38.110.tsv.gz")
