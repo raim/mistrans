@@ -70,11 +70,15 @@ feature.file <- file.path(dec.path,"features_GRCh38.110.tsv")
 ## tRNA file
 trna.file <- file.path(dec.path, "codons_GRCh38.tsv")
 
+## additional data
+goslim.file  <- file.path(dec.path,"goslim.tsv")
 
 
 
 ## DATA FILTERS
 
+## NOTE: these labels refer to options in the original code
+## leaving them here for now, because they are used in file names.
 LAB <- "" # "all"
 SETID <- "cancer"
 
@@ -84,18 +88,17 @@ SETID <- "cancer"
 ## TODO: fuse global and tight color scale?
 RAAS.MIN <- -4   # broad RAAS colors vcols: codon plot
 RAAS.MAX <-  1
-RAAS.MINA <- -4  # tighter RAAS colors acols: AA properties
+RAAS.MINA <- -4  # tighter RAAS colors acols: all other dotplots
 RAAS.MAXA <- 0
-RAAS.MINT <- -3  # tightest RAAS colors tcols: not used anymore
-RAAS.MAXT <-  -1
 
+## RAAS color pallette
 colors <- "arno" # "inferno" #"rocket" # "viridis" # 
-
 COLF <- get(colors)
 
+## p-value cutoffs for plots and filters
 p.min <- 1e-10
 p.txt <- 1e-5
-
+## dotplot parameters
 p.dot <- p.min # p.txt
 dot.sze <- c(.3,2)
 
