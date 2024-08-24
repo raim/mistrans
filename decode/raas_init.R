@@ -120,8 +120,9 @@ dot.sze <- c(.3,2)
 ## STATISTICAL TEST TO RUN
 use.test <- t.test # w.test # 
 
+## SET THIS VARIABLE TO GENERATE PDFs INSTEAD OF PNGs
 ftyp <- "png" # "pdf" # # 
-if ( !interactive() ) ftyp="pdf"
+
 
 ## heatmap colors
 docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
