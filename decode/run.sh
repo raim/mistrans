@@ -12,8 +12,10 @@ mkdir -p $DECDATA/log
 mkdir -p $DECDATA/figures
 mkdir -p $DECDATA/data_tables
 
-## Initialize BP/SAAP and RAAS TABLES
+## Note, that all scripts also load functions defined in
+## raas_utils.R
 
+## Initialize BP/SAAP and RAAS TABLES
 ## NOTE that this script is called redundantly from each script below
 ## It calls all required libraries, and defines all input and output
 ## data paths. This script also generates the
