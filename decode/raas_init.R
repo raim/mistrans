@@ -27,20 +27,18 @@ source("raas_utils.R")
 
 #### PATHS AND FILES
 
-## OUTPUT PATHS
+## INPUT/OUTPUT PATHS
 
 ##proj.path <- file.path(Sys.getenv("DECDATA"))
 proj.path <- "decode_results"
 
 out.path <- file.path(proj.path,"data_tables")
 fig.path <- file.path(proj.path,"figures")
-
 ifig.path <- file.path(fig.path,"init")
 dir.create(ifig.path)
 
 ## input data
-in.path <- "." # "/home/raim/work/mistrans"
-dec.path <- file.path(in.path,"decode", "data")
+dec.path <- file.path(in.path, "data")
 
 ## MAIN INPUT: MAPPED BP AND SAAP
 in.file <- file.path(dec.path,"saap_mapped.tsv.gz")
