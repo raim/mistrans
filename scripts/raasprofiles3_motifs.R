@@ -23,10 +23,10 @@ seq.path <- file.path(out.path,"motifs")
 dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
 
-AAS <- sort(unique(GENETIC_CODE))
+AAS <- sort(unique(Biostrings::GENETIC_CODE)) 
 AAT <- AAS[AAS!="*"]
-diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))
-ABC <- ASN
+
+ABC <- DiffLogo::ASN
 TYPE <- "AA"
 SITELAB <- "AAS"
 if ( do.nucleotides ) {
