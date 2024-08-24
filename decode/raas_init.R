@@ -31,6 +31,7 @@ source("raas_utils.R")
 
 ##proj.path <- file.path(Sys.getenv("DECDATA"))
 proj.path <- "decode_results"
+in.path <- "." # "/home/raim/work/mistrans"
 
 out.path <- file.path(proj.path,"data_tables")
 fig.path <- file.path(proj.path,"figures")
