@@ -17,7 +17,7 @@ mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
 ## AA SORTING
-AAS <- sort(unique(Biostrings::GENETIC_CODE)) 
+AAS <- sort(unique(GENETIC_CODE)) 
 AAT <- AAS[AAS!="*"]
 ABC <- DiffLogo::ASN 
 

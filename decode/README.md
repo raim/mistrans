@@ -14,7 +14,6 @@ The R scripts use the following R packages:
     - viridis,
 	- readxl.
 * BioConductor:
-    - Biostrings,
 	- DiffLogo.
 * github:
     - https://josephcrispell.github.io/projects/basicplotter (2024-08-24),
@@ -32,7 +31,6 @@ install.packages("readxl")
 ## from BioConductor
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biostrings")
 BiocManager::install("DiffLogo")
 
 ## from github
