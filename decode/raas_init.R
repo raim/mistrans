@@ -5,13 +5,17 @@
 ## protein complexes, proteins and protein windows
 ## (raasprofiles3_proteins.R).
 
-library(Biostrings) # for genetic code, blosum62, etc
+## CRAN packages
 library(viridis) # viridis coloring scheme
 library(readxl)
+
+## BioConductor packages
+library(Biostrings) # for genetic code, blosum62, etc
+library(DiffLogo) # sequence diference logos
+
+## via github
 library(basicPlotteR) # for non-overlapping text
 library(segmenTools) # plot utils and overlap profile sorting and plotting
-library(DiffLogo) # sequence diference logos
-require(qvalue)
 
 options(stringsAsFactors=FALSE)
 options(scipen=0) # use e notation for p-values
@@ -26,7 +30,7 @@ source("raas_utils.R")
 ## OUTPUT PATHS
 
 ##proj.path <- file.path(Sys.getenv("DECDATA"))
-proj.path <- "/home/raim/data/decode_results"
+proj.path <- "decode_results"
 
 out.path <- file.path(proj.path,"data_tables")
 fig.path <- file.path(proj.path,"figures")
@@ -35,7 +39,7 @@ ifig.path <- file.path(fig.path,"init")
 dir.create(ifig.path)
 
 ## input data
-in.path <- "/home/raim/work/mistrans"
+in.path <- "." # "/home/raim/work/mistrans"
 dec.path <- file.path(in.path,"decode", "data")
 
 ## MAIN INPUT: MAPPED BP AND SAAP
