@@ -1,18 +1,17 @@
 
+## CODON FREQUENCY ANALYSIS of AMINO ACID SUBSTITUTION SITES
+
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
-init.file <- "~/data/decode_results/processedData/init.rda"
-if ( interactive() & file.exists(init.file) ) {
-    load(init.file)
-} else {
+if ( !exists("bdat")
     source("~/work/mistrans/decode/raas_init.R")
-}
 
 
+## local output path
 cfig.path <- file.path(fig.path,"codons")
 dir.create(cfig.path, showWarnings=FALSE)
 
@@ -306,17 +305,6 @@ plotProfiles(ovw, fname=file.path(cfig.path,paste0("codon_",SETID,"_",ds)),
 mai <- c(.05,.75,.1,.6)
 fw <- .2
 nw <- ncol(ovw$p.value) *fw + mai[2] + mai[4]
-
-## not used but useful and cute
-maix <- maimain
-maix[1] <- maix[3] <- 0.5
-nhm <- nrow(ovw$p.value) *fw + maix[1] + maix[3]
-plotdev(file.path(cfig.path,paste0("codon_",SETID,"_",ds,
-                                   "_codons_axis")),
-        type=ftyp, res=300, width=1, height=nhm)
-par(mai=maimain, mgp=c(1.3,.3,0), tcl=-.25, xaxs="i")
-plotCodonAxis(CODP[rownames(ovw$p.value)], aa.cols=aap.cols, cex=2)
-dev.off()
 
 
 ## codon plot, bottom row

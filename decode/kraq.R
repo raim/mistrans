@@ -1,10 +1,6 @@
 
 ### ANALYZE SEQUENCE CONTEXT along BASE PEPTIDES
 
-library(stringr)
-library(DiffLogo)
-library(Biostrings)
-
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -15,7 +11,7 @@ source("~/work/mistrans/decode/raas_utils.R")
 if ( !exists("bdat") )
     source("~/work/mistrans/decode/raas_init.R")
 
-
+## local output path
 kfig.path <- file.path(fig.path,"kraq")
 dir.create(kfig.path, showWarnings=FALSE)
 

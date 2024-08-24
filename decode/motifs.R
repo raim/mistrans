@@ -1,13 +1,7 @@
 
 ### ANALYZE SEQUENCE CONTEXT around AAS
 
-## AA ENRICHMENT AROUND AAS SITES
-
-## TODO: diAA plot from _kraq.
-
-library(DiffLogo)
-library(Biostrings)
-
+#
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
 
@@ -17,10 +11,12 @@ source("~/work/mistrans/decode/raas_utils.R")
 if ( !exists("bdat") )
     source("~/work/mistrans/scripts/raasprofiles3_init.R")
 
+## local output path
 seq.path <- file.path(out.path,"motifs")
 dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
 
+## AA SORTING
 AAS <- sort(unique(GENETIC_CODE))
 AAT <- AAS[AAS!="*"]
 diAAT <- sort(paste(AAT, rep(AAT,each=length(AAT)),sep=""))

@@ -6,9 +6,12 @@
 ## (raasprofiles3_proteins.R).
 
 library(Biostrings) # for genetic code, blosum62, etc
-library(viridis)
-library(segmenTools)
+library(viridis) # viridis coloring scheme
 library(readxl)
+library(basicPlotteR) # for non-overlapping text
+library(segmenTools) # plot utils and overlap profile sorting and plotting
+library(DiffLogo) # sequence diference logos
+require(qvalue)
 
 options(stringsAsFactors=FALSE)
 options(scipen=0) # use e notation for p-values
@@ -36,42 +39,51 @@ dir.create(ifig.path)
 in.path <- "/home/raim/work/mistrans"
 dec.path <- file.path(in.path,"decode", "data")
 
-codon.file <- file.path(dec.path,"coding_codons.tsv")
-
-## external codon usage measures
-
-## @Wu2019: codon stability coefficient (CSC)
-wu19.file <- file.path(dec.path,"elife-45396-fig1-data2-v2.csv")
-
-
 ## MAIN INPUT: MAPPED BP AND SAAP
-in.file <- file.path(dec.path,"saap_mapped.tsv")
-tmt.file <- file.path(dec.path,"All_SAAP_TMTlevel_quant_df.txt")
+in.file <- file.path(dec.path,"saap_mapped.tsv.gz")
+tmt.file <- file.path(dec.path,"All_SAAP_TMTlevel_quant_df.txt.gz")
 
 
-### ADDITIONAL PROTEIN LEVEL DATA
+### SUPPLEMENTAL DATA
 
-## protein half-lives - @Mathieson2018
+## @Mathieson2018: protein half-lives 
 math18.file <- file.path(dec.path, "41467_2018_3106_MOESM5_ESM.xlsx")
 
-### GENOME FEATURE TABLE and PROTEIN ID MAPPINGS via genomeBrowser
+## @Wu2019: codon stability coefficient (CSC)
+wu19.file <- file.path(dec.path,"elife-45396-fig1-data2-v2.csv.gz")
+
+## @McCormick2024pre: RNA pseudouridylation data by (bioRxiv) 
+psi.file <- file.path(dec.path, "six_cell_lines_minimal.xlsx")
+
+
+### GENOME FEATURE TABLE and PROTEIN ID MAPPINGS
+## via https://gitlab.com/raim/genomeBrowser/data/mammary/setup.sh
 
 ## uniprot/refseq/ensembl/name mappings
-uni2ens.file <- file.path(dec.path,"uniprot_ensembl.dat")
-uni2nam.file <- file.path(dec.path,"uniprot_name.dat")
+uni2ens.file <- file.path(dec.path,"uniprot_ensembl.dat.gz")
+uni2nam.file <- file.path(dec.path,"uniprot_name.dat.gz")
 refseq.file <- file.path(dec.path, "ensembl_refseq_20240528.tsv.gz")
 
 ## gene name synonyms, via https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
 ## downloaded on 20240712
-synonym.file <- file.path(dec.path, "gene_synonyms.tsv")
+synonym.file <- file.path(dec.path, "gene_synonyms.tsv.gz")
+
+## codon frequencies, calculated in genomeBrowser
+codon.file <- file.path(dec.path,"coding_codons.tsv.gz")
+
+## coding sequence fasta
+tfas.file <- file.path(dec.path, "coding.fa")
+
+## chromosome length index
+chr.file <- file.path(dec.path,"sequenceIndex.csv")
 
 ## genome feature table 
-feature.file <- file.path(dec.path,"features_GRCh38.110.tsv")
+feature.file <- file.path(dec.path,"features_GRCh38.110.tsv.gz")
 ## tRNA file
-trna.file <- file.path(dec.path, "codons_GRCh38.tsv")
+trna.file <- file.path(dec.path, "codons_GRCh38.tsv.gz")
 
-## additional data
-goslim.file  <- file.path(dec.path,"goslim.tsv")
+## GOslim term definitions
+goslim.file  <- file.path(dec.path,"goslim.tsv.gz")
 
 
 
@@ -127,8 +139,6 @@ xl.prots <- expression(log[10](RAAS["protein,site"]))
 plab <- expression(log[10](p))
 
 
-### TODO: move AA colors, codons etc. to saap_utils.R or a new
-## saap_params.R
 
 ## AA PROPERTY CLASSES
 ## https://en.wikipedia.org/wiki/Amino_acid#/media/File:ProteinogenicAminoAcids.svg

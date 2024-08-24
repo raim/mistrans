@@ -1,8 +1,5 @@
 
-library(Biostrings) # for blosum62
-library(viridis)
-library(segmenTools)
-options(stringsAsFactors=FALSE)
+## GO ANALYSIS of PROTEINS WITH SUBSTITUTION
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")

@@ -1,5 +1,7 @@
 
-### ANALYZE AMINO ACID AND PROTEIN STRUCTURAL PROPERTIES at AAS
+### ANALYZE PROTEIN STRUCTURAL PROPERTIES at AAS
+### BP/SAAP-LEVEL CORRELATION OF CONSERVATION AND DISORDER
+
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -9,18 +11,12 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## ID mappings, etc.
 if ( !exists("tmtf") )
     source("~/work/mistrans/decode/raas_init.R")
-    
+
+## local output path
 sfig.path <- file.path(fig.path,"structure")
 dir.create(sfig.path, showWarnings=FALSE)
 
 ### START ANALYSIS
-
-xl.raas <- expression(log[10](RAAS)) # *bar(RAAS))
-xl.raaa <- expression(log[10](RAAS))
-xl.raau <- expression(log[10]*bar(RAAS[unique]))
- 
-
-### BP/SAAP-LEVEL CORRELATION OF CONSERVATION AND DISORDER
 
 
 fname <- file.path(sfig.path,paste0("structure_cor_MMSeq2_RAAS"))

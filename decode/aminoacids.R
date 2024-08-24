@@ -9,12 +9,11 @@ source("~/work/mistrans/decode/raas_utils.R")
 ## ID mappings, etc.
 source("~/work/mistrans/decode/raas_init.R")
 
+## local output path
 afig.path <- file.path(fig.path,"aminoacids")
 dir.create(afig.path, showWarnings=FALSE)
 
 ### START ANALYSIS
-
-
 
 ## RAAS profiles by AA properties
 ovw  <- raasProfile(x=tmtf, id="SAAP", value="RAAS",

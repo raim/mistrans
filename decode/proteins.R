@@ -1,8 +1,6 @@
 
-library(Biostrings) # for blosum62
-library(viridis)
-library(segmenTools)
-options(stringsAsFactors=FALSE)
+### PROTEIN-LEVEL ANALYSIS OF AMINO ACID SUBSTITUTIONS
+
 
 ## project-specific functions
 source("~/work/mistrans/decode/raas_utils.R")
@@ -13,12 +11,12 @@ source("~/work/mistrans/decode/raas_utils.R")
 if ( !exists("tmtf") )
     source("~/work/mistrans/decode/raas_init.R")
 
+## local output path
 pfig.path <- file.path(fig.path,"proteins")
 dir.create(pfig.path, showWarnings=FALSE)
 
-## file of windows with >2 AAS
-window.file <- file.path(out.path, "aas_windows.tsv")
 
+## figure settings
 corW <- corH <- 2.5
 pmai <- c(.5,.5,.25,.25)
 pmpg <- c(1.3,.3,0)
