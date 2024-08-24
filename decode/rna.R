@@ -104,10 +104,6 @@ PSI <- rbind(PSI, psiz)
 ## get ensembl protein ID
 PSI$ensembl <- names(ens2nam[match(PSI$gene,  ens2nam)]) 
 
-## TODO: find in synonyms, trace where NA come from (find synonyms)
-## already while parsing and filtering multiple hits.
-PSI$gene[is.na(PSI$ensembl)]
-
 ## take mean position - only affects @Zhang which provides ranges,
 ## and we found only one overlap (2nd and 3rd position of one AAS)
 PSI$coor <- round(apply(PSI[,c("start","end")],1,mean))

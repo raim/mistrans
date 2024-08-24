@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## ANALYSIS OF AMINO ACID SUBSTITUTION SITES
+##  as provided by Shiri Tsour.
 
 ## OUTPUT DATA PATHS
 ## SET THIS PATH TO WHERE YOU WANT OUTPUT
