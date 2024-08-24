@@ -500,6 +500,8 @@ mergeProfiles <- function(ovll) {
     ovl
 }
 
+## calculate statistical profiles, similar to segmenTools::clusterProfiler,
+## but working on lists of unequal lengths instead of a matrix
 raasProfile <- function(x, rows, ...) {
     
     ## catch traditional case for nonoverlapping class in
@@ -526,8 +528,9 @@ raasProfile <- function(x, rows, ...) {
     mergeProfiles(covw)
 }
 
-## calculate statistical profiles, similar to segmenTools::clusterProfiler,
-## but working on lists of unequal lengths instead of a matrix
+## the actual work horse function to calculate raasProfiles,
+## originally defined to work on subsets defined in one input column
+## of the passed data structure x
 raasProfile.row <- function(x=tmtf, id="SAAP", 
                             value="RAAS", delog=TRUE, replace=TRUE,
                             bg=FALSE, bg.dir="col", na.rm=FALSE,
