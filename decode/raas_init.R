@@ -947,10 +947,11 @@ asite$protein.intensity <- pint[asite$ensembl]
 
 
 ## write-out unique site-specific RAAS stats with additional data
-## used for random forest and glm4 modeling
+## used for random forest modeling
 asite.file <- file.path(out.path,"sites_raas_unique.tsv")
-write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
-            sep="\t", row.names=FALSE, quote=FALSE, na="")
+if ( !file.exists(asite.file) )
+    write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
+                sep="\t", row.names=FALSE, quote=FALSE, na="")
 
 
 #### UNIQUE SITE x AAS  TABLE
@@ -1017,8 +1018,9 @@ site$protein.intensity <- pint[site$ensembl]
 ## write-out unique site-specific RAAS stats with additional data
 ## used for random forest and glm4 modeling
 site.file <- file.path(out.path,"sites_raas.tsv")
-write.table(file=site.file, x=cbind(ID=rownames(site),site),
-            sep="\t", row.names=FALSE, quote=FALSE, na="")
+if ( !file.exists(site.file) )
+    write.table(file=site.file, x=cbind(ID=rownames(site),site),
+                sep="\t", row.names=FALSE, quote=FALSE, na="")
 
 ## TODO: also write out bdat or hdat, with all RAAS values added
 
@@ -1037,9 +1039,11 @@ colnames(edat) <- sub("^pos$", "protein.position",
                           sub("^n$","RAAS.n",
                               sub("ensembl","protein",colnames(edat)))))
 
-bpsaap.file <- file.path(out.path,"aas_coordinates.tsv")
-write.table(file=bpsaap.file, x=edat, sep="\t",
-            row.names=FALSE, quote=FALSE, na="")
+## NOTE: this table is used as supplemental data table 7
+bpsaap.file <- file.path(out.path,"Supplemental_Data_7.SAAP_coordinates.tsv")
+if ( !file.exists(bpsaap.file) )
+    write.table(file=bpsaap.file, x=edat, sep="\t",
+                row.names=FALSE, quote=FALSE, na="")
 
 
 ### PLOT ALIGNMENT

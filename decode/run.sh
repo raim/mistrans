@@ -12,10 +12,13 @@ mkdir -p $DECDATA/figures
 mkdir -p $DECDATA/data_tables
 
 ## Initialize BP/SAAP and RAAS TABLES
+
 ## NOTE that this script is called redundantly from each script below
 ## It calls all required libraries, and defines all input and output
-## data paths.
-##R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
+## data paths. This script also generates the
+## "Supplemental_Data_7.SAAP_coordinates.tsv" as well as tables for
+## unique used for the random forest model by Andrew Leduc.
+R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
 
 ### CALCULATE RAAS PROFILES and GENERATE PUBLICATION FIGURES
 R --vanilla < codons.R &> ${DECDATA}/log/codons.txt  # FIGURE 2
