@@ -13,7 +13,7 @@ mkdir -p $DECDATA/data_tables
 
 ## Initialize BP/SAAP and RAAS TABLES
 ## NOTE that this script is called redundantly from each script below
-R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
+##R --vanilla <  raas_init.R &> ${DECDATA}/log/raas_init.txt  
 
 ### CALCULATE RAAS PROFILES and GENERATE PUBLICATION FIGURES
 R --vanilla < codons.R &> ${DECDATA}/log/codons.txt  # FIGURE 2
