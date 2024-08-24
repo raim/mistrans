@@ -22,5 +22,4 @@ R --vanilla <  kraq.R &> ${DECDATA}/log/kraq.txt  # EXTENDED DATA FIGURE 8: moti
 R --vanilla <  proteins.R &> ${DECDATA}/log/proteins.txt 
 R --vanilla <  structure.R &> ${DECDATA}/log/structure.txt 
 R --vanilla <  function.R &> ${DECDATA}/log/function.txt 
-R --vanilla <  model.R &> ${DECDATA}/log/model.txt 
 R --vanilla <  rna.R &> ${DECDATA}/log/rna.txt
