@@ -136,7 +136,8 @@ for ( i in 1:length(gon) ) {
 
     plotdev(fname,  height=nh, width=nw, res=300, type=ftyp)
     par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family="sans")
-    dotprofile(gopr, value="median", vcols=acols, vbrks=abrks, p.dot=p.dot,
+    dotprofile(gopr, value="median",
+               vcols=acols, vbrks=abrks, p.dot=p.dot, dot.sze=dot.sze,
                axis=2,  show.total=TRUE, xlab=NA, ylab=NA)
     figlabel(goid, pos="bottomleft", font=2, cex=1)
     dev.off()

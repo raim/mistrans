@@ -22,13 +22,6 @@ AAT <- AAS[AAS!="*"]
 ABC <- DiffLogo::ASN 
 
 
-## NOTE: 1e-6 doesn't seem to be worth it, little gain.
-## but further experience required
-mp.min <- p.min
-mp.dot <- p.dot
-mp.txt <- p.txt
-
-
 ## motif p-value cutoffs *, **, ***
 psig <- 10^-c(3,5,10)
 
@@ -442,8 +435,8 @@ ovs <- sortOverlaps(ovm, axis=2, srt=msrt)
 plotProfiles(ovs,
              fname=file.path(mfig.path,paste0("motifs_",SETID,"")),
              mai=c(0.75,CMAIL,0.05,.5), ttcols=ttcols, value="median",
-             p.min=mp.min, p.txt=mp.txt,
-             dot.sze=dot.sze, p.dot=mp.dot,
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB,  ftyp=ftyp,
              mtxt="", mtxt.line=2.3,
              vcols=acols, vbrks=abrks,
@@ -470,7 +463,8 @@ nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 plotdev(file.path(mfig.path,paste0("classes_conservation_disorder_raas")),
         height=nh, width=nw, res=300, type=ftyp, bg=NA)
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
-dotprofile(ovls, value="median",vbrks=abrks, vcols=acols, 
+dotprofile(ovls, value="median",
+           p.dot=p.dot, dot.sze=dot.sze, vbrks=abrks, vcols=acols, 
            xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8)
 polygon(y=c(2, nrow(ovls$p.value), nrow(ovls$p.value)),
         x=c(-.2,-.6,.2), xpd=TRUE, col="#aaaaaa", border=1)
