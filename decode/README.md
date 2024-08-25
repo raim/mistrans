@@ -11,13 +11,14 @@ running the blast-based mapping pipeline in
 [`run_analysis.sh`](run_analysis.sh).
 
 If you are only interested in the downstream analysis and generation
-of all published figures you just need to download the data (step 3), and
-can directly used the R scripts called in
-[`run_analysis.sh`](run_analysis.sh) in your favorite R environment.
+of all published figures you just need to download the data (step 3),
+and can directly use the R scripts called from
+[`run_analysis.sh`](run_analysis.sh) (step 5) in in your favorite R
+environment.
 
 To seemlessly run all scripts you need to follow these steps:
 
-1. Make sure all software dependencies are met,
+1. Make sure all software dependencies are met (see below!),
 2. Choose a location where you want to store input and output data,
    and tell the the bash terminal about it:
 
@@ -36,7 +37,7 @@ unzip additionalData.zip -d $DECODE
 ```
    
    
-5. Run the bash script that blasts all BP/SAAP data, and collects various
+4. Run the bash script that blasts all BP/SAAP data, and collects various
 structural information for the best-matching protein, transcript 
 and genome site.
 
@@ -61,7 +62,14 @@ pipeline, you need to generate this input data or modify the R script
 [`map_peptides.R`](map_peptides.R), and the downstream analysis
 scripts to not use all data. Many analyses do not require all data.
 
-4. Run the bash script that analyses data and generates results plots
+If you do want to use a newly generated `saap_mapped.tsv` in downstream
+analyses (4), you need to
+copy it from the processedData to the additionalData folder,
+overwriting the downloaded original, or adjust the path for this file
+in [raas_init.R](raas_init.R).
+
+
+5. Run the bash script that analyses data and generates results plots
 
 ``` bash
 ./run_analysis.sh
