@@ -11,8 +11,6 @@ if ( !exists("bdat") )
     source("raas_init.R")
 
 ## local output path
-seq.path <- file.path(out.path,"motifs")
-dir.create(seq.path, showWarnings=FALSE)
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
