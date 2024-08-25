@@ -45,12 +45,12 @@ fi
 
 echo "testing availabilty of NCBI blast"
 
-# Ensure blast is installed
+# Ensure RNAplfold and GNU parallel are installed
 if ! command -v blastp &> /dev/null; then
     echo "blastp needs to be isntalled  and in your PATH."
     exit 1
 fi
-# Ensure R is installed
+# Ensure RNAplfold and GNU parallel are installed
 if ! command -v R &> /dev/null; then
     echo "R needs to be isntalled  and in your PATH."
     exit 1
