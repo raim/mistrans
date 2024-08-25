@@ -46,12 +46,22 @@ cat $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt | \
 		     > $DECDATA/processedData/unique_bp.fas
 rm -f $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt
 
+
+## BP/SAAP as simple table, basis for search in proteins
+gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.txt.gz | cut -f 3,4 | \
+    sort | uniq | grep -v -P "^SAAP\tBP" | grep -v -e '^$' > ${DECDATA}/processedData/tmp.tsv
+gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt.gz | cut -f 3,4 | \
+    sort | uniq | grep -v -P "^SAAP\tBP" | grep -v -e '^$' > ${DECDATA}/processedData/tmp2.tsv
+cat ${DECDATA}/processedData/tmp.tsv ${DECDATA}/processedData/tmp2.tsv | \
+    sort | uniq > ${DECDATA}/processedData/unique_saap.tsv
+
+
 ## 3) GET Ensembl PROTEIN SEQUENCES
 rsync -av rsync://ftp.ensembl.org/ensembl/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz $DECDATA/originalData/
 
 ## 4) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS 
-#All_SAAP_protein_filter_df.txt
 R --vanilla < get_mutated_proteins.R  &> ${DECDATA}/log/mutated_proteins.txt 
+
 
 ## 5) BLAST BP IN Ensembl+MUTATION PROTEINS
 
