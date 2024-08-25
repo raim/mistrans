@@ -13,7 +13,7 @@ options(stringsAsFactors=FALSE)
 ## run steps in data/mammary/setup.sh to create all data
 ## required here!
 
-mam.path <- file.path(Sys.getenv("DECDATA")) 
+mam.path <- file.path(Sys.getenv("DECODE")) 
 if ( mam.path=="" ) # author's local path
     mam.path <- "/home/raim/data/mammary"
 
@@ -30,7 +30,7 @@ if ( !file.exists(feature.file) )
 
 
 ## DECODE DATA
-proj.path <- file.path(Sys.getenv("DECDATA")) 
+proj.path <- file.path(Sys.getenv("DECODE")) 
 if ( proj.path=="" ) # author's local path
     proj.path <- "/home/raim/data/decode"
 

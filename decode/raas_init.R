@@ -31,7 +31,7 @@ options(scipen=0) # use e notation for p-values
 ## these should be downloaded or generated as outlined
 ## in README.md
 
-proj.path <- file.path(Sys.getenv("DECDATA")) 
+proj.path <- file.path(Sys.getenv("DECODE")) 
 if ( proj.path=="" ) # author's local path
     proj.path <- "/home/raim/data/decode"
 
