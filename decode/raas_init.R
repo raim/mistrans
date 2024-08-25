@@ -28,9 +28,27 @@ source("raas_utils.R")
 
 ## INPUT/OUTPUT PATHS
 
-##proj.path <- file.path(Sys.getenv("DECDATA"))
-proj.path <- "decode"
-in.path <- "." # "/home/raim/work/mistrans"
+## attempt to get the correct path for input data;
+## these should be downloaded or generated as outlined
+## in the master bash script run.sh
+
+proj.path <- file.path(Sys.getenv("DECDATA")) # this should work if run by run.sh
+if ( proj.path=="" ) # author's local path
+    proj.path <- "/home/raim/data/decode"
+
+## input data
+add.path <- file.path(proj.path, "additionalData")
+
+## MAIN INPUT: MAPPED BP AND SAAP
+in.file <- file.path(add.path,"saap_mapped.tsv.gz")
+tmt.file <- file.path(proj.path, "originalData",
+                      "Supplemental_Data_3.SAAP_precursor_quant.txt.gz")
+
+
+if ( !file.exists(infile) | !file.exists(tmt.file) )
+    stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
+         "AND INPUT EXISTS, as outlined in run.sh")
+
 
 ## output path for ALL scripts
 out.path <- file.path(proj.path,"processedData")
@@ -40,54 +58,49 @@ fig.path <- file.path(proj.path,"figures")
 ifig.path <- file.path(fig.path,"init")
 dir.create(ifig.path)
 
-## input data
-dec.path <- file.path(in.path, "data")
 
-## MAIN INPUT: MAPPED BP AND SAAP
-in.file <- file.path(dec.path,"saap_mapped.tsv.gz")
-tmt.file <- file.path(dec.path,"All_SAAP_TMTlevel_quant_df.txt.gz")
 
 
 ### SUPPLEMENTAL DATA
 
 ## @Mathieson2018: protein half-lives 
-math18.file <- file.path(dec.path, "41467_2018_3106_MOESM5_ESM.xlsx")
+math18.file <- file.path(add.path, "41467_2018_3106_MOESM5_ESM.xlsx")
 
 ## @Wu2019: codon stability coefficient (CSC)
-wu19.file <- file.path(dec.path,"elife-45396-fig1-data2-v2.csv.gz")
+wu19.file <- file.path(add.path,"elife-45396-fig1-data2-v2.csv.gz")
 
 ## @McCormick2024pre: RNA pseudouridylation data by (bioRxiv) 
-psi.file <- file.path(dec.path, "six_cell_lines_minimal.xlsx")
+psi.file <- file.path(add.path, "six_cell_lines_minimal.xlsx")
 
 
 ### GENOME FEATURE TABLE and PROTEIN ID MAPPINGS
 ## via https://gitlab.com/raim/genomeBrowser/data/mammary/setup.sh
 
 ## uniprot/refseq/ensembl/name mappings
-uni2ens.file <- file.path(dec.path,"uniprot_ensembl.dat.gz")
-uni2nam.file <- file.path(dec.path,"uniprot_name.dat.gz")
-refseq.file <- file.path(dec.path, "ensembl_refseq_20240528.tsv.gz")
+uni2ens.file <- file.path(add.path,"uniprot_ensembl.dat.gz")
+uni2nam.file <- file.path(add.path,"uniprot_name.dat.gz")
+refseq.file <- file.path(add.path, "ensembl_refseq_20240528.tsv.gz")
 
 ## gene name synonyms, via https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
 ## downloaded on 20240712
-synonym.file <- file.path(dec.path, "gene_synonyms.tsv.gz")
+synonym.file <- file.path(add.path, "gene_synonyms.tsv.gz")
 
 ## codon frequencies, calculated in genomeBrowser
-codon.file <- file.path(dec.path,"coding_codons.tsv.gz")
+codon.file <- file.path(add.path,"coding_codons.tsv.gz")
 
 ## coding sequence fasta
-tfas.file <- file.path(dec.path, "coding.fa.gz")
+tfas.file <- file.path(add.path, "coding.fa.gz")
 
 ## chromosome length index
-chr.file <- file.path(dec.path,"sequenceIndex.csv.gz")
+chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
 
 ## genome feature table 
-feature.file <- file.path(dec.path,"features_GRCh38.110.tsv.gz")
+feature.file <- file.path(add.path,"features_GRCh38.110.tsv.gz")
 ## tRNA file
-trna.file <- file.path(dec.path, "codons_GRCh38.tsv.gz")
+trna.file <- file.path(add.path, "codons_GRCh38.tsv.gz")
 
 ## GOslim term definitions
-goslim.file  <- file.path(dec.path,"goslim.tsv.gz")
+goslim.file  <- file.path(add.path,"goslim.tsv.gz")
 
 
 
@@ -331,8 +344,16 @@ dat <- read.delim(in.file)
 tmtf <- read.delim(tmt.file)
 
 ## convert to logical
-tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
 
+## NOTE, 2024-08-25: for publication this script moved from using
+## unfiltered BP/SAAP to the official supplement, filtered for IG
+## genes; this file does not have the Keep.SAAP flag anymore, since
+## since it only contains rows where Keep.SAAP was TRUE.
+if ( !"Keep.SAAP"%in%colnames(tmtf) ) {
+    tmtf$Keep.SAAP <- TRUE
+} else {
+    tmtf$Keep.SAAP <-  as.logical(tmtf$Keep.SAAP)
+}
 
 ## tag albumin/hemoglobin
 dat$Hemoglobin.Albumin <- dat$albumin|dat$globin 

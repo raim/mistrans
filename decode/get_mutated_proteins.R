@@ -5,7 +5,7 @@ proj.path <- "/home/raim/data/decode"
 dat.path <- file.path(proj.path,"originalData")
 
 fasta <- file.path(dat.path, "Homo_sapiens.GRCh38.pep.all.fa.gz")
-saap.file <- file.path(dat.path, "Supplemental_Data_2.SAAP_proteins.txt.gz")
+saap.file <- file.path(dat.path, "Supplemental_Data_2.SAAP_proteins.tsv.gz")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
