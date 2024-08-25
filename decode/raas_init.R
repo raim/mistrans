@@ -740,7 +740,7 @@ dev.off()
 
 ## legend for p.values 
 plotdev(file.path(ifig.path,paste0("legend_pvals_horizontal")),
-        type=ftyp, res=300, width=2, height=.6)
+        type=ftyp, res=300, width=2, height=.6, bg=NA)
 par(mai=c(.3,.05,.05,.05), mgp=c(.5,.3,0), tcl=-.25, xaxs="i")
 plotOverlapsLegend(p.min=p.min, p.txt=p.txt, dir=2)
 dev.off()

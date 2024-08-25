@@ -110,7 +110,7 @@ substitutions detected by one of two variant calling pipelines.
    `GO:0005576` for "extracellular region".
 * `exclude`: outdated tag to exclude the BP/SAAP from analyses, if
   either `IG`, `albumin` or `globin` is TRUE.
-* `name`: human-readable gene name (`Name=` tag in the gff3 description column.
+* `name`: human-readable gene name (`Name=` tag in the gff3 description column).
 * `site`: position of the substituted amino acid in the BP and the SAAP,
 * `pos`: position of the substituted amino acid in the protein
   indicated in column `protein` (blast hit).
@@ -126,19 +126,19 @@ substitutions detected by one of two variant calling pipelines.
   `Homo_sapiens.GRCh38.cdna.all.fa.gz`.
 * `chr`, `coor`, `strand`: the chromosome, chromosome position and
   strand of the `codon` (2nd position).
-* `s4pred`: protein secondary structure prediction by S4PRED at the
+* `s4pred`: protein secondary structure prediction by S4Pred at the
   substituted amino acid; C: coil, E: beta-sheet, H: alpha helix.
-* `C.protein`: total number of S4pred-predicted C in the `protein`.
-* `E.protein`: total number of S4pred-predicted E in the `protein`.
-* `H.protein`: total number of S4pred-predicted H in the `protein`.
-* `iupred3`: iupred3-based disordered score at the substituted amino acid.
-* `iupred3.protein`: mean iupred3 score of the whole protein.
-* `anchor2`: anchor2 (via iupred3) score of disordered protein
+* `C.protein`: total number of S4Pred-predicted C in the `protein`.
+* `E.protein`: total number of S4Pred-predicted E in the `protein`.
+* `H.protein`: total number of S4Pred-predicted H in the `protein`.
+* `iupred3`: IUPred3-based disordered score at the substituted amino acid.
+* `iupred3.protein`: mean IUPred3 score of the whole protein.
+* `anchor2`: ANCHOR2 (via IUPred3) score of disordered protein
   interaction at the substituted amino acid.
-* `anchor2.protein`: mean anchor2 score of the whole protein.
+* `anchor2.protein`: mean ANCHOR2 score of the whole protein.
 * `MMSeq2`: MMSeq2-based sequence conservation score, via the
   describePROT database.
-* `ASAquick`: surface accessibility score, via the describePROT database.
+* `ASAquick`: Accessible Surface Area score, via the describePROT database.
 * `DisoRDPbind`: disordered protein binding score (similar to
   `anchor2`), via the describePROT database.
 * `SCRIBER`:  protein-binding prediction score, via the describePROT database.
@@ -148,9 +148,9 @@ substitutions detected by one of two variant calling pipelines.
   acid, `-` fills up positions beyond the protein ends, such that the
   central position still corresponds to the substituted amino acid.
 * `NT`: the transcript sequence coding for the amino acids in `AA`.
-* `pfam`: custom `hmmer3`-based PFAM domains that overlap with
+* `pfam`: custom `hmmer3`-based Pfam domains that overlap with the
   substituted amino acid.
-* `clan`: PFAM clans of the domains in column `pfam`.
-* `pfam.ebi`: PFAM domains downloaded from InterPro that overlap with
+* `clan`: Pfam clans of the domains in column `pfam`.
+* `pfam.ebi`: Pfam domains downloaded from InterPro that overlap with
   the substituted amino acid.
-* `clan.ebi`: PFAM clans of the domains in column `pfam.ebi`.
+* `clan.ebi`: Pfam clans of the domains in column `pfam.ebi`.
