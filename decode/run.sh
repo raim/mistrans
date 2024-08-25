@@ -30,21 +30,16 @@ mkdir -p $DECDATA/originalData
 
 ## 1) REQUIRED MANUAL DOWNLOADS
 
-## download SUPPLEMENTAL DATA TABLES 2-4 AND COPY TO
-## $DECDATA/originalData
-
 ## download additionalData.zip which provides human genome data files
 ## generated in by the genomeBrowser project AND unzip in $DECDATA/
+
+## cp -a ~/data/mistrans/additionalData.zip $DECDATA/
+## cd $DECDATA; unzip additionalData.zip
+
 echo "testing existence of required input data"
 
-required1=${DECDATA}/originalData/Supplemental_Data_3.SAAP_precursor_quant.xlsx
-if [ ! -f "$required1" ]; then
-    echo "MANUAL STEPS REQIRED: Please download the supplemental data tables"
-    echo "and copy to required folder as instructed."
-    exit 1
-fi
-required2=${DECDATA}/additionalData/features_GRCh38.110.tsv.gz
-if [ ! -f "$required2" ]; then
+required=${DECDATA}/additionalData/features_GRCh38.110.tsv.gz
+if [ ! -f "$required" ]; then
     echo "MANUAL STEPS REQIRED: Please download the additionalData.zip"
     echo "and unzip as instructed."
     exit 1

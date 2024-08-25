@@ -3,9 +3,10 @@ options(stringsAsFactors=FALSE)
 
 proj.path <- "/home/raim/data/decode"
 dat.path <- file.path(proj.path,"originalData")
+add.path <- file.path(proj.path,"additionalData")
 
 fasta <- file.path(dat.path, "Homo_sapiens.GRCh38.pep.all.fa.gz")
-saap.file <- file.path(dat.path, "Supplemental_Data_2.SAAP_proteins.tsv.gz")
+saap.file <- file.path(add.path, "All_SAAP_protein_filter_df.txt.gz")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
@@ -22,7 +23,7 @@ names(fas) <- sub("\\.[0-9]*", "", names(fas))
 
 ## first split by ;
 ## column with protein matches
-PMATCH <- "Leading.razor.proteins" # for txt input
+PMATCH <- "Leading.razor.proteins..all.TMT." 
 plst <- strsplit(dat[,PMATCH],  ";")
 ## clean up strings
 plst <- lapply(plst, function(x) gsub("\\['","",gsub("\\']","",x)))

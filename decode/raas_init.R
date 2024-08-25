@@ -41,8 +41,7 @@ add.path <- file.path(proj.path, "additionalData")
 
 ## MAIN INPUT: MAPPED BP AND SAAP
 in.file <- file.path(add.path,"saap_mapped.tsv.gz")
-tmt.file <- file.path(proj.path, "originalData",
-                      "Supplemental_Data_3.SAAP_precursor_quant.tsv.gz")
+tmt.file <- file.path(add.path,  "All_SAAP_TMTlevel_quant_df.txt.gz")
 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
