@@ -39,7 +39,8 @@ feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
 
 if ( !file.exists(feature.file) )
     stop("genome feature table file not found, this script requires",
-         "setup of genomic data via the genomeBrowser/data/mammary/setup.sh",
+         "setup of genomic data via the genomeBrowser/data/mammary/setup.sh.",
+         "If you have setup this, please provide the path here as `mam.path`",
          "NOTE that the R analysis can still be run, since we provide",
          "the output of this script, saap_mapped.tsv")
 
