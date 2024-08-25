@@ -18,8 +18,9 @@ fig.path <- file.path(proj.path,"figures","saap_mapping")
 out.path <- file.path(proj.path,"processedData")
 out.file <- file.path(out.path,"saap_mapped.tsv")
 
+## SET THIS VARIABLE TO GENERATE PDFs INSTEAD OF PNGs
 ftyp <- "png"
-if ( !interactive() ) ftyp <- "pdf"
+##if ( !interactive() ) ftyp <- "pdf"
 
 ## SAAP/BP pairs
 saapf <- file.path(out.path,"unique_saap.tsv")
