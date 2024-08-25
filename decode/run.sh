@@ -7,7 +7,7 @@
 ## SET THIS PATH TO WHERE YOU WANT TO SAVE
 ## INPUT (supplemental data) and OUTPUT (figures, tables, log files)
 ## TODO: parse DECDATA in the R scripts
-export DECDATA=decode
+export DECDATA=/home/raim/data/decode
 
 ## generate output paths
 mkdir -p $DECDATA/log
@@ -39,7 +39,7 @@ gzip $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.txt $DECDATA/origin
 ## 2) COLLECT BP SEQUENCES
 gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.txt.gz | cut -f 4 | \
     sort | uniq | grep -v "^BP$" | grep -v -e '^$' > $DECDATA/processedData/tmp.txt
-gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt.gz | cut -f 5 | \
+gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt.gz | cut -f 4 | \
     sort | uniq | grep -v "^BP$" | grep -v -e '^$' > $DECDATA/processedData/tmp2.txt
 cat $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt | \
     sort |uniq | awk '{print ">" $0 ORS $0}' - \

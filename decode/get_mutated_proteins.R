@@ -1,7 +1,7 @@
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
-proj.path <- "/home/raim/data/decode_results"
+proj.path <- "/home/raim/data/decode"
 dat.path <- file.path(proj.path,"originalData")
 
 fasta <- file.path(dat.path, "Homo_sapiens.GRCh38.pep.all.fa.gz")
