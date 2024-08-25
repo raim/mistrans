@@ -29,9 +29,9 @@ options(scipen=0) # use e notation for p-values
 
 ## attempt to get the correct path for input data;
 ## these should be downloaded or generated as outlined
-## in the master bash script run.sh
+## in README.md
 
-proj.path <- file.path(Sys.getenv("DECDATA")) # this should work if run by run.sh
+proj.path <- file.path(Sys.getenv("DECDATA")) 
 if ( proj.path=="" ) # author's local path
     proj.path <- "/home/raim/data/decode"
 
@@ -45,7 +45,7 @@ tmt.file <- file.path(add.path,  "All_SAAP_TMTlevel_quant_df.txt.gz")
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
-         "AND INPUT EXISTS, as outlined in run.sh")
+         "AND INPUT EXISTS, as outlined in README.md")
 
 
 ## output path for ALL scripts

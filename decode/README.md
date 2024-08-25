@@ -1,6 +1,7 @@
 # Analysis of Amino Acid Substitution Site Context
 
 
+
 Bash and R scripts to analyze the protein and genomic context of sites of amino
 acid substitution, as provided by Dr. Shiri Tsour.
 
@@ -10,8 +11,25 @@ running the blast-based mapping pipeline in
 [`run_analysis.sh`](run_analysis.sh) or in Rstudio.  Note, that all
 scripts also load functions defined in [`raas_utils.R`](raas_utils.R).
 
-To seemlessly run these script you need to 
+To seemlessly run these scripts you need to follow these steps:
 
+1. Make sure all software dependencies are met,
+2. Choose a location where you want to store input and output data,
+   and tell the the bash terminal about it:
+
+``` bash
+export DECDATA=/home/raim/data/decode
+```
+
+where you replace the path my your favored location.
+
+3. Run the bash script that collects and blasts all BP/SAAP data.
+
+``` bash
+./run_blast.sh
+```
+
+and follow instructions if errors occur.
 
 ## Software Dependencies
 

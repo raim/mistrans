@@ -7,16 +7,18 @@
 
 ## additionally to standard bash tools (cat, grep, cut, awk, gunzip,
 ## rsync), this script additionally requires NCBI's blast, and a
-## recent R version. Please define the paths to these tools here!
+## recent R version. 
 
-myR=/usr/bin/R
+if [[ -z "${DECDATA}" ]]; then
+    echo "Please define a path for input and output of this script:" 
+    echo "export DECDATA=<YOURDATAPATH>"
+fi
 
 ## NUMBER OF CPUs used for blast
 nthreads=7
 
 ## OUTPUT DATA PATHS
 ## SET THIS PATH TO WHERE YOU WANT TO SAVE INPUT and OUTPUT
-export DECDATA=/home/raim/data/decode
 
 ## generate output paths
 mkdir -p $DECDATA/log
@@ -45,12 +47,12 @@ fi
 
 echo "testing availabilty of NCBI blast"
 
-# Ensure RNAplfold and GNU parallel are installed
+# Ensure blast is installed
 if ! command -v blastp &> /dev/null; then
     echo "blastp needs to be isntalled  and in your PATH."
     exit 1
 fi
-# Ensure RNAplfold and GNU parallel are installed
+# Ensure R is installed
 if ! command -v R &> /dev/null; then
     echo "R needs to be isntalled  and in your PATH."
     exit 1
@@ -94,7 +96,7 @@ rsync -av rsync://ftp.ensembl.org/ensembl/pub/release-110/fasta/homo_sapiens/pep
 ## 4) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS
 ## produces $DECDATA/processedData/all_proteins.fa
 echo "adding mutations to fasta"
-$myR --vanilla < get_mutated_proteins.R  &> $DECDATA/log/mutated_proteins.txt 
+R --vanilla < get_mutated_proteins.R  &> $DECDATA/log/mutated_proteins.txt 
 
 
 ## 5) BLAST BP IN Ensembl+MUTATION PROTEINS
@@ -119,7 +121,7 @@ blastp  -num_threads ${nthreads} -task blastp-short \
 ## produces $DECDATA/processedData/bp_mapped.tsv
 echo "getting best blast hit for each BP"
 
-$myR --vanilla < get_protein_match.R &> $DECDATA/log/protein_match.txt
+R --vanilla < get_protein_match.R &> $DECDATA/log/protein_match.txt
 
 ## 7) COLLECT ALL DATA FOR UNIQUE BP/SAAP PAIRS
 ## produces $DECDATA/processedData/saap_mapped.tsv
@@ -137,7 +139,7 @@ $myR --vanilla < get_protein_match.R &> $DECDATA/log/protein_match.txt
 echo "collecting BP protein, transcript and genome coordinates" \
      "and various structural data"
 
-$myR --vanilla < map_peptides.R &> $DECDATA/log/map_peptides.txt
+R --vanilla < map_peptides.R &> $DECDATA/log/map_peptides.txt
 
 
 

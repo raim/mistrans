@@ -8,7 +8,10 @@ options(stringsAsFactors=FALSE)
 
 
 ## DECODE DATA
-proj.path <- "/home/raim/data/decode"
+proj.path <- file.path(Sys.getenv("DECDATA")) 
+if ( proj.path=="" ) # author's local path
+    proj.path <- "/home/raim/data/decode"
+
 dat.path <- file.path(proj.path,"originalData")
 bp.file <- file.path(proj.path,"processedData","unique_bp_blast.tsv")
 out.file <- file.path(proj.path,"processedData","bp_mapped.tsv")
@@ -26,6 +29,13 @@ tpmap.file <- file.path(proj.path,"additionalData","protein_transcript_map.tsv.g
 
 
 ### LOAD & ANNOTATE BLAST RESULTS
+
+
+if ( !file.exists(bp.file) )
+    stop("input file is not available; make sure that either DECDATA is set in",
+         "the calling environment or that the variable proj.path in this",
+         "script")
+
 
 bp <- read.delim(bp.file, header=FALSE)
 colnames(bp) <- c("BP","protein","identity", "mismatches",

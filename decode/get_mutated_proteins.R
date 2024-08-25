@@ -1,7 +1,11 @@
 library(segmenTools)
 options(stringsAsFactors=FALSE)
 
-proj.path <- "/home/raim/data/decode"
+## DECODE DATA
+proj.path <- file.path(Sys.getenv("DECDATA")) 
+if ( proj.path=="" ) # author's local path
+    proj.path <- "/home/raim/data/decode"
+
 dat.path <- file.path(proj.path,"originalData")
 add.path <- file.path(proj.path,"additionalData")
 
@@ -10,6 +14,10 @@ saap.file <- file.path(add.path, "All_SAAP_protein_filter_df.txt.gz")
 
 out.file <- file.path(proj.path,"processedData","all_proteins.fa")
 
+if ( !file.exists(saap.file) )
+    stop("input file is not available; make sure that either DECDATA is set in",
+         "the calling environment or that the variable proj.path in this",
+         "script")
 
 dat <- read.delim(saap.file) 
 

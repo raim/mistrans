@@ -6,13 +6,34 @@
 ## statistics on blast, AA and codon matching.
 
 library(segmenTools)
-library(Biostrings)
 options(stringsAsFactors=FALSE)
 
 
+## DATA FROM  genomeBrowser, project folder data/mammary,
+## run steps in data/mammary/setup.sh to create all data
+## required here!
+
+mam.path <- file.path(Sys.getenv("DECDATA")) 
+if ( mam.path=="" ) # author's local path
+    mam.path <- "/home/raim/data/mammary"
+
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+if ( !file.exists(feature.file) )
+    stop("genome feature table file not found, this script requires",
+         "setup of genomic data via the genomeBrowser/data/mammary/setup.sh.",
+         "If you have setup this, please provide the path here as `mam.path`",
+         "and either change the path of the saap_mapped.tsv input or copy",
+         "it from processedData to additionalData.",
+         "NOTE that the R analysis can still be run, since we provide",
+         "the output of this script, saap_mapped.tsv")
+
 
 ## DECODE DATA
-proj.path <- "/home/raim/data/decode"
+proj.path <- file.path(Sys.getenv("DECDATA")) 
+if ( proj.path=="" ) # author's local path
+    proj.path <- "/home/raim/data/decode"
+
 dat.path <- file.path(proj.path,"originalData")
 fig.path <- file.path(proj.path,"figures","saap_mapping")
 out.path <- file.path(proj.path,"processedData")
@@ -29,23 +50,6 @@ bpmap <- file.path(out.path,"bp_mapped.tsv")
 
 ## protein fasta (Ensembl+Mutations, used for blast)
 pfasta <- file.path(out.path,"all_proteins.fa")
-
-## DATA FROM  genomeBrowser, project folder data/mammary,
-## run steps in data/mammary/setup.sh to create all data
-## required here!
-
-mam.path <- "/home/raim/data/mammary"
-
-feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
-
-if ( !file.exists(feature.file) )
-    stop("genome feature table file not found, this script requires",
-         "setup of genomic data via the genomeBrowser/data/mammary/setup.sh.",
-         "If you have setup this, please provide the path here as `mam.path`",
-         "and either change the path of the saap_mapped.tsv input or copy",
-         "it from processedData to additionalData.",
-         "NOTE that the R analysis can still be run, since we provide",
-         "the output of this script, saap_mapped.tsv")
 
 ## protein:transcript ID mapping
 tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
