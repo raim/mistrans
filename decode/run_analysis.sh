@@ -7,7 +7,6 @@ if ! command -v R &> /dev/null; then
     exit 1
 fi
 
-R --vanilla <  install_packages.R &> $DECODE/log/install_packages.txt  
 
 ## Note, that all scripts also load functions defined in
 ## raas_utils.R
