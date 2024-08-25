@@ -391,7 +391,7 @@ zip -r additionalData additionalData
 
 
 ## copy cleaned code and instructions to slavovlab git
-decodegit=/home/raim/programs/decode/decode_analysis/
+decodegit=/home/raim/work/decode/decode_analysis/
 cp -a $THIS/decode/*R $decodegit
 cp -a $THIS/decode/*sh $decodegit
 cp -a $THIS/decode/*md $decodegit
