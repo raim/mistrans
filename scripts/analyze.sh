@@ -261,7 +261,7 @@ cp -a ${THIS}/scripts/README.md $results/
 
 cp -a ${MISDATA}/processedData/saap_mapped.tsv $results/
 cp -a ${MISDATA}/processedData/sites_raas.tsv $results/
-cp -a ${MISDATA}/processedData/aas_coordinates.tsv $results/Supplemental_Data_7_SAAP_coordinates.tsv
+cp -a ${MISDATA}/processedData/aas_coordinates.tsv $results/Supplemental_Data_7.SAAP_coordinates.tsv
 
 cp -a ${MISDATA}/figures/raasprofiles3/legend_dotplot_acols_slim.${ftyp} $results/
 
@@ -348,13 +348,16 @@ zip -r results_${ftyp} results_${ftyp}
 ##    and all required data files (coordinates, ID mappings, supplement)
 ##    to decode git
 
+## copy data required for all scripts to run to addtionalData.zip,
+## provided as supplement.
 
-decode=/home/raim/work/mistrans/decode
-ddata=${decode}/data
+ddata=${MISDATA}/additionalData
 mkdir -p $ddata
 
 ## BP/SAAP AND RAAS DATA
+cp -a ${MISDATA}/originalData/All_SAAP_protein_filter_df.txt $ddata/
 cp -a ${MISDATA}/originalData/All_SAAP_TMTlevel_quant_df.txt $ddata/
+cp -a ${MISDATA}/originalData/All_SAAP_patient_level_quant_df.txt $ddata/
 cp -a ${MISDATA}/processedData/saap_mapped.tsv $ddata/
 
 ## supplemental data
@@ -367,6 +370,7 @@ cp -a ${MAMDATA}/originalData/uniprot_ensembl.dat $ddata/
 cp -a ${MAMDATA}/originalData/uniprot_name.dat $ddata/
 cp -a ${MAMDATA}/originalData/ensembl_refseq_20240528.tsv.gz $ddata/
 cp -a ${MAMDATA}/originalData/gene_synonyms.tsv $ddata/
+cp -a ${MAMDATA}/originalData/protein_transcript_map.tsv $ddata/
 cp -a ${MAMDATA}/processedData/coding_codons.tsv $ddata/
 cp -a ${MAMDATA}/processedData/goslim.tsv $ddata/
 cp -a ${MAMDATA}/processedData/coding.fa $ddata/
@@ -381,3 +385,13 @@ gzip $ddata/*.tsv
 gzip $ddata/*.fa
 gzip $ddata/*.txt
 gzip $ddata/*.dat
+
+cd ${MISDATA}/
+zip -r additionalData additionalData
+
+
+## copy cleaned code and instructions to slavovlab git
+decodegit=/home/raim/programs/decode/decode_analysis/
+cp -a $THIS/decode/*R $decodegit
+cp -a $THIS/decode/*sh $decodegit
+cp -a $THIS/decode/*md $decodegit

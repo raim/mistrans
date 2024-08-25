@@ -5,7 +5,6 @@
 ## protein complexes, proteins and protein windows
 ## (raasprofiles3_proteins.R).
 
-library(Biostrings) # for genetic code, blosum62, etc
 library(viridis)
 library(segmenTools)
 library(readxl)
@@ -247,6 +246,32 @@ aaprop.cols["hydrophobic"] <- rgb(0.8745098,
 aaprop.cols["hphobic"] <- aaprop.cols["hydrophobic"]
 
 ###  CODONS
+## copied from the Biostrings package
+GENETIC_CODE <- c(
+    TTT="F", TTC="F",         
+    TTA="L", TTG="L",         
+    TCT="S", TCC="S", TCA="S", TCG="S", AGT="S", AGC="S",         
+    TAT="Y", TAC="Y",         
+    TAA="*", TAG="*", TGA="*",
+    TGT="C", TGC="C",    
+    TGG="W",         
+    CTT="L", CTC="L", CTA="L", CTG="L",         
+    CCT="P", CCC="P", CCA="P", CCG="P",         
+    CAT="H", CAC="H",         
+    CAA="Q", CAG="Q",         
+    CGT="R", CGC="R", CGA="R", CGG="R", AGA="R", AGG="R",         
+    ATT="I", ATC="I", ATA="I",
+    ATG="M",         
+    ACT="T", ACC="T", ACA="T", ACG="T",         
+    AAT="N", AAC="N",         
+    AAA="K", AAG="K",         
+    GTT="V", GTC="V", GTA="V", GTG="V",         
+    GCT="A", GCC="A", GCA="A", GCG="A",         
+    GAT="D", GAC="D",         
+    GAA="E", GAG="E",         
+    GGT="G", GGC="G", GGA="G", GGG="G"
+)
+
 aa <- unique(GENETIC_CODE)
 CODONS <- rep("", length(aa))
 for ( i in seq_along(aa) )
@@ -1198,7 +1223,12 @@ if ( interactive() )
 ## TODO: add MANE column
 genes <- read.delim(feature.file)
 genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
-genes <- genes[genes$name!="" & !is.na(genes$name),]
+## NOTE: 20240825, since we use genes later (GO), we keep also genes
+## with no associated name - TODO: changes?
+##genes <- genes[genes$name!="" & !is.na(genes$name),]
+noname <- genes$name=="" | is.na(genes$name)
+genes$name[noname] <- genes$ID[noname]
+
 ptl <- strsplit(genes$proteins, ";")
 ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)
