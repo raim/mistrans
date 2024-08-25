@@ -32,6 +32,7 @@ mkdir -p $DECDATA/originalData
 
 ## download additionalData.zip which provides human genome data files
 ## generated in by the genomeBrowser project AND unzip in $DECDATA/
+echo "testing existence of required input data"
 
 required1=${DECDATA}/originalData/Supplemental_Data_3.SAAP_precursor_quant.xlsx
 if [ ! -f "$required1" ]; then
@@ -48,6 +49,8 @@ fi
 
 
 ## 2) CONVERT SAAP/BP INPUT DATA (by Shiri Tsour) to text files
+echo "converting xlsx supplements to tab-delimited files"
+
 $ssconvert --export-type=Gnumeric_stf:stf_assistant \
 	   -O "locale=C format=automatic separator='	' eol=unix" \
 	   $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.xlsx \
@@ -65,11 +68,11 @@ gzip $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.tsv \
      $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.tsv \
      $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv
 
-exit 1
 
 ## 3) COLLECT BP/SAAP SEQUENCES
 ## produces $DECDATA/processedData/unique_bp.fas and
 ##          $DECDATA/processedData/unique_saap.tsv
+echo "extracting BP and SAAP sequences"
 
 ## write BP into a fasta file for use with blast
 gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv.gz \
@@ -97,15 +100,18 @@ rm -f $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt
 
 
 ## 4) GET Ensembl PROTEIN SEQUENCES
+echo "downloading Ensembl protein fasta"
 rsync -av rsync://ftp.ensembl.org/ensembl/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz $DECDATA/originalData/
 
 ## 5) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS
 ## produces $DECDATA/processedData/all_proteins.fa
+echo "adding mutations to fasta"
 $myR --vanilla < get_mutated_proteins.R  &> $DECDATA/log/mutated_proteins.txt 
 
 
 ## 6) BLAST BP IN Ensembl+MUTATION PROTEINS
 ## produces $DECDATA/processedData/unique_bp_blast.tsv
+echo "RUNNING BLAST SEARCH OF BP"
 
 $blastdir/makeblastdb -in $DECDATA/processedData/all_proteins.fa -parse_seqids \
 		      -title "ensembl hg38 proteins" -dbtype prot  \
@@ -123,6 +129,8 @@ ${blastdir}/blastp  -num_threads 7 -task blastp-short \
 
 ## 6) SELECT BEST-MATCHING PROTEIN HIT FOR EACH BP
 ## produces $DECDATA/processedData/bp_mapped.tsv
+echo "getting best blast hit for each BP"
+
 $myR --vanilla < get_protein_match.R &> $DECDATA/log/protein_match.txt
 
 ## 7) COLLECT ALL DATA FOR UNIQUE BP/SAAP PAIRS
@@ -138,6 +146,8 @@ $myR --vanilla < get_protein_match.R &> $DECDATA/log/protein_match.txt
 ## Here, we provide the produced file saap_mapped.tsv in the
 ## downloaded additionalData folder instead, to allow running
 ## the R analysis scripts that produce the final published figures, below.
+echo "collecting BP protein, transcript and genome coordinates" \
+     "and various structural data"
 
 if false; then
     $myR --vanilla < map_peptides.R &> $DECDATA/log/map_peptides.txt
@@ -146,6 +156,7 @@ fi
 
 
 ### DATA ANALYSIS AND PLOTS
+echo "RUNNING R ANALYSIS PIPELINE, producing all figures and data tables" 
 
 ## Note, that all scripts also load functions defined in
 ## raas_utils.R
