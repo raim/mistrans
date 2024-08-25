@@ -34,7 +34,16 @@ pfasta <- file.path(out.path,"all_proteins.fa")
 ## required here!
 
 mam.path <- "/home/raim/data/mammary"
+
 feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+
+if ( !file.exists(feature.file) )
+    stop("genome feature table file not found, this script requires",
+         "setup of genomic data via the genomeBrowser/data/mammary/setup.sh",
+         "NOTE that the R analysis can still be run, since we provide",
+         "the output of this script, saap_mapped.tsv")
+
+## protein:transcript ID mapping
 tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 
 ## coding region fasta
