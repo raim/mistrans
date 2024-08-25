@@ -29,7 +29,11 @@ export DECODE=/home/raim/data/decode
 where you replace the path my your favored location.
 
 3. Generate this directory, download the large required additional
-   data file, move and unpack it in this new directory:
+   data file
+   [https://drive.google.com/file/d/1uMiGDFmludOoBQpHWGX9CmXac2muMfKF/view?usp=drive_link](additionalData.zip),
+   and move and unpack it in this new directory:
+   
+   
    
 ``` bash
 mv <DOWNLOADPATH>/additionalData.zip $DECODE
