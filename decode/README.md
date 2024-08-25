@@ -41,8 +41,16 @@ remotes::install_github("raim/segmenTools")
 
 ## Input Data
 
-* `All_SAAP_TMTlevel_quant_df.txt`: a tab-delimited version of Shiri
-  Tsour's supplemental data file,
+* `All_SAAP_TMTlevel_quant_df.txt.gz`: a tab-delimited and unfiltered
+  (i.e. incl.  immunoglobulin genes) version of the official
+  supplemental data file
+  `Supplemental_Data_3.SAAP_precursor_quant.xlsx`,
+* `All_SAAP_patient_level_quant_df.txt.gz`:  a tab-delimited and unfiltered
+  (i.e. incl.  immunoglobulin genes) version of the official
+  supplemental data file `Supplemental_Data_4.SAAP_reporter_quant.xlsx`,
+* `All_SAAP_protein_filter_df.txt.gz`:  a tab-delimited and unfiltered
+  (i.e. incl.  immunoglobulin genes) version of the official
+  supplemental data file `Supplemental_Data_2.SAAP_proteins.xlsx`,
 * `saap_mapped.tsv`: The main blast-based mapping file that holds
    various collected information for each unique BP/SAAP pair. The
    columns of this file are detailed below.

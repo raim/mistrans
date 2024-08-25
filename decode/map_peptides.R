@@ -43,7 +43,7 @@ if ( !file.exists(feature.file) )
          "setup of genomic data via the genomeBrowser/data/mammary/setup.sh.",
          "If you have setup this, please provide the path here as `mam.path`",
          "and either change the path of the saap_mapped.tsv input or copy",
-         "it from processedData to additionalData."
+         "it from processedData to additionalData.",
          "NOTE that the R analysis can still be run, since we provide",
          "the output of this script, saap_mapped.tsv")
 

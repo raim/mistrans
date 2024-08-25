@@ -16,13 +16,12 @@ library(DiffLogo) # sequence diference logos
 library(basicPlotteR) # for non-overlapping text
 library(segmenTools) # plot utils and overlap profile sorting and plotting
 
-options(stringsAsFactors=FALSE)
-options(scipen=0) # use e notation for p-values
-
 ## project-specific functions
 source("raas_utils.R")
 
-
+## R options
+options(stringsAsFactors=FALSE) # default since R v4
+options(scipen=0) # use e notation for p-values
 
 #### PATHS AND FILES
 

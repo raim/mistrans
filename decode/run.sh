@@ -130,8 +130,4 @@ echo "collecting BP protein, transcript and genome coordinates" \
 $myR --vanilla < map_peptides.R &> $DECDATA/log/map_peptides.txt
 
 
-### DATA ANALYSIS AND PLOTS
-echo "RUNNING R ANALYSIS PIPELINE, producing all figures and data tables" 
-
-run_analysis.sh
 
