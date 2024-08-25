@@ -1,3 +1,5 @@
+# Analysis of Amino Acid Substitution Site Context
+
 
 R scripts to analyze the protein and genomic context of sites of amino
 acid substitution, as provided by Shiri Tsour.
@@ -13,8 +15,7 @@ Note, that all scripts also load functions defined in
 The R scripts use the following R packages:
 
 * CRAN:
-    - viridis,
-	- readxl.
+    - viridis, readxl.
 * BioConductor:
 	- DiffLogo.
 * github:
