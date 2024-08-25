@@ -363,6 +363,7 @@ dat$KR <- dat$from%in%c("K","R") | dat$to%in%c("K","R")
 
 dat$Keep.SAAP <- !dat$IG & !dat$KR
 
+
 ### UNIFY FILTER COLUMNS
 
 ## fuse all excluded tags for each unique SAAP
@@ -827,7 +828,9 @@ bdat$Tissues <- tissues[paste(bdat$BP, bdat$SAAP)]
 ## TODO: add MANE column
 genes <- read.delim(feature.file)
 genes <- genes[genes$proteins!="" & !is.na(genes$proteins),]
-genes <- genes[genes$name!="" & !is.na(genes$name),]
+##genes <- genes[genes$name!="" & !is.na(genes$name),]
+noname <- genes$name=="" | is.na(genes$name)
+genes$name[noname] <- genes$ID[noname]
 ptl <- strsplit(genes$proteins, ";")
 ens2nam <- rep(genes$name, lengths(ptl))
 names(ens2nam) <- unlist(ptl)

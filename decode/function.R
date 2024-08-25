@@ -12,7 +12,6 @@ if ( !exists("bdat") )
 
 
 ## only use unique BP/SAAP per Dataset
-do.unique <-  FALSE #TRUE # 
 dfig.path <- file.path(fig.path,"function")
 dir.create(dfig.path, showWarnings=FALSE)
 
@@ -36,6 +35,8 @@ terms <- read.delim(goslim.file)
 trms <- terms[,2]
 names(trms) <- terms[,1]
 colnames(got) <- trms[colnames(got)]
+
+mid <- "ENSG00000277856"
 
 ## shorten names
 colnames(got) <- sub("plasma membrane", "PM",

@@ -14,7 +14,7 @@ Note, that all scripts also load functions defined in
 
 ### Bash
 
-TODO: ubuntu linux xterm, blast, bioawk, ssconvert
+Preprocessing and re-blasting of the base peptides occ
 
 ### R
 

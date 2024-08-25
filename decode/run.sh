@@ -51,38 +51,18 @@ if [ ! -f "$required2" ]; then
 fi
 
 
-## 2) CONVERT SAAP/BP INPUT DATA (by Shiri Tsour) to text files
-echo "converting xlsx supplements to tab-delimited files"
 
-$ssconvert --export-type=Gnumeric_stf:stf_assistant \
-	   -O "locale=C format=automatic separator='	' eol=unix" \
-	   $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.xlsx \
-	   $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv 
-$ssconvert --export-type=Gnumeric_stf:stf_assistant \
-	   -O "locale=C format=automatic separator='	' eol=unix" \
-	   $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.xlsx \
-	   $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.tsv 
-$ssconvert --export-type=Gnumeric_stf:stf_assistant \
-	   -O "locale=C format=automatic separator='	' eol=unix" \
-	   $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.xlsx \
-	   $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.tsv
-## gzip to save disk space
-gzip $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.tsv \
-     $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.tsv \
-     $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv
-
-
-## 3) COLLECT BP/SAAP SEQUENCES
+## 2) COLLECT BP/SAAP SEQUENCES
 ## produces $DECDATA/processedData/unique_bp.fas and
 ##          $DECDATA/processedData/unique_saap.tsv
 echo "extracting BP and SAAP sequences"
 
 ## write BP into a fasta file for use with blast
-gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv.gz \
-    | cut -f 4 | sort | uniq | grep -v "^BP$" | \
+gunzip -c $DECDATA/additionalData/All_SAAP_TMTlevel_quant_df.txt.gz \
+    | cut -f 5 | sort | uniq | grep -v "^BP$" | \
     grep -v -e '^$' > $DECDATA/processedData/tmp.txt
-gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.tsv.gz \
-    | cut -f 4 | sort | uniq | grep -v "^BP$" | \
+gunzip -c $DECDATA/additionalData/All_SAAP_patient_level_quant_df.txt \
+    | cut -f 5 | sort | uniq | grep -v "^BP$" | \
     grep -v -e '^$' > $DECDATA/processedData/tmp2.txt
 cat $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt | \
     sort |uniq | awk '{print ">" $0 ORS $0}' - \
@@ -91,28 +71,28 @@ rm -f $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt
 
 
 ## BP/SAAP as simple table, basis for search in proteins
-gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.tsv.gz \
-    | cut -f 3,4 | sort | uniq | grep -v -P "^SAAP\tBP" | \
+gunzip -c $DECDATA/additionalData/All_SAAP_TMTlevel_quant_df.txt.gz \
+    | cut -f 4,5 | sort | uniq | grep -v -P "^SAAP\tBP" | \
     grep -v -e '^$' > $DECDATA/processedData/tmp.tsv
-gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.tsv.gz \
-    | cut -f 3,4 | sort | uniq | grep -v -P "^SAAP\tBP" | \
+gunzip -c $DECDATA/additionalData/All_SAAP_patient_level_quant_df.txt \
+    | cut -f 4,5 | sort | uniq | grep -v -P "^SAAP\tBP" | \
     grep -v -e '^$' > $DECDATA/processedData/tmp2.tsv
 cat $DECDATA/processedData/tmp.tsv $DECDATA/processedData/tmp2.tsv | \
     sort | uniq > $DECDATA/processedData/unique_saap.tsv
 rm -f $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt
 
 
-## 4) GET Ensembl PROTEIN SEQUENCES
+## 3) GET Ensembl PROTEIN SEQUENCES
 echo "downloading Ensembl protein fasta"
 rsync -av rsync://ftp.ensembl.org/ensembl/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz $DECDATA/originalData/
 
-## 5) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS
+## 4) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS
 ## produces $DECDATA/processedData/all_proteins.fa
 echo "adding mutations to fasta"
 $myR --vanilla < get_mutated_proteins.R  &> $DECDATA/log/mutated_proteins.txt 
 
 
-## 6) BLAST BP IN Ensembl+MUTATION PROTEINS
+## 5) BLAST BP IN Ensembl+MUTATION PROTEINS
 ## produces $DECDATA/processedData/unique_bp_blast.tsv
 echo "RUNNING BLAST SEARCH OF BP"
 
