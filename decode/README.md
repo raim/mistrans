@@ -12,7 +12,11 @@ Note, that all scripts also load functions defined in
 
 ## Software Dependencies
 
-R:
+### Bash
+
+TODO: ubuntu linux xterm, blast, bioawk, ssconvert
+
+### R
 
 ``` r
 
