@@ -606,7 +606,7 @@ er <- c("unique BP/SAAP"=nrow(dat),
         "with mutation"=sum(dat[,"protein"]!=dat[,"ensembl"],na.rm=TRUE),
         apply(errs,2,sum))
 plotdev(file.path(fig.path,"mapping_errors"),
-        res=300, width=3.5, height=3.5, type=ftyp)
+        res=300, width=4, height=3.5, type=ftyp)
 par(mai=c(1.5,.5,.5,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(er,las=2)
 text(bp+.25, er+.05*diff(par("usr")[3:4]),
@@ -622,7 +622,7 @@ recovery <- c("SAAP"=nrow(dat),
               "genome"=sum(!is.na(dat[,"chr"])),
               "codon"=sum(!is.na(dat[,"codon"])))
 plotdev(file.path(fig.path,"mapping_recovery"),
-        res=300, width=3.5, height=3.5, type=ftyp)
+        res=300, width=4, height=3.5, type=ftyp)
 par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(recovery,las=2,ylab="")
 text(bp, recovery, recovery, pos=3, xpd=TRUE, cex=.8)
@@ -637,7 +637,7 @@ types <- c("SAAP"=nrow(dat),
 
 types <- sort(types, decreasing=TRUE)
 plotdev(file.path(fig.path,"mapping_types"),
-        res=300, width=3.5, height=3.5, type=ftyp)
+        res=300, width=4, height=3.5, type=ftyp)
 par(mai=c(.75,.5,.25,.1), mgp=c(1.3,.3,0), tcl=-.25, cex=.8)
 bp <- barplot(types,las=2,ylab="")
 text(bp, types, types, pos=3, xpd=TRUE)
