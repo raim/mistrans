@@ -45,7 +45,7 @@ tmt.file <- file.path(proj.path, "originalData",
                       "Supplemental_Data_3.SAAP_precursor_quant.txt.gz")
 
 
-if ( !file.exists(infile) | !file.exists(tmt.file) )
+if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
          "AND INPUT EXISTS, as outlined in run.sh")
 
