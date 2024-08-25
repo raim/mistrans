@@ -12,7 +12,7 @@ running the blast-based mapping pipeline in
 scripts also load functions defined in [`raas_utils.R`](raas_utils.R).
 
 If you are just interested in the downstream analysis and generation
-of published figures you just need to download the data in step 3, and
+of published figures you just need to download the data (step 3), and
 can directly used the R scripts called in
 [`run_analysis.sh`](run_analysis.sh) in your favorite R environment.
 
@@ -37,7 +37,7 @@ unzip additionalData.zip -d $DECODE
 ```
    
    
-4. Run the bash script that blasts all BP/SAAP data, and collects various
+5. Run the bash script that blasts all BP/SAAP data, and collects various
 structural information for the best-matching protein, transcript 
 and genome site.
 
