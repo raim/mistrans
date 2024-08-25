@@ -4,20 +4,64 @@
 ##  as provided by Shiri Tsour.
 
 ## OUTPUT DATA PATHS
-## SET THIS PATH TO WHERE YOU WANT OUTPUT (figures, tables, log files)
+## SET THIS PATH TO WHERE YOU WANT TO SAVE
+## INPUT (supplemental data) and OUTPUT (figures, tables, log files)
 ## TODO: parse DECDATA in the R scripts
-export DECDATA=decode_results
+export DECDATA=decode
 
 ## generate output paths
 mkdir -p $DECDATA/log
 mkdir -p $DECDATA/figures
-mkdir -p $DECDATA/data_tables
+mkdir -p $DECDATA/processedData
+mkdir -p $DECDATA/originalData
+
+## BLAST 2.15.0+ is REQUIRED, set the path to executables here
+blastdir=${HOME}/programs/ncbi-blast-2.15.0+/bin
 
 ### DATA COLLECTION
 
-## TODO: move blast commands here, and simply comment out
-## map_peptides.R, and note that it depends on genomeBrowser
+## MANUALLY DOWNLOAD SUPPLEMENTAL DATA TABLES 2-4 AND STORE IN
+## $DECDATA/originalData
 
+## MANUALLY DOWNLOAD analysis_pipeline.zip AND STORE IN
+## $DECDATA/processedData
+
+## 1) CONVERT SAAP/BP INPUT DATA (by Shiri Tsour) to text files
+##Supplemental_Data_2.SAAP_proteins.xlsx == All_SAAP_protein_filter_df.txt,
+##Supplemental_Data_3.SAAP_precursor_quant.xlsx == All_SAAP_TMTlevel_quant_df.txt,
+##Supplemental_Data_4.SAAP_reporter_quant.xlsx == All_SAAP_patient_level_quant_df.txt
+ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.xlsx $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.txt 
+ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.xlsx $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt 
+ssconvert --export-type=Gnumeric_stf:stf_assistant -O "locale=C format=automatic separator='	' eol=unix" $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.xlsx $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.txt
+## gzip to save disk space
+gzip $DECDATA/originalData/Supplemental_Data_2.SAAP_proteins.txt $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.txt
+
+## 2) COLLECT BP SEQUENCES
+gunzip -c $DECDATA/originalData/Supplemental_Data_3.SAAP_precursor_quant.txt.gz | cut -f 4 | \
+    sort | uniq | grep -v "^BP$" | grep -v -e '^$' > $DECDATA/processedData/tmp.txt
+gunzip -c $DECDATA/originalData/Supplemental_Data_4.SAAP_reporter_quant.txt.gz | cut -f 5 | \
+    sort | uniq | grep -v "^BP$" | grep -v -e '^$' > $DECDATA/processedData/tmp2.txt
+cat $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt | \
+    sort |uniq | awk '{print ">" $0 ORS $0}' - \
+		     > $DECDATA/processedData/unique_bp.fas
+rm -f $DECDATA/processedData/tmp.txt $DECDATA/processedData/tmp2.txt
+
+## 3) GET Ensembl PROTEIN SEQUENCES
+rsync -av rsync://ftp.ensembl.org/ensembl/pub/release-110/fasta/homo_sapiens/pep/Homo_sapiens.GRCh38.pep.all.fa.gz $DECDATA/originalData/
+
+## 4) ADD PATIENT-SPECIFIC SINGLE AMINO REPLACEMENTS 
+#All_SAAP_protein_filter_df.txt
+R --vanilla < get_mutated_proteins.R  &> ${DECDATA}/log/mutated_proteins.txt 
+
+## 5) BLAST BP IN Ensembl+MUTATION PROTEINS
+
+$blastdir/makeblastdb -in ${DECDATA}/processedData/all_proteins.fa -parse_seqids -title "ensembl hg38 proteins" -dbtype prot  &> ${DECDATA}/log/blast_database.txt
+## NOTE: blast hits are pre-filtered for query length=alignment length and >75% identity
+${blastdir}/blastp  -num_threads 7 -task blastp-short -query  ${DECDATA}/processedData/unique_bp.fas -db ${DECDATA}/processedData/all_proteins.fa   -outfmt "6 qseqid sacc pident mismatch length qlen slen sstart send  evalue bitscore" 2> ${DECDATA}/log/unique_bp_blast.txt | awk '{if($5==$6 && $3>75) print}'  |grep -v "^#" > ${DECDATA}/processedData/unique_bp_blast.tsv 
+
+
+## 6) SELECT BEST-MATCHING PROTEIN HIT FOR EACH BP
+R --vanilla < get_protein_match.R &> ${DECDATA}/log/protein_match.txt
 
 ### DATA ANALYSIS AND PLOTS
 

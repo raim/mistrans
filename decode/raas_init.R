@@ -32,8 +32,11 @@ source("raas_utils.R")
 proj.path <- "decode_results"
 in.path <- "." # "/home/raim/work/mistrans"
 
-out.path <- file.path(proj.path,"data_tables")
+## output path for ALL scripts
+out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures")
+
+## figures of this init script
 ifig.path <- file.path(fig.path,"init")
 dir.create(ifig.path)
 
