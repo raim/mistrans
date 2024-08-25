@@ -29,7 +29,7 @@ source("raas_utils.R")
 ## INPUT/OUTPUT PATHS
 
 ##proj.path <- file.path(Sys.getenv("DECDATA"))
-proj.path <- "decode_results"
+proj.path <- "decode"
 in.path <- "." # "/home/raim/work/mistrans"
 
 ## output path for ALL scripts
