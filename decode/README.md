@@ -12,18 +12,7 @@ Note, that all scripts also load functions defined in
 
 ## Software Dependencies
 
-The R scripts use the following R packages:
-
-* CRAN:
-    - viridis, readxl.
-* BioConductor:
-	- DiffLogo.
-* github:
-    - https://josephcrispell.github.io/projects/basicplotter (2024-08-24),
-	- https://github.com/raim/segmenTools (2024-08-24).
-
-
-Install in R:
+R:
 
 ``` r
 
@@ -37,6 +26,8 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("DiffLogo")
 
 ## from github
+## https://josephcrispell.github.io/projects/basicplotter (2024-08-24),
+## https://github.com/raim/segmenTools (2024-08-24).
 remotes::install_github("JosephCrispell/basicPlotteR")
 remotes::install_github("raim/segmenTools")
 ```
