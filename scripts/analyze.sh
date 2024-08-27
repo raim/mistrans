@@ -222,8 +222,11 @@ R --vanilla <  ${THIS}/scripts/raasprofiles3_kraq.R &> ${MISDATA}/log/kraq.txt  
 R --vanilla <  ${THIS}/scripts/raasprofiles3_structure.R &> ${MISDATA}/log/structure.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_function.R &> ${MISDATA}/log/function.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_proteins.R &> ${MISDATA}/log/proteins.txt 
-R --vanilla <  ${THIS}/scripts/raasprofiles3_model.R &> ${MISDATA}/log/model.txt 
 R --vanilla <  ${THIS}/scripts/raasprofiles3_rna.R &> ${MISDATA}/log/rna.txt
+
+## random forest modeling
+R --vanilla <  ${THIS}/scripts/raasprofiles3_model.R &> ${MISDATA}/log/model.txt 
+R --vanilla <  ${THIS}/scripts/raasprofiles3_model_xgboost.R &> ${MISDATA}/log/model_xgboost.txt 
 
 ## COMPARE MULTIPLE BP per SAAP
 R --vanilla <  ${THIS}/scripts/raasprofiles3_multipleBP.R &> ${MISDATA}/log/multipleBP.txt 
