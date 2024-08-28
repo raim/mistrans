@@ -20,7 +20,7 @@ ftyp <- "png"
 RAAS_data = read.delim(file.path(proj.path,'processedData',
                                  'sites_raas_unique.tsv'),
                        row.names = NULL)
-#RAAS_data = RAAS_data[RAAS_data$RAAS.n > 1,]
+RAAS_data = RAAS_data[RAAS_data$RAAS.n > 1,]
 
 test_rows = sample(1:nrow(RAAS_data),round(nrow(RAAS_data)*.8))
 train = RAAS_data[test_rows,]
@@ -29,13 +29,13 @@ test = RAAS_data[-test_rows,]
 ## list of features to use for random forest prediction
 feat_list =  c('MMSeq2',
                ##'fromto', 'codon',
-               #'flDPnn',
-               #'DisoRDPbind',
-               #'protein.intensity',
+               ##'flDPnn',
+               ##'DisoRDPbind',
+               'iupred3',
+               ##'anchor2',
+               'protein.intensity',
                'protein.halflife',
-               'protein.length',
-               'iupred3'#,
-               ##'anchor2'
+               'protein.length'
                )
 
 
@@ -119,7 +119,6 @@ for(j in 1:100){
   
 }
 
-summary(cor_list_all)
 
 df_xg <- as.data.frame(cbind(cor_list, feat_store))
 df_xg$cor_list <- (as.numeric(df_xg$cor_list) - median(cor_list_all)) /median(cor_list_all)*100
@@ -133,7 +132,7 @@ p1 <- ggplot(df_plot,aes(y = predictions, x =gt )) + geom_point() +
   xlab('Measured') + ylab('Predicted') +ggtitle('log10 RAAS')
 
 p2 <- ggplot(df_xg,aes(y = feat_store, x = (cor_list))) + geom_boxplot() + 
-    xlab('% gain of feature') + coord_cartesian(xlim = c(0,100)) +
+    xlab('% gain of feature') + coord_cartesian(xlim = c(0,max(df_xg$cor_list))) +
     ylab('')
 
 
@@ -150,9 +149,24 @@ write.csv(df_xg,file.path(proj.path,'processedData/xgboost_leave_one_out.csv'))
 write.csv(df_plot,file.path(proj.path,'processedData/xgboost_plot.csv'))
 
 ggsave(filename = file.path(proj.path,'figures/model/xgboost_scatter.png'),
-       plot = p1, width = 8, height = 6, dpi = 300)        
+       plot = p1, width = 3, height = 3, dpi = 300)        
 ggsave(filename = file.path(proj.path,'figures/model/xgboost_features.png'),
-       plot = p2, width = 8, height = 6, dpi = 300)        
+       plot = p2, width = 4, height = 3, dpi = 300)        
 
           
-          
+summary(cor_list_all)
+        
+## PCA
+docols <- colorRampPalette(c("#FFFFFF","#0000FF"))(50)
+upcols <- colorRampPalette(c("#FFFFFF","#FF0000"))(50)
+ttcols <- unique(c(rev(docols), upcols))
+
+cra <- cor(RAAS_data[,c("RAAS.median",feat_list)], use="pairwise.complete")
+
+segmenTools::plotdev(file.path(proj.path,'figures','model',
+                               'correlation'),
+                type=ftyp, height=3.5, width=3.5, res=200)
+par(mai=c(1.2,1.2,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+image_matrix(cra, breaks=seq(-1,1, length.out=100), col=ttcols, axis=1:2,
+             xlab=NA, ylab=NA)
+dev.off()

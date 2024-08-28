@@ -5,6 +5,8 @@
 ## protein complexes, proteins and protein windows
 ## (raasprofiles3_proteins.R).
 
+SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
+
 ## CRAN packages
 library(viridis) # viridis coloring scheme
 library(readxl)
@@ -17,7 +19,7 @@ library(basicPlotteR) # for non-overlapping text
 library(segmenTools) # plot utils and overlap profile sorting and plotting
 
 ## project-specific functions
-source("raas_utils.R")
+source(file.path(SRC.PATH, "raas_utils.R"))
 
 ## R options
 options(stringsAsFactors=FALSE) # default since R v4
@@ -33,7 +35,7 @@ options(scipen=0) # use e notation for p-values
 
 proj.path <- file.path(Sys.getenv("DECODE")) 
 if ( proj.path=="" ) # author's local path
-    proj.path <- "/home/raim/data/decode"
+    proj.path <- "/home/raim/data/decode_work"
 
 ## input data
 add.path <- file.path(proj.path, "additionalData")
@@ -901,6 +903,9 @@ pint <- lapply(pint, function(x) unique(x[x!=0]))
 ## NOTE: there are still many entries with multiple values
 pint <- unlist(lapply(pint, median))
 
+### ADD TO TMTF TABLE
+tmtf$razor.intensity <- pint
+
 ## MEDIAN of PROTEINS
 pint <- split(pint, tmtf$ensembl)
 pint <- lapply(pint, function(x) x[!is.na(x)])
@@ -911,6 +916,8 @@ pint <- lapply(pint, as.numeric)
 pint <- lapply(pint, median, na.rm=TRUE)
 pint <- unlist(pint)
 
+### ADD TO TMTF TABLE
+tmtf$protein.intensity <- pint[tmtf$ensembl]
 
 ### GENERATE UNIQUE SITE TABLE
 ## median raas per unique mane protein site
