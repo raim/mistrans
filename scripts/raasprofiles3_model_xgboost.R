@@ -16,6 +16,7 @@ fig.path <- file.path(proj.path,"figures","model")
 dir.create(fig.path)
 
 ftyp <- "png"
+perm <- 100 # number of repeated runs
 
 RAAS_data = read.delim(file.path(proj.path,'processedData',
                                  'sites_raas_unique.tsv'),
@@ -70,7 +71,7 @@ feat_store <- c()
 
 for(i in feat_list){
   
-  for(j in 1:100){
+  for(j in 1:perm){
     
     test_rows = sample(1:nrow(RAAS_data),round(nrow(RAAS_data)*.8))
     train = RAAS_data[test_rows,]
@@ -96,7 +97,7 @@ for(i in feat_list){
   
 }
 cor_list_all <- c()
-for(j in 1:100){
+for(j in 1:perm){
   
   test_rows = sample(1:nrow(RAAS_data),round(nrow(RAAS_data)*.8))
   train = RAAS_data[test_rows,]
