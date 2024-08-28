@@ -10,7 +10,7 @@ options(stringsAsFactors=FALSE)
 ## DECODE DATA
 proj.path <- file.path(Sys.getenv("DECODE")) 
 if ( proj.path=="" ) # author's local path
-    proj.path <- "/home/raim/data/decode"
+    proj.path <- "/home/raim/data/mistrans"
 
 dat.path <- file.path(proj.path,"originalData")
 bp.file <- file.path(proj.path,"processedData","unique_bp_blast.tsv")

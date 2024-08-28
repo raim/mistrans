@@ -16,6 +16,7 @@ dir.create(sfig.path, showWarnings=FALSE)
 ### START ANALYSIS
 
 tmtm <- tmtf
+value <- "RAAS"
 
 ## add protein intensity
 

@@ -5,6 +5,13 @@
 ## protein complexes, proteins and protein windows
 ## (raasprofiles3_proteins.R).
 
+
+## attempt to get the correct path for input data;
+## these should be downloaded or generated as outlined
+## in README.md
+proj.path <- file.path(Sys.getenv("DECODE")) 
+if ( proj.path=="" ) # author's local path
+    proj.path <- "/home/raim/data/mistrans"
 SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## CRAN packages
@@ -29,20 +36,18 @@ options(scipen=0) # use e notation for p-values
 
 ## INPUT/OUTPUT PATHS
 
-## attempt to get the correct path for input data;
-## these should be downloaded or generated as outlined
-## in README.md
-
-proj.path <- file.path(Sys.getenv("DECODE")) 
-if ( proj.path=="" ) # author's local path
-    proj.path <- "/home/raim/data/decode_work"
 
 ## input data
 add.path <- file.path(proj.path, "additionalData")
 
 ## MAIN INPUT: MAPPED BP AND SAAP
+## for publication with collected data
 in.file <- file.path(add.path,"saap_mapped.tsv.gz")
 tmt.file <- file.path(add.path,  "All_SAAP_TMTlevel_quant_df.txt.gz")
+
+##in.file <- file.path(proj.path,"processedData","saap_mapped.tsv.gz")
+##tmt.file <- file.path(proj.path, "originalData",
+##                      "All_SAAP_TMTlevel_quant_df.txt")
 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
@@ -589,8 +594,13 @@ tmtf$ensembl <- hdat$ensembl[idx]
 tmtf$mane <- hdat$MANE.protein[idx]
 namane <- is.na(tmtf$mane)|tmtf$mane==""
 tmtf$mane[namane] <- tmtf$ensembl[namane]
+
 ## tag protein sites
+## NOTE: these are not unique chromosome coors, because
+## for some proteins a mutated BP mapped to a different
+## protein
 tmtf$unique.site <- paste0(tmtf$ensembl, "_", tmtf$pos)
+
 
 ## gene names
 tnm <- tmtf$name
@@ -612,6 +622,8 @@ tmtf$chr <- hdat$chr[idx]
 tmtf$coor <- hdat$coor[idx]
 tmtf$strand <- hdat$strand[idx]
 
+## tag chromosome coordinates
+tmtf$unique.coor <- paste(tmtf$chr, tmtf$coor, tmtf$strand, sep=":")
 
 
 ### MEAN AND MEDIAN RAAS
@@ -919,19 +931,146 @@ pint <- unlist(pint)
 ### ADD TO TMTF TABLE
 tmtf$protein.intensity <- pint[tmtf$ensembl]
 
-### GENERATE UNIQUE SITE TABLE
+
+#### GENERATE COLLAPSED TABLES AT DIFFERENT LEVELS
+## 1) unique chromosome coordinates,
+## 2) unique protein sites,
+## 3) unique protein sites X AAS types.
+
+
+## add these columns to unique site tables
+add.data <- c("name",
+              "codon", "fromto","Dataset","tissue",
+              "iupred3", "flDPnn", # disorder
+              "anchor2","DisoRDPbind", # disorder-binding
+              "MMSeq2", # sequence conservation
+              "BP","SAAP",
+              "ensembl",
+              "pos","rpos", # position in protein
+              "transcript",
+              "tpos", "chr", "coor", "strand") 
+
+
+
+### GENERATE UNIQUE CHROMOSOME SITE TABLE
 ## median raas per unique mane protein site
 ## plus protein level data since this table is used
 ## externally for random forest et al. modeling
 
+sitl <- split(tmtf$RAAS, paste(tmtf$unique.coor))
+csite <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
+
+## mod. column names and add protein and site info
+colnames(csite) <- paste0("RAAS.", colnames(csite))
+
+
+## enumeration of sites within unique proteins
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(csite$ensembl)))
+nsites[is.na(nsites)] <- 1
+csite$n <- nsites
+
+
+## COLLECT DATA FOR SITES
+for ( i in 1:length(add.data) ) {
+    
+    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.coor), unique)
+    datl <- lapply(datl, function(x) x[x!="" & !is.na(x)])
+    datl <- lapply(datl, function(x)
+        ifelse(length(x)==1, x, paste(x, collapse=";")))
+    datl <- unlist(datl)
+    if ( any(lengths(datl)>1) )
+        stop("all protein site data should be unique")
+    csite[[add.data[i]]] <- datl[rownames(csite)]
+}
+
+## add gene names
+csite$name <- ens2nam [csite$ensembl]
+
+## add uniprot id
+csite$uniprot <- unlist(lapply(ens2u[csite$ensembl], paste, collapse=";"))
+
+## RAAS COLOR
+csite$RAAS.color <- num2col(csite$RAAS.median,
+                            limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
+
+
+## NOTE: where we require BP and SAAP we take the longest (but store all)
+## get longest BP
+bpl <- strsplit(csite$BP, ";")
+bpl <- unlist(lapply(bpl, function(x) x[which.max(nchar(x))]))
+csite$all.BP <- csite$BP
+csite$BP <- bpl
+
+## get longest SAAP
+saapl <- strsplit(csite$SAAP, ";")
+saapl <- unlist(lapply(saapl, function(x) x[which.max(nchar(x))]))
+csite$all.SAAP <- csite$SAAP
+csite$SAAP <- saapl
+
+## get AA context for longest BP/SAAP pair
+aal <- lapply(split(bdat$AA, paste(bdat$BP,bdat$SAAP)),unique)
+if ( length(table(lengths(aal)))!=1 )
+    stop("non-unique AA context per BP/SAAP pair")
+aal <- lapply(split(bdat$AA, paste(bdat$BP,bdat$SAAP)),unique)
+if ( any(!paste(csite$BP, csite$SAAP)%in%names(aal)) )
+    warning("AA context not available for selected site BP/SAAP pair")
+aal <- unlist(aal)
+csite$AA <- aal[paste(csite$BP, csite$SAAP)]
+
+## add protein data, half-live, melting point, intensity, length
+csite$protein.length <- plen[csite$ensembl]
+csite$protein.halflife <- phlv[pnms[csite$ensembl]]
+csite$protein.intensity <- pint[csite$ensembl]
+
+
+## MEDIAN RAAS as MAIN RAAS
+csite$RAAS <- csite$RAAS.median
+
+
+## write-out unique site-specific RAAS stats with additional data
+## used for random forest modeling
+csite.file <- file.path(out.path,"sites_raas_unique_genome.tsv")
+##if ( !file.exists(csite.file) )
+    write.table(file=csite.file, x=cbind(ID=rownames(csite),csite),
+                sep="\t", row.names=FALSE, quote=FALSE, na="")
+
+
+
+### GENERATE UNIQUE PROTEIN SITE TABLE
+## median raas per unique mane protein site
+## plus protein level data since this table is used
+## externally for random forest et al. modeling
 
 sitl <- split(tmtf$RAAS, paste(tmtf$unique.site))
 asite <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 ## mod. column names and add protein and site info
 colnames(asite) <- paste0("RAAS.", colnames(asite))
-asite$ensembl <- sub("_.*", "", rownames(asite))
-asite$pos <- as.numeric(sub(".*_", "", rownames(asite)))
+##asite$ensembl <- sub("_.*", "", rownames(asite))
+##asite$pos <- as.numeric(sub(".*_", "", rownames(asite)))
+
+
+
+
+## enumeration of sites within unique proteins
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(asite$ensembl)))
+nsites[is.na(nsites)] <- 1
+asite$n <- nsites
+
+
+## COLLECT DATA FOR SITES
+for ( i in 1:length(add.data) ) {
+    
+    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
+    datl <- lapply(datl, function(x) x[x!="" & !is.na(x)])
+    datl <- lapply(datl, function(x)
+        ifelse(length(x)==1, x, paste(x, collapse=";")))
+    datl <- unlist(datl)
+    if ( any(lengths(datl)>1) )
+        stop("all protein site data should be unique")
+    asite[[add.data[i]]] <- datl[rownames(asite)]
+}
+
 
 ## add gene names
 asite$name <- ens2nam [asite$ensembl]
@@ -942,40 +1081,6 @@ asite$uniprot <- unlist(lapply(ens2u[asite$ensembl], paste, collapse=";"))
 ## RAAS COLOR
 asite$RAAS.color <- num2col(asite$RAAS.median,
                            limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
-
-## make sure its ordered
-## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
-asite <-asite[order(asite$ensembl, asite$pos),]
-
-
-## enumeration of sites within unique proteins
-nsites <- as.numeric(sub(".*\\.","",tagDuplicates(asite$ensembl)))
-nsites[is.na(nsites)] <- 1
-asite$n <- nsites
-
-
-## COLLECT DATA FOR SITES
-add.data <- c("name",
-              "codon", "fromto","Dataset","tissue",
-              "iupred3", "flDPnn", # disorder
-              "anchor2","DisoRDPbind", # disorder-binding
-              "MMSeq2", # sequence conservation
-              "BP","SAAP",
-              "pos","rpos", # position in protein
-              "transcript",
-              "tpos", "chr", "coor", "strand") 
-for ( i in 1:length(add.data) ) {
-    
-    datl <- lapply(split(tmtf[[add.data[i]]], tmtf$unique.site), unique)
-    datl <- lapply(datl, function(x) x[x!=""])
-    if ( add.data[i]%in%c("fromto","Dataset","tissue","BP","SAAP") )
-        datl <- lapply(datl, function(x)
-            ifelse(length(x)==1, x, paste(x, collapse=";")))
-    datl <- unlist(datl)
-    if ( any(lengths(datl)>1) )
-        stop("all protein site data should be unique")
-    asite[[add.data[i]]] <- datl[rownames(asite)]
-}
 
 ## NOTE: where we require BP and SAAP we take the longes (but store all)
 ## get longest BP
@@ -1006,10 +1111,17 @@ asite$protein.halflife <- phlv[pnms[asite$ensembl]]
 asite$protein.intensity <- pint[asite$ensembl]
 
 
+## MEDIAN RAAS as MAIN RAAS
+asite$RAAS <- asite$RAAS.median
+
+## make sure its ordered
+## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
+asite <- asite[order(asite$ensembl, asite$pos),]
+
 ## write-out unique site-specific RAAS stats with additional data
 ## used for random forest modeling
 asite.file <- file.path(out.path,"sites_raas_unique.tsv")
-if ( !file.exists(asite.file) )
+##if ( !file.exists(asite.file) )
     write.table(file=asite.file, x=cbind(ID=rownames(asite),asite),
                 sep="\t", row.names=FALSE, quote=FALSE, na="")
 
@@ -1024,9 +1136,27 @@ site <- listProfile(sitl, y=tmtf$RAAS, use.test=use.test, min=3)
 
 ## mod. column names and add protein and site info
 colnames(site) <- paste0("RAAS.", colnames(site))
-site$ensembl <- sub("_.*", "", rownames(site))
-site$pos <- as.numeric(sub(" .*", "",sub(".*_", "", rownames(site))))
-site$fromto <- sub(".*[0-9] ", "",rownames(site))
+
+
+## enumeration of sites within unique proteins
+nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$ensembl)))
+nsites[is.na(nsites)] <- 1
+site$n <- nsites
+
+
+## COLLECT DATA FOR SITES
+for ( i in 1:length(add.data) ) {
+    
+    datl <- lapply(split(tmtf[[add.data[i]]],
+                         paste(tmtf$unique.site, tmtf$fromto)), unique)
+    datl <- lapply(datl, function(x) x[x!="" & !is.na(x)])
+    datl <- lapply(datl, function(x)
+        ifelse(length(x)==1, x, paste(x, collapse=";")))
+    datl <- unlist(datl)
+    if ( any(lengths(datl)>1) )
+        stop("all protein site data should be unique")
+    site[[add.data[i]]] <- datl[rownames(site)]
+}
 
 ## add gene names
 site$name <- ens2nam[site$ensembl]
@@ -1038,47 +1168,22 @@ site$uniprot <- unlist(lapply(ens2u[site$ensembl], paste, collapse=";"))
 site$RAAS.color <- num2col(site$RAAS.median,
                            limits=c(RAAS.MIN, RAAS.MAX), colf=arno)
 
-## make sure its ordered
-## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
-site <-site[order(site$ensembl, site$pos),]
-
-
-## enumeration of sites within unique proteins
-nsites <- as.numeric(sub(".*\\.","",tagDuplicates(site$ensembl)))
-nsites[is.na(nsites)] <- 1
-site$n <- nsites
-
-
-## COLLECT DATA FOR SITES
-##add.data <- c("name",
-##              "codon", "fromto", "Dataset","tissue",
-##              "iupred3", "flDPnn", # disorder
-##              "anchor2","DisoRDPbind", # disorder-binding
-##              "MMSeq2", "tpos", "chr", "coor", "strand") # sequence conservation
-for ( i in 1:length(add.data) ) {
-    
-    datl <- lapply(split(tmtf[[add.data[i]]],
-                         paste(tmtf$unique.site, tmtf$fromto)), unique)
-    datl <- lapply(datl, function(x) x[x!=""])
-    if ( add.data[i]%in%c("fromto","Dataset","tissue","BP","SAAP") ) # multiple per site!
-        datl <- lapply(datl, function(x)
-            ifelse(length(x)==1, x, paste(x, collapse=";")))
-    datl <- unlist(datl)
-    if ( any(lengths(datl)>1) )
-        stop("all protein site data should be unique")
-    site[[add.data[i]]] <- datl[rownames(site)]
-}
-
 ## add protein data, half-live, melting point, intensity, length
 site$protein.length <- plen[site$ensembl]
 site$protein.halflife <- phlv[pnms[site$ensembl]]
 site$protein.intensity <- pint[site$ensembl]
 
+## make sure its ordered
+## TODO: ORDER PROTEINS BY SIZE OR NUMBER OF AAS
+site <- site[order(site$ensembl, site$pos),]
+
+
+
 
 ## write-out unique site-specific RAAS stats with additional data
 ## used for random forest and glm4 modeling
 site.file <- file.path(out.path,"sites_raas.tsv")
-if ( !file.exists(site.file) )
+##if ( !file.exists(site.file) )
     write.table(file=site.file, x=cbind(ID=rownames(site),site),
                 sep="\t", row.names=FALSE, quote=FALSE, na="")
 
@@ -1101,7 +1206,7 @@ colnames(edat) <- sub("^pos$", "protein.position",
 
 ## NOTE: this table is used as supplemental data table 7
 bpsaap.file <- file.path(out.path,"Supplemental_Data_7.SAAP_coordinates.tsv")
-if ( !file.exists(bpsaap.file) )
+##if ( !file.exists(bpsaap.file) )
     write.table(file=bpsaap.file, x=edat, sep="\t",
                 row.names=FALSE, quote=FALSE, na="")
 

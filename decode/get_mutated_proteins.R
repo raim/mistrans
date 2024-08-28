@@ -4,7 +4,7 @@ options(stringsAsFactors=FALSE)
 ## DECODE DATA
 proj.path <- file.path(Sys.getenv("DECODE")) 
 if ( proj.path=="" ) # author's local path
-    proj.path <- "/home/raim/data/decode"
+    proj.path <- "/home/raim/data/mistrans"
 
 dat.path <- file.path(proj.path,"originalData")
 add.path <- file.path(proj.path,"additionalData")
