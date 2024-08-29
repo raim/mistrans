@@ -229,7 +229,7 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
 ## result vectors
-mut <- pos <- len <- cdn <- tps <- aaf <- aat <-  aas <-
+mut <- pos <- len <- cdn <- tps <- ssd <- exl <- aaf <- aat <-  aas <-
     sss <- anc <- iup <- iubg <- anbg <-
         mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
             pctx <- nctx <- pfam <- clan <- pfam.ebi <- clan.ebi <-
@@ -496,6 +496,7 @@ for ( i in 1:nrow(dat) ) {
     ## GET GENOMIC POSITION via CDS list and posl
     cds <- cdl[[gid]] # position of splice sites in transcript
     coors <- posl[[gid]] # genomic positions of CDS
+    exlen <- coors$end-coors$start+1 # exon length
 
     ## get second codon position
     npos <- npos+1
@@ -520,9 +521,17 @@ for ( i in 1:nrow(dat) ) {
         } else {
             coor <- coors[exon, "start"] + rpos -1
         }
+        ## chromosome coordinates
         gcoor[i,] <- c(chr, coor, strand)
+
+        ## get closest splice site
+        ssdst <- c(1,cds)-npos
+        ssd[i] <- ssdst[which.min(abs(ssdst))]
+        ## get exon length
+        exl[i] <- exlen[exon]
     }
-     
+
+
     ## report
     if ( !interactive() ) {        
         tcodons <- paste(names(which(GENETIC_CODE%in%aat[i])),collapse=";")
@@ -553,6 +562,8 @@ dat <- cbind(dat,
              from=aaf, to=aat,
              codon=cdn, 
              tpos=tps,   # position of AAS codon within transcript
+             ssd=ssd,    # distance to closest splice site
+             exl=exl,    # exon length
              gcoor,      # genome coordinate of AAS
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg,

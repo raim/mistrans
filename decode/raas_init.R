@@ -45,7 +45,7 @@ add.path <- file.path(proj.path, "additionalData")
 in.file <- file.path(add.path,"saap_mapped.tsv.gz")
 tmt.file <- file.path(add.path,  "All_SAAP_TMTlevel_quant_df.txt.gz")
 
-##in.file <- file.path(proj.path,"processedData","saap_mapped.tsv.gz")
+in.file <- file.path(proj.path,"processedData","saap_mapped.tsv")
 ##tmt.file <- file.path(proj.path, "originalData",
 ##                      "All_SAAP_TMTlevel_quant_df.txt")
 
@@ -621,6 +621,8 @@ tmtf$tpos <- hdat$tpos[idx]
 tmtf$chr <- hdat$chr[idx]
 tmtf$coor <- hdat$coor[idx]
 tmtf$strand <- hdat$strand[idx]
+tmtf$ssd <- hdat$ssd[idx] # distance to next splice site
+tmtf$exl <- hdat$exl[idx] # exon length
 
 ## tag chromosome coordinates
 tmtf$unique.coor <- paste(tmtf$chr, tmtf$coor, tmtf$strand, sep=":")
@@ -948,7 +950,7 @@ add.data <- c("name",
               "ensembl",
               "pos","rpos", # position in protein
               "transcript",
-              "tpos", "chr", "coor", "strand") 
+              "tpos", "ssd", "exl", "chr", "coor", "strand") 
 
 
 
@@ -1218,4 +1220,5 @@ fh <- fw <- .2 # width/height factor for invidiual fields in dotplots
 CMAIL <- 1.54 ## commonly used between motif and domain figures, defined 
               ## in domain script via nchar to fit the y-axis labels
 FONT <- "monospace" # font used for aligned figures in motifs and domains
+
 

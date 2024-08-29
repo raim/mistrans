@@ -86,7 +86,8 @@ omai <- c(.5,.5,.5,.5)
 nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
 nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
 
-plotdev(file.path(sfig.path,paste0("classes_conservation_intensity_raas_protein")),
+plotdev(file.path(sfig.path,
+                  paste0("classes_conservation_intensity_raas_protein")),
         height=nh, width=nw, res=300, type=ftyp, bg="white")
 par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
 dotprofile(ovls, value="median",
