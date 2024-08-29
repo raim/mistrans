@@ -525,6 +525,7 @@ for ( i in 1:nrow(dat) ) {
         gcoor[i,] <- c(chr, coor, strand)
 
         ## get closest splice site
+        ## TODO: does this required strand correction?
         ssdst <- c(1,cds)-npos
         ssd[i] <- ssdst[which.min(abs(ssdst))]
         ## get exon length
