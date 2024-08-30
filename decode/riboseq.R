@@ -10,16 +10,23 @@ SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 if ( !exists("bdat") )
     source(file.path(SRC.PATH, "raas_init.R"))
 
+## additionally required data files
 mam.path <- file.path(Sys.getenv("MAMDATA")) 
 if ( mam.path=="" ) # author's local path
     mam.path <- "/home/raim/data/mammary"
 
+## data to be added to additionalData folder
+cds.file <- file.path(mam.path,"transcript_coordinates.tsv")
+
+## data from additionalData folder
+chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
+
+## figure output path
 rseq.path <- file.path(proj.path, "figures", "riboseq")
 dir.create(rseq.path)
 
-ftyp <- "png"
 
-
+## bed files generated from downloaded bigwig files 
 ribo.file <- file.path(proj.path, "processedData",
                        "Iwasaki19_All.RiboProElong.bed")
 ribo.file <- file.path(mam.path, "processedData",
@@ -78,12 +85,22 @@ plot(riba$start, log10(riba$score), xlim=c(6298e2, 6299e2), type="h",
 axis(1, at=1:1e6, labels=FALSE)
 dev.off()
 
+## CHROMOSOME LENGTH INDEX
+## required for segmenTool's indexing scheme
+chrMap <- read.delim(chr.file)
+chrS <- c(0,cumsum(as.numeric(chrMap[,3])))
+chrL <- chrMap$length
+chrIdx <- chrMap[,1]
+names(chrIdx) <- chrMap[,2]
+
+
 ## CODON PERIOD
 chr <- 3
 
 if ( exists("all") ) rm(all);
 gc()
 
+## expand to full vector
 all <- rep(0, chrL[chr])
 all[riba$start[riba$chr==chr]] <- log10(riba$score[riba$chr==chr])
 
@@ -100,17 +117,9 @@ axis(1)#, at=seq(0,297,3), las=2)
 mtext(paste("chromosome",chr), 3, 0)
 dev.off()
 
-
-## chromosome length index
-chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
-chrMap <- read.delim(chr.file)
-chrS <- c(0,cumsum(as.numeric(chrMap[,3])))
-chrL <- chrMap$length
-chrIdx <- chrMap[,1]
-names(chrIdx) <- chrMap[,2]
+### SUMMARIZE DATA FOR TRANSCRIPTS
 
 ## transcript coordinates
-cds.file <- "/home/raim/data/mammary/originalData/transcript_coordinates.tsv"
 cds <- read.delim(cds.file)
 cds <- cds[cds$transcript%in%genes$MANE,]
 
