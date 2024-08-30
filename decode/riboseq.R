@@ -47,7 +47,6 @@ if ( interactive() ) {
 
     ## exponential decrease of covered positions, mostly 2
     barplot(table(ribo$end-ribo$start+1))
-
 }
 
 ## EXPAND BED RANGES TO FULL POSITIONS
@@ -93,7 +92,7 @@ chrIdx <- chrMap[,1]
 names(chrIdx) <- chrMap[,2]
 
 
-## CODON PERIOD
+## TEST CODON PERIOD
 chr <- 3
 
 if ( exists("all") ) rm(all);
@@ -105,7 +104,6 @@ all[riba$start[riba$chr==chr]] <- log10(riba$score[riba$chr==chr])
 
 racf <- acf(all, lag.max=150, plot=FALSE)
 
-
 plotdev(file.path(rseq.path,paste0("riboseq_autocor")),
         res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
@@ -115,6 +113,7 @@ axis(2)
 axis(1)#, at=seq(0,297,3), las=2)
 mtext(paste("chromosome",chr), 3, 0)
 dev.off()
+
 
 ### SUMMARIZE DATA FOR TRANSCRIPTS
 
@@ -165,7 +164,7 @@ rvals$valn <- rvals$val/rvals$len
 
 FILTER <- csite$fromto=="Q:G"
 
-aas <- csite[filter,c("chr","coor")] # ignore strand,since no strand info in input
+aas <- csite[FILTER,c("chr","coor")] # ignore strand,since no strand info in input
 aas$chr <- chrIdx[aas$chr]
 aai <- coor2index(aas, chrS=chrS)
 
