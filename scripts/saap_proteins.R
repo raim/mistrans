@@ -597,7 +597,7 @@ pids <- names(zooms)
 pids <- names(aasl)#POI #
 
 do.tight.plot <- FALSE
-do.full.plot <- FALSE
+do.full.plot <- TRUE
 for ( pid in pids ) {
 
     ffile <- file.path(fig.path, pnms[pid])

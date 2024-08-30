@@ -158,6 +158,11 @@ ssd[ssd==-mxl] <- "<"
 ssd.srt <- c("<",(-mxl+1):(mxl-1), ">")
 
 ## overlap type/exon distance
+usite$to <-
+    sapply(strsplit(usite$fromto, ":"), "[[", 2)
+usite$from <-
+    sapply(strsplit(usite$fromto, ":"), "[[", 1)
+
 cls <- clusterCluster(usite$fromto, ssd, cl2.srt=ssd.srt)
 
 

@@ -118,6 +118,11 @@ GENETIC_CODE <- c(
     GAA="E", GAG="E",         
     GGT="G", GGC="G", GGA="G", GGG="G"
 )
+aa <- unique(GENETIC_CODE)
+CODONS <- rep("", length(aa))
+for ( i in seq_along(aa) )
+    CODONS[i] <- paste(names(which(GENETIC_CODE==aa[i])), collapse=";")
+names(CODONS) <- aa
 
 ## figures
 dir.create(fig.path, showWarnings=FALSE)

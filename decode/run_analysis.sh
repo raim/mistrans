@@ -29,4 +29,15 @@ R --vanilla < proteins.R &> $DECODE/log/proteins.txt # Fig. 5a,b, EFig. 10a
 R --vanilla < structure.R &> $DECODE/log/structure.txt  # EFig. 10b,c
 R --vanilla < rna.R &> $DECODE/log/rna.txt # SFig. 2
 
+## HIGH MEMORY, test if 45GB are available
+minm=45
+fmem=`awk '/MemFree/ { printf "%.0f \n", $2/1024/1024 }' /proc/meminfo`
+if [ "$minm" -lt "$fmem" ]; then
+    echo "WARNING: running high mem script"
+    R --vanilla < riboseq.R &> $DECODE/log/riboseq.txt
+else
+    echo "not enough free RAM for riboseq script"
+    echo "available $fmem; required $minm"
+fi
+
 ## TODO: add 1d protein plots and chimeraX generating code
