@@ -21,16 +21,16 @@ cds.file <- file.path(mam.path,"transcript_coordinates.tsv")
 ## data from additionalData folder
 chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
 
-## figure output path
-rseq.path <- file.path(proj.path, "figures", "riboseq")
-dir.create(rseq.path)
-
 
 ## bed files generated from downloaded bigwig files 
 ribo.file <- file.path(proj.path, "processedData",
                        "Iwasaki19_All.RiboProElong.bed")
 ribo.file <- file.path(mam.path, "processedData",
-                       "gwipsvizRiboseq.bed")
+                       "gwipsvizRiboseq.bed.gz")
+
+## figure output path
+rseq.path <- file.path(proj.path, "figures", "riboseq")
+dir.create(rseq.path)
 
 ##source("~/programs/segmenTools/R/parsers.R")
 ribo <- bed2coor(ribo.file, header = c("chr", "start", "end", "score"))
