@@ -77,6 +77,9 @@ math18.file <- file.path(add.path, "41467_2018_3106_MOESM5_ESM.xlsx")
 ## @Wu2019: codon stability coefficient (CSC)
 wu19.file <- file.path(add.path,"elife-45396-fig1-data2-v2.csv.gz")
 
+## @Dana2014, Dana and Tuller 2014: decoding time
+dana14.file <- file.path(add.path,"dana14_codons.csv")
+
 ## @McCormick2024pre: RNA pseudouridylation data by (bioRxiv) 
 psi.file <- file.path(add.path, "six_cell_lines_minimal.xlsx")
 

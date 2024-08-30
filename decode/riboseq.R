@@ -10,6 +10,8 @@ SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 if ( !exists("bdat") )
     source(file.path(SRC.PATH, "raas_init.R"))
 
+do.autocor <- !interactive()
+
 ## additionally required data files
 mam.path <- file.path(Sys.getenv("MAMDATA")) 
 if ( mam.path=="" ) # author's local path
@@ -22,22 +24,28 @@ cds.file <- file.path(mam.path,"originalData", "transcript_coordinates.tsv")
 chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
 
 
+
 ## bed files generated from downloaded bigwig files 
-ribo.file <- file.path(proj.path, "processedData",
-                       "Iwasaki19_All.RiboProElong.bed")
 ribo.file <- file.path(mam.path, "processedData",
                        "gwipsvizRiboseq.bed.gz")
+ribo.file <- file.path(proj.path, "processedData",
+                       "human_eIF3b_bound_40S.RiboProElong.bed.gz")
+ribo.file <- file.path(proj.path, "processedData",
+                       "Iwasaki19_All.RiboProElong.bed.gz")
+
+RID <- sub("\\.bed$", "", sub("\\.gz$","",basename(ribo.file)))
 
 ## figure output path
-rseq.path <- file.path(proj.path, "figures", "riboseq")
+rseq.path <- file.path(proj.path, "figures", "riboseq") #,RID)
 dir.create(rseq.path)
 
-##source("~/programs/segmenTools/R/parsers.R")
+
 cat(paste("loading riboseq file", ribo.file, "\n"))
+source("~/programs/segmenTools/R/parsers.R")
 ribo <- bed2coor(ribo.file, header = c("chr", "start", "end", "score"))
 
 ## some interactive QC and exploration
-if ( interactive() ) { 
+if ( FALSE ) { 
     ## strand info by reverted start/end? would be illegal for bed, i think
     any(ribo$end<ribo$start)
 
@@ -64,7 +72,7 @@ while( any(diff(riba$start)==0) ) {
     
 
 ## some interactive QC and exploration
-if ( interactive() ) {
+if ( FALSE ) {
     ## number of non-consecutive runs
     sum(diff(riba$start)!=1)
 
@@ -75,7 +83,7 @@ if ( interactive() ) {
 }
 
 ## plot an example region
-plotdev(file.path(rseq.path,paste0("riboseq_example")),
+plotdev(file.path(rseq.path,paste0(RID,"_example")),
         res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
 plot(riba$start, log10(riba$score), xlim=c(6298e2, 6299e2), type="h",
@@ -93,27 +101,28 @@ names(chrIdx) <- chrMap[,2]
 
 
 ## TEST CODON PERIOD
-chr <- 3
-
-if ( exists("all") ) rm(all);
-gc()
-
-## expand to full vector
-all <- rep(0, chrL[chr])
-all[riba$start[riba$chr==chr]] <- log10(riba$score[riba$chr==chr])
-
-racf <- acf(all, lag.max=150, plot=FALSE)
-
-plotdev(file.path(rseq.path,paste0("riboseq_autocor")),
-        res=300, type=ftyp, width=4, height=3)
-par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
-plot(racf$lag, racf$acf, type="h", axes=FALSE, ylim=c(0,1),
+if ( do.autocor ) {
+    chr <- 3
+    
+    if ( exists("all") ) rm(all);
+    gc()
+    
+    ## expand to full vector
+    all <- rep(0, chrL[chr])
+    all[riba$start[riba$chr==chr]] <- log10(riba$score[riba$chr==chr])
+    
+    racf <- acf(all, lag.max=150, plot=FALSE)
+    
+    plotdev(file.path(rseq.path,paste0(RID,"_autocor")),
+            res=300, type=ftyp, width=4, height=3)
+    par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
+    plot(racf$lag, racf$acf, type="h", axes=FALSE, ylim=c(0,1),
          ylab=expression(ACF), xlab="lag")
-axis(2)
-axis(1)#, at=seq(0,297,3), las=2)
-mtext(paste("chromosome",chr), 3, 0)
-dev.off()
-
+    axis(2)
+    axis(1)#, at=seq(0,297,3), las=2)
+    mtext(paste("chromosome",chr), 3, 0)
+    dev.off()
+}
 
 ### SUMMARIZE DATA FOR TRANSCRIPTS
 
@@ -162,9 +171,9 @@ rvals$valn <- rvals$val/rvals$len
 
 ## GET AAS VALUES
 
-FILTER <- csite$fromto=="Q:G"
+usite <- site
 
-aas <- csite[FILTER,c("chr","coor")] # ignore strand,since no strand info in input
+aas <- usite[,c("chr","coor")] # ignore strand,since no strand info in input
 aas$chr <- chrIdx[aas$chr]
 aai <- coor2index(aas, chrS=chrS)
 
@@ -177,46 +186,65 @@ for ( r in range )
     aar <- aar + rall[aai$coor + r]
 aar <- aar/length(range)
 
-
 ## relative value
-aan <- aar/rvals[csite$transcript[FILTER], "valn"]
+aan <- aar/rvals[usite$transcript, "valn"]
 
-plotdev(file.path(rseq.path,paste0("riboseq_raas_norm")),
+## PLOT
+
+## interactive QC and data exploration
+if ( FALSE ) {
+    ##boxplot(log2(aan) ~ usite$fromto)
+    plotCor(as.numeric(usite$iupred3), log(aan))
+    plotCor(log10(as.numeric(usite$protein.intensity)), log(aan))
+    plotCor(as.numeric(usite$MMSeq2), log(aan)) # <- SIGNIFICANT
+ 
+}
+
+
+## subset to certain types?
+FILTER <- rep(TRUE, nrow(usite)) # usite$fromto=="Q:G" # 
+
+plotdev(file.path(rseq.path,paste0(RID,"_raas_norm")),
         res=300, type=ftyp, width=2.5, height=2.5)
 par(mai=c(.5,.5,.25,.15), mgp=c(1.4,.3,0), tcl=-.25)
-plotCor(log2(aan), csite$RAAS[FILTER],
+plotCor(log2(aan[FILTER]), usite$RAAS.median[FILTER],
         xlab=expression(log[2](count[AAS]/count[transcript])), ylab=xl.raas,
         cor.legend=FALSE, title=TRUE)
 dev.off()
 
-plotdev(file.path(rseq.path,paste0("riboseq_raas_raw")),
+plotdev(file.path(rseq.path,paste0(RID,"_raas_raw")),
         res=300, type=ftyp, width=2.5, height=2.5)
 par(mai=c(.5,.5,.25,.15), mgp=c(1.4,.3,0), tcl=-.25)
-plotCor(log10(aar), csite$RAAS[FILTER],
+plotCor(log10(aar[FILTER]), usite$RAAS.median[FILTER],
         xlab=expression(log[10](count[AAS])), ylab=xl.raas,
         cor.legend=FALSE, title=TRUE)
 dev.off()
 
-if ( FALSE ) {
-    ## slow but less memory: 
-    rvals <- lapply(cdsl, function(x) {
-        
-        ## get transcript CDS coordinates
-        coors <- unlist(apply(x,1, function(y) y[1]:y[2]))
-        if ( any(duplicated(coors)) ) stop("overlapping cds")
-        
-        ## count coordinates that are present
-        idx <- which(riba$start%in%coors)
-        ncds <- length(coors)
-        navail <- length(idx)
-        ## sum riboseq values if present
-        vals <- ifelse(navail>0, sum(riba[idx,"score"]), 0)
-        ## return
-        c(len=ncds, n=navail, val=vals)
-    })
-}
+## transcripts
+## only for non-0 AAS
+
+faas <- FILTER & aar!=0
+
+plotdev(file.path(rseq.path,paste0(RID,"_raas_transcript")),
+        res=300, type=ftyp, width=2.5, height=2.5)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.4,.3,0), tcl=-.25)
+plotCor(log10(rvals[usite$transcript[faas], "valn"]),
+        usite$RAAS.median[faas],
+        xlab=expression(log[10](count[transcript])), ylab=xl.raas,
+        cor.legend=FALSE, title=TRUE)
+dev.off()
+
+
+plotdev(file.path(rseq.path,paste0(RID,"_aas_transcript")),
+        res=300, type=ftyp, width=2.5, height=2.5)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.4,.3,0), tcl=-.25)
+plotCor(log10(rvals[usite$transcript[FILTER], "valn"]),
+        log10(aar[FILTER]),
+        xlab=expression(log[10](count[transcript])),
+        ylab=expression(log[10](count[AAS])),
+        cor.legend=FALSE, title=TRUE)
+dev.off()
+
 
 ## TODO:
-## * load transcript coordinates and get total count,
-## * get relative count for each codon,
-## * plot relative count by RAAS.
+## * load motif classification and analyze specifically by motif

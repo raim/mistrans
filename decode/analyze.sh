@@ -63,6 +63,10 @@ mkdir -p $MISDATA/processedData
 ## TODO: add source and download url for dana14_codons.ods/csv,
 ## optionally (if present) used in raasprofiles3_codons.R
 
+##NOTE: copying dana14_codons.csv to avoid requiring git path in R
+##TODO: just move to genomeBrowser git?
+cp -a ${THIS}/data/dana14_codons.csv ${MISDATA}/originalData/
+
 ## @Wu2019
 ## We calculated the codon stability coefficient (CSC) as the Pearson
 ## correlation coefficient between mRNA stability and codon
@@ -367,6 +371,7 @@ cp -a ${MISDATA}/processedData/saap_mapped.tsv $ddata/
 cp -a ${MAMDATA}/originalData/41467_2018_3106_MOESM5_ESM.xlsx $ddata/
 cp -a ${MISDATA}/originalData/elife-45396-fig1-data2-v2.csv $ddata/
 cp -a ${MISDATA}/originalData/six_cell_lines_minimal.xlsx $ddata/
+cp -a ${MISDATA}/originalData/dana14_codons.csv $ddata/
 
 ## genomeBrowser data
 cp -a ${MAMDATA}/originalData/uniprot_ensembl.dat $ddata/

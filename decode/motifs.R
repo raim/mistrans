@@ -13,6 +13,9 @@ if ( !exists("bdat") )
 mfig.path <- file.path(fig.path,"motifs")
 dir.create(mfig.path, showWarnings=FALSE)
 
+## output file
+motif.file <- file.path(out.path, "saap_motifs.tsv")
+
 ## AA SORTING
 AAS <- sort(unique(GENETIC_CODE)) 
 AAT <- AAS[AAS!="*"]
@@ -69,7 +72,7 @@ dev.off()
 
 
 ### DEFINE MOTIF CLASSES
-do.all.motifs <-  TRUE # FALSE # 
+do.all.motifs <-  FALSE # TRUE # 
 
 CTXT <- as.character(c(-2,-1,1,2))
 CCxCC <- apply(aam[,CTXT], 1, function(x) any(x%in%c("C")))
@@ -443,3 +446,11 @@ plotProfiles(ovs,
 
 
 
+## WRITE OUT MOTIF ASSOCIATION
+
+
+motifs <- cbind(cdat[,c("BP","SAAP")],
+                classes[,selected])
+write.table(file=motif.file, x=motifs,
+            sep="\t", row.names=FALSE, quote=FALSE, na="")
+              

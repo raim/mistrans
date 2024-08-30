@@ -197,7 +197,7 @@ if ( exists("decod") ) {
            pch=aa.pchs[sub("-.*","",names(Fbg))])
     dev.off()
 
-    plotdev(file.path(cfig.path,paste0("codon_frequencies_reldecoding_dana14")),
+    plotdev(file.path(cfig.path,paste0("codon_frequencies_rel_decoding_dana14")),
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(Fbg, decodl[sub(".*-","", names(Fbg)),1], density=FALSE,
