@@ -16,7 +16,7 @@ if ( mam.path=="" ) # author's local path
     mam.path <- "/home/raim/data/mammary"
 
 ## data to be added to additionalData folder
-cds.file <- file.path(mam.path,"transcript_coordinates.tsv")
+cds.file <- file.path(mam.path,"originalData", "transcript_coordinates.tsv")
 
 ## data from additionalData folder
 chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
@@ -33,9 +33,11 @@ rseq.path <- file.path(proj.path, "figures", "riboseq")
 dir.create(rseq.path)
 
 ##source("~/programs/segmenTools/R/parsers.R")
+cat(paste("loading riboseq file", ribo.file, "\n"))
 ribo <- bed2coor(ribo.file, header = c("chr", "start", "end", "score"))
 
-if ( FALSE ) { # some interactive QC and Exploration
+## some interactive QC and exploration
+if ( interactive() ) { 
     ## strand info by reverted start/end? would be illegal for bed, i think
     any(ribo$end<ribo$start)
 
@@ -48,26 +50,22 @@ if ( FALSE ) { # some interactive QC and Exploration
 
 }
 
-## EXPAND RANGES TO FULL POSITIONS
+## EXPAND BED RANGES TO FULL POSITIONS
 lens <- ribo$end-ribo$start+1
 
 ## expand positions
 riba <- data.frame(chr=rep(ribo$chr, lens),
                    start=rep(ribo$start, lens),
                    score=rep(ribo$score, lens))
-
-head(riba)
-
-## TODO: loop over diff(riba$start==0) and increase each by 1, until none are
-## left
+## loop over diff(riba$start==0) and increase each by 1, until none are left
 while( any(diff(riba$start)==0) ) {
-
     idx <- which(diff(riba$start)==0)+1
     riba$start[idx] <- riba$start[idx]+1
 }
     
 
-if ( FALSE ) {
+## some interactive QC and exploration
+if ( interactive() ) {
     ## number of non-consecutive runs
     sum(diff(riba$start)!=1)
 
@@ -77,6 +75,7 @@ if ( FALSE ) {
     plot(riba$start, log10(riba$score), xlim=c(628e3, 635e3), type="h")
 }
 
+## plot an example region
 plotdev(file.path(rseq.path,paste0("riboseq_example")),
         res=300, type=ftyp, width=4, height=3)
 par(mai=c(.5,.5,.15,.15), mgp=c(1.4,.3,0), tcl=-.25)
