@@ -177,7 +177,7 @@ par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25)
 ##abline(v=0)
 #par(new=TRUE)
 hist(ssd, breaks=seq(-1e5,1e5,1), xlim=c(-mxl,mxl),
-     xlab="AAS (2nd codon) distance from closest s.s.", main=NA, col="#DF536B",border=NA)
+     xlab="AAS (2nd cod.) distance from closest splice site", main=NA, col="#DF536B",border=NA)
 ##shadowtext(x=-100, y=50, labels="AAS", font=2, col="#ff0000")
 axis(3, labels=FALSE)
 text(40,80, labels="pref. splicing\nbetween codons", pos=4, font=2, xpd=TRUE)
@@ -195,7 +195,7 @@ hist(ssz, breaks=seq(-1e5+2,1e5,12), xlim=c(-mxl,mxl), axes=FALSE,
 axis(4, col="#999999", col.axis="#999999")
 par(new=TRUE)
 hist(ssz, breaks=seq(-1e5+2,1e5,3), xlim=c(-mxl,mxl),
-     xlab="AAS (2nd codon) distance from closest s.s.",
+     xlab="AAS (2nd cod.) distance from closest splice site",
      main=NA, col="#DF536B",border=NA)
 axis(3, labels=FALSE)
 legend("topright", c("12 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
@@ -209,7 +209,7 @@ hist(ssz, breaks=seq(-1e5+1,1e5,12), xlim=c(-mxl,mxl), axes=FALSE,
 axis(4, col="#999999", col.axis="#999999")
 par(new=TRUE)
 hist(ssz, breaks=seq(-1e5+1,1e5,3), xlim=c(-mxl,mxl),
-     xlab="AAS (2nd codon) distance from closest s.s.",
+     xlab="AAS (2nd cod.) distance from closest splice site",
      main=NA, col="#DF536B",border=NA)
 axis(3, labels=FALSE)
 legend("topright", c("12 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
@@ -226,8 +226,8 @@ par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(usite$exl, breaks=2000,
      xlim=c(0,3.5*mxl),
      col="#aaaaaa", border=NA,
-     xlab="AAS exon length", main=NA)
-#shadowtext(x=150, y=350, labels="exon\nlengths", font=2, pos=4, col="#aaaaaa")
+     xlab="exon length", main=NA)
+shadowtext(x=200, y=350, labels="exon\nlengths", font=2, pos=4, col="#aaaaaa")
 ##abline(v=0)
 axis(3, labels=FALSE)
 dev.off()
@@ -355,8 +355,8 @@ usite$from <-
     sapply(strsplit(usite$fromto, ":"), "[[", 1)
 
 ## by INCORPORATED
-usite$toAG <- usite$to
-usite$toAG[usite$to%in%c("A","G")] <- "AG"
+##usite$toAG <- usite$to
+##usite$toAG[usite$to%in%c("A","G")] <- "AG"
 
 cls <- clusterCluster(usite$to, ssd, cl2.srt=ssd.srt)
 ## sort by only enriched
@@ -378,7 +378,7 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
-clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
 plotdev(file.path(kfig.path,paste0("splicesites_AAStype_to_tight")),
         height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
         res=300, type=ftyp)
@@ -390,7 +390,7 @@ axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
      cex.axis=.8)
 axex <- rownames(clc$p.value)
 axis(2, length(axex):1, labels=axex, las=2, family="monospace")
-mtext("Incorporated AA", 2, 1.3)
+mtext("Incorp. AA", 2, 1.3)
 mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
@@ -417,7 +417,7 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
-clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
 plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from_tight")),
         height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
         res=300, type=ftyp)
