@@ -83,7 +83,33 @@ cat(paste("finding perfect matches for", sum(!duplicated(pkore$SAAP)),
 ## TESTING SOME CASES
 ## BP:   LGFYGLDESDLDKVFHLPTTTFIGGQESALPLR, matches ENSP00000222673 (MANE)
 ## SAAP: GGFYGLDESDLDKVFHLPTTTFIGGQESALPLR, matches ENSP00000388183,ENSP00000414662
-## both SAAP hits are proteoforms
+## both SAAP hits are proteoforms, with N-term difference
+##ENST00000222673 ENSP00000222673
+##ENST00000447398 ENSP00000388183 cds_3   7       44647444        44647534        +
+##ENST00000444676 ENSP00000414662 cds_3   7       44647657        44647759        +
+## confirm only difference by diff these files:
+
+##grep ENST00000222673 ~/data/mammary/originalData/transcript_coordinates.tsv |cut -f 2,3,4,5 > data/ENST00000222673.txt
+##grep ENST00000447398 ~/data/mammary/originalData/transcript_coordinates.tsv |cut -f 2,3,4,5 > data/ENST00000447398.txt
+##grep ENST00000444676 ~/data/mammary/originalData/transcript_coordinates.tsv |cut -f 2,3,4,5 > data/ENST00000444676.txt
+
+##raim > diff data/ENST00000222673.txt data/ENST00000447398.txt 
+##3c3,4
+##< 7     44647657        44647759
+##---
+##> 7     44647444        44647534
+##> 7     44656318        44656362
+##
+##raim > diff data/ENST00000222673.txt data/ENST00000444676.txt 
+##3a4
+##> 7     44656318        44656362
+##raim > diff data/ENST00000447398.txt data/ENST00000444676.txt 
+##3c3
+##< 7     44647444        44647534
+##---
+##> 7     44647657        44647759
+
+
 
 ## BP:   DTEEEDFHVDQVTTVK, ENSP00000376802, SERPINA1
 ## SAAP: DTEEEDFHVDQATTVK, ENSP00000486067, SERPINA1 description:serpin family A member 1, but annotated as scaffold!
@@ -114,26 +140,30 @@ mtcraas[mtcraas==-Inf] <- mnraas -1
 brks <- -7:5
 
 plotdev(file.path(fig.path,"saap_blast_raas_total"),
-        res=300, width=3.5, height=3.5, type=ftyp)
-par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        res=300, width=4, height=3.5, type=ftyp)
+par(mfcol=c(1,1), mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(allraas, xlab=expression(log[10](RAAS)), main=NA, breaks=brks)
 hist(mtcraas, col=2, add=TRUE, breaks=brks)
-legend("topright", c(paste0("all SAAP: ", asaap),
-                     paste0("perfect match: ", nsaap)),
-       col=c(8,2), lty=1, lwd=5, bty="n")
+legend("topleft", c(paste0("all SAAP: ", asaap),
+                     paste0("isoform match: ", nsaap)),
+       col=c(8,2), pch=15, bty="n")
 dev.off()
 
 
 plotdev(file.path(fig.path,"saap_blast_raas"),
-        res=300, width=3.5, height=3.5, type=ftyp)
-par(mfcol=c(1,1), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+        res=300, width=4, height=3.5, type=ftyp)
+par(mfcol=c(1,1), mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
 hist(allraas, freq=FALSE, ylim=c(0,.4),
+     col="#00000099", border=NA,
      xlab=expression(log[10](RAAS)), main=NA, breaks=brks)
-hist(mtcraas, breaks=brks, 
-     col="#ff000077", border=2, add=TRUE, freq=FALSE)
-legend("topright", c(paste0("all SAAP: ", asaap),
-                     paste0("perfect match: ", nsaap)),
-       col=c(8,2), lty=1, lwd=5, bty="n")
+par(new=TRUE)
+hist(mtcraas, breaks=brks, ylim=c(0,110),
+     col="#ff000077", border=2, xlab=NA, ylab=NA, main=NA, axes=FALSE)
+mtext("Frequency", 4, 1.3, col=2)
+axis(4, col=2, col.axis=2)
+legend("topleft", c(paste0("all SAAP: ", asaap, ", n=",sum(!is.na(allraas))),
+                     paste0("isoform match: ", nsaap, ", n=",nraas)),
+       col=c("#00000099","#ff000077"), pch=15, bty="n")
 dev.off()
 
 ## AAS TYPES
