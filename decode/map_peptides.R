@@ -530,11 +530,12 @@ for ( i in 1:nrow(dat) ) {
         gcoor[i,] <- c(chr, coor, strand)
 
         ## get closest splice site
-        ## TODO: does this required strand correction?
-        ssdst <- c(1,cds)-npos
+        ## position in transcript - ss. location: negative value is upstream!
+        ssdst <- npos - c(1,cds) 
         ssd[i] <- ssdst[which.min(abs(ssdst))]
         ## get exon length
         exl[i] <- exlen[exon]
+        ##if (ssd[i]==0) stop("todo: 5' or 3'?", exon, length(cds))
     }
 
 

@@ -234,7 +234,7 @@ ssd <- usite$ssd
 ## pos 1: 3' exon, increase by 1, 0 is BETWEEN splice site
 ssd[ssd>=0] <- ssd[ssd>=0]+1
 
-mxl <- 6
+mxl <- 9
 ssd[ssd>  mxl] <- mxl
 ssd[ssd< -mxl] <- -mxl
 ssd[ssd== mxl] <- ">"
@@ -287,10 +287,16 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 dev.off()
 
 ## NOTE: WHY IS OGDH gene, L->G MISSING, should be at -2
-## ssd is 2; strand mix-up?
+## ssd is 2, should be -2; strand mix-up?
+## check PSMA1: ssd at -8, should be +8
+## -> strand-mix up confirmed,fix in map_peptides.!
+if ( FALSE ) {
 
-saap="GGFYGLDESDLDKVFHLPTTTFIGGQESALPLR"
-csite[csite$SAAP==saap,]
+    saap="GGFYGLDESDLDKVFHLPTTTFIGGQESALPLR"
+    csite[csite$SAAP==saap,]
+    csite[csite$name=="PSMA1" & csite$fromto=="Q:G;Q:A",c("SAAP","ssd","pos")]
+}
+
 
 tog <- grep(":G",rownames(cls$p.value), value=TRUE)
 clc <- sortOverlaps(cls, axis=2, srt=tog, cut=TRUE)
