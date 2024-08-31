@@ -234,11 +234,12 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
 ## result vectors
-mut <- pos <- len <- cdn <- tps <- ssd <- exl <- aaf <- aat <-  aas <-
-    sss <- anc <- iup <- iubg <- anbg <-
-        mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
-            pctx <- nctx <- pfam <- clan <- pfam.ebi <- clan.ebi <-
-                rep(NA, nrow(dat))
+mut <- pos <- len <- cdn <- tps <- ssd <- exl <- exn <- ext <-
+    aaf <- aat <-  aas <-
+        sss <- anc <- iup <- iubg <- anbg <-
+            mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
+                pctx <- nctx <- pfam <- clan <- pfam.ebi <- clan.ebi <-
+                    rep(NA, nrow(dat))
 
 ## secondary structure frequencies in whole protein
 sssbg <- matrix(NA, nrow=nrow(dat), ncol=3)
@@ -535,6 +536,9 @@ for ( i in 1:nrow(dat) ) {
         ssd[i] <- ssdst[which.min(abs(ssdst))]
         ## get exon length
         exl[i] <- exlen[exon]
+        ## record exon number
+        exn[i] <- exon
+        ext[i] <- length(cds)
         ##if (ssd[i]==0) stop("todo: 5' or 3'?", exon, length(cds))
     }
 
@@ -571,6 +575,8 @@ dat <- cbind(dat,
              tpos=tps,   # position of AAS codon within transcript
              ssd=ssd,    # distance to closest splice site
              exl=exl,    # exon length
+             exn=exn,    # exon number where AAS/2nd codon is found
+             ext=ext,    # total number of exons
              gcoor,      # genome coordinate of AAS
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg,

@@ -234,7 +234,7 @@ ssd <- usite$ssd
 ## pos 1: 3' exon, increase by 1, 0 is BETWEEN splice site
 ssd[ssd>=0] <- ssd[ssd>=0]+1
 
-mxl <- 9
+mxl <- 6
 ssd[ssd>  mxl] <- mxl
 ssd[ssd< -mxl] <- -mxl
 ssd[ssd== mxl] <- ">"

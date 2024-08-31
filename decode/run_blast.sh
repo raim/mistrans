@@ -141,7 +141,7 @@ echo "collecting BP protein, transcript and genome coordinates" \
      "if the genomeBrowser mammary data setup is not present."
 
 ## not redirecting this to a log file to show error to user
-R --vanilla < map_peptides.R 
+R --vanilla < map_peptides.R ## >& $DECODE/log/map_peptides.txt
 
 
 
