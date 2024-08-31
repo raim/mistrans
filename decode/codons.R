@@ -193,7 +193,7 @@ ova <- raasProfile(x=dtmt, id="unique.site",
                        verb=0)
 
 ## RAAS PROFILE by Dataset
-## NOTE: bg=TRUE :column-wise background
+## NOTE: bg=TRUE : here, row-wise background
 ovd <- raasProfile(x=dtmt, id="unique.site", 
                        rows="Dataset", cols="aacodon",
                        col.srt=codon.srt, filter=FALSE,
