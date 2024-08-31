@@ -23,15 +23,15 @@ cds.file <- file.path(mam.path,"originalData", "transcript_coordinates.tsv")
 ## data from additionalData folder
 chr.file <- file.path(add.path,"sequenceIndex.csv.gz")
 
-
+motif.file <- file.path(proj.path, "processedata", "saap_motifs.tsv")
 
 ## bed files generated from downloaded bigwig files 
-ribo.file <- file.path(mam.path, "processedData",
-                       "gwipsvizRiboseq.bed.gz")
-ribo.file <- file.path(proj.path, "processedData",
-                       "human_eIF3b_bound_40S.RiboProElong.bed.gz")
 ribo.file <- file.path(proj.path, "processedData",
                        "Iwasaki19_All.RiboProElong.bed.gz")
+ribo.file <- file.path(proj.path, "processedData",
+                       "human_eIF3b_bound_40S.RiboProElong.bed.gz")
+ribo.file <- file.path(mam.path, "processedData",
+                       "gwipsvizRiboseq.bed.gz")
 
 RID <- sub("\\.bed$", "", sub("\\.gz$","",basename(ribo.file)))
 
@@ -248,3 +248,55 @@ dev.off()
 
 ## TODO:
 ## * load motif classification and analyze specifically by motif
+## * dotplot, riboseq count bins vs. Datasets
+
+## expand to tmtu
+
+tmtu <- tmtf
+
+idx <- match(paste(tmtu$BP, tmtu$SAAP), paste(usite$BP, usite$SAAP))
+
+## TODO: why missing?
+ina <- which(is.na(idx))
+
+## REMOVE MISSING BP/SAAP
+if ( length(ina)>0 ) {
+
+    cat(paste("TODO:", length(ina), "BP/SAAP missing from BP/SAAP file.\n"))
+    tmtu <- tmtu[-ina,]
+    idx <- idx[-ina]    
+}
+riboseq <- rep(NA, nrow(tmtu))
+riboseq <- log2(aan[idx])
+riboseq[is.infinite(riboseq)] <- NA
+rmx <- 3
+riboseq[riboseq>  rmx] <-  rmx
+riboseq[riboseq< -rmx] <- -rmx
+riboseq.bins <- cut(riboseq,
+                    breaks=seq(min(riboseq,na.rm=TRUE),
+                               max(riboseq,na.rm=TRUE), length.out=6))
+levels(riboseq.bins) <- c(levels(riboseq.bins), "NA")
+riboseq.bins[is.na(riboseq.bins)] <- "NA"
+tmtu$riboseq.bins <-riboseq.bins
+
+ovls <- raasProfile(x=tmtu, id="SAAP", 
+                    rows="riboseq.bins", cols="Dataset",
+                    row.srt=rev(levels(riboseq.bins)),
+                    col.srt=uds,
+                    bg=TRUE, value="RAAS",
+                    use.test=use.test, do.plots=FALSE,
+                    xlab=xl.raas,
+                    verb=1)
+
+omai <- c(.75,1,.5,.5)
+nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
+nh <- nrow(ovls$p.value)*.2 + omai[1] + omai[3]
+
+plotdev(file.path(rseq.path,paste0(RID,"_dotplot")),
+        height=nh, width=nw, res=300, type=ftyp, bg="white")
+par(mai=omai, mgp=c(1.3,.3,0), tcl=-.05, family=FONT)
+dotprofile(ovls, value="median",
+           p.dot=p.dot, dot.sze=dot.sze, vbrks=abrks, vcols=acols, 
+           xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8, axis=1:2)
+mtext(expression(log[2](count~ratio)),2, 3.3)
+dev.off()
