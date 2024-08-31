@@ -24,7 +24,7 @@ value <- "RAAS"
 hist(log10(tmtm$razor.intensity))
 rint.bins <- cut(log10(tmtm$razor.intensity),
                  breaks=seq(6,14,length.out=6), include.lowest = TRUE)
-levels(rint.bins) <- c("NA", levels(rint.bins))
+levels(rint.bins) <- c(levels(rint.bins),"NA")
 rint.bins[is.na(rint.bins)] <- "NA"
 
 tmtm$rint.bins <- rint.bins
@@ -36,7 +36,7 @@ hist(log10(tmtm$protein.intensity))
 
 pint.bins <- cut(log10(tmtm$protein.intensity),
                  breaks=seq(7,14,length.out=7), include.lowest = TRUE)
-levels(pint.bins) <- c("NA", levels(pint.bins))
+levels(pint.bins) <- c(levels(pint.bins),"NA")
 pint.bins[is.na(pint.bins)] <- "NA"
 
 tmtm$pint.bins <- pint.bins
