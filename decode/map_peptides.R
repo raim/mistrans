@@ -234,7 +234,7 @@ dat <- merge(dat, bmap, by="BP", all=TRUE)
 
 
 ## result vectors
-mut <- pos <- len <- cdn <- tps <- ssd <- exl <- exn <- ext <-
+mut <- pos <- len <- cdn <- tps <- ssd <- exl <- exn <- ext <- tln <-
     aaf <- aat <-  aas <-
         sss <- anc <- iup <- iubg <- anbg <-
             mmseq2 <- asaquick <- disordRDPbind <- scriber <- flDPnn <-
@@ -532,13 +532,16 @@ for ( i in 1:nrow(dat) ) {
 
         ## get closest splice site
         ## position in transcript - ss. location: negative value is upstream!
-        ssdst <- npos - c(1,cds) 
+        ## end-rule: ignore 5'/3' transcript ends, this will lead
+        ## to some ssd/exl > 0.5 !
+        ssdst <- npos - cds[unique(1:(length(cds)-1))] ##c(1,cds) 
         ssd[i] <- ssdst[which.min(abs(ssdst))]
         ## get exon length
         exl[i] <- exlen[exon]
         ## record exon number
         exn[i] <- exon
         ext[i] <- length(cds)
+        tlen[i] <- nsq # transcript length
         ##if (ssd[i]==0) stop("todo: 5' or 3'?", exon, length(cds))
     }
 
@@ -577,6 +580,7 @@ dat <- cbind(dat,
              exl=exl,    # exon length
              exn=exn,    # exon number where AAS/2nd codon is found
              ext=ext,    # total number of exons
+             tlen=tlen,  # transcript length
              gcoor,      # genome coordinate of AAS
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg,

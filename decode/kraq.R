@@ -75,6 +75,8 @@ dev.off()
 
 ### SPLICE SITE TEST
 
+## TODO: distinguish splice site distance from N/C-terminal ends
+
 ## NOTE: unique sites for splice site distance distributions
 ## but using full sites X AAS for hypergeo test below
 usite <- csite ## unique chrom.sites
