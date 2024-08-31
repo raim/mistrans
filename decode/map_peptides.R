@@ -541,7 +541,7 @@ for ( i in 1:nrow(dat) ) {
         ## record exon number
         exn[i] <- exon
         ext[i] <- length(cds)
-        tlen[i] <- nsq # transcript length
+        tln[i] <- nsq # transcript length
         ##if (ssd[i]==0) stop("todo: 5' or 3'?", exon, length(cds))
     }
 
@@ -580,7 +580,7 @@ dat <- cbind(dat,
              exl=exl,    # exon length
              exn=exn,    # exon number where AAS/2nd codon is found
              ext=ext,    # total number of exons
-             tlen=tlen,  # transcript length
+             tln=tln,    # transcript length
              gcoor,      # genome coordinate of AAS
              s4pred=sss, bgsss, iupred3=iup, iupred3.protein=iubg,
              anchor2=anc, anchor2.protein=anbg,
