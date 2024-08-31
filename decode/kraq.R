@@ -131,9 +131,15 @@ if ( interactive() ) {
 
 ## relative position
 plotdev(file.path(kfig.path,paste0("splicesites_relativepos_hist")),
-        height=3.5, width=3.5, res=300, type=ftyp)
+        height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(rpos, breaks=20, xlab="relative position in exon", main=NA)
+hist(rpos, breaks=20,
+     xlab="relative distance of AAS to closest splice site", main=NA,
+     ylim=c(0,800))
+text(0,800, "no spatial bias of AAS within exons",pos=4)
+arrows(x0=.1, x1=.4, y0=750, code=3, length=.05)
+text(.5, 200, "closer to 5'/3' end\nthan to splice site", pos=4)
+arrows(x0=.6, x1=.9, y0=150, code=3, length=.05)
 dev.off()
 
 plotCor(ssd, exl,
@@ -156,7 +162,8 @@ col4 = c("#000000", "#DF536B", "#61D04F", "#2297E6",
 
 ssd <- usite$ssd
 ## pos 1: 3' exon
-ssd[ssd>=0] <- ssd[ssd>=0]+1
+## TODO: is ssdst==0 5' or 3'
+ssd[ssd<=0] <- ssd[ssd<=0]-1
 mxl <- 100
 #ssd[ssd>  mxl] <-  mxl
 #ssd[ssd< -mxl] <- -mxl
@@ -176,13 +183,14 @@ axis(3, labels=FALSE)
 text(40,80, labels="pref. splicing\nbetween codons", pos=4, font=2, xpd=TRUE)
 dev.off()
 
-## smooth and remove missing 0 again
-ssz <- ssd
-ssz[ssz>0] <-ssz[ssz>0]-1 
+## smooth and including 0
+ssz <- usite$ssd 
+##ssz[ssz<0] <-ssz[ssz<0]+1
+
 plotdev(file.path(kfig.path,paste0("splicesites_absolutepos_hist_smooth")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25)
-hist(ssz, breaks=seq(-1e5+2,1e5,19), xlim=c(-mxl,mxl), axes=FALSE,
+hist(ssz, breaks=seq(-1e5+2,1e5,12), xlim=c(-mxl,mxl), axes=FALSE,
      xlab=NA, ylab=NA, main=NA, col="#99999999", border=NA)
 axis(4, col="#999999", col.axis="#999999")
 par(new=TRUE)
@@ -190,26 +198,26 @@ hist(ssz, breaks=seq(-1e5+2,1e5,3), xlim=c(-mxl,mxl),
      xlab="AAS (2nd codon) distance from closest s.s.",
      main=NA, col="#DF536B",border=NA)
 axis(3, labels=FALSE)
-legend("topright", c("19 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
+legend("topright", c("12 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
        pch=15, pt.cex=1.5, bty="n") 
 dev.off()
 plotdev(file.path(kfig.path,paste0("splicesites_absolutepos_hist_annotated")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25)
-hist(ssz, breaks=seq(-1e5+2,1e5,19), xlim=c(-mxl,mxl), axes=FALSE,
+hist(ssz, breaks=seq(-1e5+1,1e5,12), xlim=c(-mxl,mxl), axes=FALSE,
      xlab=NA, ylab=NA, main=NA, col="#99999999", border=NA)
 axis(4, col="#999999", col.axis="#999999")
 par(new=TRUE)
-hist(ssz, breaks=seq(-1e5+2,1e5,3), xlim=c(-mxl,mxl),
+hist(ssz, breaks=seq(-1e5+1,1e5,3), xlim=c(-mxl,mxl),
      xlab="AAS (2nd codon) distance from closest s.s.",
      main=NA, col="#DF536B",border=NA)
 axis(3, labels=FALSE)
-legend("topright", c("19 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
+legend("topright", c("12 nt", " 3 nt"), col=c("#99999999", "#DF536B"),
        pch=15, pt.cex=1.5, bty="n") 
 ##text(50,150, labels="with 0, and\nover 3 nt", pos=4, font=2)
-text(-50,155, labels="N-terminal\nisoforms?", pos=2, font=2,
+text(-50,150, labels="N-terminal\nisoforms?", pos=2, font=2,
      col="#2297E6", xpd=TRUE)
-arrows(x0=-50, x1=-15, y0=160, length=.05, lwd=4, col="#2297E6")
+arrows(x0=-50, x1=-15, y0=157, length=.05, lwd=4, col="#2297E6")
 dev.off()
 
 plotdev(file.path(kfig.path,paste0("splicesites_exonlength_hist")),
@@ -234,7 +242,8 @@ usite <- site ## incl. all distinct AAStypes, w. redundant chrom.sites
 ssd <- usite$ssd
 
 ## pos 1: 3' exon, increase by 1, 0 is BETWEEN splice site
-ssd[ssd>=0] <- ssd[ssd>=0]+1
+## TODO: is ssdst==0 5' or 3'
+ssd[ssd<=0] <- ssd[ssd<=0]-1
 
 mxl <- 6
 ssd[ssd>  mxl] <- mxl
@@ -270,7 +279,7 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 dev.off()
 
 ## TIGHTER, cut at 1e-3
-clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
+clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
 
 plotdev(file.path(kfig.path,paste0("splicesites_AAStype_tight")),
         height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
@@ -369,12 +378,47 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
+clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+plotdev(file.path(kfig.path,paste0("splicesites_AAStype_to_tight")),
+        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+        res=300, type=ftyp)
+par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+     cex.axis=.8)
+axex <- rownames(clc$p.value)
+axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+mtext("Incorporated AA", 2, 1.3)
+mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
+
 ## by ENCODED
 cls <- clusterCluster(usite$from, ssd, cl2.srt=ssd.srt)
 ## sort by only enriched
 clc <- sortOverlaps(cls, p.min=1e-2)
 
 plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from")),
+        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+        res=300, type=ftyp)
+par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+par(mgp=c(1.3,.3,0), tcl=-.25)
+axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+     cex.axis=.8)
+axex <- rownames(clc$p.value)
+axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+mtext("Encoded AA", 2, 1.3)
+mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+dev.off()
+
+clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from_tight")),
         height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
         res=300, type=ftyp)
 par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
@@ -422,7 +466,7 @@ nc <- ncol(ovw$p.value)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 
-plotdev(file.path(kfig.path,paste0("splicesite_relativepos_raas")),
+plotdev(file.path(kfig.path,paste0("splicesites_relativepos_raas")),
         type=ftyp, res=300, width=nw,height=nh)
 par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)
 dotprofile(x=ovw, value="median", vbrks=abrks,

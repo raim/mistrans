@@ -531,9 +531,12 @@ for ( i in 1:nrow(dat) ) {
         gcoor[i,] <- c(chr, coor, strand)
 
         ## get closest splice site
-        ## position in transcript - ss. location: negative value is upstream!
+
+        ## AAS pos. in transcript MINUS ss. location:
+        ## NEGATIVE VALUE IS UPSTREAM!
         ## end-rule: ignore 5'/3' transcript ends, this will lead
         ## to some ssd/exl > 0.5 !
+        ## TODO: is ssdst==0 5' or 3'
         ssdst <- npos - cds[unique(1:(length(cds)-1))] ##c(1,cds) 
         ssd[i] <- ssdst[which.min(abs(ssdst))]
         ## get exon length
