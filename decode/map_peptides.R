@@ -49,8 +49,6 @@ bpmap <- file.path(out.path,"bp_mapped.tsv")
 ## protein fasta (Ensembl+Mutations, used for blast)
 pfasta <- file.path(out.path,"all_proteins.fa")
 
-## protein:transcript ID mapping
-tpmap.file <- file.path(mam.path,"originalData","protein_transcript_map.tsv")
 
 ## coding region fasta
 tfasta <- file.path(mam.path,"processedData","coding.fa")

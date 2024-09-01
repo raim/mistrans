@@ -674,7 +674,8 @@ if ( FALSE ) {
     plotCor(cmer1["uniprot",], cmer1["BP",], ##outliers=fcuts[1,]<.001,
             density=FALSE, ##xlim=c(0,.08), ylim=c(0,.08),
             xlab="proteomic frequency", ylab="BP frequency")
-    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4, xpd=TRUE)
+    text(cmer1["uniprot",], cmer1["BP",], labels=colnames(cmer1), pos=4,
+         xpd=TRUE)
     abline(a=0, b=1)
     dev.off()
     
@@ -697,7 +698,7 @@ boxplot(cdat$ASAquick ~ cdat$fromto)
 ## * use universalmotifs to shuffle with 2mer preservation.
 
 ## DEFINE MOTIF
-pat <- "[KR]AQ"
+pat <- "[KR]A[A-Z]?Q" #"[KR]AQ" # TODO: 
 m <- 3
 
 ## SIMPLE MOTIF PROB.
@@ -719,6 +720,8 @@ aacnt <- table(unlist(strsplit(conc,"")))
 aafrq <- aacnt/sum(aacnt)
 L <- nchar(unlist(seql))
 
+## expected: product of individual frequencies
+## TODO: how to account for possible insert [A-Z]*
 p <- (aafrq["K"]+aafrq["R"]) * aafrq["A"] * aafrq["Q"]
 expected <- sum(L-m+1)*p
 
@@ -752,10 +755,76 @@ if ( !interactive() )
 
 ## NOTE: KRAQ as expected also when 2mer shuffling, p~0.4
 ## e.g.:
-presult <-  467
+presult <-  23# 467
 if ( !interactive() ) presult <- pcnt
 
 cat(paste("found", sum(gcnt), "K|RAQ in the proteome, expected:",
           round(expected), "\n",
           "p-value with 2-mer conserving shuffled sequences:",
           presult/numperm,"\n"))
+
+plotdev(file.path(kfig.path,paste0("kraq_permutation")),
+        height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(nums, main=NA, xlab=paste("proteome frequency of",pat))
+abline(v=gcnt, col=2)
+dev.off()
+
+
+## KRAQ at splice sites
+cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
+cds <- read.delim(cdsmap,header=FALSE, row.names=1)
+cdl <- strsplit(cds[,1],";")
+names(cdl) <- rownames(cds)
+cdl <- lapply(cdl, as.numeric)
+## genomic position of CDS
+cpos <- read.delim(cdspos, header=FALSE, sep=" ")
+colnames(cpos) <- c("ID","chr","start","end","strand")
+posl <- split(cpos[,2:5], cpos[,1])
+## NOTE: reverse order for minus strand
+posl <- lapply(posl, function(x) x[order(x$start,
+                                         decreasing=x$strand=="-"),])
+
+pdl <- lapply(cdl, function(x) x/3)
+
+## calculate distance of KRAQ elements to closest splice sites
+kpos <- gregexpr(pat, seql)
+names(kpos) <- names(seql)
+pdl <- pdl[names(seql)]
+
+## get all with kraq
+rmk <- unlist(lapply(kpos, function(x) x[1]==-1))
+
+kpos <- kpos[!rmk]
+pdl <- pdl[!rmk]
+
+ssd <- exl <- NULL
+for ( i in seq_along(kpos) ) {
+    hits <- kpos[[i]]
+    cds <- pdl[[i]]
+    len <- diff(c(0,cds)) #TODO: correct exon length?
+    ssd[[i]] <- exl[[i]] <- rep(NA, length(hits))
+    for ( j in seq_along(hits) ) {
+        ssdst <- hits[j] - cds[unique(1:(length(cds)-1))]
+        idx <- which.min(abs(ssdst))
+        ssd[[i]][j] <- ssdst[idx] # minimal distance to splice site
+        exon <- which(cds>=hits[j])[1] # in which exon is the start?
+        exl[[i]][j] <- len[exon]
+        
+    }
+}
+
+sst <- table(unlist(ssd))
+dst <- as.numeric(names(sst))
+class(sst) <- "numeric"
+
+plot(dst, sst, type="h", xlim=c(-50,50))
+
+rpos <- abs(unlist(ssd))/unlist(exl)
+plotdev(file.path(kfig.path,paste0("kraq_relativepos_hist")),
+        height=3.5, width=5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(rpos, breaks=50,
+     xlab="distance to closest splice site / exon length", main=NA)
+text(.1,400, paste("position of", pat, "relative to splice sites"), pos=4)
+dev.off()
