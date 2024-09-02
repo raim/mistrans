@@ -133,13 +133,14 @@ if ( interactive() ) {
 plotdev(file.path(kfig.path,paste0("splicesites_relativepos_hist")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(rpos, breaks=100,
-     xlab="distance to closest splice site / exon length", main=NA,
-     ylim=c(0,200))
-text(0,200, "no spatial bias of AAS within exons")
-arrows(x0=-.4, x1=.4, y0=180, code=3, length=.05)
-text(.5, 60, "closer to end", pos=4)
-arrows(x0=.55, x1=.95, y0=40, code=3, length=.05)
+hist(rpos, breaks=20,
+     xlab="distance to closest splice site / exon length",
+     main=NA,ylim=c(0,800))
+text(0,800, "no spatial bias of AAS within exons")
+arrows(x0=-.4, x1=.4, y0=750, code=3, length=.05)
+text(.5, 150, "closer to end", pos=4)
+arrows(x0=.55, x1=.95, y0=120, code=3, length=.05)
+axis(3, labels=FALSE)
 dev.off()
 
 
@@ -148,10 +149,11 @@ plotdev(file.path(kfig.path,paste0("splicesites_relativepos_hist_annotated")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(rpos, breaks=100,
      xlab="distance to closest splice site / exon length", main=NA,
-     ylim=c(0,200))
+     ylim=c(0,180))
 text(-1,160, labels="N-terminal\nisoforms?", pos=4, font=2,
      col="#2297E6", xpd=TRUE)
 arrows(x0=-.5, x1=-.1, y0=160, length=.05, lwd=4, col="#2297E6")
+axis(3, labels=FALSE)
 dev.off()
 
 
