@@ -142,6 +142,19 @@ text(.5, 60, "closer to end", pos=4)
 arrows(x0=.55, x1=.95, y0=40, code=3, length=.05)
 dev.off()
 
+
+plotdev(file.path(kfig.path,paste0("splicesites_relativepos_hist_annotated")),
+        height=3.5, width=5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(rpos, breaks=100,
+     xlab="distance to closest splice site / exon length", main=NA,
+     ylim=c(0,200))
+text(-1,160, labels="N-terminal\nisoforms?", pos=4, font=2,
+     col="#2297E6", xpd=TRUE)
+arrows(x0=-.5, x1=-.1, y0=160, length=.05, lwd=4, col="#2297E6")
+dev.off()
+
+
 plotCor(ssd, exl,
         xlab=expression("distance from s.s."),
         ylab=expression("exon length"))
@@ -184,9 +197,13 @@ text(40,80, labels="pref. splicing\nbetween codons", pos=4, font=2, xpd=TRUE)
 dev.off()
 
 ## smooth and including 0
+## TODO: table get coors and values, then moving average,
+## instead of fiddling with hist breaks
+
 ssz <- usite$ssd 
 ##ssz[ssz<0] <-ssz[ssz<0]+1
 
+## NOTE breaks shifted such that peak at splice site is less obvious
 plotdev(file.path(kfig.path,paste0("splicesites_absolutepos_hist_smooth")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.25), mgp=c(1.3,.3,0), tcl=-.25)
@@ -539,11 +556,12 @@ library(stringr)
 numperm <- 1000
 nums <- rep(0, length(numperm))
 pcnt <- 0
+K <- 2
 if ( !interactive() ) {
     for ( i in 1:numperm ) {
         cat(paste(i,","))
         aaset <- AAStringSet(x=unlist(seql))
-        seqr <- shuffle_sequences(aaset, k=2)
+        seqr <- shuffle_sequences(aaset, k=K)
         ##vcnt <- vcountPattern(pat, seqr)
         rcnt <- sum(stringr::str_count(as.character(seqr), pat))
         nums[i] <- rcnt
@@ -552,10 +570,13 @@ if ( !interactive() ) {
     }
 
     plotdev(file.path(kfig.path,paste0("kraq_permutation")),
-            height=3.5, width=3.5, res=300, type=ftyp)
-    par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+            height=3.5, width=5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25)
     hist(nums, main=NA, xlab=paste("proteome frequency of",pat))
     abline(v=gcnt, col=2)
+    text(gcnt-10, 200,  labels="observed", col=2, pos=4, xpd=TRUE)
+    text(par("usr")[1], 200, paste0(numperm, " permutations\n",
+                                    "with k=", 2), pos=4, xpd=TRUE)
     dev.off()
 }
 
@@ -571,7 +592,9 @@ cat(paste("found", sum(gcnt), "K|RAQ in the proteome, expected:",
 
 
 
-## KRAQ at splice sites
+### KRAQ AT SPLICE SITES
+
+## get transcript exon map
 cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
 cds <- read.delim(cdsmap,header=FALSE, row.names=1)
 cdl <- strsplit(cds[,1],";")
@@ -585,19 +608,26 @@ posl <- split(cpos[,2:5], cpos[,1])
 posl <- lapply(posl, function(x) x[order(x$start,
                                          decreasing=x$strand=="-"),])
 
+## splice sites in AA coordinates
 pdl <- lapply(cdl, function(x) x/3)
-
-## calculate distance of KRAQ elements to closest splice sites
-kpos <- gregexpr(pat, seql)
-names(kpos) <- names(seql)
 pdl <- pdl[names(seql)]
 
-## get all with kraq
-rmk <- unlist(lapply(kpos, function(x) x[1]==-1))
+## extract actual KRAQ 
+kraqs <- stringr::str_extract_all(seql, pat)
 
+## get positions of KRAQ
+kpos <- gregexpr(pat, seql)
+names(kpos) <- names(seql)
+
+## FIND DISTANCES OF THE MOTIF (START) TO CLOSEST
+## SPLICE SITE
+
+## remove all sequences without KRAQ
+rmk <- unlist(lapply(kpos, function(x) x[1]==-1))
 kpos <- kpos[!rmk]
 pdl <- pdl[!rmk]
-
+kraqs <- kraqs[!rmk]
+## loop through all proteins with KRAQ
 ssd <- exl <- NULL
 for ( i in seq_along(kpos) ) {
     hits <- kpos[[i]]
@@ -612,6 +642,7 @@ for ( i in seq_along(kpos) ) {
         exl[[i]][j] <- len[exon]
     }
 }
+names(ssd) <- names(exl) <- names(kpos)
 
 sst <- table(unlist(ssd))
 dst <- as.numeric(names(sst))
@@ -624,6 +655,13 @@ plot(dst, sst, type="h", xlim=c(-50,50),
      xlab="distance to closest splice site", ylab="Frequency")
 dev.off()
 
+plotdev(file.path(kfig.path,paste0("kraq_absolutepos_smooth")),
+        height=3.5, width=5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(dst, ma(sst,50), type="l", xlim=c(-50,50),
+     xlab="distance to closest splice site", ylab="Frequency (moving average)")
+dev.off()
+
 rpos <- unlist(ssd)/unlist(exl)
 plotdev(file.path(kfig.path,paste0("kraq_relativepos_hist")),
         height=3.5, width=5, res=300, type=ftyp)
@@ -633,3 +671,18 @@ hist(rpos, breaks=100,
 text(0,300, paste0("position of ", pat, "\nrelative to splice sites\n",
                   "in all ", round(length(seql)/1000), "k proteins"), pos=4)
 dev.off()
+
+
+## GET ONLY KRAQ AT SPLICE SITES and DO SEQUENCE LOGO
+
+sskr <- gids <- nkr <- NULL
+for ( i in seq_along(ssd) ) {
+    idx <- which(ssd[[i]] > -5 & ssd[[i]] < 0)
+    if ( length(idx) ) {
+        gids <- c(gids, names(ssd)[i])
+        sskr <- c(sskr, kraqs[[i]][idx])
+        nkr <- c(nkr, length(idx))
+    }
+}
+
+## TODO: revisit Q->G alignments and reduce to KRAQ
