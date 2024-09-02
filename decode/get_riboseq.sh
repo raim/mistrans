@@ -31,4 +31,6 @@ gzip $DECODE/processedData/Iwasaki16_All.RiboCov.bed
 gzip $DECODE/processedData/human_eIF3b_bound_40S.RiboProElong.bed
 gzip $DECODE/processedData/Chen20_All.RiboCov.bed
 
+## link mammary project bed.gz
+ln -s $MAMDATA/processedData/gwipsvizRiboseq.bed.gz  $DECODE/processedData/
 
