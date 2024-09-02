@@ -199,6 +199,12 @@ for ( ds in dataSets ) {
     ## relative value
     aan <- aar/rvals[usite$transcript, "valn"]
     
+    ## clean up to avoid memory problems
+    rm(rall)
+    rm(ribo)
+    rm(riba)
+    gc()
+    
     ## PLOT
     
     ## interactive QC and data exploration
@@ -315,6 +321,7 @@ for ( ds in dataSets ) {
                xlab=NA, ylab=NA, show.total=TRUE, tot.cex=.8, axis=1:2)
     ##mtext(expression(log[2](count~ratio)),2, 3.3)
     dev.off()
+
 }
 
 ## save results
