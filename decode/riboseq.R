@@ -301,7 +301,7 @@ for ( ds in dataSets ) {
                         bg=TRUE, value="RAAS",
                         use.test=use.test, do.plots=FALSE,
                         xlab=xl.raas,
-                        verb=1)
+                        verb=0)
     
     omai <- c(.75,1.25,.5,.5)
     nw <- ncol(ovls$p.value)*.2 + omai[2] + omai[4]
