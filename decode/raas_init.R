@@ -626,6 +626,7 @@ tmtf$coor <- hdat$coor[idx]
 tmtf$strand <- hdat$strand[idx]
 tmtf$ssd <- hdat$ssd[idx] # distance to next splice site
 tmtf$exl <- hdat$exl[idx] # exon length
+tmtf$exn <- hdat$exn[idx] # exon number
 
 ## tag chromosome coordinates
 tmtf$unique.coor <- paste(tmtf$chr, tmtf$coor, tmtf$strand, sep=":")
@@ -953,7 +954,7 @@ add.data <- c("name",
               "ensembl",
               "pos","rpos", # position in protein
               "transcript",
-              "tpos", "ssd", "exl", "chr", "coor", "strand") 
+              "tpos", "ssd", "exl", "exn", "chr", "coor", "strand") 
 
 
 

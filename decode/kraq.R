@@ -81,6 +81,16 @@ dev.off()
 ## but using full sites X AAS for hypergeo test below
 usite <- csite ## unique chrom.sites
 
+## laminin A is NOT next to splice site
+kid <- "ENSP00000357283"
+usite[usite$ensembl==kid & usite$fromto=="Q:G",]
+
+bid <- "AQNTWGCGNSLR"
+flt <- tmtf$BP==bid& tmtf$fromto=="Q:G"
+boxplot(tmtf$RAAS[flt] ~ tmtf$Dataset[flt], xlab=NA, ylab=xl.raas)
+legend("bottomright", bid)
+boxplot(tmtf$RAAS[flt] ~ tmtf$tissue[flt], xlab=NA, ylab=xl.raas)
+legend("bottomright", bid)
 
 plotCor(log10(abs(usite$ssd)), usite$RAAS.median)
 plotCor(log10(abs(usite$ssd)[usite$fromto=="Q:G"]),
@@ -264,7 +274,7 @@ ssd <- usite$ssd
 ## TODO: is ssdst==0 5' or 3'
 ssd[ssd<=0] <- ssd[ssd<=0]-1
 
-mxl <- 6
+mxl <- 7
 ssd[ssd>  mxl] <- mxl
 ssd[ssd< -mxl] <- -mxl
 ssd[ssd== mxl] <- ">"
@@ -456,6 +466,9 @@ dev.off()
 ## D: GAT,GAC
 ## W: TGG
 
+## AQ -> AG = Q
+## G .. Q->A
+
 ##
 
 tmtm <- tmtf
@@ -496,7 +509,23 @@ dev.off()
 
 ## TODO:
 ## * revisit results from full script ../scripts/raasprofiles3_kraq.R
-## * count KRAQ at splice sites.
+## * revisit Q->G alignments and reduce to KRAQ,
+## * get examples of KRAQ->G at splice sites.
+
+### INVESTIGATE SPECIFIC KRAQ->G AT SPLICE SITES
+
+if ( interactive() ) {
+    kidx <- usite$fromto=="Q:G" & (usite$ssd %in% -1)
+    
+    cat(unique(usite$name[kidx]))
+
+    brks <- seq(-6,4,.2)
+    hist(usite$RAAS.median, breaks=brks)
+    par(new=TRUE)
+    hist(usite$RAAS.median[kidx], breaks=brks, border=2, col=NA)
+    
+    usite[kidx & usite$name=="EHD4",]
+}
 
 ### WHOLE PROTEOME KMER ANALYSIS
 
@@ -576,7 +605,8 @@ if ( !interactive() ) {
     par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25)
     hist(nums, main=NA, xlab=paste("proteome frequency of",pat))
     abline(v=gcnt, col=2)
-    text(gcnt-10, 200,  labels="observed", col=2, pos=4, xpd=TRUE)
+    text(gcnt-10, 200,  labels=paste0("observed\n", gcnt),
+         col=2, pos=4, xpd=TRUE)
     text(par("usr")[1], 200, paste0(numperm, " permutations\n",
                                     "with k=", 2), pos=4, xpd=TRUE)
     dev.off()
@@ -646,23 +676,76 @@ for ( i in seq_along(kpos) ) {
 }
 names(ssd) <- names(exl) <- names(kpos)
 
-sst <- table(unlist(ssd))
+## match lengths: KRAQ vs.KRAxQ
+klen <- lapply(kpos, function(x) attributes(x)$match.length)
+
+## check positions
+kn <- unlist(lapply(ssd, function(x) any(x==0)))
+kid <- names(which(kn)[1])
+
+cdl[[kid]]
+pdl[[kid]]
+ssd[[kid]]
+kpos[[kid]]
+unlist(strsplit(fas[[kid]]$seq,""))[kpos[[kid]]+3] # position is K
+
+## laminin A Q-G
+bid <- "AQNTWGC"
+grep(bid,bdat$BP)# LMNA ENST00000368300 ENSP00000357283
+
+kid <- "ENSP00000357283"
+kpos[[kid]]
+
+## NOTE: table on fractions doesn't work, needs rounding!
+sst <- table(round(unlist(ssd),2))
 dst <- as.numeric(names(sst))
 class(sst) <- "numeric"
 
 plotdev(file.path(kfig.path,paste0("kraq_absolutepos_bar")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(dst, sst, type="h", xlim=c(-50,50),
+plot(dst, sst, type="h", xlim=c(-40,40),
      xlab="distance to closest splice site", ylab="Frequency")
+text(0,180, paste0("position of ", pat, "\nrelative to splice sites\n",
+                   "in all ", round(length(seql)/1000), "k MANE proteins"),
+     pos=4)
+##points(dst,sst)
+axis(3, labels=FALSE)
 dev.off()
-
+plotdev(file.path(kfig.path,paste0("kraq_absolutepos_bar_zoom")),
+        height=3.5, width=5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(dst, sst, type="h", xlim=c(-10,10),
+     xlab="distance to closest splice site", ylab="Frequency", axes=FALSE)
+##points(dst,sst)
+axis(1, at=-10:10)
+axis(2)
+axis(3, labels=FALSE)
+axis(3, at=-10:10, labels=FALSE)
+dev.off()
 plotdev(file.path(kfig.path,paste0("kraq_absolutepos_smooth")),
         height=3.5, width=5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(dst, ma(sst,50), type="l", xlim=c(-50,50),
+plot(dst, ma(sst,10), type="l", xlim=c(-40,40),
      xlab="distance to closest splice site", ylab="Frequency (moving average)")
+axis(3, labels=FALSE)
 dev.off()
+
+
+sst <- table(round(unlist(ssd),0))
+dst <- as.numeric(names(sst))
+class(sst) <- "numeric"
+plotdev(file.path(kfig.path,paste0("kraq_absolutepos_bar_round")),
+        height=3.5, width=5, res=300, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(dst, sst, type="h", xlim=c(-40,40),
+     xlab="distance to closest splice site", ylab="Frequency")
+axis(1, at=-100:100, tcl=-.125, labels=FALSE)
+axis(3, labels=FALSE)
+text(-3,200, "Q->G at\n5' splice site\ne.g. N-term PSMA1 site",pos=2)
+text(0,350, "[KR] at\n5' splice site\ne.g. main PSMA1 site",pos=4)
+dev.off()
+
 
 rpos <- unlist(ssd)/unlist(exl)
 plotdev(file.path(kfig.path,paste0("kraq_relativepos_hist")),
@@ -670,8 +753,7 @@ plotdev(file.path(kfig.path,paste0("kraq_relativepos_hist")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 hist(rpos, breaks=100,
      xlab="distance to closest splice site / exon length", main=NA)
-text(0,300, paste0("position of ", pat, "\nrelative to splice sites\n",
-                  "in all ", round(length(seql)/1000), "k proteins"), pos=4)
+axis(3, labels=FALSE)
 dev.off()
 
 
@@ -679,12 +761,23 @@ dev.off()
 
 sskr <- gids <- nkr <- NULL
 for ( i in seq_along(ssd) ) {
-    idx <- which(ssd[[i]] > -5 & ssd[[i]] < 0)
+    idx <- which(round(ssd[[i]]) >= -3 & round(ssd[[i]]) < 1)
     if ( length(idx) ) {
         gids <- c(gids, names(ssd)[i])
         sskr <- c(sskr, kraqs[[i]][idx])
         nkr <- c(nkr, length(idx))
     }
 }
+sort(table(sskr))
 
-## TODO: revisit Q->G alignments and reduce to KRAQ
+
+### N-TERM AA ANALYSIS
+## TODO: see old kraq script
+
+first <- unlist(lapply(strsplit(usite$BP,""),function(x) x[1]))
+sort(table(usite$fromto[first=="G"]))
+
+boxplot(usite$RAAS~first)
+
+sort(table(first[usite$to=="G"]))
+sort(table(first[usite$to=="A"]))

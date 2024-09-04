@@ -795,7 +795,7 @@ for ( pid in pids ) {
 
     ## skip plot if no RAAS is higher than minimum
     doit <- pid%in%POI | pnms[pid]%in%shiri.selection
-    if ( sum(aas$median >= min.raas)==0 & !doit ) next
+    ##if ( sum(aas$median >= min.raas)==0 & !doit ) next
 
     cat(paste("PLOTTING", pnms[pid], pid, "\n"))
 
@@ -868,7 +868,7 @@ for ( pid in pids ) {
             plotFeatures(mpd, coors=coors, names=FALSE, arrows=TRUE, 
                          typord=TRUE, axis2=TRUE, arrow=list(code=3, pch=NA))
         } else {
-        plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
+            plot(1, xlim=c(coors[2:3]), col=NA, axes=FALSE, xlab=NA, ylab=NA)
         }
         mmaiaa <- mmai
         mmaiaa[3] <- 0.01
