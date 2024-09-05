@@ -777,7 +777,7 @@ sort(table(sskr))
 first <- unlist(lapply(strsplit(usite$BP,""),function(x) x[1]))
 sort(table(usite$fromto[first=="G"]))
 
-boxplot(usite$RAAS~first)
+boxplot(usite$RAAS.median~first)
 
 sort(table(first[usite$to=="G"]))
 sort(table(first[usite$to=="A"]))
