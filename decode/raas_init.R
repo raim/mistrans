@@ -21,7 +21,7 @@ library(readxl)
 ## BioConductor packages
 library(DiffLogo) # sequence diference logos
 
-## via github
+## via github, see install_packages.R
 library(basicPlotteR) # for non-overlapping text
 library(segmenTools) # plot utils and overlap profile sorting and plotting
 
