@@ -543,88 +543,10 @@ seql <- lapply(fas, function(x) x$seq)
 ## * read the Introduction to sequence motifs by Benjamin Jean-Marie Tremblay 
 ## * use universalmotifs to shuffle with 2mer preservation.
 
-## DEFINE MOTIF
-pat <- "[KR]A[A-Z]?Q" #"[KR]AQ" # TODO: 
-m <- 4
+## TODO:
+## * full AA enrichments around splice sites -> structural elements?
+## * full NT enrichments around splice sites -> enhancers
 
-## SIMPLE MOTIF PROB.
-
-## count in base peptides
-bcnt <- stringr::str_count(cdat$AA, pat)
-bpcnt <- table(unlist(strsplit(cdat$AA,"")))
-bpfrq <- bpcnt/sum(bpcnt)
-Lbp <- nchar(cdat$AA)
-p <- (bpfrq["K"]+bpfrq["R"]) * bpfrq["A"] * bpfrq["Q"]
-expected <- sum(Lbp-m+1)*p
-
-cat(paste("found", sum(bcnt), "K|RAQ in the base peptides, expected:",
-          round(expected), "\n"))
-
-## COUNT IN PROTEOME
-conc <- paste0(unlist(seql), collapse="")
-aacnt <- table(unlist(strsplit(conc,"")))
-aafrq <- aacnt/sum(aacnt)
-L <- nchar(unlist(seql))
-
-## expected: product of individual frequencies
-## TODO: how to account for possible insert [A-Z]*
-p <- (aafrq["K"]+aafrq["R"]) * aafrq["A"] * aafrq["Q"]
-expected <- sum(L-m+1)*p
-
-## count pattern in all MANE proteins
-gcnt <- sum(stringr::str_count(seql, pat))
-
-cat(paste("found", gcnt, "K|RAQ in the proteome, expected:",
-          round(expected), "\n"))
-
-
-## TODO: cluster sequences kmer content, as eg.
-## shown in univseralmotifs package.
-library(universalmotif)
-library(Biostrings)
-library(stringr)
-
-numperm <- 1000
-nums <- rep(0, length(numperm))
-pcnt <- 0
-K <- 2
-if ( !interactive() ) {
-    for ( i in 1:numperm ) {
-        cat(paste(i,","))
-        aaset <- AAStringSet(x=unlist(seql))
-        seqr <- shuffle_sequences(aaset, k=K)
-        ##vcnt <- vcountPattern(pat, seqr)
-        rcnt <- sum(stringr::str_count(as.character(seqr), pat))
-        nums[i] <- rcnt
-        if ( rcnt >= gcnt )
-            pcnt <- pcnt+1
-    }
-
-    plotdev(file.path(kfig.path,paste0("kraq_permutation")),
-            height=3.5, width=5, res=300, type=ftyp)
-    par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25)
-    hist(nums, main=NA, xlab=paste("proteome frequency of",pat))
-    abline(v=gcnt, col=2)
-    text(gcnt-10, 200,  labels=paste0("observed\n", gcnt),
-         col=2, pos=4, xpd=TRUE)
-    text(par("usr")[1], 200, paste0(numperm, " permutations\n",
-                                    "with k=", 2), pos=4, xpd=TRUE)
-    dev.off()
-}
-
-## NOTE: KRAQ as expected also when 2mer shuffling, p~0.4
-## e.g.:
-presult <-  23# 467
-if ( !interactive() ) presult <- pcnt
-
-cat(paste("found", sum(gcnt), "K|RAQ in the proteome, expected:",
-          round(expected), "\n",
-          "p-value with 2-mer conserving shuffled sequences:",
-          presult/numperm,"\n"))
-
-
-
-### KRAQ AT SPLICE SITES
 
 ## get transcript exon map
 cdsmap <- file.path(mam.path,"processedData","protein_cds_structure.dat")
@@ -640,9 +562,94 @@ posl <- split(cpos[,2:5], cpos[,1])
 posl <- lapply(posl, function(x) x[order(x$start,
                                          decreasing=x$strand=="-"),])
 
-## splice sites in AA coordinates
-pdl <- lapply(cdl, function(x) x/3)
-pdl <- pdl[names(seql)]
+
+## DEFINE MOTIF
+
+## NOTE: A is enriched at 3' and deprived at the 5'
+## 
+
+## "[KR]..Q" strongest of the motifs
+pat <- "[KR]..Q" #"[KR]A[A-Z]?Q" #"[KR]AQ" # 
+m <- 4
+do.perm <- FALSE #TRUE #
+
+## SIMPLE MOTIF PROB.
+
+## count in base peptides
+bcnt <- stringr::str_count(cdat$AA, pat)
+bpcnt <- table(unlist(strsplit(cdat$AA,"")))
+bpfrq <- bpcnt/sum(bpcnt)
+Lbp <- nchar(cdat$AA)
+p <- (bpfrq["K"]+bpfrq["R"]) * bpfrq["A"] * bpfrq["Q"]
+expected <- sum(Lbp-m+1)*p
+
+##cat(paste("found", sum(bcnt), "K|RAQ in the base peptides, expected:",
+##          round(expected), "\n"))
+
+## COUNT IN PROTEOME
+conc <- paste0(unlist(seql), collapse="")
+aacnt <- table(unlist(strsplit(conc,"")))
+aafrq <- aacnt/sum(aacnt)
+L <- nchar(unlist(seql))
+
+## expected: product of individual frequencies
+## TODO: do this for general motifs, e.g. also of variable length?
+p <- (aafrq["K"]+aafrq["R"]) * aafrq["A"] * aafrq["Q"]
+expected <- sum(L-m+1)*p
+
+## count pattern in all MANE proteins
+gcnt <- sum(stringr::str_count(seql, pat))
+
+cat(paste("found", gcnt, pat, "in the proteome\n"))
+
+
+## TODO: cluster sequences kmer content, as eg.
+## shown in univseralmotifs package.
+library(universalmotif)
+library(Biostrings)
+library(stringr)
+
+numperm <- 1000
+if ( !interactive() | do.perm ) {
+    nums <- rep(0, length(numperm))
+    pcnt <- 0
+    K <- 2
+    for ( i in 1:numperm ) {
+        cat(paste(i,","))
+        aaset <- AAStringSet(x=unlist(seql))
+        seqr <- shuffle_sequences(aaset, k=K)
+        ##vcnt <- vcountPattern(pat, seqr)
+        rcnt <- sum(stringr::str_count(as.character(seqr), pat))
+        nums[i] <- rcnt
+        if ( rcnt >= gcnt )
+            pcnt <- pcnt+1
+    }
+
+    plotdev(file.path(kfig.path,paste0("kraq_permutation")),
+            height=3.5, width=5, res=300, type=ftyp)
+    par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25)
+    hist(nums, main=NA, xlab=paste("proteome frequency of",pat),
+         xlim=range(c(nums,gcnt)), breaks=10)
+    abline(v=gcnt, col=2)
+    text(gcnt-10, par("usr")[4]*.9,  labels=paste0("observed\n", gcnt),
+         col=2, pos=2, xpd=TRUE)
+    text(par("usr")[1], par("usr")[4]*.9, paste0(numperm, " permutations\n",
+                                    "with k=", 2), pos=4, xpd=TRUE)
+    dev.off()
+}
+
+## NOTE: KRAQ as expected also when 2mer shuffling, p~0.4
+## e.g.:
+presult <-  23# 467
+if ( !interactive() ) presult <- pcnt
+
+cat(paste("found", sum(gcnt), pat, "in the proteome\n",
+          "p-value with 2-mer conserving shuffled sequences:",
+          presult/numperm,"\n"))
+
+
+
+### KRAQ AT SPLICE SITES
 
 ## extract actual KRAQ 
 kraqs <- stringr::str_extract_all(seql, pat)
@@ -653,6 +660,10 @@ names(kpos) <- names(seql)
 
 ## FIND DISTANCES OF THE MOTIF (START) TO CLOSEST
 ## SPLICE SITE
+
+## splice sites in AA coordinates
+pdl <- lapply(cdl, function(x) x/3)
+pdl <- pdl[names(seql)]
 
 ## remove all sequences without KRAQ
 rmk <- unlist(lapply(kpos, function(x) x[1]==-1))
@@ -706,9 +717,10 @@ plotdev(file.path(kfig.path,paste0("kraq_absolutepos_bar")),
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 plot(dst, sst, type="h", xlim=c(-40,40),
      xlab="distance to closest splice site", ylab="Frequency")
-text(0,180, paste0("position of ", pat, "\nrelative to splice sites\n",
-                   "in all ", round(length(seql)/1000), "k MANE proteins"),
-     pos=4)
+text(0,.85*par("usr")[4],
+     paste0("position of ", pat, "\nrelative to splice sites\n",
+            "in all ", round(length(seql)/1000), "k MANE proteins"),
+     pos=4, xpd=TRUE)
 ##points(dst,sst)
 axis(3, labels=FALSE)
 dev.off()
@@ -742,8 +754,8 @@ plot(dst, sst, type="h", xlim=c(-40,40),
      xlab="distance to closest splice site", ylab="Frequency")
 axis(1, at=-100:100, tcl=-.125, labels=FALSE)
 axis(3, labels=FALSE)
-text(-3,200, "Q->G at\n5' splice site\ne.g. N-term PSMA1 site",pos=2)
-text(0,350, "[KR] at\n5' splice site\ne.g. main PSMA1 site",pos=4)
+text(-3,.85*par("usr")[4], "Q at\n5' splice site\ne.g. N-term PSMA1 site",pos=2)
+text(0, .85*par("usr")[4], "[KR] at\n5' splice site\ne.g. main PSMA1 site",pos=4)
 dev.off()
 
 
@@ -781,3 +793,6 @@ boxplot(usite$RAAS.median~first)
 
 sort(table(first[usite$to=="G"]))
 sort(table(first[usite$to=="A"]))
+
+## C-term:
+last<- unlist(lapply(strsplit(usite$BP,""),function(x) x[length(x)]))
