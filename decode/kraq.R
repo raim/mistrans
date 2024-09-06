@@ -2,7 +2,6 @@
 ### ANALYZE SEQUENCE CONTEXT along BASE PEPTIDES
 ### and around splice sites
 
-## TODO: splice sites, resolve 0: 5' or 3'?
 SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
@@ -57,8 +56,12 @@ cls <- clusterCluster(cdat$fromto, asite.bins, cl2.srt=asite.srt)
 cls <- sortOverlaps(cls, p.min=1e-3)
 clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
 
+hscale <- 2
+if ( RM.POSPROB )
+    hscale <- .3
+
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
-        height=.2*nrow(clc$p.value)+1.1, width=.25*nrow(clc$p.value)+1.25,
+        height=.2*nrow(clc$p.value)+1.1, width=.25*ncol(clc$p.value)+1.25,
         res=300, type=ftyp)
 par(mai=c(.5,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
 plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,

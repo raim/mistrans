@@ -170,7 +170,7 @@ dev.off()
 fname <- file.path(sfig.path,paste0("structure_cor_MMSeq2_RAAS_sites"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(asite$MMSeq2, asite$RAAS.median,
+plotCor(as.numeric(asite$MMSeq2), asite$RAAS.median,
         xlab="conservation, MMSeq2",
         ylab=xl.raas, legpos="topright")
 dev.off()
@@ -179,7 +179,7 @@ dev.off()
 fname <- file.path(sfig.path,paste0("structure_cor_iupred3_RAAS_sites"))
 plotdev(fname, height=3.5, width=3.5, res=300, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plotCor(asite$iupred3, asite$RAAS.median,
+plotCor(as.numeric(asite$iupred3), asite$RAAS.median,
         xlab="disordered score, iupred3",
         ylab=xl.raas, legpos="bottomleft")
 dev.off()

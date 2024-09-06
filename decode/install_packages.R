@@ -16,6 +16,12 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("DiffLogo")
 
+## for kraq.R
+BiocManager::install("Biostrings")
+BiocManager::install("seqinr")
+BiocManager::install("MatrixGenerics")
+BiocManager::install("universalmotif")
+
 ## for rna.R
 ## https://josephcrispell.github.io/projects/basicplotter (2024-08-24),
 remotes::install_github("JosephCrispell/basicPlotteR")

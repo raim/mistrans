@@ -25,6 +25,9 @@ ABC <- DiffLogo::ASN
 ## motif p-value cutoffs *, **, ***
 psig <- 10^-c(3,5,10)
 
+if ( RM.POSPROB ) # strongly decreased number of input sequences
+    psig <- c(.05,10^-3,10^-10)
+
 ## remove identical sequences before motif plots
 remove.duplicated.sequences <- TRUE
 
@@ -72,7 +75,7 @@ dev.off()
 
 
 ### DEFINE MOTIF CLASSES
-do.all.motifs <-  FALSE # TRUE # 
+do.all.motifs <-  TRUE # FALSE # 
 
 CTXT <- as.character(c(-2,-1,1,2))
 CCxCC <- apply(aam[,CTXT], 1, function(x) any(x%in%c("C")))

@@ -49,6 +49,9 @@ in.file <- file.path(proj.path,"processedData","saap_mapped.tsv")
 ##tmt.file <- file.path(proj.path, "originalData",
 ##                      "All_SAAP_TMTlevel_quant_df.txt")
 
+## 20240906: positional probabilities
+prob.file <- file.path(proj.path, "originalData",
+                       "Supplemental_Data_3.SAAP_precursor_quant.xlsx")
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
@@ -374,6 +377,21 @@ dat$KR <- dat$from%in%c("K","R") | dat$to%in%c("K","R")
 
 dat$Keep.SAAP <- !dat$IG & !dat$KR
 
+## 20240906: POSITIONAL PROBABILITY FILTER
+pprob <- readxl::read_xlsx(prob.file)
+
+pp <- pprob$"Positional probability"
+names(pp) <- paste(pprob$BP, pprob$SAAP)
+
+## NOTE: only filtered are used in supplemental file, so many pp are missing
+dat$pp <- pp[match(paste(dat$BP, dat$SAAP), names(pp))]
+dat$pp[is.na(dat$pp)] <- -Inf
+
+## 20240906
+MINPP <- .8
+RM.POSPROB <- TRUE
+if ( RM.POSPROB )
+    dat$Keep.SAAP <- dat$Keep.SAAP & dat$pp >= MINPP
 
 ### UNIFY FILTER COLUMNS
 

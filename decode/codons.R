@@ -1,14 +1,13 @@
 
 ## CODON FREQUENCY ANALYSIS of AMINO ACID SUBSTITUTION SITES
 
-## project-specific functions
-source("raas_utils.R")
+SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
 if ( !exists("bdat") )
-    source("raas_init.R")
+    source(file.path(SRC.PATH, "raas_init.R"))
 
 
 ## local output path
