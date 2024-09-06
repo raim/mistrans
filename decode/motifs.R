@@ -82,6 +82,8 @@ CCxCC <- apply(aam[,CTXT], 1, function(x) any(x%in%c("C")))
 MMxMM <- apply(aam[,CTXT], 1, function(x) any(x%in%c("M")))
 WWxWW <- apply(aam[,CTXT], 1, function(x) any(x%in%c("W")))
 GGxGG <- apply(aam[,CTXT], 1, function(x) any(x%in%c("G")))
+xG <- aam[,"1"] == "G"
+xP <- aam[,"1"] == "P"
 
 classes <- cbind(
     "KRAQ"=cdat$to%in%c("G","A") & cdat$site%in%1:3,
@@ -90,6 +92,11 @@ classes <- cbind(
     WWxWW=WWxWW,
     GGxGG=GGxGG
 )
+
+if ( RM.POSPROB )
+    classes <- cbind(classes,
+                     xG=xG,
+                     xP=xP)
 
 ## NA values in filters
 classes[is.na(classes)] <- FALSE

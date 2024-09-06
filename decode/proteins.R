@@ -1,14 +1,13 @@
 
 ## PROTEIN-LEVEL ANALYSIS OF AMINO ACID SUBSTITUTIONS
 
-## project-specific functions
-source("raas_utils.R")
+SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
 if ( !exists("bdat") )
-    source("raas_init.R")
+    source(file.path(SRC.PATH,"raas_init.R"))
 
 ## local output path
 pfig.path <- file.path(fig.path,"proteins")
@@ -22,6 +21,9 @@ pmpg <- c(1.3,.3,0)
 
 ## maximal SAAP/peptide, etc.
 max.saap <- 12
+
+if ( RM.POSPROB )
+    max.saap <- 8
 
 ## axis labels
 xl.hlfm <- expression(protein~"half-life"/h)
@@ -104,6 +106,8 @@ write.table(cbind(protein=rownames(ptstat), ptstat),
 pns <- bpstat$nsaap
 pns[pns>max.saap] <- paste0(">",max.saap)
 paas <- table(pns)[c(as.character(1:max.saap),paste0(">", max.saap))]
+
+paas <- paas[!is.na(paas)]
 
 bid <- rownames(bpstat)[which(bpstat$nsaap>80)]
 
