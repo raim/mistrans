@@ -88,12 +88,15 @@ usite <- csite ## unique chrom.sites
 kid <- "ENSP00000357283"
 usite[usite$ensembl==kid & usite$fromto=="Q:G",]
 
+## laminin BP/SAAP is higher in healthy tissues than cancer
 bid <- "AQNTWGCGNSLR"
-flt <- tmtf$BP==bid& tmtf$fromto=="Q:G"
-boxplot(tmtf$RAAS[flt] ~ tmtf$Dataset[flt], xlab=NA, ylab=xl.raas)
-legend("bottomright", bid)
-boxplot(tmtf$RAAS[flt] ~ tmtf$tissue[flt], xlab=NA, ylab=xl.raas)
-legend("bottomright", bid)
+if ( !RM.POSPROB ) {
+    flt <- tmtf$BP==bid & tmtf$fromto=="Q:G"
+    boxplot(tmtf$RAAS[flt] ~ tmtf$Dataset[flt], xlab=NA, ylab=xl.raas)
+    legend("bottomright", bid)
+    boxplot(tmtf$RAAS[flt] ~ tmtf$tissue[flt], xlab=NA, ylab=xl.raas)
+    legend("bottomright", bid)
+}
 
 plotCor(log10(abs(usite$ssd)), usite$RAAS.median)
 plotCor(log10(abs(usite$ssd)[usite$fromto=="Q:G"]),
@@ -313,21 +316,23 @@ dev.off()
 ## TIGHTER, cut at 1e-3
 clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
 
-plotdev(file.path(kfig.path,paste0("splicesites_AAStype_tight")),
-        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
-        res=300, type=ftyp)
-par(mai=c(.75,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
-     cex.axis=.8)
-axex <- ftlabels(rownames(clc$p.value))
-axis(2, length(axex):1, labels=axex, las=2, family="monospace")
-mtext("AAS type", 2, 2.7)
-mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
-##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
+if ( nrow(clc$p.value) >0 ) {
+    plotdev(file.path(kfig.path,paste0("splicesites_AAStype_tight")),
+            height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+            res=300, type=ftyp)
+    par(mai=c(.75,.75,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+    plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+                 show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+    par(mgp=c(1.3,.3,0), tcl=-.25)
+    axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+         cex.axis=.8)
+    axex <- ftlabels(rownames(clc$p.value))
+    axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+    mtext("AAS type", 2, 2.7)
+    mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+    ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+    dev.off()
+}
 
 ## NOTE: WHY IS OGDH gene, L->G MISSING, should be at -2
 ## ssd is 2, should be -2; strand mix-up?
@@ -411,21 +416,23 @@ mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
 dev.off()
 
 clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
-plotdev(file.path(kfig.path,paste0("splicesites_AAStype_to_tight")),
-        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
-        res=300, type=ftyp)
-par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
-     cex.axis=.8)
-axex <- rownames(clc$p.value)
-axis(2, length(axex):1, labels=axex, las=2, family="monospace")
-mtext("Incorp. AA", 2, 1.3)
-mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
-##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
+if ( nrow(clc$p.value)>0 ) {
+    plotdev(file.path(kfig.path,paste0("splicesites_AAStype_to_tight")),
+            height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+            res=300, type=ftyp)
+    par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+    plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+                 show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+    par(mgp=c(1.3,.3,0), tcl=-.25)
+    axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+         cex.axis=.8)
+    axex <- rownames(clc$p.value)
+    axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+    mtext("Incorp. AA", 2, 1.3)
+    mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+    ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+    dev.off()
+}
 
 
 ## by ENCODED
@@ -433,38 +440,43 @@ cls <- clusterCluster(usite$from, ssd, cl2.srt=ssd.srt)
 ## sort by only enriched
 clc <- sortOverlaps(cls, p.min=1e-2)
 
-plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from")),
-        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
-        res=300, type=ftyp)
-par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
-     cex.axis=.8)
-axex <- rownames(clc$p.value)
-axis(2, length(axex):1, labels=axex, las=2, family="monospace")
-mtext("Encoded AA", 2, 1.3)
-mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
-##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
+if ( nrow(clc$p.value)>0 ) {
+    plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from")),
+            height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+            res=300, type=ftyp)
+    par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+    plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+                 show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+    par(mgp=c(1.3,.3,0), tcl=-.25)
+    axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+         cex.axis=.8)
+    axex <- rownames(clc$p.value)
+    axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+    mtext("Encoded AA", 2, 1.3)
+    mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+    ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+    dev.off()
+}
 
 clc <- sortOverlaps(cls, p.min=1e-3, cut=TRUE, sign=1)
-plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from_tight")),
-        height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
-        res=300, type=ftyp)
-par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
-plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
-             show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
-par(mgp=c(1.3,.3,0), tcl=-.25)
-axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
-     cex.axis=.8)
-axex <- rownames(clc$p.value)
-axis(2, length(axex):1, labels=axex, las=2, family="monospace")
-mtext("Encoded AA", 2, 1.3)
-mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
-##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
-dev.off()
+
+if ( nrow(clc$p.value)>0 ) {
+    plotdev(file.path(kfig.path,paste0("splicesites_AAStype_from_tight")),
+            height=.2*nrow(clc$p.value)+1.25, width=.25*ncol(clc$p.value)+1.5,
+            res=300, type=ftyp)
+    par(mai=c(.75,.5,.5,.5), mgp=c(2,.3,0), tcl=-.05, family="monospace")
+    plotOverlaps(clc, p.min=p.min, p.txt=p.txt, ylab=NA, xlab=NA,
+                 show.total=TRUE, show.sig=FALSE, axis=NA, text.cex=.7)
+    par(mgp=c(1.3,.3,0), tcl=-.25)
+    axis(1, at=1:ncol(clc$p.value), labels=colnames(clc$p.value), las=1,
+         cex.axis=.8)
+    axex <- rownames(clc$p.value)
+    axis(2, length(axex):1, labels=axex, las=2, family="monospace")
+    mtext("Encoded AA", 2, 1.3)
+    mtext("pos. of AAS (2nd codon pos.)\nrelative to closest s.s.", 1, 2.5)
+    ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+    dev.off()
+}
 
 ## D: GAT,GAC
 ## W: TGG

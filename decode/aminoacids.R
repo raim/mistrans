@@ -1,14 +1,13 @@
 
 ### AMINO ACIDS at AMINO ACID SUBSTITUTION SITES
 
-## project-specific functions
-source("raas_utils.R")
+SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
 ## loading, mapping, filtering, data selection, output paths,
 ## ID mappings, etc.
 if ( !exists("bdat") )
-    source("raas_init.R")
+    source(file.path(SRC.PATH,"raas_init.R"))
 
 ## local output path
 afig.path <- file.path(fig.path,"aminoacids")
@@ -312,14 +311,14 @@ ovw <- raasProfile(x=tmtd, id="SAAP",
                    verb=0)
 
 plotProfiles(ovw, fname=file.path(afig.path,paste0("AA_",SETID,"_",ds)),
-             mai=c(.5,.5,.6,.6), ttcols=ttcols, value="median",
+             mai=c(.5,.5,.5,.5), ttcols=ttcols, value="median",
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, llab=dsl, ftyp=ftyp,
              vcols=acols, vbrks=abrks,
              mtxt="Incorporated AA", 
              mtxt1="Encoded AA", ffam="monospace",
-             axis1.las=1, fw=.2, fh=.2,
+             axis1.las=1, fw=.22, fh=.22,
              gcols=gcols)
 
 

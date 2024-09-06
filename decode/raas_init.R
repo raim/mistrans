@@ -53,6 +53,10 @@ in.file <- file.path(proj.path,"processedData","saap_mapped.tsv")
 prob.file <- file.path(proj.path, "originalData",
                        "Supplemental_Data_3.SAAP_precursor_quant.xlsx")
 
+## 
+MINPP <- .8
+RM.POSPROB <- TRUE # FALSE # 
+
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
          "AND INPUT EXISTS, as outlined in README.md")
@@ -61,6 +65,10 @@ if ( !file.exists(in.file) | !file.exists(tmt.file) )
 ## output path for ALL scripts
 out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures")
+
+if ( RM.POSPROB ) {
+    fig.path <- paste0(fig.path, "_posprob")
+}
 
 ## figures of this init script
 ifig.path <- file.path(fig.path,"init")
@@ -147,6 +155,9 @@ dot.sze <- c(.3,2)
 
 ## STATISTICAL TEST TO RUN
 use.test <- t.test # w.test # 
+
+if ( RM.POSPROB ) ## NON-NORMAL DISTRIBUTION
+    use.test <- w.test
 
 ## SET THIS VARIABLE TO GENERATE PDFs INSTEAD OF PNGs
 ftyp <- "png" # "pdf" # # 
@@ -387,9 +398,6 @@ names(pp) <- paste(pprob$BP, pprob$SAAP)
 dat$pp <- pp[match(paste(dat$BP, dat$SAAP), names(pp))]
 dat$pp[is.na(dat$pp)] <- -Inf
 
-## 20240906
-MINPP <- .8
-RM.POSPROB <- TRUE
 if ( RM.POSPROB )
     dat$Keep.SAAP <- dat$Keep.SAAP & dat$pp >= MINPP
 
