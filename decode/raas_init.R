@@ -51,11 +51,13 @@ in.file <- file.path(proj.path,"processedData","saap_mapped.tsv")
 
 ## 20240906: positional probabilities
 prob.file <- file.path(proj.path, "originalData",
-                       "Supplemental_Data_3.SAAP_precursor_quant.xlsx")
+                     "Supplemental_Data_3.SAAP_precursor_quant_w_fragments.xlsx")
 
 ## 
-MINPP <- .8
-RM.POSPROB <- TRUE # FALSE # 
+MINPP <- .9
+RM.POSPROB <- FALSE # TRUE # 
+MAXPP <- .5
+MN.POSPROB <- TRUE # FALSE #
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
@@ -67,7 +69,9 @@ out.path <- file.path(proj.path,"processedData")
 fig.path <- file.path(proj.path,"figures")
 
 if ( RM.POSPROB ) {
-    fig.path <- paste0(fig.path, "_posprob")
+    fig.path <- file.path(fig.path, "posprob")
+} else if ( MN.POSPROB ) {
+    fig.path <- file.path(fig.path, "lowposprob")
 }
 
 ## figures of this init script
@@ -391,15 +395,44 @@ dat$Keep.SAAP <- !dat$IG & !dat$KR
 ## 20240906: POSITIONAL PROBABILITY FILTER
 pprob <- readxl::read_xlsx(prob.file)
 
-pp <- pprob$"Positional probability"
-names(pp) <- paste(pprob$BP, pprob$SAAP)
+
+ppl <- split(pprob$"Positional probability", paste(pprob$BP, pprob$SAAP))
+pp <- unlist(lapply(ppl, max, na.rm=TRUE))
+## TODO: use max for each unique BP/SAAP
+
 
 ## NOTE: only filtered are used in supplemental file, so many pp are missing
 dat$pp <- pp[match(paste(dat$BP, dat$SAAP), names(pp))]
 dat$pp[is.na(dat$pp)] <- -Inf
 
-if ( RM.POSPROB )
-    dat$Keep.SAAP <- dat$Keep.SAAP & dat$pp >= MINPP
+plotdev(file.path(ifig.path, paste0("position_probabilities")),
+        width=3, height=2, res=200, type=ftyp)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+hist(dat$pp, xlab="position probabilities", main=NA)
+abline(v=MINPP, col=2)
+abline(v=MAXPP, col=4)
+dev.off()
+
+## TODO: merge fragment at AAS site filter
+if ( FALSE ) {
+    dat$faas <- pprob$"Fragment at AAS site"[match(paste(dat$BP, dat$SAAP),
+                                                   names(pp))]
+    dat$faas[is.na(dat$faas)] <- FALSE
+    
+    plotdev(file.path(ifig.path, paste0("position_probabilities_bar")),
+            width=3, height=3, res=200, type=ftyp)
+    par(mai=c(.75,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+    barplot(t(table(cut(dat$pp, breaks=seq(0,1,.1), include.lowest = TRUE),
+                    dat$faas)), beside=TRUE, legend=TRUE, las=2,
+            args.legend=list(x="top"))
+    dev.off()
+}
+
+if ( RM.POSPROB ) {
+    dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp >= MINPP) # & dat$faas)
+} else if ( MN.POSPROB ) {
+    dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp <= MAXPP) # & !dat$faas)
+}
 
 ### UNIFY FILTER COLUMNS
 

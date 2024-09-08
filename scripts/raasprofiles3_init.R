@@ -114,7 +114,7 @@ refseq.file <- file.path(mam.path,"originalData",
                          "ensembl_refseq_20240528.tsv.gz")
 
 ## genome feature file
-feature.file <- file.path(mam.path,"features_GRCh38.110.tsv")
+feature.file <- file.path(mam.path,"features_GRCh38.110.tsv.gz")
 
 ## gene name synonyms, via https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz
 ## downloaded on 20240712

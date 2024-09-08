@@ -56,9 +56,6 @@ cls <- clusterCluster(cdat$fromto, asite.bins, cl2.srt=asite.srt)
 cls <- sortOverlaps(cls, p.min=1e-3)
 clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
 
-hscale <- 2
-if ( RM.POSPROB )
-    hscale <- .3
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
         height=.2*nrow(clc$p.value)+1.1, width=.25*ncol(clc$p.value)+1.25,
@@ -811,3 +808,7 @@ sort(table(first[usite$to=="A"]))
 
 ## C-term:
 last<- unlist(lapply(strsplit(usite$BP,""),function(x) x[length(x)]))
+
+
+## TODO: look for multiple [KR] upstream of AAS, which
+## could explain dipeptide loss.

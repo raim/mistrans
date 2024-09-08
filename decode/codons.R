@@ -9,6 +9,7 @@ SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 if ( !exists("bdat") )
     source(file.path(SRC.PATH, "raas_init.R"))
 
+    
 
 ## local output path
 cfig.path <- file.path(fig.path,"codons")
@@ -21,6 +22,7 @@ dir.create(cfig.path, showWarnings=FALSE)
 
 ## ONLY USE RAAS WITH ASSIGNED CODONS
 ctmt <- tmtf[tmtf$codon!="",]
+
 
 ## add columns for codon positions
 cpos <- strsplit(ctmt$codon,"")
@@ -140,7 +142,7 @@ Faas.lst <- lcodl
 Faas <- unlist(lapply(lcodl, function(x) x/sum(x)))
 names(Faas) <- sub("\\.","-", names(Faas))
 
-## inspect
+## inspect - NOTE: should Craas.site and Craas be equal?
 if ( interactive() ) { # properly plotted below loop
     plotCor(Craas.site[names(Craas)], Craas)
     plotCor(Craas.site[names(Faas)], Faas)
@@ -194,10 +196,10 @@ ova <- raasProfile(x=dtmt, id="unique.site",
 ## RAAS PROFILE by Dataset
 ## NOTE: bg=TRUE : here, row-wise background
 ovd <- raasProfile(x=dtmt, id="unique.site", 
-                       rows="Dataset", cols="aacodon",
-                       col.srt=codon.srt, filter=FALSE,
-                       bg=TRUE, bg.dir="row",
-                       use.test=use.test, do.plots=FALSE, 
+                   rows="Dataset", cols="aacodon",
+                   col.srt=codon.srt, filter=FALSE,
+                   bg=TRUE, bg.dir="row",
+                   use.test=use.test, do.plots=FALSE, 
                    verb=0)
 
 ## sort rows
