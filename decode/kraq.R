@@ -813,7 +813,13 @@ sort(table(first[usite$to=="A"]))
 last<- unlist(lapply(strsplit(usite$BP,""),function(x) x[length(x)]))
 
 ## cleavage sites
-strsplit(bdat$AA,"")
+### AA MATRIX
+aam <- do.call(rbind, strsplit(bdat[["AA"]],""))
+nc <- (ncol(aam)-1)/2
+colnames(aam) <- -nc:nc
+rownames(aam) <- paste0(bdat$BP,"_", bdat$SAAP)
+
+table(aam[bdat$site==1,"-1"])
 
 ### CHECK AMINO ACID MASS = Delta MASS
 aams <- as.data.frame(read_xlsx(file.path(mam.path, "originalData",
