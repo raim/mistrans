@@ -820,6 +820,7 @@ colnames(aam) <- -nc:nc
 rownames(aam) <- paste0(bdat$BP,"_", bdat$SAAP)
 
 table(aam[bdat$site==1,"-1"])
+sort(table(aam[bdat$site==1,"1"]))
 
 ### CHECK AMINO ACID MASS = Delta MASS
 aams <- as.data.frame(read_xlsx(file.path(mam.path, "originalData",
