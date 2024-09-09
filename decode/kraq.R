@@ -794,6 +794,9 @@ for ( i in seq_along(ssd) ) {
 }
 sort(table(sskr))
 
+## TODO: look for multiple [KR] upstream of AAS, which
+## could explain dipeptide loss.
+
 
 ### N-TERM AA ANALYSIS
 ## TODO: see old kraq script
@@ -809,6 +812,30 @@ sort(table(first[usite$to=="A"]))
 ## C-term:
 last<- unlist(lapply(strsplit(usite$BP,""),function(x) x[length(x)]))
 
+## cleavage sites
+strsplit(bdat$AA,"")
 
-## TODO: look for multiple [KR] upstream of AAS, which
-## could explain dipeptide loss.
+### CHECK AMINO ACID MASS = Delta MASS
+aams <- as.data.frame(read_xlsx(file.path(mam.path, "originalData",
+                                          "amino_acid_masses.xlsx")))
+masses <- aams[1:23,c("calculated avg mass")]
+names(masses) <- aams[1:23,"code"]
+dm <- as.matrix(dist(masses))
+
+masses[which(round(masses)%in%round(dm))]
+
+aa <- names(masses)
+im <- matrix("", nrow=length(aa), ncol=length(aa))
+rownames(im) <- colnames(im) <- aa
+for ( i in 1:nrow(im) )
+    for ( j in 1:ncol(im) ) {
+        dm <- round(masses[aa[i]]-masses[aa[j]])
+        idx <- abs(round(masses)-dm) <= 2
+        if ( any(idx) )
+            im[i,j] <- paste(names(masses)[idx],collapse=";")
+    }
+
+ims <- gdata::unmatrix(im, byrow=FALSE)
+ims <- ims[ims!=""]
+ims[order(names(ims))]
+

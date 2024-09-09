@@ -53,11 +53,12 @@ in.file <- file.path(proj.path,"processedData","saap_mapped.tsv")
 prob.file <- file.path(proj.path, "originalData",
                      "Supplemental_Data_3.SAAP_precursor_quant_w_fragments.xlsx")
 
-## 
+## TODO: remove those from TMT level
+## and afterwards remove all missing from  bdat
 MINPP <- .9
 RM.POSPROB <- FALSE # TRUE # 
 MAXPP <- .5
-MN.POSPROB <- TRUE # FALSE #
+MN.POSPROB <- TRUE # FALSE # 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
@@ -428,10 +429,16 @@ if ( FALSE ) {
     dev.off()
 }
 
+## TODO: instead filter independently of keep saap, but
+## (i) filter from tmtf and (ii) done below(?), remove all from
+## bdat that are not present in tmtf
+tmtf$pp <-  pp[match(paste(tmtf$BP, tmtf$SAAP), names(pp))]
 if ( RM.POSPROB ) {
-    dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp >= MINPP) # & dat$faas)
+    ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp >= MINPP) # & dat$faas)
+    tmtf <- tmtf[tmtf$pp >= MINPP,]
 } else if ( MN.POSPROB ) {
-    dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp <= MAXPP) # & !dat$faas)
+    ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp <= MAXPP) # & !dat$faas)
+    tmtf <- tmtf[tmtf$pp <= MAXPP,]
 }
 
 ### UNIFY FILTER COLUMNS
