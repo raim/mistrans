@@ -56,9 +56,9 @@ prob.file <- file.path(proj.path, "originalData",
 ## TODO: remove those from TMT level
 ## and afterwards remove all missing from  bdat
 MINPP <- .9
-RM.POSPROB <- FALSE # TRUE # 
+RM.POSPROB <- TRUE # FALSE # 
 MAXPP <- .5
-MN.POSPROB <- TRUE # FALSE # 
+MN.POSPROB <- FALSE # TRUE # 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
@@ -161,8 +161,9 @@ dot.sze <- c(.3,2)
 ## STATISTICAL TEST TO RUN
 use.test <- t.test # w.test # 
 
-if ( RM.POSPROB ) ## NON-NORMAL DISTRIBUTION
-    use.test <- w.test
+## to keep comparable, use t-test also for high pos prob set
+##if ( RM.POSPROB ) ## NON-NORMAL DISTRIBUTION
+##    use.test <- w.test
 
 ## SET THIS VARIABLE TO GENERATE PDFs INSTEAD OF PNGs
 ftyp <- "png" # "pdf" # # 
@@ -397,48 +398,56 @@ dat$Keep.SAAP <- !dat$IG & !dat$KR
 pprob <- readxl::read_xlsx(prob.file)
 
 
-ppl <- split(pprob$"Positional probability", paste(pprob$BP, pprob$SAAP))
+## FILTER INDEPENDENTLY OF Keep.SAAP, but (i) filter from tmtf and
+## (ii) done below(?), remove all from bdat that are not present in
+## tmtf
+
+
+## NOTE: with BP,SAAP,Datset,TMT/Tissue-wise pos.prob.
+## we wouldn't need the split
+ppl <- split(pprob$"Positional probability",
+             paste(pprob$BP, pprob$SAAP,
+                   pprob$Dataset, pprob$"TMT/Tissue"))
 pp <- unlist(lapply(ppl, max, na.rm=TRUE))
-## TODO: use max for each unique BP/SAAP
+tmtf$pp <-  pp[match(paste(tmtf$BP, tmtf$SAAP,
+                           tmtf$Dataset, tmtf$TMT.Tissue),
+                     names(pp))]
+tmtf$pp[is.na(tmtf$pp)] <- -Inf
+fal <- split(pprob$"Fragment at AAS site",
+             paste(pprob$BP, pprob$SAAP,
+                   pprob$Dataset, pprob$"TMT/Tissue"))
+fa <- unlist(fal) #lapply(fal, any))
+tmtf$fa <-  fa[match(paste(tmtf$BP, tmtf$SAAP,
+                           tmtf$Dataset, tmtf$TMT.Tissue),
+                     names(fa))]
+tmtf$fa[is.na(tmtf$fa)] <- FALSE
 
-
-## NOTE: only filtered are used in supplemental file, so many pp are missing
-dat$pp <- pp[match(paste(dat$BP, dat$SAAP), names(pp))]
-dat$pp[is.na(dat$pp)] <- -Inf
 
 plotdev(file.path(ifig.path, paste0("position_probabilities")),
         width=3, height=2, res=200, type=ftyp)
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-hist(dat$pp, xlab="position probabilities", main=NA)
+hist(tmtf$pp, xlab="position probabilities", main=NA)
 abline(v=MINPP, col=2)
 abline(v=MAXPP, col=4)
 dev.off()
 
 ## TODO: merge fragment at AAS site filter
-if ( FALSE ) {
-    dat$faas <- pprob$"Fragment at AAS site"[match(paste(dat$BP, dat$SAAP),
-                                                   names(pp))]
-    dat$faas[is.na(dat$faas)] <- FALSE
-    
-    plotdev(file.path(ifig.path, paste0("position_probabilities_bar")),
-            width=3, height=3, res=200, type=ftyp)
-    par(mai=c(.75,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-    barplot(t(table(cut(dat$pp, breaks=seq(0,1,.1), include.lowest = TRUE),
-                    dat$faas)), beside=TRUE, legend=TRUE, las=2,
-            args.legend=list(x="top"))
-    dev.off()
-}
+plotdev(file.path(ifig.path, paste0("position_probabilities_bar")),
+        width=3, height=3, res=200, type=ftyp)
+par(mai=c(.75,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+barplot(t(table(cut(tmtf$pp, breaks=seq(0,1,.1), include.lowest = TRUE),
+                tmtf$fa)), beside=TRUE, legend=TRUE, las=2,
+        args.legend=list(x="top", title="AAS fragment?"))
+figlabel("pos. prob.", pos="bottomleft")
+dev.off()
 
-## TODO: instead filter independently of keep saap, but
-## (i) filter from tmtf and (ii) done below(?), remove all from
-## bdat that are not present in tmtf
-tmtf$pp <-  pp[match(paste(tmtf$BP, tmtf$SAAP), names(pp))]
+
 if ( RM.POSPROB ) {
     ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp >= MINPP) # & dat$faas)
-    tmtf <- tmtf[tmtf$pp >= MINPP,]
+    tmtf <- tmtf[tmtf$pp >= MINPP & tmtf$fa,] 
 } else if ( MN.POSPROB ) {
     ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp <= MAXPP) # & !dat$faas)
-    tmtf <- tmtf[tmtf$pp <= MAXPP,]
+    tmtf <- tmtf[tmtf$pp <= MAXPP & !tmtf$fa,]
 }
 
 ### UNIFY FILTER COLUMNS

@@ -24,10 +24,10 @@ R --vanilla < codons.R &> $DECODE/log/codons.txt  # Fig. 2j, EFig. 3k, 4
 R --vanilla < aminoacids.R &> $DECODE/log/aminoacids.txt  # Fig. 3b,c,e, EFig. 5a,c,f
 R --vanilla < function.R &> $DECODE/log/function.txt # Fig. 4c, EFig. 7
 R --vanilla < motifs.R &> $DECODE/log/motifs.txt  # Fig. 4c,d, Fig. 5c, EFig. 8a,c
-R --vanilla < kraq.R &> $DECODE/log/kraq.txt  # EFig. 8b
 R --vanilla < proteins.R &> $DECODE/log/proteins.txt # Fig. 5a,b, EFig. 10a
 R --vanilla < structure.R &> $DECODE/log/structure.txt  # EFig. 10b,c
 R --vanilla < rna.R &> $DECODE/log/rna.txt # SFig. 2
+R --vanilla < kraq.R &> $DECODE/log/kraq.txt  # EFig. 8b
 
 ## HIGH MEMORY, test if 45GB are available
 minm=45

@@ -72,6 +72,17 @@ mtext("position of AAS in peptide", 1, 1.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
 dev.off()
 
+## absolute position
+if ( interactive() )
+    barplot(table(asite.bins)[asite.srt])
+
+## relative position
+plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_hist")),
+        height=3.5, width=3.5, res=300, type=ftyp)
+par(mai=c(.5,.5,.15,.15), mgp=c(1.3,.3,0), tcl=-.25)
+hist(cdat$site/nchar(cdat$BP), main=NA, breaks=20,
+     xlab="relative position of AAS in peptide", xlim=c(0,1))
+dev.off()
 
 ### SPLICE SITE TEST
 
@@ -577,9 +588,6 @@ posl <- lapply(posl, function(x) x[order(x$start,
 
 ## DEFINE MOTIF
 
-## NOTE: A is enriched at 3' and deprived at the 5'
-## 
-
 ## "[KR]..Q" strongest of the motifs
 pat <- "[KR]..Q" #"[KR]A[A-Z]?Q" #"[KR]AQ" # 
 m <- 4
@@ -621,7 +629,7 @@ library(universalmotif)
 library(Biostrings)
 library(stringr)
 
-numperm <- 1000
+numperm <- 100
 if ( !interactive() | do.perm ) {
     nums <- rep(0, length(numperm))
     pcnt <- 0
