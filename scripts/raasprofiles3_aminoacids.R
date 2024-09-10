@@ -85,6 +85,8 @@ nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
 ffam <- "monospace"#"sans"
 
+if ( SETID=="tissues" ) ffam <- "sans"
+
 rsrt <- rownames(ovw$p.value)
 tap <- sub(".*:","", rsrt)
 fap <- sub(":.*","", rsrt)
@@ -120,7 +122,6 @@ nc <- ncol(ovwp$p.value)
 mai <- c(.8,1.75,.1,.6)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
-ffam <- "monospace"#"sans"
 
 rsrt <- rownames(ovwp$p.value)
 tap <- sub(".*:","", rsrt)
@@ -178,7 +179,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("fromAA_",SETID)),
              rlab=LAB, llab="", ftyp=ftyp,
              ##axis2.col=aap.cols,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, plot.all=TRUE, ffam="monospace")
+             gcols=gcols, plot.all=TRUE, ffam=ffam)
 
 ## from AA - ONLY SIGNIFICANT
 
@@ -205,7 +206,7 @@ axis(1,  1:ncol(ovwp$p.value),
      labels=colnames(ovwp$p.value), las=2, family=ffam)
 shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-mtext("Encoded AA", 2, 1.3, family="monospace")
+mtext("Encoded AA", 2, 1.3, family=ffam)
 ##axis(3, at=1:ncol(ovwp$num.target),
 ##     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
 axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
@@ -233,7 +234,7 @@ axis(2, nrow(ovwr$p.value):1,
      labels=rownames(ovwr$p.value), las=2, family=ffam)
 shadowtext(1:nc, rep(0, nc), fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-mtext("Encoded AA", 1, 1, family="monospace")
+mtext("Encoded AA", 1, 1, family=ffam)
 axis(3, at=1:ncol(ovwr$num.target),
      labels=format(ovwr$num.target[1,], big.mark=",", trim=TRUE),las=2)
 ##axis(4, at=nrow(ovwr$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
@@ -261,7 +262,7 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
              rlab=LAB, llab="", ftyp=ftyp,
              ##axis2.col=aap.cols,
              vcols=acols, vbrks=abrks,
-             gcols=gcols, plot.all=TRUE, ffam="monospace")
+             gcols=gcols, plot.all=TRUE, ffam=ffam)
 
 ## to AA - ONLY SIGNIFICANT
 
@@ -288,7 +289,7 @@ axis(1,  1:ncol(ovwp$p.value),
      labels=colnames(ovwp$p.value), las=2, family=ffam)
 shadowtext(rep(-.1, nr), nr:1, fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-mtext("Incorporated AA", 2, 1.3, family="monospace", adj=1)
+mtext("Incorporated AA", 2, 1.3, family=ffam, adj=1)
 ##axis(3, at=1:ncol(ovwp$num.target),
 ##     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
 axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
@@ -316,7 +317,7 @@ axis(2, nrow(ovwr$p.value):1,
      labels=rownames(ovwr$p.value), las=2, family=ffam)
 shadowtext(1:nc, rep(0, nc), fap, col=aap.cols[fap], xpd=TRUE,
            font=2, r=.1)
-mtext("Incorporated AA", 1, 1, family="monospace", adj=1)
+mtext("Incorporated AA", 1, 1, family=ffam, adj=1)
 axis(3, at=1:ncol(ovwr$num.target),
      labels=format(ovwr$num.target[1,], big.mark=",", trim=TRUE),las=2)
 ##axis(4, at=nrow(ovwr$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
@@ -378,7 +379,6 @@ nr <- nrow(ovwp$p.value)
 nc <- ncol(ovwp$p.value)
 nh <- nr *fh + mai[1] + mai[3]
 nw <- nc *fw + mai[2] + mai[4]
-ffam <- "monospace"#"sans"
 
 plotProfiles(ovwp,
              fname=file.path(afig.path,paste0("AA_",SETID,"_toG")),
@@ -387,15 +387,15 @@ plotProfiles(ovwp,
              p.min=p.min, p.txt=p.txt,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, llab="",  ftyp=ftyp,
-             ffam="monospace",
-             #axis2.col=ft.cols,
+             ffam=ffam,
+             ##axis2.col=ft.cols,
              vcols=acols, vbrks=abrks,
              gcols=gcols, plot.all=TRUE)
 fname <- file.path(afig.path,paste0("AA_",SETID,"_toG_manual"))
 ## combined effect size and p-value plot
 plotdev(paste0(fname),
         height=nh, width=nw, res=300, type=ftyp)
-par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)#, family=ffam)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
 dotprofile(x=ovwp, value="median", vbrks=abrks,
            vcols=acols, p.dot=p.dot,
            dot.sze=dot.sze, axis=1:2, xlab=NA, ylab=NA)
@@ -445,7 +445,7 @@ if ( nrow(ovwp$p.value)>0 ) {
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="",  ftyp=ftyp,
-                 ##ffam="monospace",
+                 ffam=ffam,
                  axis2.col=ft.cols,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, plot.all=TRUE)
@@ -455,7 +455,6 @@ if ( nrow(ovwp$p.value)>0 ) {
     nc <- ncol(ovwp$p.value)
     nh <- nr *fh + mai[1] + mai[3]
     nw <- nc *fw + mai[2] + mai[4]
-    ffam <- "monospace"#"sans"
 
     rsrt <- rownames(ovwp$p.value)
     taa <- sub(".*:","", rsrt)
@@ -465,7 +464,7 @@ if ( nrow(ovwp$p.value)>0 ) {
     ## combined effect size and p-value plot
     plotdev(paste0(fname),
             height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)#, family=ffam)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
     dotprofile(x=ovwp, value="median", vbrks=abrks,
                vcols=acols, p.dot=p.dot,
                dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
@@ -492,7 +491,7 @@ if ( nrow(ovwp$p.value)>0 ) {
 
 
 ## TODO: plot on p-value correction
-##plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
+plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
 
 
 ## by AA->AA
@@ -523,7 +522,7 @@ for ( ds in auds ) {
                  rlab=LAB, llab=dsl, ftyp=ftyp,
                  vcols=acols, vbrks=abrks,
                  mtxt="Incorporated AA", 
-                 mtxt1="Encoded AA", #ffam="monospace",
+                 mtxt1="Encoded AA", ffam=ffam,
                  axis1.las=1, fw=.2, fh=.2,
                  gcols=gcols)
 }
