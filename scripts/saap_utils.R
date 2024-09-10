@@ -427,7 +427,7 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     cnt[cnt==0] <- NA
     txt <- ovw$unique
     txt[txt==0] <- ""
-    txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
+    txt.col <- ifelse(ovw$unique>max(c(ovw$unique))*.75,"white","black")
     image_matrix(cnt, col=gcols, axis=1:2,
                  text=txt, text.col=txt.col, ylab=NA, xlab=NA, text.cex=.8)
     axis(3, at=1:ncol(ovw$num.target), cex.axis=tot.cex,
