@@ -125,7 +125,7 @@ synonym.file <- file.path(mam.path, "originalData", "gene_synonyms.tsv")
 ## DATA FILTERS
 
 ## CANCERS OR HEALTHY TISSUES
-healthy <- FALSE # TRUE #  
+healthy <- TRUE #  FALSE # 
 
 ## TODO: extracellular is mostly album/globin - analyze
 exclude.nterm <- FALSE # TRUE # 

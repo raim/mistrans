@@ -56,7 +56,7 @@ prob.file <- file.path(proj.path, "originalData",
 ## TODO: remove those from TMT level
 ## and afterwards remove all missing from  bdat
 MINPP <- .9
-RM.POSPROB <- TRUE # FALSE # 
+RM.POSPROB <- FALSE # TRUE # 
 MAXPP <- .5
 MN.POSPROB <- FALSE # TRUE # 
 

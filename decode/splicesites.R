@@ -237,7 +237,7 @@ ssf <- rbind(A=apply(asm, 2, function(x) sum(x=="A")),
              T=apply(asm, 2, function(x) sum(x=="T")))
 
 plotdev(file.path(fig.path,paste0("splicesite_nucleotides")),
-        height=3.5, width=7.5, res=300, type=ftyp)
+        height=3.5, width=10, res=300, type=ftyp)
 par(mai=c(.5,.75,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
 bp <- barplot(ssf, las=2, beside=TRUE, col=1:4, legend=TRUE)
 mtext("distance from splice site",1, 1.3)
