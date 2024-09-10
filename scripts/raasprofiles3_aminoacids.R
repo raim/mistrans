@@ -365,10 +365,52 @@ for ( ptype in unique(tmtf$pfromto) ) {
     
 }
 
-## plot only significantly high RAAS
-ovwp <-ovw
+## all ->G
+tog <- grep(":G", rownames(ovw$p.value), value=TRUE)
+ovwp <- sortOverlaps(ovw, srt=tog)
+
+mai <- c(.8,.8,.7,.6)
+if ( SETID=="tissues" ) {
+    mai[1] <- 1.5
+}
+## calculate optimal figure height: result fields + figure margins (mai)
+nr <- nrow(ovwp$p.value)
+nc <- ncol(ovwp$p.value)
+nh <- nr *fh + mai[1] + mai[3]
+nw <- nc *fw + mai[2] + mai[4]
+ffam <- "monospace"#"sans"
+
+plotProfiles(ovwp,
+             fname=file.path(afig.path,paste0("AA_",SETID,"_toG")),
+             mai=mai, fw=.2, fh=.2,
+             ttcols=ttcols, value="median",
+             p.min=p.min, p.txt=p.txt,
+             dot.sze=dot.sze, p.dot=p.dot,
+             rlab=LAB, llab="",  ftyp=ftyp,
+             ffam="monospace",
+             axis2.col=ft.cols,
+             vcols=acols, vbrks=abrks,
+             gcols=gcols, plot.all=TRUE)
+fname <- file.path(afig.path,paste0("AA_",SETID,"_toG_manual"))
+## combined effect size and p-value plot
+plotdev(paste0(fname),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+dotprofile(x=ovwp, value="median", vbrks=abrks,
+           vcols=acols, p.dot=p.dot,
+           dot.sze=dot.sze, axis=1:2, xlab=NA, ylab=NA)
+box()
+axis(3, at=1:ncol(ovwp$num.target),
+     labels=format(ovwp$num.target[1,], big.mark=",", trim=TRUE),las=2)
+axis(4, at=nrow(ovwp$num.query):1, mgp=c(1.3,.1,0), tcl=-.1,
+     labels=format(ovwp$num.query[,1], big.mark=",", trim=TRUE),las=2)
+dev.off()
+
+
+
 
 ## only significant
+ovwp <-ovw
 ovwp <- sortOverlaps2(ovwp, axis=2, p.min=p.min, cut=TRUE)
 
 
@@ -392,9 +434,13 @@ if ( nrow(ovwp$p.value)>0 ) {
     ft.cols <- aa.cols[faa]
     names(ft.cols) <- rownames(ovwp$p.value)
     
+    mai <- c(.8,.8,.7,.6)
+    if ( SETID=="tissues" ) {
+        mai[1] <- 1.5
+    }
     plotProfiles(ovwp,
                  fname=file.path(afig.path,paste0("AA_",SETID,"_cut")),
-                 mai=c(.8,.8,.6,.6), fw=.2, fh=.2,
+                 mai=mai, fw=.2, fh=.2,
                  ttcols=ttcols, value="median",
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
@@ -407,7 +453,6 @@ if ( nrow(ovwp$p.value)>0 ) {
     ## calculate optimal figure height: result fields + figure margins (mai)
     nr <- nrow(ovwp$p.value)
     nc <- ncol(ovwp$p.value)
-    mai <- c(.8,.8,.7,.6)
     nh <- nr *fh + mai[1] + mai[3]
     nw <- nc *fw + mai[2] + mai[4]
     ffam <- "monospace"#"sans"
@@ -416,9 +461,9 @@ if ( nrow(ovwp$p.value)>0 ) {
     taa <- sub(".*:","", rsrt)
     faa <- sub(":.*","", rsrt)
 
-    fname <- file.path(afig.path,paste0("AA_",SETID,"_cut"))
+    fname <- file.path(afig.path,paste0("AA_",SETID,"_cut_dotplot_manual"))
     ## combined effect size and p-value plot
-    plotdev(paste0(fname,"_dotplot_manual"),
+    plotdev(paste0(fname),
             height=nh, width=nw, res=300, type=ftyp)
     par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
     dotprofile(x=ovwp, value="median", vbrks=abrks,

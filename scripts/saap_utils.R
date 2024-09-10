@@ -430,6 +430,10 @@ plotProfiles <- function(ovw, mai=c(.6,.5,.5,.5),
     txt.col <- ifelse(ovw$unique>quantile(c(ovw$unique),.95),"white","black")
     image_matrix(cnt, col=gcols, axis=1:2,
                  text=txt, text.col=txt.col, ylab=NA, xlab=NA, text.cex=.8)
+    axis(3, at=1:ncol(ovw$num.target), cex.axis=tot.cex,
+         labels=format(apply(ovw$unique,2,sum), big.mark=",", trim=TRUE),las=2)
+    axis(4, at=nrow(ovw$num.query):1, cex.axis=tot.cex,
+         labels=format(apply(ovw$unique,1,sum), big.mark=",", trim=TRUE),las=2)
     ##axis(2, length(axex):1, labels=axex, las=2)
     if ( !missing(mtxt) ) mtext(mtxt, 2, mtxt.line, cex=mtxt.cex)
     if ( !missing(mtxt1) ) mtext(mtxt1, 1, mtxt.line, cex=mtxt.cex)
