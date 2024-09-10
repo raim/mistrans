@@ -395,7 +395,7 @@ fname <- file.path(afig.path,paste0("AA_",SETID,"_toG_manual"))
 ## combined effect size and p-value plot
 plotdev(paste0(fname),
         height=nh, width=nw, res=300, type=ftyp)
-par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)#, family=ffam)
 dotprofile(x=ovwp, value="median", vbrks=abrks,
            vcols=acols, p.dot=p.dot,
            dot.sze=dot.sze, axis=1:2, xlab=NA, ylab=NA)
@@ -445,7 +445,7 @@ if ( nrow(ovwp$p.value)>0 ) {
                  p.min=p.min, p.txt=p.txt,
                  dot.sze=dot.sze, p.dot=p.dot,
                  rlab=LAB, llab="",  ftyp=ftyp,
-                 ffam="monospace",
+                 ##ffam="monospace",
                  axis2.col=ft.cols,
                  vcols=acols, vbrks=abrks,
                  gcols=gcols, plot.all=TRUE)
@@ -465,7 +465,7 @@ if ( nrow(ovwp$p.value)>0 ) {
     ## combined effect size and p-value plot
     plotdev(paste0(fname),
             height=nh, width=nw, res=300, type=ftyp)
-    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+    par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25)#, family=ffam)
     dotprofile(x=ovwp, value="median", vbrks=abrks,
                vcols=acols, p.dot=p.dot,
                dot.sze=dot.sze, axis=NA, xlab=NA, ylab=NA)
@@ -492,7 +492,7 @@ if ( nrow(ovwp$p.value)>0 ) {
 
 
 ## TODO: plot on p-value correction
-plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
+##plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
 
 
 ## by AA->AA
@@ -523,7 +523,7 @@ for ( ds in auds ) {
                  rlab=LAB, llab=dsl, ftyp=ftyp,
                  vcols=acols, vbrks=abrks,
                  mtxt="Incorporated AA", 
-                 mtxt1="Encoded AA", ffam="monospace",
+                 mtxt1="Encoded AA", #ffam="monospace",
                  axis1.las=1, fw=.2, fh=.2,
                  gcols=gcols)
 }
