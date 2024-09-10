@@ -388,7 +388,7 @@ plotProfiles(ovwp,
              dot.sze=dot.sze, p.dot=p.dot,
              rlab=LAB, llab="",  ftyp=ftyp,
              ffam="monospace",
-             axis2.col=ft.cols,
+             #axis2.col=ft.cols,
              vcols=acols, vbrks=abrks,
              gcols=gcols, plot.all=TRUE)
 fname <- file.path(afig.path,paste0("AA_",SETID,"_toG_manual"))
