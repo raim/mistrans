@@ -17,6 +17,7 @@ SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 ## CRAN packages
 library(viridis) # viridis coloring scheme
 library(readxl)
+library(R.utils) # parsing gz files
 
 ## BioConductor packages
 library(DiffLogo) # sequence diference logos
@@ -56,7 +57,7 @@ prob.file <- file.path(proj.path, "originalData",
 ## TODO: remove those from TMT level
 ## and afterwards remove all missing from  bdat
 MINPP <- .9
-RM.POSPROB <- TRUE # FALSE # 
+RM.POSPROB <- FALSE # TRUE # 
 MAXPP <- .5
 MN.POSPROB <- FALSE # TRUE # 
 
@@ -1301,3 +1302,7 @@ CMAIL <- 1.54 ## commonly used between motif and domain figures, defined
 FONT <- "monospace" # font used for aligned figures in motifs and domains
 
 
+##
+cat(paste("KEEPING\n\t",
+          nrow(bdat), "unique BP/SAAP\n\t",
+          nrow(csite), "unique genomic sites\n"))

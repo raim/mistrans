@@ -181,7 +181,10 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("toAA_",SETID)),
 
 ## to AA - ONLY SIGNIFICANT
 
-ovwp <- sortOverlaps(ovw, axis=2, p.min=p.min, cut=TRUE)
+P.CUT <- p.min
+if ( RM.POSPROB ) P.CUT <- p.txt
+
+ovwp <- sortOverlaps(ovw, axis=2, p.min=P.CUT, cut=TRUE)
 nsrt <- names(sort(apply(ovwp$median, 1, median)))
 ovwp <- sortOverlaps(ovwp, axis=2, srt=nsrt)
 
@@ -323,3 +326,9 @@ plotProfiles(ovw, fname=file.path(afig.path,paste0("AA_",SETID,"_",ds)),
 
 
 
+## phypergeo of AAS types vs. Dataset/Tissues
+
+ovl <- clusterCluster(tmtf$fromto, tmtf$Dataset, cl2.srt=uds)
+ovc <- sortOverlaps(ovl, p.min=p.min, cut=TRUE, axis=2)
+
+plotOverlaps(ovc, p.min=p.min, p.txt=p.txt, show.total=TRUE)

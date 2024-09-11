@@ -54,7 +54,11 @@ cls <- clusterCluster(cdat$fromto, asite.bins, cl2.srt=asite.srt)
 
 ## sort by only enriched
 cls <- sortOverlaps(cls, p.min=1e-3)
-clc <- sortOverlaps(cls, p.min=p.txt, cut=TRUE, sign=1)
+
+# cut tight
+P.CUT <- p.txt
+if ( RM.POSPROB ) P.CUT <- 1e-3 
+clc <- sortOverlaps(cls, p.min=P.CUT, cut=TRUE, sign=1)
 
 
 plotdev(file.path(kfig.path,paste0("peptides_AAS_AAStype_tight")),
@@ -70,6 +74,8 @@ axis(2, length(axex):1, labels=axex, las=2, family="monospace")
 mtext("AAS type", 2, 2.7)
 mtext("position of AAS in peptide", 1, 1.5)
 ##figlabel("AAS", pos="bottomright",cex=1.2, font=2)
+if ( P.CUT!=p.txt )
+    figlabel(paste0("p<=",P.CUT), pos="bottomright",cex=1.2, font=2)
 dev.off()
 
 ## absolute position

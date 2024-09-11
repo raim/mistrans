@@ -13,7 +13,7 @@ if ( !exists("bdat") )
 do.autocor <- !interactive()
 
 ## figure output path
-rseq.path <- file.path(proj.path, "figures", "riboseq") #,RID)
+rseq.path <- file.path(fig.path, "riboseq") #,RID)
 dir.create(rseq.path)
 
 ## additionally required data files

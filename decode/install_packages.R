@@ -4,6 +4,7 @@
 ## from CRAN
 install.packages("viridis")
 install.packages("readxl")
+install.packages("R.utils")
 
 ## from github
 ## https://github.com/raim/segmenTools (release RAAS_preprint).

@@ -491,7 +491,7 @@ if ( nrow(ovwp$p.value)>0 ) {
 
 
 ## TODO: plot on p-value correction
-plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
+##plot(ovw$p.value, qvalue::qvalue(c(ovw$p.value))$qvalues)
 
 
 ## by AA->AA
@@ -528,3 +528,27 @@ for ( ds in auds ) {
 }
 
 
+
+## phypergeo of AAS types vs. Dataset/Tissues
+
+ttmt <- tmtf[tmtf$Dataset!="Cancer",]
+
+ovl <- clusterCluster(ttmt$fromto, ttmt$Dataset, cl2.srt=uds[uds!="Cancer"])
+ovc <- sortOverlaps(ovl, p.min=p.min, cut=TRUE, axis=2)
+
+mai <- c(.8,.8,.7,.6)
+if ( SETID=="tissues" ) {
+    mai[1] <- 1.5
+}
+## calculate optimal figure height: result fields + figure margins (mai)
+nr <- nrow(ovc$p.value)
+nc <- ncol(ovc$p.value)
+nh <- nr *.2 + mai[1] + mai[3]
+nw <- nc *.25 + mai[2] + mai[4]
+
+plotdev(file.path(afig.path,paste0("AAStype_",SETID,"_hypergeo")),
+        height=nh, width=nw, res=300, type=ftyp)
+par(mai=mai, mgp=c(1.3,.3,0), tcl=-.25, family=ffam)
+plotOverlaps(ovc, p.min=p.min, p.txt=p.txt, show.total=TRUE,
+             xlab=NA, ylab=NA, text.cex = .9)
+dev.off()
