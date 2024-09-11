@@ -59,7 +59,7 @@ prob.file <- file.path(proj.path, "originalData",
 MINPP <- .9
 RM.POSPROB <- FALSE # TRUE # 
 MAXPP <- .5
-MN.POSPROB <- FALSE # TRUE # 
+MN.POSPROB <- TRUE # FALSE # 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
