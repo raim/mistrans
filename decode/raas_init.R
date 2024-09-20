@@ -59,7 +59,7 @@ prob.file <- file.path(proj.path, "originalData",
 MINPP <- .9
 RM.POSPROB <- FALSE # TRUE # 
 MAXPP <- .5
-MN.POSPROB <- TRUE # FALSE # 
+MN.POSPROB <- FALSE # TRUE # 
 
 if ( !file.exists(in.file) | !file.exists(tmt.file) )
     stop("INPUT FILES MISSING. MAKE SURE PATHS ARE DEFINED PROPERLY",
@@ -1306,3 +1306,33 @@ FONT <- "monospace" # font used for aligned figures in motifs and domains
 cat(paste("KEEPING\n\t",
           nrow(bdat), "unique BP/SAAP\n\t",
           nrow(csite), "unique genomic sites\n"))
+
+## test positional probabilities vs. sites
+if ( interactive() ) {
+    
+    plotdev(file.path(fig.path,paste0("pp")), width=5, height=3,
+            type="png")
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(tmtf$site, tmtf$pp, ylab="positional probability",
+         xlab="position in peptide", main=paste("all precursor level"))
+    dev.off()
+
+    source("~/programs/segmenTools/R/plotUtils.R")
+    first <- substring(tmtf$BP,1,1)
+    id = "Q:G"
+    idx <- which(tmtf$fromto==id & first=="A")
+    plotdev(file.path(fig.path,paste0("pp_",id)), width=5, height=3,
+            type="png")
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(tmtf$site[idx], tmtf$pp[idx], ylab="positional probability",
+         xlab="position in peptide", main=paste(id, "and A at N1"))
+    dev.off()
+    id = "Q:A"
+    idx <- which(tmtf$fromto==id & first=="G")
+    plotdev(file.path(fig.path,paste0("pp_",id)), width=5, height=3,
+            type="png")
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    dense2d(tmtf$site[idx], tmtf$pp[idx], ylab="positional probability",
+         xlab="position in peptide", main=paste(id, "and G at N1"))
+    dev.off()
+}
