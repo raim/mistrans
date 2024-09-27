@@ -1336,3 +1336,7 @@ if ( interactive() ) {
          xlab="position in peptide", main=paste(id, "and G at N1"))
     dev.off()
 }
+
+bid="AGIPEGDYLSYR"
+pprob$"RAAS"[pprob$SAAP==bid]
+pprob$"Positional probability"[pprob$SAAP==bid]
