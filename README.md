@@ -4,8 +4,6 @@ Ideas
 
 ## TODO
 
-# ANDREW WAS HERE
-
 * hypothesis tree:
     - synthesis: codons, ribosome density, translation kinetics,
 	- degradation: degrons,
