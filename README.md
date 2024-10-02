@@ -1,3 +1,10 @@
+
+Working directory for code produced by raim for the decode project in the
+Slavov lab, 2024; see (https://github.com/SlavovLab/decode/tree/main/decode_analysis) for the published version of this code that also underlies publications
+from this project.
+
+### old
+
 Protein mutation data by Shiri Tsour, 2023.
 
 Ideas
