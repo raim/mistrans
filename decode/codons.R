@@ -1,6 +1,13 @@
 
 ## CODON FREQUENCY ANALYSIS of AMINO ACID SUBSTITUTION SITES
 
+## TODO 20241220:
+
+## * load tissue-wise transcript counts, table EV2 by Ersalan et
+##   al. 2019 10.15252/msb.20188513,
+## * calculate scaled codon frequencies: transcript*count for each tissue,
+## * correlate with tissue-specific RAAS values.
+
 SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data

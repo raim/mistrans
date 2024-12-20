@@ -373,6 +373,10 @@ cp -a ${MISDATA}/originalData/elife-45396-fig1-data2-v2.csv $ddata/
 cp -a ${MISDATA}/originalData/six_cell_lines_minimal.xlsx $ddata/
 cp -a ${MISDATA}/originalData/dana14_codons.csv $ddata/
 
+## 20241220
+## TODO: download here?
+cp -a ${MAMDATA}/originalData/eraslan19_table_EV2.tsv $ddata/
+
 ## genomeBrowser data
 cp -a ${MAMDATA}/originalData/uniprot_ensembl.dat $ddata/
 cp -a ${MAMDATA}/originalData/uniprot_name.dat $ddata/
