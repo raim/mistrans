@@ -118,7 +118,7 @@ codon.file <- file.path(add.path,"coding_codons.tsv.gz")
 
 ## 20241220
 ## Eraslan et al. 2019: tissue transcriptome counts
-eraslan19.file <- file.path(add.path, "eraslan19_table_EV2.tsv"
+eraslan19.file <- file.path(add.path, "eraslan19_table_EV2.tsv")
 
 ## coding sequence fasta
 tfas.file <- file.path(add.path, "coding.fa.gz")

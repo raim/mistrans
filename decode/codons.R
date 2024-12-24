@@ -3,7 +3,7 @@
 
 ## TODO 20241220:
 
-## * load tissue-wise transcript counts, table EV2 by Ersalan et
+## * load tissue-wise transcript counts, table EV2 by Eraslan et
 ##   al. 2019 10.15252/msb.20188513,
 ## * calculate scaled codon frequencies: transcript*count for each tissue,
 ## * correlate with tissue-specific RAAS values.
@@ -88,7 +88,27 @@ Fbg <- lapply(codl, function(x) x/sum(x)) # codon frequency
 Fbg <- unlist(Fbg)
 names(Fbg) <- sub("\\.","-",names(Fbg))
 
+## TISSUE-SPECIFIC CODON FREQUENCIES:
+## for each tissue multiple codon per transcript count by
+## tissue-specific transcript count, and calculate a tissue-specific
+## codon frequency.
 
+## tissue-specific transcript counts
+tcnts <- read.delim(eraslan19.file, row.names=3)
+tcnts <- tcnts[,grep("exonic",colnames(tcnts))]
+colnames(tcnts) <- sub("_exonicMRNA", "",  colnames(tcnts))
+## mean counts over replicates
+## TODO: inspect standard deviations
+tiss <- unique(sub("_.*", "", colnames(tcnts)))
+tcnt <- sapply(tiss, function(x)
+    apply(tcnts[,grep(x,colnames(tcnts)),drop=FALSE],1,mean))
+
+## list of tissue-specific codons counts
+tcodons <- codons[rownames(tcnt),]
+tcodcnts <- lapply(tiss, function(x) tcodons*tcnt[,x])
+names(tcodcnts) <- tiss
+
+## TODO: AA-specific codon frequencies
 
 ## median codon RAAS:
 ## NOTE: median over all measurements
