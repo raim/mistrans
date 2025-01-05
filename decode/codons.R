@@ -1,13 +1,6 @@
 
 ## CODON FREQUENCY ANALYSIS of AMINO ACID SUBSTITUTION SITES
 
-## TODO 20241220:
-
-## * load tissue-wise transcript counts, table EV2 by Eraslan et
-##   al. 2019 10.15252/msb.20188513,
-## * calculate scaled codon frequencies: transcript*count for each tissue,
-## * correlate with tissue-specific RAAS values.
-
 SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 
 ## common initialization of BP/SAAP mapping and TMT level RAAS data
@@ -61,21 +54,21 @@ rownames(decodl) <- sub(".*\\.", "", rownames(decodl))
 
 ## CODON COUNT and FREQUENCY IN ALL UNIQUE TRANSCRIPTS 
 
+if ( any(!ctmt$transcript%in%rownames(codons)) )
+    stop("some codon frequencies not found, rerun calculation")
+
 ## codon counts in all mapped transcripts
 ## NOTE: this is used as our background frequency
 cod  <- codons[unique(ctmt$transcript),]
 codt <- apply(cod,2,sum) # total count
 
-if ( any(!ctmt$transcript%in%rownames(codons)) )
-    stop("some codon frequencies not found, rerun calculation")
-
 ### CODON SORTING
 
 ## PER AA
 ## transcript codon frequencies per AA and SORTING by frequency and AA prop
-codl <- split(codt, GENETIC_CODE[sub(".*\\.","",names(codt))])
+codl <- split(codt, GENETIC_CODE[names(codt)])
 codl <- lapply(codl, sort, decreasing=TRUE) ## SORT BY MOST FREQUENT
-codl <- codl[aap.srt[aap.srt%in%names(codl)]] ## SORT BY AA PROP
+codl <- codl[aap.srt[aap.srt%in%names(codl)]] ## SORT AA BY PROP
 
 ## LOCAL CODON SORTING by background frequencies
 ## (AA property ->codon frequency)
@@ -88,27 +81,7 @@ Fbg <- lapply(codl, function(x) x/sum(x)) # codon frequency
 Fbg <- unlist(Fbg)
 names(Fbg) <- sub("\\.","-",names(Fbg))
 
-## TISSUE-SPECIFIC CODON FREQUENCIES:
-## for each tissue multiple codon per transcript count by
-## tissue-specific transcript count, and calculate a tissue-specific
-## codon frequency.
 
-## tissue-specific transcript counts
-tcnts <- read.delim(eraslan19.file, row.names=3)
-tcnts <- tcnts[,grep("exonic",colnames(tcnts))]
-colnames(tcnts) <- sub("_exonicMRNA", "",  colnames(tcnts))
-## mean counts over replicates
-## TODO: inspect standard deviations
-tiss <- unique(sub("_.*", "", colnames(tcnts)))
-tcnt <- sapply(tiss, function(x)
-    apply(tcnts[,grep(x,colnames(tcnts)),drop=FALSE],1,mean))
-
-## list of tissue-specific codons counts
-tcodons <- codons[rownames(tcnt),]
-tcodcnts <- lapply(tiss, function(x) tcodons*tcnt[,x])
-names(tcodcnts) <- tiss
-
-## TODO: AA-specific codon frequencies
 
 ## median codon RAAS:
 ## NOTE: median over all measurements
@@ -512,3 +485,6 @@ points(decodl[sub(".*-","",names(Nraas)),1], Nraas,
        col=aa.cols[sub("-.*","",names(Nraas))],
        pch=aa.pchs[sub("-.*","",names(Nraas))])
 dev.off()
+
+
+
