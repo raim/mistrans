@@ -19,8 +19,8 @@ if ( !exists("bdat") )
     
 
 ## local output path
-cfig.path <- file.path(fig.path,"codons")
-dir.create(cfig.path, showWarnings=FALSE)
+ctfig.path <- file.path(fig.path,"codons", "tissues")
+dir.create(ctfig.path, showWarnings=FALSE)
 
 ### START ANALYSIS
 
@@ -172,7 +172,7 @@ if ( interactive() ) {
     hist(tcodfreq[,4])
 }
 
-plotdev(file.path(cfig.path,paste0("tissues_codons_frequencies")),
+plotdev(file.path(ctfig.path,paste0("tissues_codons_frequencies")),
         type=ftyp, res=300, width=12,height=6)
 par(mai=c(.65,1.5,.1,.1), mgp=c(1.3, .3, 0), tcl=-.25, family='monospace')
 image_matrix(rbind(tcodfreq,
@@ -186,17 +186,68 @@ abline(v=.5+cumsum(table(sub("-.*","", colnames(tcodfreq)))),
 dev.off()
 
 ## TODO: huge heatmap of per transcript codon frequencies.
-rcodons <- codons/apply(codons,1,sum)
-plotdev(file.path(cfig.path,paste0("all_codons_frequencies")),
-        type=ftyp, res=300, width=12,height=100)
-par(mai=c(.65,1.5,.1,.1), mgp=c(1.3, .3, 0), tcl=-.25, family='monospace')
-image_matrix(rcodons,
+if ( FALSE ) {
+    rcodons <- codons/apply(codons,1,sum)
+    plotdev(file.path(ctfig.path,paste0("all_codons_frequencies")),
+            type=ftyp, res=300, width=12,height=100)
+    par(mai=c(.65,1.5,.1,.1), mgp=c(1.3, .3, 0), tcl=-.25, family='monospace')
+    image_matrix(rcodons,
              axis=1:2, col=viridis(100),
              breaks=seq(0,1,length.out=101), xlab=NA, ylab=NA)
-abline(v=.5+cumsum(table(sub("-.*","", colnames(tcodfreq)))),
-       col='white', lwd=1)
-dev.off()
+    abline(v=.5+cumsum(table(sub("-.*","", colnames(tcodfreq)))),
+           col='white', lwd=1)
+    dev.off()
+}
+
+## REPORT AVAILABLE AND MISSING TISSIES
+havefreq <- tolower(rownames(tcodfreq))
+haveraas <- unique(ctmt$TMT.Tissue[ctmt$Dataset=="Healthy"])
+
+cat(paste("codon frequencies available but no RAAS:",
+          paste(havefreq[!havefreq%in%haveraas], collapse="; "), "\n"))
+cat(paste("RAAS available but no codon frequencies:",
+          paste(haveraas[!haveraas%in%havefreq], collapse="; "), "\n"))
+
+## map different tissue names between data sets
+tmap <- setNames(havefreq, havefreq)
+tmap["salivarygland"] <- "saliva-secretinggland"
+tmap["brain"] <- "cerebralcortex"
+tmap["fat"] <- "adiposetissue"
+tmap["thyroid"] <- "thyroidgland"
+tmap["appendices"] <- "vermiformappendix"
+tmap["prostate"] <- "prostategland"
+tmap["thyroid"] <- "thyroidgland"
+
+havefreq <- tmap[tolower(rownames(tcodfreq))]
+haveraas <- unique(ctmt$TMT.Tissue[ctmt$Dataset=="Healthy"])
+
+cat(paste("codon frequencies available but no RAAS:",
+          paste(havefreq[!havefreq%in%haveraas], collapse="; "), "\n"))
+cat(paste("RAAS available but no codon frequencies:",
+          paste(haveraas[!haveraas%in%havefreq], collapse="; "), "\n"))
 
 ## CORRELATE TO RAAS
-for ( ds in auds ) {
+for ( i in 1:nrow(tcodfreq) ) {
+
+    tid <- tmap[tolower(rownames(tcodfreq)[i])]
+
+    ## get codon frequency for this tissue
+    cfrq <- tcodfreq[i,]
+
+    ## get codon-specific RAAS for this tissue
+    dtmt <- ctmt[ctmt$TMT.Tissue==tid,]
+    if ( nrow(dtmt)==0 ) {
+        cat(paste(tid, "NOT IN DATA\n"))
+        next
+    }
+    craas <- sapply(names(cfrq), function(cl)
+        log10(median(10^dtmt$RAAS[dtmt$aacodon==cl])))
+
+    plotdev(file.path(ctfig.path,paste0("codons_raas_", tid)),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(cfrq, craas, title=TRUE, cor.legend=FALSE,
+            xlab="codon frequency", ylab=xl.raas, density=FALSE)
+    figlabel(tid, pos='bottomleft')
+    dev.off()
 }
