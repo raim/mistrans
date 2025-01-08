@@ -243,6 +243,7 @@ par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
 plotCor(afrq, log10(araas[names(afrq)]), 
         title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
         xlab="codon frequency", ylab=xl.raas)
+figlabel("all tissues", pos='bottomleft')
 dev.off()
 
 for ( i in 1:nrow(tcodfreq) ) {
