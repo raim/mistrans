@@ -216,7 +216,6 @@ tmap["fat"] <- "adiposetissue"
 tmap["thyroid"] <- "thyroidgland"
 tmap["appendices"] <- "vermiformappendix"
 tmap["prostate"] <- "prostategland"
-tmap["thyroid"] <- "thyroidgland"
 
 havefreq <- tmap[tolower(rownames(tcodfreq))]
 haveraas <- unique(ctmt$TMT.Tissue[ctmt$Dataset=="Healthy"])
@@ -227,12 +226,24 @@ cat(paste("RAAS available but no codon frequencies:",
           paste(haveraas[!haveraas%in%havefreq], collapse="; "), "\n"))
 
 ## CORRELATE TO RAAS
+
+## global scaled codon frequency
+acnt <- apply(tcnt, 1, sum)
+acodcnts <- tcodons*acnt
+afrq <- codonFrequencies(acodcnts)
+
+araas <- sapply(names(afrq), function(cl)
+    median(10^ctmt$RAAS[which(ctmt$aacodon==cl)]))
+
+## NOTE: scaled values reproduce non-scaled version
+plotCor(afrq, log10(araas[names(afrq)]))
+
 for ( i in 1:nrow(tcodfreq) ) {
 
     tid <- tmap[tolower(rownames(tcodfreq)[i])]
 
     ## get codon frequency for this tissue
-    cfrq <- tcodfreq[i,]
+    tfrq <- tcodfreq[i,]
 
     ## get codon-specific RAAS for this tissue
     dtmt <- ctmt[ctmt$TMT.Tissue==tid,]
@@ -240,14 +251,41 @@ for ( i in 1:nrow(tcodfreq) ) {
         cat(paste(tid, "NOT IN DATA\n"))
         next
     }
-    craas <- sapply(names(cfrq), function(cl)
-        log10(median(10^dtmt$RAAS[dtmt$aacodon==cl])))
+    traas <- sapply(names(tfrq), function(cl)
+        median(10^dtmt$RAAS[dtmt$aacodon==cl]))
 
+    plotdev(file.path(ctfig.path,paste0("codons_raas_freq_", tid)),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tfrq, log10(traas), 
+            title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
+            xlab="codon frequency", ylab=xl.raas)
+    figlabel(tid, pos='bottomleft')
+    dev.off()
+    plotdev(file.path(ctfig.path,paste0("codons_raas_freq_diff_", tid)),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tfrq - afrq, log10(traas/araas),
+            title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
+            xlab=expression(f[tissue]-f[all]),
+            ylab=expression(log[10](RAAS[tissue]/RAAS[all])))
+    figlabel(tid, pos='bottomleft')
+    dev.off()
+
+    plotdev(file.path(ctfig.path,paste0("codons_freq_", tid)),
+            type=ftyp, res=300, width=3,height=3)
+    par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+    plotCor(tfrq, afrq, title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
+            xlab=bquote(f[.(tid)]),
+            ylab=expression(f[all]))
+    dev.off()
     plotdev(file.path(ctfig.path,paste0("codons_raas_", tid)),
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
-    plotCor(cfrq, craas, title=TRUE, cor.legend=FALSE,
-            xlab="codon frequency", ylab=xl.raas, density=FALSE)
+    plotCor(log10(traas), log10(araas), 
+            title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
+            xlab=bquote(log[10](RAAS[.(tid)])),
+            ylab=expression(log[10](RAAS[all])))
     figlabel(tid, pos='bottomleft')
     dev.off()
 }
