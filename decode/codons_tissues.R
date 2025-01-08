@@ -232,11 +232,18 @@ acnt <- apply(tcnt, 1, sum)
 acodcnts <- tcodons*acnt
 afrq <- codonFrequencies(acodcnts)
 
+## global median RAAS over codons
 araas <- sapply(names(afrq), function(cl)
     median(10^ctmt$RAAS[which(ctmt$aacodon==cl)]))
 
-## NOTE: scaled values reproduce non-scaled version
-plotCor(afrq, log10(araas[names(afrq)]))
+## NOTE: SCALED VALUES REPRODUCE NON-SCALED VERSION
+plotdev(file.path(ctfig.path,paste0("codons_raas_freq_all")),
+            type=ftyp, res=300, width=3,height=3)
+par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
+plotCor(afrq, log10(araas[names(afrq)]), 
+        title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
+        xlab="codon frequency", ylab=xl.raas)
+dev.off()
 
 for ( i in 1:nrow(tcodfreq) ) {
 
@@ -276,15 +283,16 @@ for ( i in 1:nrow(tcodfreq) ) {
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(tfrq, afrq, title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
-            xlab=bquote(f[.(tid)]),
+            xlab=bquote(f[tissue]),
             ylab=expression(f[all]))
+    figlabel(tid, pos='bottomleft')
     dev.off()
     plotdev(file.path(ctfig.path,paste0("codons_raas_", tid)),
             type=ftyp, res=300, width=3,height=3)
     par(mai=c(.5,.5,.25,.25), mgp=c(1.3,.3,0), tcl=-.25)
     plotCor(log10(traas), log10(araas), 
             title=TRUE, cor.legend=FALSE, density=FALSE, pch=1,
-            xlab=bquote(log[10](RAAS[.(tid)])),
+            xlab=bquote(log[10](RAAS[tissue])),
             ylab=expression(log[10](RAAS[all])))
     figlabel(tid, pos='bottomleft')
     dev.off()
