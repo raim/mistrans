@@ -30,9 +30,7 @@ mkdir $MAMDATA/log
 ## includes trivial preprocessing: format conversions, data extractions, etc.
 ## NOTE: do this manually, since many files
 ## are behind wget/rsync firewalls
-if false; then
-    $SRC/download.sh
-fi
+$SRC/download.sh
 
 ## ANALYZE GFF3 FILE STRUCTURE
 
@@ -41,7 +39,9 @@ gunzip -c $ORIGDATA/Homo_sapiens.GRCh38.110.gff3.gz \
     | cut -f 3  | grep -v "\\#"  | sort| uniq -c \
     | sort -nr > $PROCDATA/features_count.txt
 
-## PROBLEM: ca. 10k more proteins in protein fasta than mRNA in gff3
+## PROBLEM: ca. 10k more proteins in protein fasta than mRNA in gff3.
+## These are annotated to scaffold sequences instead of properly assigned
+## chromosome positions.
 
 ## analyze gff3 vs. protein fasta
 ## get all proteins in protein fasta
