@@ -56,8 +56,8 @@ prob.file <- file.path(proj.path, "originalData",
 
 ## TODO: remove those from TMT level
 ## and afterwards remove all missing from  bdat
-MINPP <- .9
-RM.POSPROB <- FALSE # TRUE # 
+MINPP <- .5
+RM.POSPROB <- TRUE # FALSE # 
 MAXPP <- .5
 MN.POSPROB <- FALSE # TRUE # 
 
@@ -426,7 +426,9 @@ dev.off()
 
 if ( RM.POSPROB ) {
     ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp >= MINPP) # & dat$faas)
-    tmtf <- tmtf[tmtf$pp >= MINPP & tmtf$fa,] 
+    ##tmtf <- tmtf[tmtf$pp >= MINPP & tmtf$fa,]
+    ## NOTE: 20251110 - testing protein half-life RAAS relation
+    tmtf <- tmtf[tmtf$pp >= MINPP ,] 
 } else if ( MN.POSPROB ) {
     ##dat$Keep.SAAP <- dat$Keep.SAAP & (dat$pp <= MAXPP) # & !dat$faas)
     tmtf <- tmtf[tmtf$pp <= MAXPP & !tmtf$fa,]
@@ -1321,3 +1323,4 @@ if ( interactive() ) {
 bid="AGIPEGDYLSYR"
 pprob$"RAAS"[pprob$SAAP==bid]
 pprob$"Positional probability"[pprob$SAAP==bid]
+
