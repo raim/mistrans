@@ -162,20 +162,47 @@ dev.off()
 
 ## PROTEIN HALF-LIVES, @Mathieson2018
 
+pxstat <- ptstat #[ptstat$median<1, ]
+
 ## halflives all
 plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
-        type=ftyp, res=300, width=corW,height=corH)
+        type=ftyp, res=300, width=3.5,height=3.5)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
-plotCor(log10(ptstat$halflife), ptstat$median, ylim=range(ptstat$median),
-        ylab=xl.prota, xlab=xl.hlfm, axes=FALSE, title=TRUE, cor.legend=FALSE)
-axis(2)
-axis(1, at=1:10, labels=10^(1:10))
-axis(1, at=log10(rep(1:10, 5) * 10^rep(0:4, each=10)), tcl=-.125, labels=FALSE)
+cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
+              ylab=expression(RAAS~rho), xlab=xl.hlfm, axes=FALSE, title=TRUE,
+              cor.legend=FALSE,
+              line.methods='ols')
+logaxis(1:2)
+## calculate intercept alpha=\log(c \log(2))
+alpha <- cr$fit$coeff[1]
+C <- (10^alpha)/log(2)
+## calculate half-life of mistranslated proteins c=eps/d2;
+## d2=eps/C; t2 = C/(eps*log(2))
+eps <- 1/100
+t2 <- C/(eps*log(2))
+legend('topright', legend=c(bquote(alpha==.(round(cr$fit$coeff[1], 1))),
+                            bquote(beta==.(round(cr$fit$coeff[2], 1))),
+                            bquote(C==.(round(C, 1))),
+                            bquote(tau[1/2]==.(round(t2))~h)),
+       box.col=NA, bg='#ffffff77', inset=c(-.1,0), xpd=TRUE)
 ##box()
 dev.off()
 
 
 
+plotdev(file.path(pfig.path,paste0("protein_degradation")),
+        type=ftyp, res=300, width=corW,height=corH)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+cr <- plotCor(log(2)/(pxstat$halflife),
+              10^pxstat$median, #log='xy',
+              ylab=expression(RAAS~rho),
+              xlab=expression(degradation~rate~d[1]/h^-1),
+              axes=FALSE, title=TRUE,
+              cor.legend=FALSE,
+              line.methods='ols', ylim=c(0,.5), xlim=c(0,.02))
+axis(1);axis(2)
+## calculate intercept alpha=\log(c \log(2))
+dev.off()
 
 
 
