@@ -193,6 +193,16 @@ legend('topright', legend=c(bquote(alpha==.(round(cr$fit$coeff[1], 1))),
                             bquote(tau[1/2]==.(round(t2))~h)),
        box.col=NA, bg='#ffffff77', inset=c(-.1,0), xpd=TRUE)
 ##box()
+### Theoretical RAAS FOR CONSTANT s2/s1 and d2
+tau <- 1 # half-life of mistranslated proteins, 1 h
+error_rate <- 1e-2 # one error in 100 proteins = s2/s1
+d2 <- log(2)/tau 
+halflives <- range(pxstat$halflife, na.rm=TRUE)
+d1 <- log(2)/halflives # s1/P1
+RAAS <- eps/d2 * d1
+lines(log10(halflives), log10(RAAS), col=2, lwd=2)
+figlabel(bquote(tau[1/2]==.(tau)~h), col=2, font=2,
+         region='plot', pos='bottomleft')
 dev.off()
 
 
