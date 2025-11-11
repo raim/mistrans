@@ -166,7 +166,7 @@ pxstat <- ptstat #[ptstat$median<1, ]
 
 ## halflives all
 plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
-        type=ftyp, res=300, width=3.5,height=3.5)
+        type=ftyp, res=300, width=3,height=3)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
               ylab=expression(RAAS~rho), xlab=xl.hlfm, axes=FALSE, title=TRUE,
@@ -183,6 +183,7 @@ t2 <- C/(eps*log(2))
 legend('topright', legend=c(bquote(alpha==.(round(cr$fit$coeff[1], 1))),
                             bquote(beta==.(round(cr$fit$coeff[2], 1))),
                             bquote(C==.(round(C, 1))),
+                            bquote(epsilon==.(eps)),
                             bquote(tau[1/2]==.(round(t2))~h)),
        box.col=NA, bg='#ffffff77', inset=c(-.1,0), xpd=TRUE)
 ##box()
