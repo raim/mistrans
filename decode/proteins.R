@@ -168,14 +168,16 @@ dev.off()
 ## from the slope of log(RAAS) = log(log(2)*eps/d2) - log(t_{1/2}),
 ## using the measured half-lives of @Mathieson2018.
 
-pxstat <- ptstat #[ptstat$median<1, ]
+pxstat <- ptstat#[ptstat$median< -1.3, ]
+hist(pxstat$median, breaks=30)
 
 ## halflives all
 plotdev(file.path(pfig.path,paste0("protein_halflives_all")),
         type=ftyp, res=300, width=3,height=3)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
-              ylab=expression(RAAS~rho), xlab=xl.hlfm, axes=FALSE, title=TRUE,
+              ylab=expression(median~RAAS), xlab=xl.hlfm,
+              axes=FALSE, title=TRUE,
               cor.legend=FALSE,
               line.methods='ols')
 logaxis(1:2)
@@ -192,10 +194,11 @@ legend('topright', legend=c(bquote(alpha==.(round(cr$fit$coeff[1], 1))),
                             bquote(epsilon==.(eps)),
                             bquote(tau[1/2]==.(round(t2))~h)),
        box.col=NA, bg='#ffffff77', inset=c(-.1,0), xpd=TRUE)
-##box()
 ### Theoretical RAAS FOR CONSTANT s2/s1 and d2
-tau <- 1 # half-life of mistranslated proteins, 1 h
-error_rate <- 1e-2 # one error in 100 proteins = s2/s1
+##    figlabel(bquote(tau[1/2]==.(tau)~h), col=2, font=2,
+##             region='plot', pos='bottomleft')
+tau <- 24 # half-life of mistranslated proteins, 1 h
+eps <- .01 # one error in 100 proteins = s2/s1
 d2 <- log(2)/tau 
 halflives <- range(pxstat$halflife, na.rm=TRUE)
 d1 <- log(2)/halflives # s1/P1
@@ -205,6 +208,32 @@ figlabel(bquote(tau[1/2]==.(tau)~h), col=2, font=2,
          region='plot', pos='bottomleft')
 dev.off()
 
+## halflives all
+plotdev(file.path(pfig.path,paste0("protein_halflives_model")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
+              ylab=expression(median~RAAS), xlab=xl.hlfm,
+              axes=FALSE, title=FALSE,
+              cor.legend=FALSE,
+              line.methods='')
+logaxis(1:2)
+### Theoretical RAAS FOR CONSTANT s2/s1 and d2
+epss <- c(.01, 1)
+for ( i in seq_along(epss) ) {
+    tau <- 24 # half-life of mistranslated proteins, 1 h
+    eps <- epss[i] # one error in 100 proteins = s2/s1
+    d2 <- log(2)/tau 
+    halflives <- range(pxstat$halflife, na.rm=TRUE)
+    d1 <- log(2)/halflives # s1/P1
+    RAAS <- eps/d2 * d1
+    lines(log10(halflives), log10(RAAS), col=i+1, lwd=2)
+}
+mtext(bquote(tau[1/2]==.(tau)~h), 3, 0, adj=1)
+legend('topright', legend=c(epss), col=seq_along(epss)+1, lty=1, lwd=2,
+       title=expression(error~rate~epsilon), bty='n', seg.len=.75)
+dev.off()
+
 
 
 plotdev(file.path(pfig.path,paste0("protein_degradation")),
@@ -212,7 +241,7 @@ plotdev(file.path(pfig.path,paste0("protein_degradation")),
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 cr <- plotCor(log(2)/(pxstat$halflife),
               10^pxstat$median, #log='xy',
-              ylab=expression(RAAS~rho),
+              ylab=expression(RAAS),
               xlab=expression(degradation~rate~d[1]/h^-1),
               axes=FALSE, title=TRUE,
               cor.legend=FALSE,
