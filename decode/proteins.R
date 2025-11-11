@@ -162,6 +162,12 @@ dev.off()
 
 ## PROTEIN HALF-LIVES, @Mathieson2018
 
+## 20251110: added estimation of parameters based on RAAS = s2/d2 *
+## d1/s1, where we assume a constant error rate eps=s2/s1 to
+## derive a constant degradation d_2 of mistranslated proteins,
+## from the slope of log(RAAS) = log(log(2)*eps/d2) - log(t_{1/2}),
+## using the measured half-lives of @Mathieson2018.
+
 pxstat <- ptstat #[ptstat$median<1, ]
 
 ## halflives all

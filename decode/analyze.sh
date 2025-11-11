@@ -7,6 +7,9 @@
 ### TODO:
 ## * consider which parts of genomeBrowser/data/mammary should/could be
 ##   moved here,
+## * update scripts calls from raasprofiles3_ used in mistrans/scrpts
+##   to file names used here in mistrans/decode
+## * add new abundance.R simulation script.
 
 ### MAIN INPUT DATA
 
