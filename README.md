@@ -11,6 +11,11 @@ Ideas
 
 ## TODO
 
+* KRAQ and splice sites,
+* protein properties and half-life,
+* RAAS and half life,
+* evidence for N Aminopeptidase activity in proteomics data.
+
 * hypothesis tree:
     - synthesis: codons, ribosome density, translation kinetics,
 	- degradation: degrons,
