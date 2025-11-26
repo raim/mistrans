@@ -26,7 +26,7 @@ if ( RM.POSPROB )
     max.saap <- 8
 
 ## axis labels
-xl.hlfm <- expression(protein~"half-life"/h)
+xl.hlfm <- expression(protein~"half-life"~tau[1]/h)
 xl.hlf <- expression(protein~"half-life"/h)
 
 ## overrule specific y-axis label
@@ -209,30 +209,6 @@ figlabel(bquote(tau[1/2]==.(tau)~h), col=2, font=2,
 dev.off()
 
 ## halflives all
-plotdev(file.path(pfig.path,paste0("protein_halflives_model")),
-        type=ftyp, res=300, width=3,height=3)
-par(mai=pmai, mgp=pmpg, tcl=-.25)
-cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
-              ylab=expression(median~RAAS), xlab=xl.hlfm,
-              axes=FALSE, title=FALSE,
-              cor.legend=FALSE,
-              line.methods='')
-logaxis(1:2)
-### Theoretical RAAS FOR CONSTANT s2/s1 and d2
-epss <- c(.01, 1)
-for ( i in seq_along(epss) ) {
-    tau <- 24 # half-life of mistranslated proteins, 1 h
-    eps <- epss[i] # one error in 100 proteins = s2/s1
-    d2 <- log(2)/tau 
-    halflives <- range(pxstat$halflife, na.rm=TRUE)
-    d1 <- log(2)/halflives # s1/P1
-    RAAS <- eps/d2 * d1
-    lines(log10(halflives), log10(RAAS), col=i+1, lwd=2)
-}
-mtext(bquote(tau[1/2]==.(tau)~h), 3, 0, adj=1)
-legend('topright', legend=c(epss), col=seq_along(epss)+1, lty=1, lwd=2,
-       title=expression(error~rate~epsilon), bty='n', seg.len=.75)
-dev.off()
 
 
 
