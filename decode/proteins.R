@@ -208,7 +208,37 @@ figlabel(bquote(tau[1/2]==.(tau)~h), col=2, font=2,
          region='plot', pos='bottomleft')
 dev.off()
 
-## halflives all
+## halflives with model
+plotdev(file.path(pfig.path,paste0("protein_halflives_model")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
+              ylab=expression(median~RAAS), xlab=xl.hlfm,
+              axes=FALSE, title=FALSE,
+              cor.legend=FALSE,
+              line.methods='')
+logaxis(1:2)
+### Theoretical RAAS FOR CONSTANT s2/s1 and d2
+epss <- c(.005, .05, 5)/5
+for ( i in seq_along(epss) ) {
+    tau <- 24 # half-life of mistranslated proteins, 1 h
+    frac_deg <- .9
+    ##tau <- 24*log(2)/-log(1-frac_deg)
+    eps <- epss[i] # one error in 100 proteins = s2/s1
+    d2 <- log(2)/tau 
+    halflives <- range(pxstat$halflife, na.rm=TRUE)
+    d1 <- log(2)/halflives # s1/P1
+    RAAS <- eps/d2 * d1
+    lines(log10(halflives), log10(RAAS), col=i+1, lwd=2)
+}
+abline(h=log10(epss), lty=2, col=1:length(epss) +1)
+
+mtext(bquote(tau[2]==.(round(tau,1))~h), 3, 0, adj=1)
+legend('topright', legend=c(epss), col=seq_along(epss)+1, lty=1, lwd=2,
+       title=expression(error~rate~epsilon), bty='n', seg.len=.75)
+legend('topleft', legend=expression(tau[1]==tau[2]), lty=2,
+       bty='n', inset=c(0,-.13), xpd=TRUE)
+dev.off()
 
 
 
@@ -216,13 +246,14 @@ plotdev(file.path(pfig.path,paste0("protein_degradation")),
         type=ftyp, res=300, width=corW,height=corH)
 par(mai=pmai, mgp=pmpg, tcl=-.25)
 cr <- plotCor(log(2)/(pxstat$halflife),
-              10^pxstat$median, #log='xy',
+              10^pxstat$median, 
               ylab=expression(RAAS),
               xlab=expression(degradation~rate~d[1]/h^-1),
-              axes=FALSE, title=TRUE,
+              axes=TRUE, title=TRUE,
               cor.legend=FALSE,
-              line.methods='ols', ylim=c(0,.5), xlim=c(0,.02))
-axis(1);axis(2)
+              line.methods='ols',
+              log='yx')#,              ylim=c(0,.5))#, xlim=c(0,.02))
+##axis(1);axis(2)
 ## calculate intercept alpha=\log(c \log(2))
 dev.off()
 
