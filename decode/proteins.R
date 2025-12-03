@@ -258,4 +258,26 @@ cr <- plotCor(log(2)/(pxstat$halflife),
 dev.off()
 
 
+### TMT Level
+
+plotdev(file.path(pfig.path,paste0("protein_correlations")),
+        type=ftyp, res=300, width=corW*5,height=corH)
+par(mfcol=c(1,5), mai=c(.35,.35,.1,.1), mgp=pmpg, tcl=-.25)
+
+## BP and SAAP are correlated
+plotCor(tmtf$BP.abundance, tmtf$SAAP.abundance, log='xy',
+        ylab='SAAP abundance', xlab='BP abundance')
+## SAAP is not correlated to protein intensity
+plotCor(tmtf$protein.intensity, tmtf$SAAP.abundance, log='xy',
+        xlab='protein intensity', ylab='SAAP abundance')
+## BP is correlated to protein intensity
+plotCor(tmtf$protein.intensity, tmtf$BP.abundance, log='xy',
+        xlab='protein intensity', ylab='BP abundance')
+
+plotCor(tmtf$protein.intensity, 1/tmtf$BP.abundance, log='xy',
+        xlab='protein intensity', ylab='1 / BP abundance')
+
+plotCor(tmtf$protein.intensity, tmtf$SAAP.abundance/tmtf$BP.abundance, log='xy',
+        xlab='protein intensity', ylab='RAAS')
+dev.off()
 
