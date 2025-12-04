@@ -9,8 +9,20 @@ SRC.PATH <- file.path("/home/raim/work/mistrans/decode/")
 if ( !exists("bdat") )
     source(file.path(SRC.PATH,"raas_init.R"))
 
+## 20251204 - q&d filter
+opath <- "proteins"
+do.healthy <- FALSE # TRUE # 
+do.cancer <- TRUE # FALSE # 
+if ( do.healthy ) {
+    tmtp <- tmtf[tmtf$Dataset=='Healthy',]
+    opath <- "proteins/healthy"
+} else if ( do.cancer ) {
+    tmtp <- tmtf[tmtf$Dataset!='Healthy',]
+    opath <- "proteins/cancer"
+}
+
 ## local output path
-pfig.path <- file.path(fig.path,"proteins")
+pfig.path <- file.path(fig.path, opath)
 dir.create(pfig.path, showWarnings=FALSE)
 
 
@@ -39,8 +51,8 @@ xl.prota <- xl.raas
 ### BP/SAAP RAAS and STATS
 
 ## bp median raas
-bpl <- split(tmtf$RAAS, tmtf$BP)
-bpstat <- listProfile(bpl, y=tmtf$RAAS, use.test=use.test, min=3)
+bpl <- split(tmtp$RAAS, tmtp$BP)
+bpstat <- listProfile(bpl, y=tmtp$RAAS, use.test=use.test, min=3)
 ## add data
 bpstat$bplen <- nchar(rownames(bpstat))
 ## count distinct SAAP per BP
@@ -48,8 +60,8 @@ bps <- unlist(lengths(lapply(split(bdat$SAAP, bdat$BP), unique)))
 bpstat$nsaap <- bps[rownames(bpstat)]
 
 ## add median intensities per BP+SAAP
-bsints <- tmtf$BP.abundance+tmtf$SAAP.abundance
-bpint <- unlist(lapply(split(bsints, tmtf$BP), median, na.rm=TRUE))
+bsints <- tmtp$BP.abundance+tmtp$SAAP.abundance
+bpint <- unlist(lapply(split(bsints, tmtp$BP), median, na.rm=TRUE))
 
 bpstat$intensity <- bpint[rownames(bpstat)]
 
@@ -57,8 +69,8 @@ bpstat$intensity <- bpint[rownames(bpstat)]
 ### PROTEIN RAAS AND STATS
 
 ## protein median raas per protein w/o site-specific median first
-ptl <- split(tmtf$RAAS, tmtf$ensembl)
-ptstat <- listProfile(ptl, y=tmtf$RAAS, use.test=use.test, min=3)
+ptl <- split(tmtp$RAAS, tmtp$ensembl)
+ptstat <- listProfile(ptl, y=tmtp$RAAS, use.test=use.test, min=3)
 
 ## count distinct BP per  protein
 pts <- unlist(lengths(lapply(split(bdat$BP, bdat$ensembl), unique)))
@@ -240,7 +252,37 @@ legend('topleft', legend=expression(tau[1]==tau[2]), lty=2,
        bty='n', inset=c(0,-.13), xpd=TRUE)
 dev.off()
 
+plotdev(file.path(pfig.path,paste0("protein_halflives_iupred3")),
+        type=ftyp, res=300, width=3,height=3)
+par(mai=pmai, mgp=pmpg, tcl=-.25)
+cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
+              ylab=expression(median~RAAS), xlab=xl.hlfm,
+              density=FALSE, col=num2col(pxstat$iupred3),
+              axes=FALSE, title=FALSE,
+              cor.legend=FALSE,
+              line.methods='')
+logaxis(1:2)
+### Theoretical RAAS FOR CONSTANT s2/s1 and d2
+epss <- c(.005, .05, 5)/5
+for ( i in seq_along(epss) ) {
+    tau <- 24 # half-life of mistranslated proteins, 1 h
+    frac_deg <- .9
+    ##tau <- 24*log(2)/-log(1-frac_deg)
+    eps <- epss[i] # one error in 100 proteins = s2/s1
+    d2 <- log(2)/tau 
+    halflives <- range(pxstat$halflife, na.rm=TRUE)
+    d1 <- log(2)/halflives # s1/P1
+    RAAS <- eps/d2 * d1
+    lines(log10(halflives), log10(RAAS), col=i+1, lwd=2)
+}
+abline(h=log10(epss), lty=2, col=1:length(epss) +1)
 
+mtext(bquote(tau[2]==.(round(tau,1))~h), 3, 0, adj=1)
+legend('topright', legend=c(epss), col=seq_along(epss)+1, lty=1, lwd=2,
+       title=expression(error~rate~epsilon), bty='n', seg.len=.75)
+legend('topleft', legend=expression(tau[1]==tau[2]), lty=2,
+       bty='n', inset=c(0,-.13), xpd=TRUE)
+dev.off()
 
 plotdev(file.path(pfig.path,paste0("protein_degradation")),
         type=ftyp, res=300, width=corW,height=corH)
@@ -265,23 +307,23 @@ plotdev(file.path(pfig.path,paste0("protein_correlations")),
 par(mfcol=c(1,5), mai=c(.35,.35,.1,.1), mgp=pmpg, tcl=-.25)
 
 ## BP is correlated to protein intensity
-plotCor(tmtf$protein.intensity, tmtf$BP.abundance, log='xy',
+plotCor(tmtp$protein.intensity, tmtp$BP.abundance, log='xy',
         xlab='protein intensity', ylab='BP abundance')
 ## 1/BP is correlated to protein intensity
-plotCor(tmtf$protein.intensity, 1/tmtf$BP.abundance, log='xy',
+plotCor(tmtp$protein.intensity, 1/tmtp$BP.abundance, log='xy',
         xlab='protein intensity', ylab='1 / BP abundance')
 ##figlabel('C', pos='topleft', font=2, cex=1.2)
 ##figlabel('A', pos='topleft', font=2, cex=1.2)
 ## SAAP is not correlated to protein intensity
-plotCor(tmtf$protein.intensity, tmtf$SAAP.abundance, log='xy',
+plotCor(tmtp$protein.intensity, tmtp$SAAP.abundance, log='xy',
         xlab='protein intensity', ylab='SAAP abundance')
 ##figlabel('B', pos='topleft', font=2, cex=1.2)
 ## SAAP/BP is correlated to protein intensity
-plotCor(tmtf$protein.intensity, tmtf$SAAP.abundance/tmtf$BP.abundance, log='xy',
+plotCor(tmtp$protein.intensity, tmtp$SAAP.abundance/tmtp$BP.abundance, log='xy',
         xlab='protein intensity', ylab='RAAS')
 ##figlabel('D', pos='topleft', font=2, cex=1.2)
 ## BP and SAAP are correlated
-plotCor(tmtf$BP.abundance, tmtf$SAAP.abundance, log='xy',
+plotCor(tmtp$BP.abundance, tmtp$SAAP.abundance, log='xy',
         ylab='SAAP abundance', xlab='BP abundance')
 ##figlabel('E', pos='topleft', font=2, cex=1.2)
 dev.off()
