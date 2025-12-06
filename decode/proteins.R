@@ -11,8 +11,10 @@ if ( !exists("bdat") )
 
 ## 20251204 - q&d filter
 opath <- "proteins"
-do.healthy <- FALSE # TRUE # 
-do.cancer <- TRUE # FALSE # 
+tmtp <- tmtf
+
+do.healthy <- TRUE # FALSE # 
+do.cancer <- FALSE # TRUE # 
 if ( do.healthy ) {
     tmtp <- tmtf[tmtf$Dataset=='Healthy',]
     opath <- "proteins/healthy"
@@ -195,14 +197,15 @@ cr <- plotCor(log10(pxstat$halflife), pxstat$median, ylim=range(pxstat$median),
 logaxis(1:2)
 ## calculate intercept alpha=\log(c \log(2))
 alpha <- cr$fit$coeff[1]
-C <- (10^alpha)/log(2)
+## error persistence time
+TAUE <- (10^alpha)/log(2)
 ## calculate half-life of mistranslated proteins c=eps/d2;
-## d2=eps/C; t2 = C/(eps*log(2))
+## d2=eps/TAUE; t2 = TAUE/(eps*log(2))
 eps <- 1/100
-t2 <- C/(eps*log(2))
+t2 <- TAUE/(eps*log(2))
 legend('topright', legend=c(bquote(alpha==.(round(cr$fit$coeff[1], 1))),
                             bquote(beta==.(round(cr$fit$coeff[2], 1))),
-                            bquote(C==.(round(C, 1))),
+                            bquote(tau[e]==.(round(TAUE, 1))~h),
                             bquote(epsilon==.(eps)),
                             bquote(tau[1/2]==.(round(t2))~h)),
        box.col=NA, bg='#ffffff77', inset=c(-.1,0), xpd=TRUE)
@@ -242,6 +245,8 @@ for ( i in seq_along(epss) ) {
     d1 <- log(2)/halflives # s1/P1
     RAAS <- eps/d2 * d1
     lines(log10(halflives), log10(RAAS), col=i+1, lwd=2)
+    ## error persistence time
+    taue <- eps/d2 
 }
 abline(h=log10(epss), lty=2, col=1:length(epss) +1)
 
